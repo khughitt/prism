@@ -34,6 +34,15 @@ test('app ids cannot inject KDL', () => {
   assert.equal(kdl.match(/window-rule \{/g)?.length, 2);
 });
 
+test('disabled blur omits blur while retaining the other background effects', () => {
+  const kdl = renderNiriFragment({
+    params: { ...resolved.params, 'terminal.blur': false },
+  });
+
+  assert.doesNotMatch(kdl, /\bblur true\b/);
+  assert.match(kdl, /background-effect \{\n        xray false\n        saturation 1\n        noise 0\.1\n    \}/);
+});
+
 test('fragment is stable', () => {
   assert.equal(renderNiriFragment(resolved), renderNiriFragment(resolved));
 });
