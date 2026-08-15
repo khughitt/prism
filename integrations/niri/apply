@@ -1,0 +1,14 @@
+#!/usr/bin/env node
+import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { generatedPath } from '../../src/paths.js';
+import { renderNiriFragment } from './render.js';
+
+const resolved = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+const target = generatedPath('prism.kdl');
+fs.mkdirSync(path.dirname(target), { recursive: true });
+const tmp = `${target}.${process.pid}.tmp`;
+fs.writeFileSync(tmp, renderNiriFragment(resolved));
+fs.renameSync(tmp, target);
+execFileSync('niri', ['msg', 'action', 'load-config-file'], { stdio: 'pipe' });
