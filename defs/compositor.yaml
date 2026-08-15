@@ -1,0 +1,6 @@
+- key: compositor.gaps
+  type: int
+  range: [0, 128]
+  default: 24
+  ui: {group: compositor, control: slider, step: 1}
+  description: Gap in logical pixels between tiled windows
