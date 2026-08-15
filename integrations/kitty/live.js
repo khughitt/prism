@@ -16,3 +16,22 @@ export function applyLiveOpacity(resolved, kitten) {
   const activeCommand = liveCommands(resolved, osWindows)[1];
   if (activeCommand) kitten(activeCommand);
 }
+
+export function kittySockets(procNetUnix) {
+  const sockets = new Set();
+  for (const line of procNetUnix.split('\n')) {
+    const address = line.trim().split(/\s+/).at(-1);
+    if (/^@dotfiles-kitty-\d+$/.test(address)) sockets.add(`unix:${address}`);
+  }
+  return [...sockets];
+}
+
+export function applyToKittySockets(resolved, procNetUnix, kitten) {
+  const sockets = kittySockets(procNetUnix);
+  if (sockets.length === 0) {
+    throw new Error('no kitty remote-control sockets found matching unix:@dotfiles-kitty-<pid>');
+  }
+  for (const socket of sockets) {
+    applyLiveOpacity(resolved, (args) => kitten(socket, args));
+  }
+}

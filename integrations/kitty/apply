@@ -4,9 +4,8 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { generatedPath } from '../../src/paths.js';
 import { renderKittyConf } from './render.js';
-import { applyLiveOpacity } from './live.js';
+import { applyToKittySockets } from './live.js';
 
-const socket = 'unix:@dotfiles-kitty';
 const resolved = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 
 const target = generatedPath('kitty.conf');
@@ -15,5 +14,6 @@ const tmp = `${target}.${process.pid}.tmp`;
 fs.writeFileSync(tmp, renderKittyConf(resolved));
 fs.renameSync(tmp, target);
 
-const kitten = (args) => execFileSync('kitten', ['@', '--to', socket, ...args], { stdio: 'pipe' });
-applyLiveOpacity(resolved, kitten);
+const kitten = (socket, args) =>
+  execFileSync('kitten', ['@', '--to', socket, ...args], { stdio: 'pipe' });
+applyToKittySockets(resolved, fs.readFileSync('/proc/net/unix', 'utf8'), kitten);

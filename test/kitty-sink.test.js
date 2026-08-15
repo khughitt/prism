@@ -1,12 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 import { renderKittyConf } from '../integrations/kitty/render.js';
-import { liveCommands } from '../integrations/kitty/live.js';
+import { applyToKittySockets, kittySockets, liveCommands } from '../integrations/kitty/live.js';
 
 const resolved = { params: {
   'terminal.background.opacity.active': 0.95,
@@ -36,37 +31,49 @@ test('live: no focused os window -> everything inactive, no active command', () 
     [['set-background-opacity', '--all', '0.65']]);
 });
 
-test('apply makes everything inactive before reading focus and activating its nested window', (t) => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-kitty-'));
-  t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
-  const bin = path.join(tmp, 'bin');
-  const callsFile = path.join(tmp, 'calls');
-  const resolvedFile = path.join(tmp, 'resolved.json');
-  fs.mkdirSync(bin);
-  fs.writeFileSync(resolvedFile, JSON.stringify(resolved));
-  fs.writeFileSync(path.join(bin, 'kitten'), `#!/usr/bin/env node
-const fs = require('node:fs');
-const args = process.argv.slice(2);
-fs.appendFileSync(process.env.KITTEN_CALLS, JSON.stringify(args) + '\\n');
-if (args.at(-1) === 'ls') process.stdout.write(JSON.stringify([
-  { id: 1, is_focused: false, tabs: [{ windows: [{ id: 11 }] }] },
-  { id: 2, is_focused: true, tabs: [{ windows: [{ id: 21 }, { id: 22 }] }] },
-]));
-`, { mode: 0o755 });
+test('socket discovery deduplicates exact pid-suffixed kitty addresses', () => {
+  const procNetUnix = `Num RefCount Protocol Flags Type St Inode Path
+000: 2 0 10000 1 01 10 @dotfiles-kitty-12
+001: 2 0 10000 1 01 11 @dotfiles-kitty-12
+002: 2 0 10000 1 01 12 @dotfiles-kitty
+003: 2 0 10000 1 01 13 @dotfiles-kitty-12-extra
+004: 2 0 10000 1 01 14 prefix@dotfiles-kitty-13
+005: 2 0 10000 1 01 15 @dotfiles-kitty-34
+`;
+  assert.deepEqual(kittySockets(procNetUnix), [
+    'unix:@dotfiles-kitty-12',
+    'unix:@dotfiles-kitty-34',
+  ]);
+});
 
-  const root = fileURLToPath(new URL('..', import.meta.url));
-  execFileSync(process.execPath, [path.join(root, 'integrations/kitty/apply'), resolvedFile], {
-    env: {
-      ...process.env,
-      PATH: `${bin}:${process.env.PATH}`,
-      KITTEN_CALLS: callsFile,
-      PRISM_STATE_DIR: path.join(tmp, 'state'),
-    },
-  });
+test('socket application fails loudly when discovery finds no exact match', () => {
+  assert.deepEqual(kittySockets('Num RefCount Protocol Flags Type St Inode Path\n'), []);
+  assert.throws(
+    () => applyToKittySockets(resolved, '@not-dotfiles-kitty-1\n', () => {}),
+    /no kitty remote-control sockets found/,
+  );
+});
 
-  assert.deepEqual(fs.readFileSync(callsFile, 'utf8').trim().split('\n').map(JSON.parse), [
-    ['@', '--to', 'unix:@dotfiles-kitty', 'set-background-opacity', '--all', '0.65'],
-    ['@', '--to', 'unix:@dotfiles-kitty', 'ls'],
-    ['@', '--to', 'unix:@dotfiles-kitty', 'set-background-opacity', '--match', 'id:21', '0.95'],
+test('each discovered socket gets its own inactive, ls, optional nested-id active sequence', () => {
+  const calls = [];
+  const kitten = (socket, args) => {
+    calls.push([socket, ...args]);
+    if (args[0] !== 'ls') return '';
+    return JSON.stringify(socket.endsWith('-12')
+      ? [{ id: 1, is_focused: false, tabs: [{ windows: [{ id: 11 }] }] }]
+      : [{ id: 2, is_focused: true, tabs: [{ windows: [{ id: 21 }] }] }]);
+  };
+
+  applyToKittySockets(resolved, [
+    '000: 2 0 10000 1 01 10 @dotfiles-kitty-12',
+    '001: 2 0 10000 1 01 11 @dotfiles-kitty-34',
+  ].join('\n'), kitten);
+
+  assert.deepEqual(calls, [
+    ['unix:@dotfiles-kitty-12', 'set-background-opacity', '--all', '0.65'],
+    ['unix:@dotfiles-kitty-12', 'ls'],
+    ['unix:@dotfiles-kitty-34', 'set-background-opacity', '--all', '0.65'],
+    ['unix:@dotfiles-kitty-34', 'ls'],
+    ['unix:@dotfiles-kitty-34', 'set-background-opacity', '--match', 'id:21', '0.95'],
   ]);
 });

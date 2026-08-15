@@ -343,17 +343,23 @@ cheap to honor because both repos are local.
 
 **kitty** — two channels in one adapter:
 
-1. *Live*: remote-control calls over the existing `unix:@dotfiles-kitty`
-   socket so sliders move instantly. Because opacity is per-OS-window in
-   kitty and there is no stored active/inactive pair, the adapter applies
-   **both states immediately**. It must not use `state:focused` matching:
+1. *Live*: remote-control calls over the existing kitty sockets so sliders
+   move instantly. The configured `listen_on unix:@dotfiles-kitty` address
+   is expanded by kitty to `unix:@dotfiles-kitty-<kitty_pid>`; the adapter
+   reads `/proc/net/unix`, deduplicates exact PID-suffixed matches, and
+   applies to every current socket. No exact match is a loud sink failure,
+   as is a discovered socket that disappears or rejects a call. Because
+   opacity is per-OS-window in kitty and there is no stored active/inactive
+   pair, the adapter applies **both states immediately**. It must not use
+   `state:focused` matching:
    kitty deliberately falls back to the *last-focused* window when none is
    currently focused — the likely state while the user is operating the
    noctalia panel — and this is documented behavior, not an accident
    ("If no window is focused, the last focused window is matched").
 
-   The sequence is: `set-background-opacity --all <inactive>` in one call,
-   then read `kitten @ ls` and, **only if** an OS window reports
+   For each discovered socket, the sequence is:
+   `set-background-opacity --all <inactive>` in one call, then read
+   `kitten @ ls` from that socket and, **only if** an OS window reports
    `is_focused: true`, a second call setting that window to `<active>`.
 
    The second call must match on **the id of a kitty window inside the
