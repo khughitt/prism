@@ -62,13 +62,16 @@ Item {
       failed(writeError);
     }
 
+    var completedSample = Queue.isSample(queue.inFlight);
     var result = Queue.finish(queue);
     queue = result.state;
     if (result.launch) {
       launch(result.launch);
     } else if (result.drained) {
       drained();
-      refresh();
+      if (!completedSample) {
+        refresh();
+      }
     }
   }
 

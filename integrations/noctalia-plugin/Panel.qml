@@ -194,9 +194,12 @@ Item {
                 }
 
                 NValueSlider {
+                  id: valueSlider
+
                   visible: modelData.ui.control === "slider"
                   Layout.fillWidth: true
                   property bool liveDrag: modelData.effectiveLiveness === "live"
+                  property bool pointerPressed: false
                   from: modelData.range ? modelData.range[0] : 0
                   to: modelData.range ? modelData.range[1] : 1
                   stepSize: modelData.ui.step === undefined ? 0.01 : modelData.ui.step
@@ -209,14 +212,27 @@ Item {
                     repeat: false
                   }
 
+                  Timer {
+                    id: commitGate
+                    interval: 100
+                    repeat: false
+                    onTriggered: client.set(modelData.key, valueSlider.value, false)
+                  }
+
                   onMoved: function(value) {
-                    if (liveDrag && !sampleGate.running) {
-                      client.set(modelData.key, value, true);
-                      sampleGate.restart();
+                    if (pointerPressed) {
+                      if (liveDrag && !sampleGate.running) {
+                        client.set(modelData.key, value, true);
+                        sampleGate.restart();
+                      }
+                    } else {
+                      commitGate.restart();
                     }
                   }
 
                   onPressedChanged: function(pressed, value) {
+                    pointerPressed = pressed;
+                    commitGate.stop();
                     if (!pressed) {
                       client.set(modelData.key, value, false);
                     }

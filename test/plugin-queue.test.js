@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { newQueue, enqueue, finish, argvFor } from '../integrations/noctalia-plugin/queue.mjs';
+import * as Queue from '../integrations/noctalia-plugin/queue.mjs';
+
+const { newQueue, enqueue, finish, argvFor } = Queue;
 
 const sample = (key, value) => ({ verb: 'set', key, value, sample: true });
 const release = (key, value) => ({ verb: 'set', key, value, sample: false });
@@ -60,4 +62,10 @@ test('argvFor: samples and releases produce the same command line', () => {
   assert.deepEqual(argvFor(sample('a.x', 0.5)), ['prism', 'set', 'a.x', '0.5']);
   assert.deepEqual(argvFor(release('a.x', 0.5)), ['prism', 'set', 'a.x', '0.5']);
   assert.deepEqual(argvFor(unset('a.x')), ['prism', 'unset', 'a.x']);
+});
+
+test('only drag samples defer a refresh when their queue drains', () => {
+  assert.equal(Queue.isSample?.(sample('a.x', 0.5)), true);
+  assert.equal(Queue.isSample?.(release('a.x', 0.5)), false);
+  assert.equal(Queue.isSample?.(unset('a.x')), false);
 });

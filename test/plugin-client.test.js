@@ -19,3 +19,18 @@ test('panel Connections use explicit signal handlers accepted by current QML', (
   assert.match(panel, /function onDescribed\(model\) \{/);
   assert.doesNotMatch(panel, /onDescribed:\s*function/);
 });
+
+test('a sample-only drain does not refresh and replace the pressed slider', () => {
+  const writeDone = source.slice(source.indexOf('function writeDone'), source.indexOf('Process {'));
+
+  assert.match(writeDone, /var completedSample = Queue\.isSample\(queue\.inFlight\);\s*var result = Queue\.finish\(queue\);/);
+  assert.match(writeDone, /else if \(result\.drained\) \{\s*drained\(\);\s*if \(!completedSample\) \{\s*refresh\(\);\s*\}/);
+});
+
+test('slider commits keyboard and wheel moves without changing pointer drag behavior', () => {
+  assert.match(panel, /property bool pointerPressed: false/);
+  assert.match(panel, /id: commitGate\s*interval: 100\s*repeat: false\s*onTriggered: client\.set\(modelData\.key, valueSlider\.value, false\)/);
+  assert.match(panel, /onMoved: function\(value\) \{\s*if \(pointerPressed\) \{\s*if \(liveDrag && !sampleGate\.running\)/);
+  assert.match(panel, /\} else \{\s*commitGate\.restart\(\);\s*\}\s*\}/);
+  assert.match(panel, /onPressedChanged: function\(pressed, value\) \{\s*pointerPressed = pressed;\s*commitGate\.stop\(\);\s*if \(!pressed\) \{\s*client\.set\(modelData\.key, value, false\);/);
+});

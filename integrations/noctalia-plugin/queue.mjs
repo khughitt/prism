@@ -3,7 +3,7 @@ export function newQueue() {
   return { inFlight: null, pending: [] };
 }
 
-function isSample(item) {
+export function isSample(item) {
   return item !== null && item !== undefined
     && item.verb === 'set' && item.sample === true;
 }
