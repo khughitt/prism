@@ -56,3 +56,42 @@ exit=0
 ## Concerns
 
 None.
+
+## Fix Round 1
+
+Regression coverage now rejects scalar and array YAML documents from
+`readValues`, and scalar/array inputs to `writeValues`.
+
+RED:
+
+```text
+$ node --test test/values.test.js
+✔ 4 existing tests
+✖ readValues and writeValues reject scalar and array documents
+AssertionError [ERR_ASSERTION]: Missing expected exception.
+ℹ tests 5
+ℹ pass 4
+ℹ fail 1
+exit=1
+```
+
+GREEN:
+
+```text
+$ node --test test/values.test.js
+✔ 5 tests
+ℹ tests 5
+ℹ pass 5
+ℹ fail 0
+exit=0
+
+$ npm test
+ℹ tests 40
+ℹ pass 40
+ℹ fail 0
+exit=0
+```
+
+The shared `ensureValuesObject` boundary check now rejects null write inputs,
+arrays, and non-object documents while preserving the missing/empty-document
+`{}` fallback.

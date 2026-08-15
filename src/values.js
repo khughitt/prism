@@ -3,9 +3,16 @@ import path from 'node:path';
 import { parse, stringify } from 'yaml';
 import { valuesPath } from './paths.js';
 
+function ensureValuesObject(values) {
+  if (typeof values !== 'object' || values === null || Array.isArray(values)) {
+    throw new Error('values must be an object');
+  }
+  return values;
+}
+
 export function readValues() {
   try {
-    return parse(fs.readFileSync(valuesPath(), 'utf8')) ?? {};
+    return ensureValuesObject(parse(fs.readFileSync(valuesPath(), 'utf8')) ?? {});
   } catch (err) {
     if (err.code === 'ENOENT') return {};
     throw err;
@@ -13,6 +20,7 @@ export function readValues() {
 }
 
 export function writeValues(values) {
+  ensureValuesObject(values);
   const file = valuesPath();
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;

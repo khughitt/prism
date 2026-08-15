@@ -42,3 +42,15 @@ test('readValues/writeValues round-trip via PRISM_CONFIG_DIR', async () => {
   writeValues({ 'a.b': 1 });
   assert.deepEqual(readValues(), { 'a.b': 1 });
 });
+
+test('readValues and writeValues reject scalar and array documents', async () => {
+  process.env.PRISM_CONFIG_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-cfg-'));
+  const { readValues, writeValues } = await import('../src/values.js');
+  const file = path.join(process.env.PRISM_CONFIG_DIR, 'values.yaml');
+  fs.writeFileSync(file, 'scalar\n');
+  assert.throws(() => readValues(), /object/);
+  fs.writeFileSync(file, '- item\n');
+  assert.throws(() => readValues(), /object/);
+  assert.throws(() => writeValues('scalar'), /object/);
+  assert.throws(() => writeValues(['item']), /object/);
+});
