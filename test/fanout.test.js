@@ -16,7 +16,7 @@ function freshState() {
   process.env.PRISM_STATE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-state-'));
 }
 
-function runWorker(sink, param, value) {
+function runWorker(sink, param, value, onDone) {
   const child = fork(worker, [sink, param, String(value)], { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] });
   let ready;
   const readyPromise = new Promise((resolve, reject) => { ready = { resolve, reject }; });
@@ -29,7 +29,10 @@ function runWorker(sink, param, value) {
       if (message === 'ready') ready.resolve();
     });
     child.on('close', (code) => {
-      if (code === 0) resolve();
+      if (code === 0) {
+        onDone();
+        resolve();
+      }
       else {
         const error = new Error(`worker exited with code ${code}`);
         ready.reject(error);
@@ -76,12 +79,15 @@ test('one failing sink neither blocks others nor throws; status snapshots bound 
 
 test('child fan-outs wait for the status lock and retain unique snapshots', { timeout: 10_000 }, async () => {
   freshState();
-  const workers = [
-    runWorker('first', 'first.value', 101),
-    runWorker('second', 'second.value', 202),
-  ];
+  let workers;
+  let completed = 0;
   await withLock(statusLockPath(), async () => {
+    workers = [
+      runWorker('first', 'first.value', 101, () => { completed += 1; }),
+      runWorker('second', 'second.value', 202, () => { completed += 1; }),
+    ];
     await Promise.all(workers.map(({ ready }) => ready));
+    assert.equal(completed, 0, 'no child can complete while the parent holds the status lock');
     assert.equal(fs.existsSync(sinkStatusPath()), false, 'no child can record while the parent holds the status lock');
   });
   await Promise.all(workers.map(({ done }) => done));
