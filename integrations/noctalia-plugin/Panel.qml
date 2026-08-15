@@ -13,7 +13,8 @@ Item {
   property real contentPreferredWidth: Math.round(560 * Style.uiScaleRatio)
   property real contentPreferredHeight: Math.round(760 * Style.uiScaleRatio)
   property var groups: []
-  property string errorMessage: ""
+  readonly property var client: pluginApi && pluginApi.mainInstance ? pluginApi.mainInstance.client : null
+  readonly property string errorMessage: client ? client.errorMessage : ""
 
   function groupedParams(params) {
     var byName = {};
@@ -81,17 +82,10 @@ Item {
     }
   }
 
-  PrismClient {
-    id: client
-
+  Connections {
+    target: client
     onDescribed: function(model) {
       root.groups = root.groupedParams(model.params);
-      root.errorMessage = "";
-    }
-
-    onFailed: function(message) {
-      root.groups = [];
-      root.errorMessage = message;
     }
   }
 
@@ -201,11 +195,31 @@ Item {
                 NValueSlider {
                   visible: modelData.ui.control === "slider"
                   Layout.fillWidth: true
+                  property bool liveDrag: modelData.effectiveLiveness === "live"
                   from: modelData.range ? modelData.range[0] : 0
                   to: modelData.range ? modelData.range[1] : 1
                   stepSize: modelData.ui.step === undefined ? 0.01 : modelData.ui.step
                   value: modelData.value
                   text: String(value)
+
+                  Timer {
+                    id: sampleGate
+                    interval: 100
+                    repeat: false
+                  }
+
+                  onMoved: function(value) {
+                    if (liveDrag && !sampleGate.running) {
+                      client.set(modelData.key, value, true);
+                      sampleGate.restart();
+                    }
+                  }
+
+                  onPressedChanged: function(pressed, value) {
+                    if (!pressed) {
+                      client.set(modelData.key, value, false);
+                    }
+                  }
                 }
 
                 NToggle {

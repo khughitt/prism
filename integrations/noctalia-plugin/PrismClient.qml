@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell.Io
+import "./queue.mjs" as Queue
 
 Item {
   id: root
@@ -8,19 +9,57 @@ Item {
   signal drained
   signal failed(string message)
 
+  property var queue: Queue.newQueue()
+  property string errorMessage: ""
+  property string writeError: ""
+
   function refresh() {
     if (!describeProcess.running) {
       describeProcess.running = true;
     }
   }
 
-  // Task 18 replaces these visible failures with the serialized write queue.
   function set(key, value, isSample) {
-    failed("Prism writes are not available yet.");
+    push({ verb: "set", key: key, value: value, sample: isSample });
   }
 
   function unset(key) {
-    failed("Prism writes are not available yet.");
+    push({ verb: "unset", key: key });
+  }
+
+  function push(item) {
+    if (queue.inFlight === null) {
+      writeError = "";
+      errorMessage = "";
+    }
+
+    var result = Queue.enqueue(queue, item);
+    queue = result.state;
+    if (result.launch) {
+      launch(result.launch);
+    }
+  }
+
+  function launch(item) {
+    writeProcess.command = Queue.argvFor(item);
+    writeProcess.running = true;
+  }
+
+  function writeDone(exitCode, errorText) {
+    if (exitCode !== 0) {
+      writeError = errorText || "prism exited " + exitCode;
+      errorMessage = writeError;
+      failed(writeError);
+    }
+
+    var result = Queue.finish(queue);
+    queue = result.state;
+    if (result.launch) {
+      launch(result.launch);
+    } else if (result.drained) {
+      drained();
+      refresh();
+    }
   }
 
   Process {
@@ -35,7 +74,11 @@ Item {
       var errorText = String(describeProcess.stderr.text || "").trim();
 
       if (exitCode !== 0) {
-        root.failed(errorText || "prism describe exited " + exitCode);
+        var message = errorText || "prism describe exited " + exitCode;
+        if (root.writeError === "") {
+          root.errorMessage = message;
+        }
+        root.failed(message);
         return;
       }
 
@@ -44,10 +87,26 @@ Item {
         if (!model || !Array.isArray(model.params)) {
           throw new Error("prism describe returned an invalid model");
         }
+        root.errorMessage = root.writeError;
         root.described(model);
       } catch (error) {
-        root.failed(error && error.message ? error.message : "Failed to parse prism describe output.");
+        var message = error && error.message ? error.message : "Failed to parse prism describe output.";
+        if (root.writeError === "") {
+          root.errorMessage = message;
+        }
+        root.failed(message);
       }
+    }
+  }
+
+  Process {
+    id: writeProcess
+
+    stdout: StdioCollector {}
+    stderr: StdioCollector {}
+
+    onExited: function(exitCode) {
+      root.writeDone(exitCode, String(writeProcess.stderr.text || "").trim());
     }
   }
 }
