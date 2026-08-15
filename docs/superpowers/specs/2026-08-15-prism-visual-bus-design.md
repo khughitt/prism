@@ -394,7 +394,10 @@ patched (in dotfiles) to read its two opacity values from `resolved.json`
 at focus-change time — a cheap file read that turns the fight into
 cooperation without bringing focus state into the bus. Ongoing focus
 transitions remain the watcher's job; the adapter only handles the moment
-a value changes.
+a value changes. Kitty caches watcher Python for the process lifetime:
+SIGUSR1 reloads the generated config include but does **not** load the patched
+watcher into an existing process. The patch takes effect in new or restarted
+Kitty processes; existing processes converge as they are restarted or closed.
 
 Accepted limitation: the watcher does a second job the live channel does not
 replicate. `_rescale_transparent_colors` drags the seven
@@ -404,10 +407,10 @@ solid thing on screen. That path runs `patch_colors` through kitty's internal
 API, which the adapter — an external process on a remote-control socket —
 cannot reach. So **during a drag the terminal body tracks the slider while
 those seven colors do not**, and the two reconverge on the next focus
-transition. This is a visible-but-transient inconsistency during an
-interaction the user is already watching change, and reimplementing kitty's
-internal color-patching path in the adapter is far more machinery than a v1
-release should carry. Documented rather than fixed.
+transition once the patched watcher is loaded. This is a visible-but-transient
+inconsistency during an interaction the user is already watching change, and
+reimplementing kitty's internal color-patching path in the adapter is far more
+machinery than a v1 release should carry. Documented rather than fixed.
 
 **niri** — generated include fragment, the proven `noctalia.kdl` pattern.
 `apply` renders `~/.config/niri/prism.kdl` (window-rule
@@ -551,7 +554,11 @@ that same directory) is the model.
 2. kitty sink + the `focus-opacity.py` patch in dotfiles; gitignore
    `kitty/prism-generated.conf`. In the same change, add the include in the
    correct position and delete `kitty.conf`'s static `background_opacity`
-   line and its keep-in-sync comment (see the kitty sink above).
+   line and its keep-in-sync comment (see the kitty sink above). Use SIGUSR1
+   to prove the generated include reloads without a config error, but verify
+   focus cooperation in a fresh temporary/new Kitty process: watcher Python
+   is process-cached, so existing processes do not load the patch on config
+   reload and converge only when restarted or closed.
 3. niri sink (`prism.kdl` include, gitignored). Materialize the generated
    target and prove `prism apply niri` on the host *before* adding the
    `include` line — a dangling include makes niri reject the whole config.
