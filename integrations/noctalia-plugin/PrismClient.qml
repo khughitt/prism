@@ -12,9 +12,19 @@ Item {
   property var queue: Queue.newQueue()
   property string errorMessage: ""
   property string writeError: ""
+  property bool refreshPending: false
 
   function refresh() {
-    if (!describeProcess.running) {
+    if (describeProcess.running) {
+      refreshPending = true;
+      return;
+    }
+    describeProcess.running = true;
+  }
+
+  function finishRefresh() {
+    if (refreshPending) {
+      refreshPending = false;
       describeProcess.running = true;
     }
   }
@@ -79,23 +89,24 @@ Item {
           root.errorMessage = message;
         }
         root.failed(message);
-        return;
+      } else {
+        try {
+          var model = JSON.parse(output);
+          if (!model || !Array.isArray(model.params)) {
+            throw new Error("prism describe returned an invalid model");
+          }
+          root.errorMessage = root.writeError;
+          root.described(model);
+        } catch (error) {
+          var message = error && error.message ? error.message : "Failed to parse prism describe output.";
+          if (root.writeError === "") {
+            root.errorMessage = message;
+          }
+          root.failed(message);
+        }
       }
 
-      try {
-        var model = JSON.parse(output);
-        if (!model || !Array.isArray(model.params)) {
-          throw new Error("prism describe returned an invalid model");
-        }
-        root.errorMessage = root.writeError;
-        root.described(model);
-      } catch (error) {
-        var message = error && error.message ? error.message : "Failed to parse prism describe output.";
-        if (root.writeError === "") {
-          root.errorMessage = message;
-        }
-        root.failed(message);
-      }
+      root.finishRefresh();
     }
   }
 
