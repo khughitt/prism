@@ -1,0 +1,27 @@
+sink: niri-glass
+generates: [niri-glass.json]
+binds:
+  - {param: compositor.gaps, liveness: live}
+  - {param: glass.paneLip, liveness: live}
+  - {param: glass.paneShiftX, liveness: live}
+  - {param: glass.paneShiftY, liveness: live}
+  - {param: glass.gridOverlay, liveness: live}
+  - {param: glass.calibrate, liveness: live}
+  - {param: glass.probeExposure, liveness: live}
+  - {param: glass.ior, liveness: live}
+  - {param: glass.thickness, liveness: live}
+  - {param: glass.roughness, liveness: live}
+  - {param: glass.transmission, liveness: live}
+  - {param: glass.attenuationColor, liveness: live}
+  - {param: glass.attenuationDistance, liveness: live}
+  - {param: glass.chromaticAberration, liveness: live}
+  - {param: glass.distortion, liveness: live}
+  - {param: glass.distortionScale, liveness: live}
+  - {param: glass.samples, liveness: live}
+  - {param: glass.anisotropicBlur, liveness: live}
+  - {param: glass.jellyFlex, liveness: live}
+  - {param: glass.jellyRipple, liveness: live}
+  - {param: glass.springDampingRatio, liveness: live}
+  - {param: glass.springStiffness, liveness: live}
+  - {param: glass.springEpsilon, liveness: live}
+  - {param: terminal.apps, liveness: live}
