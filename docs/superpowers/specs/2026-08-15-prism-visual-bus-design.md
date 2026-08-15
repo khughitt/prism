@@ -295,13 +295,21 @@ while its target is machine-local, a host that has never run `prism apply`
 would inherit a broken compositor config. The ordering is therefore part of
 the contract:
 
-1. Setup creates the state directory and the config-path symlinks.
-2. Setup runs `prism apply`, materializing every generated target.
-3. Only then does the config that references them take effect — and during
-   migration, the `include` line lands only after `apply` is proven on the
-   host.
-4. Setup runs `niri validate` as its own step; a failure here is a setup
-   failure, not something discovered at the next login.
+1. Setup leaves the tracked niri directory unexposed while it creates the
+   generated-file symlink inside it and selects the host fragment.
+2. Setup runs `prism apply niri`, materializing the target. If no niri is
+   running, the adapter writes the target and then returns nonzero because it
+   cannot reload; setup accepts that result only when `NIRI_SOCKET` is unset
+   and the generated target is nonempty with a different device+inode from
+   before the invocation, proving that atomic rename replaced it. Any other
+   failure remains fatal.
+3. Setup validates the still-unexposed config by explicit path with
+   `niri validate -c`. A failure is a setup failure, not something discovered
+   at the next login.
+4. Only after validation does setup link the directory into `~/.config/niri`.
+   A running niri reloads the newly exposed config; without one, setup states
+   that the config will load on first start. During migration, the `include`
+   line likewise lands only after `apply` is proven on the host.
 
 `prism doctor` (and `dotfiles-health` through it) treats a missing or
 dangling generated target as a **hard failure**, not a warning. It is the
@@ -414,8 +422,10 @@ machinery than a v1 release should carry. Documented rather than fixed.
 
 **niri** — generated include fragment, the proven `noctalia.kdl` pattern.
 `apply` renders `~/.config/niri/prism.kdl` (window-rule
-opacity/blur/saturation/noise for the terminal allowlist, gaps) and triggers
-`niri msg action load-config-file`. Liveness class `reload`: sub-second, not
+opacity/blur/saturation/noise for the terminal allowlist, gaps) and then runs
+`niri msg action load-config-file`. With no running niri the write succeeds
+but the command returns nonzero at the reload step; bootstrap handles that
+specific state as described above. Liveness class `reload`: sub-second, not
 per-frame. There is deliberately **no debounce inside the adapter** — each
 `apply` is a short-lived process, so no timer survives between invocations.
 Drag-rate protection comes from the panel instead: a parameter this sink
@@ -560,11 +570,13 @@ that same directory) is the model.
    is process-cached, so existing processes do not load the patch on config
    reload and converge only when restarted or closed.
 3. niri sink (`prism.kdl` include, gitignored). Materialize the generated
-   target and prove `prism apply niri` on the host *before* adding the
-   `include` line — a dangling include makes niri reject the whole config.
-   Then delete the now-duplicated opacity/blur window-rule values, `gaps`,
-   and the stale ownership table from `config.kdl`, and `gaps` from **both**
-   `host-*.kdl` files. Finish with `niri validate`.
+   target and validate the tracked config by explicit path before linking that
+   directory into `~/.config/niri` — a dangling include makes niri reject the
+   whole config. With no running niri, only the reload failure is deferred and
+   the validated config loads on first start; a running niri reloads after the
+   link. Then delete the now-duplicated opacity/blur window-rule values,
+   `gaps`, and the stale ownership table from `config.kdl`, and `gaps` from
+   **both** `host-*.kdl` files.
 4. noctalia plugin — sliders arrive here.
 5. Remaining dotfiles wiring: noctalia plugin symlink, `dotfiles-health`
    runs `prism doctor`.
