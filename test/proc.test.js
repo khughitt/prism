@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseStat, ancestors, isAlive, startTimeOf } from '../src/proc.js';
+import { parseStat, isAlive, startTimeOf } from '../src/proc.js';
 
 const statLine = (over = {}) => {
   const f = {
@@ -28,20 +28,6 @@ test('parses starttime — field 22, the thing that makes a pid an identity', ()
 test('returns null on garbage rather than a half-built record', () => {
   assert.equal(parseStat(''), null);
   assert.equal(parseStat('nonsense'), null);
-});
-
-test('walks the ancestor chain, self first, and stops at pid 1', () => {
-  const table = {
-    500: '500 (node) S 400 0 0 0 0 0 0 0 0 0 0 0 0 0',
-    400: '400 (zsh) S 300 0 0 0 0 0 0 0 0 0 0 0 0 0',
-    300: '300 (claude) S 1 0 0 0 0 0 0 0 0 0 0 0 0 0',
-  };
-  assert.deepEqual(ancestors(500, { readStat: (pid) => table[pid] ?? null }).map((p) => p.comm), ['node', 'zsh', 'claude']);
-});
-
-test('a vanished ancestor truncates the chain rather than throwing', () => {
-  const readStat = (pid) => pid === 500 ? '500 (node) S 999 0 0 0 0 0 0 0 0 0 0 0 0 0' : null;
-  assert.deepEqual(ancestors(500, { readStat }).map((p) => p.pid), [500]);
 });
 
 test('isAlive is true for THIS process — with its real starttime, read from real /proc', () => {

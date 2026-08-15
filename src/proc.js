@@ -25,20 +25,6 @@ const defaultReadStat = (pid) => {
   catch { return null; }
 };
 
-export function ancestors(pid, { readStat = defaultReadStat } = {}) {
-  const chain = [];
-  const seen = new Set();
-  let current = pid;
-  while (current > 1 && !seen.has(current)) {
-    seen.add(current);
-    const stat = parseStat(readStat(current));
-    if (!stat) break;
-    chain.push(stat);
-    current = stat.ppid;
-  }
-  return chain;
-}
-
 export function startTimeOf(pid, { readStat = defaultReadStat } = {}) {
   return parseStat(readStat(pid))?.starttime ?? null;
 }
