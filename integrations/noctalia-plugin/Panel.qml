@@ -84,7 +84,8 @@ Item {
 
   Connections {
     target: client
-    onDescribed: function(model) {
+
+    function onDescribed(model) {
       root.groups = root.groupedParams(model.params);
     }
   }

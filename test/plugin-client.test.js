@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const source = await readFile(new URL('../integrations/noctalia-plugin/PrismClient.qml', import.meta.url), 'utf8');
+const panel = await readFile(new URL('../integrations/noctalia-plugin/Panel.qml', import.meta.url), 'utf8');
 
 test('describe refresh requests made in flight are coalesced and replayed after exit', () => {
   assert.match(source, /property bool refreshPending: false/);
@@ -12,4 +13,9 @@ test('describe refresh requests made in flight are coalesced and replayed after 
   const describeProcess = source.slice(source.indexOf('id: describeProcess'), source.indexOf('id: writeProcess'));
   assert.doesNotMatch(describeProcess, /\breturn;/, 'every describe exit path must reach the replay');
   assert.equal(describeProcess.match(/root\.finishRefresh\(\);/g)?.length, 1);
+});
+
+test('panel Connections use explicit signal handlers accepted by current QML', () => {
+  assert.match(panel, /function onDescribed\(model\) \{/);
+  assert.doesNotMatch(panel, /onDescribed:\s*function/);
 });
