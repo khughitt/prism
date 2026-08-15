@@ -12,9 +12,10 @@ hardened to create both generated/ignored include targets, apply, validate,
 and only then expose the config directory. The Noctalia client lives in the
 persistent plugin `Main.qml`, preserving queued writes across panel closure,
 and coalesces overlapping `describe` refresh requests. `dotfiles-health`
-runs `prism doctor` only on hosts carrying the Prism config ownership marker;
-a broken marker is still strict, while unconfigured headless/macOS hosts do
-not acquire an unrelated Prism dependency.
+treats `${DOTS_HOME}/prism/$(hostname)/values.yaml` as the configured-host
+marker, requires `~/.config/prism` to link to that host directory, and only
+then runs `prism doctor`. Unconfigured headless/macOS hosts do not acquire an
+unrelated Prism dependency.
 
 The implementation and dotfiles wiring are committed on their feature
 branches. Two environment-dependent checks remain explicitly post-merge:
@@ -196,8 +197,11 @@ import-free logic modules) carry over directly.
 - `~/.config/prism/values.yaml` — the user's persisted overrides, sparse:
   only params changed from defaults. This is what gets checked into
   dotfiles.
-- `~/.local/state/prism/resolved.json` — machine-written product: *every*
+- `~/.local/state/prism/resolved.json` by default — machine-written product:
+  *every*
   defined param with its effective value (`values.yaml[key] ?? default`).
+  `PRISM_STATE_DIR` overrides the complete state directory; otherwise
+  `XDG_STATE_HOME` replaces `~/.local/state`.
   Written atomically (temp + rename) under a lockfile. **This file is the
   bus** — the only thing sinks ever read. It carries no generation or
   sequence counter: staleness is per-sink (a snapshot of each sink's own
@@ -419,13 +423,13 @@ cheap to honor because both repos are local.
    `focus-opacity.py`. Leaving either would preserve exactly the drift this
    project exists to end.
 
-Interplay fix: `focus-opacity.py` currently holds hardcoded ACTIVE/INACTIVE
-constants and would fight live changes on the next focus event. It is
-patched (in dotfiles) to read its two opacity values from `resolved.json`
-at focus-change time — a cheap file read that turns the fight into
-cooperation without bringing focus state into the bus. Ongoing focus
-transitions remain the watcher's job; the adapter only handles the moment
-a value changes. Kitty caches watcher Python for the process lifetime:
+Interplay fix: `focus-opacity.py` keeps hardcoded ACTIVE/INACTIVE constants
+only as the missing-state fallback and reads its two opacity values from
+`resolved.json` at focus-change time. It resolves that file with Prism's own
+precedence: `PRISM_STATE_DIR`, then `XDG_STATE_HOME/prism`, then
+`~/.local/state/prism`. This cheap file read keeps focus transitions in the
+watcher without fighting live bus changes; the adapter only handles the
+moment a value changes. Kitty caches watcher Python for the process lifetime:
 SIGUSR1 reloads the generated config include but does **not** load the patched
 watcher into an existing process. The patch takes effect in new or restarted
 Kitty processes; existing processes converge as they are restarted or closed.
