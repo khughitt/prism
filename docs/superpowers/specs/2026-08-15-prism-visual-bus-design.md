@@ -12,10 +12,11 @@ hardened to create both generated/ignored include targets, apply, validate,
 and only then expose the config directory. The Noctalia client lives in the
 persistent plugin `Main.qml`, preserving queued writes across panel closure,
 and coalesces overlapping `describe` refresh requests. `dotfiles-health`
-treats `${DOTS_HOME}/prism/$(hostname)/values.yaml` as the configured-host
-marker, requires `~/.config/prism` to link to that host directory, and only
-then runs `prism doctor`. Unconfigured headless/macOS hosts do not acquire an
-unrelated Prism dependency.
+validates Prism ownership when either `~/.config/prism` exists/is a symlink
+(including dangling) or `${DOTS_HOME}/prism/$(hostname)/values.yaml` marks a
+tracked host. Explicit broken markers remain strict even on unknown hosts;
+doctor runs only after the ownership link matches. Hosts with neither marker
+do not acquire an unrelated Prism dependency.
 
 The implementation and dotfiles wiring are committed on their feature
 branches. Two environment-dependent checks remain explicitly post-merge:
