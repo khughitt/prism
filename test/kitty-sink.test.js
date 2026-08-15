@@ -1,5 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { renderKittyConf } from '../integrations/kitty/render.js';
 import { liveCommands } from '../integrations/kitty/live.js';
 
@@ -29,4 +34,39 @@ test('live: no focused os window -> everything inactive, no active command', () 
   const osWindows = [{ id: 1, is_focused: false, tabs: [{ windows: [{ id: 11 }] }] }];
   assert.deepEqual(liveCommands(resolved, osWindows),
     [['set-background-opacity', '--all', '0.65']]);
+});
+
+test('apply makes everything inactive before reading focus and activating its nested window', (t) => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-kitty-'));
+  t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
+  const bin = path.join(tmp, 'bin');
+  const callsFile = path.join(tmp, 'calls');
+  const resolvedFile = path.join(tmp, 'resolved.json');
+  fs.mkdirSync(bin);
+  fs.writeFileSync(resolvedFile, JSON.stringify(resolved));
+  fs.writeFileSync(path.join(bin, 'kitten'), `#!/usr/bin/env node
+const fs = require('node:fs');
+const args = process.argv.slice(2);
+fs.appendFileSync(process.env.KITTEN_CALLS, JSON.stringify(args) + '\\n');
+if (args.at(-1) === 'ls') process.stdout.write(JSON.stringify([
+  { id: 1, is_focused: false, tabs: [{ windows: [{ id: 11 }] }] },
+  { id: 2, is_focused: true, tabs: [{ windows: [{ id: 21 }, { id: 22 }] }] },
+]));
+`, { mode: 0o755 });
+
+  const root = fileURLToPath(new URL('..', import.meta.url));
+  execFileSync(process.execPath, [path.join(root, 'integrations/kitty/apply'), resolvedFile], {
+    env: {
+      ...process.env,
+      PATH: `${bin}:${process.env.PATH}`,
+      KITTEN_CALLS: callsFile,
+      PRISM_STATE_DIR: path.join(tmp, 'state'),
+    },
+  });
+
+  assert.deepEqual(fs.readFileSync(callsFile, 'utf8').trim().split('\n').map(JSON.parse), [
+    ['@', '--to', 'unix:@dotfiles-kitty', 'set-background-opacity', '--all', '0.65'],
+    ['@', '--to', 'unix:@dotfiles-kitty', 'ls'],
+    ['@', '--to', 'unix:@dotfiles-kitty', 'set-background-opacity', '--match', 'id:21', '0.95'],
+  ]);
 });

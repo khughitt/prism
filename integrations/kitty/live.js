@@ -9,3 +9,10 @@ export function liveCommands(resolved, osWindows) {
   }
   return commands;
 }
+
+export function applyLiveOpacity(resolved, kitten) {
+  kitten(liveCommands(resolved, [])[0]);
+  const osWindows = JSON.parse(kitten(['ls']).toString());
+  const activeCommand = liveCommands(resolved, osWindows)[1];
+  if (activeCommand) kitten(activeCommand);
+}
