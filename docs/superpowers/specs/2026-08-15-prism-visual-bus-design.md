@@ -18,6 +18,9 @@ tracked host. Explicit broken markers remain strict even on unknown hosts;
 doctor runs only after the ownership link matches. Hosts with neither marker
 do not acquire an unrelated Prism dependency.
 
+Approved final-review product fixes are committed at `e4e11a3`, `532cceb`,
+`76fe05e`, and `7a337fe`; the dotfiles final-review head is `74f35be`.
+
 The implementation and dotfiles wiring are committed on their feature
 branches. Two environment-dependent checks remain explicitly post-merge:
 replacing the temporary live plugin link with setup's permanent
@@ -180,7 +183,8 @@ binds:
   `~/.local/state/prism/generated/`. It exists for exactly one consumer —
   `doctor`'s bootstrap check (see Bootstrap ordering) — and carries names
   rather than paths so the core still never learns where a config lives.
-  Sinks that write nothing omit it.
+  Each entry must be a nonempty basename: absolute paths, nested paths,
+  `.`, and `..` are rejected. Sinks that write nothing omit it.
 
 Conditions (per-window / `is-active` addressing), source priority layers,
 and user-level defs/sinks directories are deliberately absent from the v1
@@ -264,6 +268,11 @@ A `set` that fails mid-fan-out leaves `values.yaml` and `resolved.json`
 consistent (committed before fan-out). Failures are reported per-sink;
 `prism apply <sink>` retries. No rollback machinery — sinks are idempotent,
 so re-apply is always the fix.
+
+Each adapter invocation has a hard five-second timeout and is killed with
+`SIGKILL` when it expires. The timeout is recorded as that sink's failure and
+fan-out continues to later sinks, so an adapter that ignores softer signals
+cannot wedge the whole operation.
 
 **The store lock is deliberately not held across fan-out.** Sink `apply`
 programs are external processes that talk to sockets and compositors; holding
@@ -514,21 +523,26 @@ parameters, sinks, or semantics.
   (`slider` / `toggle` / `color` / `select`), each showing current effective
   value and a liveness badge (live / reload / grayed-unbound).
 - **Writes**: drag sampling is **liveness-gated** — only a param whose
-  effective liveness is fully `live` is written during drag (sampled at
-  ~10 Hz as an ordinary `prism set`); a reload-class or mixed-class param
-  (e.g. gaps: glass live + niri reload) is not sampled at all and is written
-  once on release, so its surfaces always move together. Release always
-  issues a `prism set` with the final value, which applies every bound sink
-  regardless of class. **This gate is the only drag-rate protection in the
-  system** — the CLI has no liveness filter to fall back on, so a future
-  high-frequency writer that is not this panel must implement its own.
+  effective liveness is fully `live` is written during a pointer drag
+  (sampled at ~10 Hz as an ordinary `prism set`); a reload-class or
+  mixed-class pointer drag (e.g. gaps: glass live + niri reload) is not
+  sampled and is written once on release, so its surfaces move together.
+  Keyboard/wheel slider movement has no press/release boundary, so `moved`
+  debounces a 100 ms ordinary `set` for every liveness class. Pointer release
+  always issues a final ordinary `set`, applying every bound sink. **These
+  input gates are the only drag-rate protection in the system** — the CLI has
+  no liveness filter to fall back on, so a future high-frequency writer that
+  is not this panel must implement its own.
   Because independently spawned processes can acquire the store lock out of
   launch order, the plugin **serializes its writes**: at most one `prism`
   subprocess in flight, with a FIFO pending queue in which successive drag
   samples of the *same* param coalesce to the newest — discrete writes
   (toggles, selects, unsets, group resets) are never dropped or reordered.
   Release enqueues the final value and waits for the queue to drain,
-  guaranteeing the released value is the last write.
+  guaranteeing the released value is the last write. A queue drain containing
+  only a drag sample deliberately skips `describe`: replacing the model while
+  the pointer is pressed would reset the slider. Release and every discrete
+  drain refresh normally, so badges and modified markers converge afterward.
 - **Reset affordances**: per-param revert (`prism unset`) and per-group
   reset; modified-from-default state comes through `describe`.
 - **No caching**: the panel re-runs `describe` on open rather than watching
