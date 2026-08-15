@@ -1,0 +1,20 @@
+#!/usr/bin/env node
+import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { generatedPath } from '../../src/paths.js';
+import { renderKittyConf } from './render.js';
+import { liveCommands } from './live.js';
+
+const socket = 'unix:@dotfiles-kitty';
+const resolved = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+
+const target = generatedPath('kitty.conf');
+fs.mkdirSync(path.dirname(target), { recursive: true });
+const tmp = `${target}.${process.pid}.tmp`;
+fs.writeFileSync(tmp, renderKittyConf(resolved));
+fs.renameSync(tmp, target);
+
+const kitten = (args) => execFileSync('kitten', ['@', '--to', socket, ...args], { stdio: 'pipe' });
+const osWindows = JSON.parse(kitten(['ls']).toString());
+for (const command of liveCommands(resolved, osWindows)) kitten(command);
