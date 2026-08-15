@@ -39,13 +39,13 @@ truth, subsuming the config-deduplication problem.
 - **Sources**: user controls only — the persisted values file and the
   noctalia slider panel. Existing automated glue (`focus-opacity.py`,
   familiar OSC 11, `noctalia-glass-sync`) keeps running as-is beside prism.
-  Arbitration/layering is future work; the file contracts can grow the
-  needed fields non-breakingly when a second source exists.
+  Arbitration/layering is future work, designed when a second source
+  actually exists.
 - **Sinks**: kitty, niri-glass, and niri. ghostty is deferred as a scope
   choice, not a capability gap: Linux ghostty (1.3.1 installed) supports
   `reload_config` and scripted reload via its systemd integration
-  (`systemctl reload --user`), so a future ghostty sink is liveness class
-  `reload`. (Only macOS background-opacity changes require restart.)
+  (`systemctl reload --user app-com.mitchellh.ghostty.service`), so a
+  future ghostty sink is liveness class `reload`. (Only macOS background-opacity changes require restart.)
 - **Placement**: standalone repo (`~/d/prism`) with a machine-enforced
   portability seam, following familiar's model. Dotfiles only wires it up.
 
@@ -126,8 +126,8 @@ binds:
 
 Conditions (per-window / `is-active` addressing), source priority layers,
 and user-level defs/sinks directories are deliberately absent from the v1
-schema — see Future work. Adding fields to YAML/JSON contracts later is
-non-breaking, so nothing is reserved speculatively.
+schema — see Future work. Nothing is reserved speculatively; each future
+representation is designed when its first real consumer exists.
 
 ## Section 2: Store, resolution, and the CLI
 
@@ -156,10 +156,20 @@ fails loudly; nothing clamps silently.
 
 - `prism set <key> <value>` / `prism unset <key>` — locked read-modify-write
   of `values.yaml`, re-resolve, write `resolved.json`, then fan out. The
-  write path the noctalia sliders use. `--liveness live` restricts fan-out
-  to bindings of that class (state files are still fully written); the
-  plugin uses this during slider drags so reload-class sinks (niri) are
-  only applied by the plain `set` on release.
+  write path the noctalia sliders use. An explicit `set` **always fans out
+  for its requested key, even when the stored value is unchanged** —
+  otherwise a release `set` whose value was already written by the last
+  drag sample would skip reload-class sinks and leave niri stale.
+  `--liveness live` restricts fan-out to bindings of that class (state
+  files are still fully written); the plugin uses this during slider drags
+  so reload-class sinks (niri) are only applied by the plain `set` on
+  release.
+
+  Value parsing is by declared type: `float`/`int` use strict numeric
+  parsing, `bool` accepts `true`/`false`, `color` is a literal hex string
+  (`#rrggbb` or `#rrggbbaa`), `enum` must equal one of the definition's
+  `values`, `list` is a JSON array, `string` is taken verbatim. Anything
+  else is a loud error.
 - `prism get <key>` / `prism list` — read effective values.
 - `prism describe --json` — dump merged defs × manifests plus
   modified-from-default state; the UI bootstraps from this.
@@ -183,7 +193,8 @@ so re-apply is always the fix.
 
 **Execution model: apply-on-write, no watchers in v1.** The CLI is the only
 writer, so `prism set` ends by invoking the `apply` executable of each sink
-whose manifest binds a changed key. `apply` receives the path to
+whose manifest binds a changed key — where the key named by the `set` counts
+as changed even if its stored value did not move (see the CLI contract). `apply` receives the path to
 `resolved.json` plus the changed keys as arguments. The contract stays
 file-shaped so a future daemon or external writer can trigger the same
 executables without the CLI.
@@ -205,13 +216,16 @@ once; both this sink and the niri sink render it, ending the
 1. *Live*: remote-control calls over the existing `unix:@dotfiles-kitty`
    socket so sliders move instantly. Because opacity is per-OS-window in
    kitty and there is no stored active/inactive pair, the adapter applies
-   **both states immediately**: it enumerates OS windows via `kitten @ ls`
-   (which reports focus) and issues `set-background-opacity` with
-   `--match state:focused` for the active value and the negated match for
-   the inactive value. Documented fallback: if state-matching proves
-   unreliable in implementation, `terminal.background.opacity.inactive`
-   is demoted to liveness `reload` (applied on next focus transition)
-   rather than shipping a flaky live claim.
+   **both states immediately**. It must not use `state:focused` matching:
+   kitty deliberately falls back to the *last-focused* window when none is
+   currently focused — the likely state while the user is operating the
+   noctalia panel. Instead: enumerate OS windows via `kitten @ ls`, set
+   **all** of them to the inactive value, then, only if `ls` reports an
+   actually focused OS window, set that one to the active value by numeric
+   id. Documented fallback: if this proves unreliable in implementation,
+   `terminal.background.opacity.inactive` is demoted to liveness `reload`
+   (applied on next focus transition) rather than shipping a flaky live
+   claim.
 2. *Persistent*: a generated `kitty/prism-generated.conf` include so new
    kitty instances start with the same values.
 
@@ -309,20 +323,23 @@ dotfiles `niri/` directory, so anything prism generates there lands inside
 the tracked repo. The `noctalia.kdl` precedent (generated + gitignored in
 that same directory) is the model.
 
-1. Core + niri-glass sink, **including the dotfiles ownership handoff**:
-   seed `values.yaml` from the current `niri-glass.json`, `git rm --cached`
-   the tracked file, and gitignore it — otherwise the first generated write
-   dirties the dotfiles repo. No *code* changes to existing components.
-   Until step 4 the knobs are CLI-only (`prism set`); "live" means the
-   change is visible the moment the command runs.
+1. Core + niri-glass sink, **including the dotfiles ownership handoff and
+   prism config wiring**: create the `~/.config/prism` link in dotfiles
+   setup (a `prism/` dir in the dotfiles repo holding `values.yaml`, wired
+   like the existing `familiar/` config link), seed `values.yaml` from the
+   current `niri-glass.json`, `git rm --cached` the tracked file, and
+   gitignore it — otherwise the first generated write dirties the dotfiles
+   repo. No *code* changes to existing components. Until step 4 the knobs
+   are CLI-only (`prism set`); "live" means the change is visible the
+   moment the command runs.
 2. kitty sink + the `focus-opacity.py` patch in dotfiles; gitignore
    `kitty/prism-generated.conf`.
 3. niri sink (`prism.kdl` include, gitignored); then delete the
    now-duplicated opacity/blur window-rule values and the stale ownership
    table from `config.kdl`.
 4. noctalia plugin — sliders arrive here.
-5. Remaining dotfiles wiring: setup.sh symlinks, `dotfiles-health` runs
-   `prism doctor`.
+5. Remaining dotfiles wiring: noctalia plugin symlink, `dotfiles-health`
+   runs `prism doctor`.
 
 Existing systems (noctalia color pipeline, familiar, `noctalia-glass-sync`)
 are untouched in v1; folding them in as prioritized sources is the
@@ -331,8 +348,8 @@ designed-for v2.
 ## Future work (explicit non-goals for v1)
 
 - Source priority layers and arbitration (noctalia palette, familiar
-  identity/state, focus tracking as bus sources); a per-param `layer`
-  field in `resolved.json` arrives with them.
+  identity/state, focus tracking as bus sources); how `resolved.json`
+  represents layers is designed then, alongside its consumers.
 - Per-window / conditional bindings (a `when:` field on manifest binds).
 - Out-of-tree user defs and sinks directories
   (`~/.config/prism/{defs,sinks}/`), when an external integration exists.
