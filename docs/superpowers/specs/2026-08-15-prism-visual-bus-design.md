@@ -202,6 +202,16 @@ executables without the CLI.
 `apply` must be **idempotent**: applying the same state twice is a no-op.
 This is what makes `prism apply` a universal repair verb.
 
+**Generated-file targets are machine-local.** The config directories the
+sinks feed (`~/.config/niri`, `~/.config/kitty`) are cloud-synced symlinks
+into the dotfiles repo and shared across hosts, while generated content is
+per-host (gaps differ per machine). Sinks therefore write their real output
+under `~/.local/state/prism/generated/`, and dotfiles setup places a
+symlink at each config-path location (`niri-glass.json`, `prism.kdl`,
+`kitty/prism-generated.conf`) pointing there. The symlink's literal target
+is identical on every host, so cloud sync of the symlink is harmless; the
+content it resolves to never leaves the machine.
+
 ### v1 sinks
 
 **niri-glass** — renders glass params into `~/.config/niri/niri-glass.json`;
@@ -355,7 +365,8 @@ designed-for v2.
   (`~/.config/prism/{defs,sinks}/`), when an external integration exists.
 - An optional daemon fast path for high-frequency modulation.
 - ghostty sink (liveness `reload` on Linux via `reload_config` /
-  `systemctl reload --user`) and other third-party sinks.
+  `systemctl reload --user app-com.mitchellh.ghostty.service`) and other
+  third-party sinks.
 - UI controls for `list`/`string` params (v1 hides them via
   `control: none`).
 - Folding the glass role table / `noctalia-glass-sync` pipeline into prism.
