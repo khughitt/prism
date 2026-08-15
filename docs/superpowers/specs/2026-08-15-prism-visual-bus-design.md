@@ -277,15 +277,19 @@ parameters, sinks, or semantics.
   from the result — one section per `ui.group`, one control per definition
   (`slider` / `toggle` / `color` / `select`), each showing current effective
   value and a liveness badge (live / reload / grayed-unbound).
-- **Writes**: slider drags issue `prism set --liveness live` (sampled at
-  ~10 Hz); release issues a plain `prism set` with the final value, which
-  also applies reload-class sinks (niri). Because independently spawned
-  processes can acquire the store lock out of launch order, the plugin
-  **serializes its writes**: at most one `prism set` subprocess in flight,
-  plus a single pending value that newer drag samples replace. When the
-  in-flight process exits, the pending value (if any) is sent next. Release
-  enqueues the final value and waits for the queue to drain, guaranteeing
-  the released value is the last write.
+- **Writes**: drag sampling is **liveness-gated** — only a param whose
+  effective liveness is fully `live` is written during drag (sampled at
+  ~10 Hz as `prism set --liveness live`); a reload-class or mixed-class
+  param (e.g. gaps: glass live + niri reload) is written once on release,
+  so its surfaces always move together. Release always issues a plain
+  `prism set` with the final value, which also applies reload-class sinks.
+  Because independently spawned processes can acquire the store lock out of
+  launch order, the plugin **serializes its writes**: at most one `prism`
+  subprocess in flight, with a FIFO pending queue in which successive drag
+  samples of the *same* param coalesce to the newest — discrete writes
+  (toggles, selects, unsets, group resets) are never dropped or reordered.
+  Release enqueues the final value and waits for the queue to drain,
+  guaranteeing the released value is the last write.
 - **Reset affordances**: per-param revert (`prism unset`) and per-group
   reset; modified-from-default state comes through `describe`.
 - **No caching**: the panel re-runs `describe` on open rather than watching
@@ -334,10 +338,12 @@ the tracked repo. The `noctalia.kdl` precedent (generated + gitignored in
 that same directory) is the model.
 
 1. Core + niri-glass sink, **including the dotfiles ownership handoff and
-   prism config wiring**: create the `~/.config/prism` link in dotfiles
-   setup (a `prism/` dir in the dotfiles repo holding `values.yaml`, wired
-   like the existing `familiar/` config link), seed `values.yaml` from the
-   current `niri-glass.json`, `git rm --cached` the tracked file, and
+   prism config wiring**: dotfiles setup links `~/.config/prism` to a
+   host-specific directory in the repo (`prism/<hostname>/`, each holding
+   that host's `values.yaml`) — gaps are per-host, and putting the host
+   specificity in the directory link keeps every file under the write path
+   a real file (atomic rename would destroy a `values.yaml` symlink). Seed
+   each host's values, `git rm` the tracked `niri-glass.json`, and
    gitignore it — otherwise the first generated write dirties the dotfiles
    repo. No *code* changes to existing components. Until step 4 the knobs
    are CLI-only (`prism set`); "live" means the change is visible the
