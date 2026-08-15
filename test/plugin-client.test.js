@@ -29,8 +29,10 @@ test('a sample-only drain does not refresh and replace the pressed slider', () =
 
 test('slider commits keyboard and wheel moves without changing pointer drag behavior', () => {
   assert.match(panel, /property bool pointerPressed: false/);
-  assert.match(panel, /id: commitGate\s*interval: 100\s*repeat: false\s*onTriggered: client\.set\(modelData\.key, valueSlider\.value, false\)/);
+  assert.doesNotMatch(panel, /onTriggered: client\.set\(modelData\.key, valueSlider\.value, false\)/);
+  assert.match(panel, /property real pendingValue: 0/);
+  assert.match(panel, /id: commitGate\s*interval: 100\s*repeat: false\s*onTriggered: client\.set\(modelData\.key, valueSlider\.pendingValue, false\)/);
   assert.match(panel, /onMoved: function\(value\) \{\s*if \(pointerPressed\) \{\s*if \(liveDrag && !sampleGate\.running\)/);
-  assert.match(panel, /\} else \{\s*commitGate\.restart\(\);\s*\}\s*\}/);
+  assert.match(panel, /\} else \{\s*pendingValue = value;\s*commitGate\.restart\(\);\s*\}\s*\}/);
   assert.match(panel, /onPressedChanged: function\(pressed, value\) \{\s*pointerPressed = pressed;\s*commitGate\.stop\(\);\s*if \(!pressed\) \{\s*client\.set\(modelData\.key, value, false\);/);
 });

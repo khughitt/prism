@@ -200,6 +200,7 @@ Item {
                   Layout.fillWidth: true
                   property bool liveDrag: modelData.effectiveLiveness === "live"
                   property bool pointerPressed: false
+                  property real pendingValue: 0
                   from: modelData.range ? modelData.range[0] : 0
                   to: modelData.range ? modelData.range[1] : 1
                   stepSize: modelData.ui.step === undefined ? 0.01 : modelData.ui.step
@@ -216,7 +217,7 @@ Item {
                     id: commitGate
                     interval: 100
                     repeat: false
-                    onTriggered: client.set(modelData.key, valueSlider.value, false)
+                    onTriggered: client.set(modelData.key, valueSlider.pendingValue, false)
                   }
 
                   onMoved: function(value) {
@@ -226,6 +227,7 @@ Item {
                         sampleGate.restart();
                       }
                     } else {
+                      pendingValue = value;
                       commitGate.restart();
                     }
                   }
