@@ -13,7 +13,9 @@ export function boundParams(manifest, resolved) {
 }
 
 export function runApply(manifest, resolvedFile, keys, timeout = 5_000) {
-  execFileSync(path.join(manifest.dir, 'apply'), [resolvedFile, ...keys], { stdio: 'pipe', timeout });
+  execFileSync(path.join(manifest.dir, 'apply'), [resolvedFile, ...keys], {
+    stdio: 'pipe', timeout, killSignal: 'SIGKILL',
+  });
 }
 
 async function record(sink, entry) {

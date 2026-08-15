@@ -33,7 +33,7 @@ test('shipped paths decode spaces and non-ASCII filesystem names', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'prism path-é-'));
   const sourceDir = path.join(root, 'src');
   fs.mkdirSync(sourceDir);
-  const copy = path.join(sourceDir, 'paths.js');
+  const copy = path.join(sourceDir, 'paths.mjs');
   fs.copyFileSync(new URL('../src/paths.js', import.meta.url), copy);
 
   const p = await import(pathToFileURL(copy));

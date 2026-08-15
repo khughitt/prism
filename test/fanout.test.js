@@ -110,9 +110,11 @@ test('a timed-out apply is recorded and does not block the next sink', { timeout
     fs.writeFileSync(path.join(dir, 'apply'), `#!/usr/bin/env node\n${body}\n`, { mode: 0o755 });
     return { sink: name, dir, binds: [{ param: 'a.x', liveness: 'live' }] };
   };
-  const timedOut = makeSink('timed-out', 'setInterval(() => {}, 1_000);');
+  const timedOut = makeSink('timed-out',
+    "process.on('SIGTERM', () => {}); setTimeout(() => process.exit(0), 750);");
   const later = makeSink('later', `require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'yes');`);
 
+  const started = Date.now();
   const out = await fanOut({
     manifests: [timedOut, later],
     resolved,
@@ -120,6 +122,7 @@ test('a timed-out apply is recorded and does not block the next sink', { timeout
     runner: (manifest, resolvedFile, keys) => runApply(manifest, resolvedFile, keys, 100),
   });
 
+  assert.ok(Date.now() - started < 500, 'SIGTERM handling must not defeat the timeout');
   assert.deepEqual(out.applied, ['later']);
   assert.equal(out.failed[0].sink, 'timed-out');
   assert.match(out.failed[0].error, /ETIMEDOUT/);

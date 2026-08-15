@@ -39,7 +39,7 @@ test('generates is parsed when present and rejected when malformed', () => {
 });
 
 test('generates accepts basenames only', () => {
-  for (const generated of ['', '/tmp/out.json', '../out.json', 'nested/out.json']) {
+  for (const generated of ['', '.', '..', '/tmp/out.json', '../out.json', 'nested/out.json']) {
     const root = integ({ 'alpha/manifest.yaml':
       `sink: alpha\nbinds:\n  - {param: a.x, liveness: live}\ngenerates: [${JSON.stringify(generated)}]\n` });
     assert.throws(() => loadManifests(root, defs), /generates.*file names/, JSON.stringify(generated));
