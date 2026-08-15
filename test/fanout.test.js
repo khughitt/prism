@@ -3,10 +3,42 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fork } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
-process.env.PRISM_STATE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-state-'));
 const { fanOut, selectSinks } = await import('../src/fanout.js');
-const { sinkStatusPath } = await import('../src/paths.js');
+const { sinkStatusPath, statusLockPath } = await import('../src/paths.js');
+const { withLock } = await import('../src/lock.js');
+
+const worker = fileURLToPath(new URL('./fixtures/fanout-worker.js', import.meta.url));
+
+function freshState() {
+  process.env.PRISM_STATE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-state-'));
+}
+
+function runWorker(sink, param, value) {
+  const child = fork(worker, [sink, param, String(value)], { stdio: ['ignore', 'ignore', 'inherit', 'ipc'] });
+  let ready;
+  const readyPromise = new Promise((resolve, reject) => { ready = { resolve, reject }; });
+  const done = new Promise((resolve, reject) => {
+    child.on('error', (error) => {
+      ready.reject(error);
+      reject(error);
+    });
+    child.on('message', (message) => {
+      if (message === 'ready') ready.resolve();
+    });
+    child.on('close', (code) => {
+      if (code === 0) resolve();
+      else {
+        const error = new Error(`worker exited with code ${code}`);
+        ready.reject(error);
+        reject(error);
+      }
+    });
+  });
+  return { ready: readyPromise, done };
+}
 
 const manifests = [
   { sink: 'fast', dir: '/x/fast', binds: [{ param: 'a.x', liveness: 'live' }] },
@@ -16,12 +48,14 @@ const manifests = [
 const resolved = { params: { 'a.x': 1, 'b.y': 2 } };
 
 test('selects every sink binding a changed key, regardless of liveness class', () => {
+  freshState();
   assert.deepEqual(selectSinks(manifests, ['a.x']).map((m) => m.sink), ['fast', 'slow']);
   assert.deepEqual(selectSinks(manifests, ['b.y']).map((m) => m.sink), ['other']);
   assert.deepEqual(selectSinks(manifests, ['nope.z']), []);
 });
 
 test('one failing sink neither blocks others nor throws; status snapshots bound params', async () => {
+  freshState();
   const calls = [];
   const runner = (m) => {
     calls.push(m.sink);
@@ -40,13 +74,19 @@ test('one failing sink neither blocks others nor throws; status snapshots bound 
   assert.deepEqual(status.slow.params, { 'a.x': 1 });
 });
 
-test('concurrent fan-outs retain both status records', async () => {
-  await Promise.all([
-    fanOut({ manifests, resolved, changedKeys: ['a.x'], runner: () => {} }),
-    fanOut({ manifests, resolved, changedKeys: ['b.y'], runner: () => {} }),
-  ]);
-
+test('child fan-outs wait for the status lock and retain unique snapshots', { timeout: 10_000 }, async () => {
+  freshState();
+  const workers = [
+    runWorker('first', 'first.value', 101),
+    runWorker('second', 'second.value', 202),
+  ];
+  await withLock(statusLockPath(), async () => {
+    await Promise.all(workers.map(({ ready }) => ready));
+    assert.equal(fs.existsSync(sinkStatusPath()), false, 'no child can record while the parent holds the status lock');
+  });
+  await Promise.all(workers.map(({ done }) => done));
   const status = JSON.parse(fs.readFileSync(sinkStatusPath(), 'utf8'));
-  assert.deepEqual(status.slow.params, { 'a.x': 1 });
-  assert.deepEqual(status.other.params, { 'b.y': 2 });
+  assert.deepEqual(Object.keys(status).sort(), ['first', 'second']);
+  assert.deepEqual(status.first.params, { 'first.value': 101 });
+  assert.deepEqual(status.second.params, { 'second.value': 202 });
 });
