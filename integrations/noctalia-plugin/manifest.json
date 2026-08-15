@@ -1,0 +1,12 @@
+{
+  "id": "prism",
+  "name": "Prism",
+  "version": "0.1.0",
+  "author": "Keith Hughitt",
+  "description": "Controls Prism visual parameters from the Noctalia bar.",
+  "entryPoints": {
+    "main": "Main.qml",
+    "barWidget": "BarWidget.qml",
+    "panel": "Panel.qml"
+  }
+}
