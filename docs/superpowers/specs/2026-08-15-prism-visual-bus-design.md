@@ -1,8 +1,26 @@
 # prism: a desktop-agnostic visual parameter bus
 
-- **Status**: Approved design, not yet implemented
+- **Status**: Implemented (v1) — 2026-08-15
 - **Date**: 2026-08-15
 - **Working name**: `prism` (sources in, surfaces out); rename is cheap until paths ship
+
+Implementation kept Kitty's inactive opacity live: the adapter discovered
+that Kitty expands the configured abstract socket to PID-suffixed addresses,
+so it enumerates the exact live addresses from `/proc/net/unix` before using
+the specified inactive-then-focused sequence. Fresh-host niri setup was also
+hardened to create both generated/ignored include targets, apply, validate,
+and only then expose the config directory. The Noctalia client lives in the
+persistent plugin `Main.qml`, preserving queued writes across panel closure,
+and coalesces overlapping `describe` refresh requests. `dotfiles-health`
+runs `prism doctor` only on hosts carrying the Prism config ownership marker;
+a broken marker is still strict, while unconfigured headless/macOS hosts do
+not acquire an unrelated Prism dependency.
+
+The implementation and dotfiles wiring are committed on their feature
+branches. Two environment-dependent checks remain explicitly post-merge:
+replacing the temporary live plugin link with setup's permanent
+`~/d/prism/integrations/noctalia-plugin` link, and the opacity/gaps
+gesture-level panel demo.
 
 ## Problem
 
