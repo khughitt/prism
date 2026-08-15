@@ -42,6 +42,12 @@ beforeEach(() => {
   fs.writeFileSync(genFile, 'generated\n');   // gensink's declared target
 });
 
+async function runCaptured(argv, opts = {}) {
+  let stderr = '';
+  const code = await cli.run(argv, { ...opts, eprint: (text) => { stderr += text; } });
+  return { code, stderr };
+}
+
 test('set writes values, resolves, and reports the changed key to fan-out', async () => {
   const calls = [];
   const code = await cli.run(['set', 'terminal.background.opacity.inactive', '0.6'],
@@ -82,12 +88,24 @@ test('set back to the default deletes the override but still fans out', async ()
 test('set rejects out-of-range values, unknown keys, and stray flags without touching state', async () => {
   await cli.run(['set', 'terminal.background.opacity.inactive', '0.5'], { runner: () => {} });
   const before = fs.readFileSync(resolvedPath(), 'utf8');   // a known-good baseline to compare against
-  assert.notEqual(await cli.run(['set', 'terminal.background.opacity.inactive', '1.5'], { runner: () => {} }), 0);
-  assert.notEqual(await cli.run(['set', 'no.such.key', '1'], { runner: () => {} }), 0);
+  const outOfRange = await runCaptured(
+    ['set', 'terminal.background.opacity.inactive', '1.5'], { runner: () => {} });
+  assert.notEqual(outOfRange.code, 0);
+  assert.match(outOfRange.stderr, /outside range/);
+  const unknown = await runCaptured(['set', 'no.such.key', '1'], { runner: () => {} });
+  assert.notEqual(unknown.code, 0);
+  assert.match(unknown.stderr, /unknown param no\.such\.key/);
   // the removed --liveness flag must be an error, not silently ignored: a caller
   // still passing it is running against an older contract and should hear about it
-  assert.notEqual(await cli.run(['set', 'terminal.background.opacity.inactive', '0.5', '--liveness', 'live'], { runner: () => {} }), 0);
-  assert.notEqual(await cli.run(['set', 'terminal.background.opacity.inactive'], { runner: () => {} }), 0);
+  const stray = await runCaptured(
+    ['set', 'terminal.background.opacity.inactive', '0.5', '--liveness', 'live'],
+    { runner: () => {} });
+  assert.notEqual(stray.code, 0);
+  assert.match(stray.stderr, /usage: prism set/);
+  const missing = await runCaptured(
+    ['set', 'terminal.background.opacity.inactive'], { runner: () => {} });
+  assert.notEqual(missing.code, 0);
+  assert.match(missing.stderr, /usage: prism set/);
   assert.equal(fs.readFileSync(resolvedPath(), 'utf8'), before);
 });
 
@@ -137,7 +155,9 @@ test('apply targets only validated sink names and passes every bound target key'
 
   fs.writeFileSync(valuesPath(), 'terminal.blur: false\n');
   const before = fs.readFileSync(resolvedPath(), 'utf8');
-  assert.notEqual(await cli.run(['apply', 'missing-sink'], { runner: () => {} }), 0);
+  const missing = await runCaptured(['apply', 'missing-sink'], { runner: () => {} });
+  assert.notEqual(missing.code, 0);
+  assert.match(missing.stderr, /unknown sink missing-sink/);
   assert.equal(fs.readFileSync(resolvedPath(), 'utf8'), before,
     'an invalid target must fail before recovery state changes');
 });
@@ -158,14 +178,13 @@ test('store commits happen under the store lock and fan-out happens after it', a
 });
 
 test('failed fan-out reports every sink error after committing state', async () => {
-  let err = '';
-  const code = await cli.run(['set', 'terminal.background.opacity.inactive', '0.42'], {
-    runner: (m) => { throw new Error(`${m.sink} down`); },
-    eprint: (s) => { err += s; },
-  });
+  const { code, stderr } = await runCaptured(
+    ['set', 'terminal.background.opacity.inactive', '0.42'], {
+      runner: (m) => { throw new Error(`${m.sink} down`); },
+    });
   assert.equal(code, 1);
-  assert.match(err, /fastsink: Error: fastsink down/);
-  assert.match(err, /slowsink: Error: slowsink down/);
+  assert.match(stderr, /fastsink: Error: fastsink down/);
+  assert.match(stderr, /slowsink: Error: slowsink down/);
   assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8'))
     .params['terminal.background.opacity.inactive'], 0.42);
 });
@@ -188,8 +207,10 @@ test('doctor: a never-applied sink is unhealthy', async () => {
 
 test('doctor: a sink whose apply failed reports its error', async () => {
   await cli.run(['apply'], { runner: () => {} });   // every sink has a current, ok record
-  await cli.run(['set', 'terminal.background.opacity.inactive', '0.42'],
+  const failedApply = await runCaptured(['set', 'terminal.background.opacity.inactive', '0.42'],
     { runner: (m) => { if (m.sink === 'slowsink') throw new Error('down'); } });
+  assert.equal(failedApply.code, 1);
+  assert.match(failedApply.stderr, /slowsink: Error: down/);
   let out = '';
   const code = await cli.run(['doctor'], { runner: () => {}, print: (s) => { out += s; } });
   assert.equal(code, 1);
@@ -246,10 +267,16 @@ test('orphan keys: unset digs out, every other verb fails loudly', async () => {
   fs.writeFileSync(valuesPath(), 'gone.away: 1\n');
 
   // resolution throws on the orphan, so these cannot work — and must not pretend to
-  assert.notEqual(await cli.run(['list'], { runner: () => {}, print: () => {} }), 0);
-  assert.notEqual(await cli.run(['describe', '--json'], { runner: () => {}, print: () => {} }), 0);
-  assert.notEqual(await cli.run(['apply'], { runner: () => {} }), 0);
-  assert.notEqual(await cli.run(['set', 'terminal.blur', 'false'], { runner: () => {} }), 0);
+  for (const argv of [
+    ['list'],
+    ['describe', '--json'],
+    ['apply'],
+    ['set', 'terminal.blur', 'false'],
+  ]) {
+    const failure = await runCaptured(argv, { runner: () => {}, print: () => {} });
+    assert.notEqual(failure.code, 0);
+    assert.match(failure.stderr, /unknown param gone\.away in values/);
+  }
 
   // the one escape hatch
   assert.equal(await cli.run(['unset', 'gone.away'], { runner: () => {} }), 0);
@@ -257,7 +284,9 @@ test('orphan keys: unset digs out, every other verb fails loudly', async () => {
   assert.equal(await cli.run(['list'], { runner: () => {}, print: () => {} }), 0);
 
   // but unset does NOT invent keys: an undefined key absent from values.yaml is still an error
-  assert.notEqual(await cli.run(['unset', 'never.existed'], { runner: () => {} }), 0);
+  const absent = await runCaptured(['unset', 'never.existed'], { runner: () => {} });
+  assert.notEqual(absent.code, 0);
+  assert.match(absent.stderr, /unknown param never\.existed/);
 });
 
 test('orphans block mutation; orphan unsets remove exactly one per invocation', async () => {
@@ -265,11 +294,15 @@ test('orphans block mutation; orphan unsets remove exactly one per invocation', 
   const resolvedBefore = fs.readFileSync(resolvedPath(), 'utf8');
   fs.writeFileSync(valuesPath(), 'first.orphan: 1\nsecond.orphan: 2\n');
 
-  assert.notEqual(await cli.run(['set', 'terminal.blur', 'false'], { runner: () => {} }), 0);
+  const blocked = await runCaptured(['set', 'terminal.blur', 'false'], { runner: () => {} });
+  assert.notEqual(blocked.code, 0);
+  assert.match(blocked.stderr, /unknown param first\.orphan in values/);
   assert.deepEqual(fs.readFileSync(valuesPath(), 'utf8'), 'first.orphan: 1\nsecond.orphan: 2\n');
   assert.equal(fs.readFileSync(resolvedPath(), 'utf8'), resolvedBefore);
 
-  assert.notEqual(await cli.run(['unset', 'first.orphan'], { runner: () => {} }), 0);
+  const firstUnset = await runCaptured(['unset', 'first.orphan'], { runner: () => {} });
+  assert.notEqual(firstUnset.code, 0);
+  assert.match(firstUnset.stderr, /unknown param second\.orphan in values/);
   assert.deepEqual(fs.readFileSync(valuesPath(), 'utf8'), 'second.orphan: 2\n');
   assert.equal(fs.readFileSync(resolvedPath(), 'utf8'), resolvedBefore);
 
@@ -286,7 +319,9 @@ test('every public verb enforces its required and stray arguments', async () => 
     ['doctor', 'extra'],
   ];
   for (const argv of invalid) {
-    assert.notEqual(await cli.run(argv, { print: () => {}, eprint: () => {} }), 0,
+    const failure = await runCaptured(argv, { print: () => {} });
+    assert.notEqual(failure.code, 0,
       `${argv.join(' ')} unexpectedly succeeded`);
+    assert.match(failure.stderr, /usage: prism/);
   }
 });
