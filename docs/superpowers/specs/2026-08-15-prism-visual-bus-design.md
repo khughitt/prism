@@ -2,7 +2,7 @@
 
 - **Status**: Implemented (v1) — 2026-08-15
 - **Date**: 2026-08-15
-- **Working name**: `prism` (sources in, surfaces out); rename is cheap until paths ship
+- **Name**: `prism` (shipped in CLI, config, state, and integration paths)
 
 Implementation kept Kitty's inactive opacity live: the adapter discovered
 that Kitty expands the configured abstract socket to PID-suffixed addresses,
@@ -19,14 +19,15 @@ not acquire an unrelated Prism dependency.
 The implementation and dotfiles wiring are committed on their feature
 branches. Two environment-dependent checks remain explicitly post-merge:
 replacing the temporary live plugin link with setup's permanent
-`~/d/prism/integrations/noctalia-plugin` link, and the opacity/gaps
-gesture-level panel demo.
+`~/d/prism/integrations/noctalia-plugin` link, and the full manual panel
+contract from Tasks 18–19 — live glass/opacity drag, mixed gaps release,
+fast-release ordering, blur toggle, param/group reset, and error banner.
 
 ## Problem
 
 Control of desktop/terminal visual appearance is spread across many
 configuration files and applications, with some parameters specified in
-multiple places that drift independently. Concretely, in the current setup:
+multiple places that drift independently. Concretely, at design time:
 
 - Terminal background opacity is defined in four places with drifted values:
   `kitty.conf` (0.95), kitty's `focus-opacity.py` watcher (0.95 active /
