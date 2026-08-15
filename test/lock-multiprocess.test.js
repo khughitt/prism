@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 
-const worker = fileURLToPath(new URL('./fixtures/lock-worker.js', import.meta.url));
+const worker = fileURLToPath(new URL('../test-support/lock-worker.js', import.meta.url));
 const dir = () => mkdtempSync(join(tmpdir(), 'familiar-lock-mp-'));
 const DEAD_PID = 0x7fffffff;
 

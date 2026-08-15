@@ -1,5 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises';
-import { withLock } from '../../src/lock.js';
+import { withLock } from '../src/lock.js';
 
 const [, , lockPath, counterPath, iterationsArg, retriesArg, delayMsArg] = process.argv;
 const iterations = Number.parseInt(iterationsArg, 10);

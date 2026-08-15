@@ -6,11 +6,11 @@ import path from 'node:path';
 import { fork } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const { fanOut, selectSinks } = await import('../src/fanout.js');
+const { fanOut, runApply, selectSinks } = await import('../src/fanout.js');
 const { sinkStatusPath, statusLockPath } = await import('../src/paths.js');
 const { withLock } = await import('../src/lock.js');
 
-const worker = fileURLToPath(new URL('./fixtures/fanout-worker.js', import.meta.url));
+const worker = fileURLToPath(new URL('../test-support/fanout-worker.js', import.meta.url));
 
 function freshState() {
   return process.env.PRISM_STATE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-state-'));
@@ -98,6 +98,36 @@ test('one failing sink neither blocks others nor throws; status snapshots bound 
   assert.match(status.fast.error, /socket gone/);
   assert.equal(status.slow.ok, true);
   assert.deepEqual(status.slow.params, { 'a.x': 1 });
+});
+
+test('a timed-out apply is recorded and does not block the next sink', { timeout: 2_000 }, async () => {
+  freshState();
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-sinks-'));
+  const marker = path.join(root, 'later-ran');
+  const makeSink = (name, body) => {
+    const dir = path.join(root, name);
+    fs.mkdirSync(dir);
+    fs.writeFileSync(path.join(dir, 'apply'), `#!/usr/bin/env node\n${body}\n`, { mode: 0o755 });
+    return { sink: name, dir, binds: [{ param: 'a.x', liveness: 'live' }] };
+  };
+  const timedOut = makeSink('timed-out', 'setInterval(() => {}, 1_000);');
+  const later = makeSink('later', `require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'yes');`);
+
+  const out = await fanOut({
+    manifests: [timedOut, later],
+    resolved,
+    changedKeys: ['a.x'],
+    runner: (manifest, resolvedFile, keys) => runApply(manifest, resolvedFile, keys, 100),
+  });
+
+  assert.deepEqual(out.applied, ['later']);
+  assert.equal(out.failed[0].sink, 'timed-out');
+  assert.match(out.failed[0].error, /ETIMEDOUT/);
+  assert.equal(fs.readFileSync(marker, 'utf8'), 'yes');
+  const status = JSON.parse(fs.readFileSync(sinkStatusPath(), 'utf8'));
+  assert.equal(status['timed-out'].ok, false);
+  assert.match(status['timed-out'].error, /ETIMEDOUT/);
+  assert.equal(status.later.ok, true);
 });
 
 test('child fan-outs wait for the status lock and retain unique snapshots', { timeout: 10_000 }, async (t) => {

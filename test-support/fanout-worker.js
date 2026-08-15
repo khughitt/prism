@@ -1,4 +1,4 @@
-import { fanOut } from '../../src/fanout.js';
+import { fanOut } from '../src/fanout.js';
 
 const [, , sink, param, value] = process.argv;
 

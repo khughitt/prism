@@ -12,8 +12,8 @@ export function boundParams(manifest, resolved) {
   return Object.fromEntries(manifest.binds.map((bind) => [bind.param, resolved.params[bind.param]]));
 }
 
-function runApply(manifest, resolvedFile, keys) {
-  execFileSync(path.join(manifest.dir, 'apply'), [resolvedFile, ...keys], { stdio: 'pipe' });
+export function runApply(manifest, resolvedFile, keys, timeout = 5_000) {
+  execFileSync(path.join(manifest.dir, 'apply'), [resolvedFile, ...keys], { stdio: 'pipe', timeout });
 }
 
 async function record(sink, entry) {

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { writeJsonAtomic, readJson } from '../src/store.js';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'prism-test-'));
@@ -25,4 +26,18 @@ test('paths honor PRISM_* env overrides', async () => {
   const p = await import('../src/paths.js');
   assert.equal(p.valuesPath(), '/tmp/pc/values.yaml');
   assert.equal(p.resolvedPath(), '/tmp/ps/resolved.json');
+});
+
+test('shipped paths decode spaces and non-ASCII filesystem names', async () => {
+  delete process.env.PRISM_INTEGRATIONS_DIR;
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'prism path-é-'));
+  const sourceDir = path.join(root, 'src');
+  fs.mkdirSync(sourceDir);
+  const copy = path.join(sourceDir, 'paths.js');
+  fs.copyFileSync(new URL('../src/paths.js', import.meta.url), copy);
+
+  const p = await import(pathToFileURL(copy));
+
+  assert.equal(p.defsDir(), `${path.join(root, 'defs')}${path.sep}`);
+  assert.equal(p.integrationsDir(), `${path.join(root, 'integrations')}${path.sep}`);
 });

@@ -1,5 +1,6 @@
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export function configDir() {
   return process.env.PRISM_CONFIG_DIR
@@ -17,6 +18,6 @@ export const sinkStatusPath = () => path.join(stateDir(), 'sink-status.json');
 export const statusLockPath = () => path.join(stateDir(), 'status.lock');
 export const lockPath = () => path.join(stateDir(), 'store.lock');
 export const generatedPath = (name) => path.join(stateDir(), 'generated', name);
-export const defsDir = () => new URL('../defs/', import.meta.url).pathname;
+export const defsDir = () => fileURLToPath(new URL('../defs/', import.meta.url));
 export const integrationsDir = () =>
-  process.env.PRISM_INTEGRATIONS_DIR ?? new URL('../integrations/', import.meta.url).pathname;
+  process.env.PRISM_INTEGRATIONS_DIR ?? fileURLToPath(new URL('../integrations/', import.meta.url));

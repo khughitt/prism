@@ -24,7 +24,8 @@ export function loadManifests(dir, defs) {
       }
     }
     const generates = m.generates ?? [];
-    if (!Array.isArray(generates) || generates.some((g) => typeof g !== 'string')) {
+    if (!Array.isArray(generates) || generates.some((g) =>
+      typeof g !== 'string' || !g || g === '.' || g === '..' || path.basename(g) !== g)) {
       throw new Error(`${file}: generates must be a list of file names`);
     }
     manifests.push({ sink: m.sink, dir: path.join(dir, entry.name), binds: m.binds, generates });

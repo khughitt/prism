@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "engines": { "node": ">=20" },
-  "scripts": { "test": "node --test test/*.test.js" },
+  "scripts": { "test": "node --test test/*.test.js integrations/noctalia-plugin/contract.test.mjs" },
   "dependencies": { "yaml": "^2.4.0" }
 }
