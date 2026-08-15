@@ -296,7 +296,9 @@ would inherit a broken compositor config. The ordering is therefore part of
 the contract:
 
 1. Setup leaves the tracked niri directory unexposed while it creates the
-   generated-file symlink inside it and selects the host fragment.
+   generated-file symlink inside it, selects the host fragment, and creates an
+   empty ignored `noctalia.kdl` placeholder if Noctalia has not generated it
+   yet. Empty KDL is valid, and Noctalia later owns and replaces that file.
 2. Setup runs `prism apply niri`, materializing the target. If no niri is
    running, the adapter writes the target and then returns nonzero because it
    cannot reload; setup accepts that result only when `NIRI_SOCKET` is unset
@@ -308,8 +310,10 @@ the contract:
    at the next login.
 4. Only after validation does setup link the directory into `~/.config/niri`.
    A running niri reloads the newly exposed config; without one, setup states
-   that the config will load on first start. During migration, the `include`
-   line likewise lands only after `apply` is proven on the host.
+   that the config will load on first start and instructs the user to run
+   `prism apply niri` after startup to reload and clear the failed sink status.
+   During migration, the `include` line likewise lands only after `apply` is
+   proven on the host.
 
 `prism doctor` (and `dotfiles-health` through it) treats a missing or
 dangling generated target as a **hard failure**, not a warning. It is the
