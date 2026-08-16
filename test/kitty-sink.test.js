@@ -125,6 +125,23 @@ test('a failed socket still present in fresh discovery rethrows the original err
   );
 });
 
+test('malformed ls JSON stays loud even when fresh discovery omits the socket', () => {
+  let freshReads = 0;
+  assert.throws(
+    () => applyToKittySockets(
+      resolved,
+      '000: 2 0 10000 1 01 10 @dotfiles-kitty-12',
+      (socket, args) => args[0] === 'ls' ? '{' : '',
+      () => {
+        freshReads++;
+        return 'Num RefCount Protocol Flags Type St Inode Path\n';
+      },
+    ),
+    SyntaxError,
+  );
+  assert.equal(freshReads, 0);
+});
+
 test('socket application fails loudly when every discovered socket vanishes', () => {
   const calls = [];
   assert.throws(

@@ -36,10 +36,19 @@ export function applyToKittySockets(resolved, procNetUnix, kitten, readProcNetUn
   }
   let applied = 0;
   for (const socket of sockets) {
+    let commandError;
     try {
-      applyLiveOpacity(resolved, (args) => kitten(socket, args));
+      applyLiveOpacity(resolved, (args) => {
+        try {
+          return kitten(socket, args);
+        } catch (error) {
+          commandError = error;
+          throw error;
+        }
+      });
       applied++;
     } catch (error) {
+      if (error !== commandError) throw error;
       if (kittySockets(readProcNetUnix()).includes(socket)) throw error;
     }
   }
