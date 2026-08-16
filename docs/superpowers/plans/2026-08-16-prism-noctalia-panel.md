@@ -191,12 +191,13 @@ assert.throws(() => loadBinding('    liveness: reload\n    drag: release'),
 
 - [ ] **Step 2: Add failing describe-shape and aggregation tests**
 
-Inside the describe aggregation test, accept `(t)` and create two dedicated
-fixture sink directories. Register cleanup as the test's first statement,
-before either directory is written, so a failed assertion cannot contaminate
-the later doctor tests. Do not add top-level fixture bindings and do not bind
-`compositor.gaps`; the doctor regression named "healthy sink stays healthy
-after an unrelated change" depends on gaps touching no fixture sink.
+In `describe emits bindings and slowest effectiveLiveness`, change the callback
+to `async (t)`, then create two dedicated fixture sink directories. Register
+cleanup as the test's first statement, before either directory is written, so
+a failed assertion cannot contaminate the later doctor tests. Do not add
+top-level fixture bindings and do not bind `compositor.gaps`; the doctor
+regression named "healthy sink stays healthy after an unrelated change"
+depends on gaps touching no fixture sink.
 
 ```js
 t.after(() => {
@@ -239,7 +240,8 @@ override binding is exposed publicly as exactly:
 [{ sink: 'draglive', liveness: 'live' }]
 ```
 
-Update the exact ordered-key assertion in `test/cli.test.js` to:
+Separately, update the exact ordered-key assertion in
+`describe emits only the public counter-free JSON shape` to:
 
 ```js
 assert.deepEqual(Object.keys(p), [
