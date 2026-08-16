@@ -19,7 +19,8 @@ doctor runs only after the ownership link matches. Hosts with neither marker
 do not acquire an unrelated Prism dependency.
 
 Approved final-review product fixes are committed at `e4e11a3`, `532cceb`,
-`76fe05e`, and `7a337fe`; the dotfiles final-review head is `74f35be`.
+`76fe05e`, `7a337fe`, and `04b90bf`; the dotfiles final-review head is
+`74f35be`.
 
 The implementation and dotfiles wiring are committed on their feature
 branches. Two environment-dependent checks remain explicitly post-merge:
@@ -528,11 +529,13 @@ parameters, sinks, or semantics.
   mixed-class pointer drag (e.g. gaps: glass live + niri reload) is not
   sampled and is written once on release, so its surfaces move together.
   Keyboard/wheel slider movement has no press/release boundary, so `moved`
-  debounces a 100 ms ordinary `set` for every liveness class. Pointer release
-  always issues a final ordinary `set`, applying every bound sink. **These
-  input gates are the only drag-rate protection in the system** — the CLI has
-  no liveness filter to fall back on, so a future high-frequency writer that
-  is not this panel must implement its own.
+  debounces a 100 ms ordinary `set` for every liveness class. If its delegate
+  is destroyed while that debounce is pending, it flushes the ordinary set
+  into the persistent client before disappearing. Pointer release always
+  issues a final ordinary `set`, applying every bound sink. **These input
+  gates are the only drag-rate protection in the system** — the CLI has no
+  liveness filter to fall back on, so a future high-frequency writer that is
+  not this panel must implement its own.
   Because independently spawned processes can acquire the store lock out of
   launch order, the plugin **serializes its writes**: at most one `prism`
   subprocess in flight, with a FIFO pending queue in which successive drag
