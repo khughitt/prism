@@ -34,6 +34,7 @@ test('advanced headers use a passive chevron and quiet icon reset', () => {
   const header = panel.slice(start, panel.indexOf('ColumnLayout {', start));
 
   assert.match(header, /NIcon\s*\{[\s\S]*icon: groupSurface\.expanded \? "chevron-down" : "chevron-right"/);
+  assert.match(header, /NText\s*\{[\s\S]*text: groupSurface\.modelData\.name/);
   assert.match(header, /NIconButton\s*\{[\s\S]*visible: groupSurface\.modifiedCount > 0[\s\S]*icon: "restore"[\s\S]*onClicked: root\.resetGroup\(groupSurface\.groupParams\)/);
   assert.doesNotMatch(header, /\bNButton\s*\{/);
 });
