@@ -36,3 +36,9 @@ test('slider commits keyboard and wheel moves without changing pointer drag beha
   assert.match(panel, /\} else \{\s*pendingValue = value;\s*commitGate\.restart\(\);\s*\}\s*\}/);
   assert.match(panel, /onPressedChanged: function\(pressed, value\) \{\s*pointerPressed = pressed;\s*commitGate\.stop\(\);\s*if \(!pressed\) \{\s*client\.set\(modelData\.key, value, false\);/);
 });
+
+test('slider flushes a pending keyboard or wheel write before destruction', () => {
+  const slider = panel.slice(panel.indexOf('NValueSlider {'), panel.indexOf('NToggle {'));
+
+  assert.match(slider, /Component\.onDestruction: \{\s*if \(commitGate\.running\) \{\s*commitGate\.stop\(\);\s*client\.set\(modelData\.key, valueSlider\.pendingValue, false\);\s*\}\s*\}/);
+});

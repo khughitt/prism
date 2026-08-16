@@ -207,6 +207,13 @@ Item {
                   value: modelData.value
                   text: String(value)
 
+                  Component.onDestruction: {
+                    if (commitGate.running) {
+                      commitGate.stop();
+                      client.set(modelData.key, valueSlider.pendingValue, false);
+                    }
+                  }
+
                   Timer {
                     id: sampleGate
                     interval: 100
