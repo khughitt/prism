@@ -162,11 +162,9 @@ Item {
                   anchors.rightMargin: Style.marginS
                   spacing: Style.marginS
 
-                  NIconButton {
-                    baseSize: Style.baseWidgetSize * 0.65
+                  NIcon {
                     icon: groupSurface.expanded ? "chevron-down" : "chevron-right"
-                    tooltipText: groupSurface.expanded ? "Collapse section" : "Expand section"
-                    onClicked: root.setGroupExpanded(groupSurface.modelData.name, !groupSurface.expanded)
+                    pointSize: Style.fontSizeL
                   }
 
                   NText {
@@ -184,11 +182,11 @@ Item {
                     opacity: 0.7
                   }
 
-                  NButton {
+                  NIconButton {
                     visible: groupSurface.modifiedCount > 0
-                    text: "Reset"
-                    outlined: true
-                    fontSize: Style.fontSizeS
+                    baseSize: Style.baseWidgetSize * 0.65
+                    icon: "restore"
+                    tooltipText: "Reset section"
                     onClicked: root.resetGroup(groupSurface.groupParams)
                   }
                 }

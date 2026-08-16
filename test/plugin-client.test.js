@@ -29,6 +29,15 @@ test('panel groups parameters and replaces root-local expansion state explicitly
   assert.match(panel, /Presentation\.groupParams\(model\.params\)/);
 });
 
+test('advanced headers use a passive chevron and quiet icon reset', () => {
+  const start = panel.indexOf('id: groupHeader');
+  const header = panel.slice(start, panel.indexOf('ColumnLayout {', start));
+
+  assert.match(header, /NIcon\s*\{[\s\S]*icon: groupSurface\.expanded \? "chevron-down" : "chevron-right"/);
+  assert.match(header, /NIconButton\s*\{[\s\S]*visible: groupSurface\.modifiedCount > 0[\s\S]*icon: "restore"[\s\S]*onClicked: root\.resetGroup\(groupSurface\.groupParams\)/);
+  assert.doesNotMatch(header, /\bNButton\s*\{/);
+});
+
 test('parameter rows use presentation metadata and one Prism reset action', () => {
   assert.match(control, /readonly property bool liveDrag: param\.effectiveDrag === "live"/);
   assert.match(control, /showReset: false/);
