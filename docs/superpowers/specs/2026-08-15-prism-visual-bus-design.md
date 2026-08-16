@@ -22,12 +22,12 @@ Approved final-review product fixes are committed at `e4e11a3`, `532cceb`,
 `76fe05e`, `7a337fe`, and `04b90bf`; the dotfiles final-review head is
 `74f35be`.
 
-The implementation and dotfiles wiring are committed on their feature
-branches. Two environment-dependent checks remain explicitly post-merge:
-replacing the temporary live plugin link with setup's permanent
-`~/d/prism/integrations/noctalia-plugin` link, and the full manual panel
-contract from Tasks 18–19 — live glass/opacity drag, mixed gaps release,
-fast-release ordering, blur toggle, param/group reset, and error banner.
+The implementation and dotfiles wiring are merged to `main`. Dotfiles setup
+replaced the temporary live plugin link with the permanent
+`~/d/prism/integrations/noctalia-plugin` link, and a restarted Noctalia loaded
+Prism from that target. The full manual panel contract from Tasks 18–19
+remains: live glass/opacity drag, mixed gaps release, fast-release ordering,
+blur toggle, param/group reset, and error banner.
 
 ## Problem
 
