@@ -191,7 +191,31 @@ assert.throws(() => loadBinding('    liveness: reload\n    drag: release'),
 
 - [ ] **Step 2: Add failing describe-shape and aggregation tests**
 
-Extend the existing CLI fixture manifests to cover four cases:
+Inside the describe aggregation test, accept `(t)` and create two dedicated
+fixture sink directories. Register cleanup as the test's first statement,
+before either directory is written, so a failed assertion cannot contaminate
+the later doctor tests. Do not add top-level fixture bindings and do not bind
+`compositor.gaps`; the doctor regression named "healthy sink stays healthy
+after an unrelated change" depends on gaps touching no fixture sink.
+
+```js
+t.after(() => {
+  fs.rmSync(path.join(integ, 'draglive'), { recursive: true, force: true });
+  fs.rmSync(path.join(integ, 'dragreload'), { recursive: true, force: true });
+});
+fs.mkdirSync(path.join(integ, 'draglive'));
+fs.writeFileSync(path.join(integ, 'draglive', 'manifest.yaml'),
+  'sink: draglive\nbinds:\n'
+  + '  - {param: glass.roughness, liveness: live}\n'
+  + '  - {param: terminal.background.opacity.active, liveness: live, drag: release}\n'
+  + '  - {param: glass.transmission, liveness: live}\n');
+fs.mkdirSync(path.join(integ, 'dragreload'));
+fs.writeFileSync(path.join(integ, 'dragreload', 'manifest.yaml'),
+  'sink: dragreload\nbinds:\n'
+  + '  - {param: glass.transmission, liveness: reload}\n');
+```
+
+These fixtures cover four cases:
 
 ```yaml
 # every binding live, no override
@@ -199,15 +223,20 @@ Extend the existing CLI fixture manifests to cover four cases:
 # live capability, expensive adapter
 - {param: terminal.background.opacity.active, liveness: live, drag: release}
 # mixed live/reload
-- {param: compositor.gaps, liveness: live}
-- {param: compositor.gaps, liveness: reload}
+- {param: glass.transmission, liveness: live}
+- {param: glass.transmission, liveness: reload}
 # glass.ior intentionally unbound
 ```
 
-Assert `effectiveDrag` is respectively `live`, `release`, `release`, and `null`. Assert `effectiveLiveness` remains present and correct. Assert the override binding is exposed publicly as exactly:
+Assert `effectiveDrag` is respectively `live`, `release`, `release`, and
+`null` by selecting those exact keys. Assert `effectiveLiveness` remains
+present and correct. Change the existing generic unbound lookup to select
+`glass.ior` explicitly; many fixture params are unbound, so
+`find((x) => x.bindings.length === 0)` is not a stable assertion. Assert the
+override binding is exposed publicly as exactly:
 
 ```js
-[{ sink: 'kitty', liveness: 'live' }]
+[{ sink: 'draglive', liveness: 'live' }]
 ```
 
 Update the exact ordered-key assertion in `test/cli.test.js` to:
@@ -301,6 +330,8 @@ import test from 'node:test';
 import {
   formatValue, groupParams, quantizeValue, stepPrecision,
 } from '../integrations/noctalia-plugin/presentation.mjs';
+import { loadDefs } from '../src/defs.js';
+import { defsDir } from '../src/paths.js';
 
 test('groups visible params in presentation order with Quick first', () => {
   const params = [
@@ -318,6 +349,27 @@ test('groups visible params in presentation order with Quick first', () => {
     { name: 'Alpha', keys: ['a.one'] },
     { name: 'Beta', keys: ['b.one', 'b.two'] },
   ]);
+});
+
+test('shipped presentation has the exact Quick and advanced structure', () => {
+  const defs = [...loadDefs(defsDir()).values()];
+  const visible = defs.filter((def) => def.ui.control !== 'none');
+  const groups = groupParams(defs);
+  assert.deepEqual(groups.map((group) => group.name), [
+    'Quick', 'Opacity & Focus', 'Glass Shape', 'Glass Optics', 'Motion', 'Diagnostics',
+  ]);
+  assert.deepEqual(groups[0].params.map((param) => param.key), [
+    'terminal.background.opacity.active',
+    'terminal.background.opacity.inactive',
+    'compositor.gaps',
+    'glass.roughness',
+    'glass.transmission',
+    'glass.attenuationColor',
+  ]);
+  const renderedKeys = groups.flatMap((group) => group.params.map((param) => param.key));
+  assert.equal(renderedKeys.length, 32);
+  assert.equal(new Set(renderedKeys).size, 32);
+  assert.deepEqual(renderedKeys.slice().sort(), visible.map((def) => def.key).sort());
 });
 
 test('quantizes panel writes to step precision', () => {
@@ -385,7 +437,7 @@ export function groupParams(params) {
   var byName = {};
   for (var j = 0; j < visible.length; j++) {
     var name = visible[j].ui.group;
-    if (!byName[name]) {
+    if (!Object.prototype.hasOwnProperty.call(byName, name)) {
       byName[name] = { name: name, params: [] };
       groups.push(byName[name]);
     }
@@ -461,7 +513,7 @@ Add source-contract tests that require all of these facts:
 assert.match(panel, /property var expandedGroups: \(\{\}\)/);
 assert.match(panel, /function setGroupExpanded\(name, expanded\)/);
 assert.match(panel, /root\.expandedGroups = next/);
-assert.doesNotMatch(panel, /expandedGroups\[[^\]]+\]\s*=/);
+assert.doesNotMatch(panel, /expandedGroups\[[^\]]+\]\s*=(?!=)/);
 assert.match(panel, /Presentation\.groupParams\(model\.params\)/);
 
 assert.match(control, /readonly property bool liveDrag: param\.effectiveDrag === "live"/);
@@ -479,9 +531,12 @@ client.set(param.key, Presentation.quantizeValue(value, stepSize), sample)
 
 - [ ] **Step 3: Implement `ParamControl.qml` with native controls**
 
-Give the component only these public inputs:
+Import the shared module in this file—QML imports are file-local—then give the
+component only these public inputs:
 
 ```qml
+import "./presentation.mjs" as Presentation
+
 required property var param
 required property var client
 property var screen: null
@@ -513,7 +568,7 @@ Use the existing `selectOptions` and `colorHex` logic locally in this component;
 Import the shared module:
 
 ```qml
-import "presentation.mjs" as Presentation
+import "./presentation.mjs" as Presentation
 ```
 
 Replace `groupedParams` with `Presentation.groupParams(model.params)`. Add:
@@ -673,7 +728,10 @@ Expected: the `jq` predicate succeeds, all Node tests pass, and QML lint exits 0
 
 - [ ] **Step 2: Record and redirect both live code paths**
 
-The plugin link and spawned CLI must both resolve to the worktree. Record the permanent target and make a temporary `PATH` directory without changing the permanent Prism installation:
+The plugin link and spawned CLI must both resolve to the worktree. Use one
+shell session for Steps 2–6 so the recorded paths remain available. Record the
+permanent target and make a temporary `PATH` directory without changing the
+permanent Prism installation:
 
 ```bash
 prism_plugin_link="$HOME/.config/noctalia/plugins/prism"
@@ -696,11 +754,19 @@ If Noctalia fails to restart, restore the link and ordinary launch immediately u
 
 - [ ] **Step 3: Snapshot Prism values and perform the UI acceptance checklist**
 
-Create a private snapshot without changing the tracked/user-owned file:
+Derive the values path through Prism's own path helper so
+`PRISM_CONFIG_DIR`/`XDG_CONFIG_HOME` are honored. Record whether the sparse
+store existed; a default-only installation may have no `values.yaml` to copy.
 
 ```bash
-prism_values_backup=$(mktemp)
-cp "$HOME/.config/prism/values.yaml" "$prism_values_backup"
+prism_values_path=$(node --input-type=module -e 'import { valuesPath } from "./src/paths.js"; process.stdout.write(valuesPath())')
+prism_values_existed=false
+prism_values_backup=""
+if [[ -e "$prism_values_path" ]]; then
+  prism_values_backup=$(mktemp)
+  cp "$prism_values_path" "$prism_values_backup"
+  prism_values_existed=true
+fi
 ```
 
 Manually verify and record pass/fail for each item:
@@ -733,12 +799,18 @@ Fix the first broken link with a failing regression test, rerun Task 4's focused
 
 - [ ] **Step 5: Restore values atomically and verify system health**
 
-Restore through a real file in the same directory so the final rename is atomic:
+If the sparse store existed, restore through a real file in the same directory
+so the final rename is atomic. If it did not exist, remove the file created by
+acceptance and let `apply` resolve pure defaults:
 
 ```bash
-prism_values_restore=$(mktemp "$HOME/.config/prism/.values.restore.XXXXXX")
-cp "$prism_values_backup" "$prism_values_restore"
-mv "$prism_values_restore" "$HOME/.config/prism/values.yaml"
+if [[ "$prism_values_existed" == true ]]; then
+  prism_values_restore=$(mktemp "$(dirname "$prism_values_path")/.values.restore.XXXXXX")
+  cp "$prism_values_backup" "$prism_values_restore"
+  mv "$prism_values_restore" "$prism_values_path"
+else
+  rm -f "$prism_values_path"
+fi
 bin/prism apply
 bin/prism doctor
 ```
@@ -751,7 +823,9 @@ Expected: `apply` and `doctor` succeed. Keep the backup until the plugin and ord
 ln -sfn "$prism_plugin_target" "$prism_plugin_link"
 qs kill -c noctalia-shell --any-display
 qs -d -c noctalia-shell
-rm "$prism_values_backup"
+if [[ -n "$prism_values_backup" ]]; then
+  rm "$prism_values_backup"
+fi
 rm "$prism_test_bin/prism"
 rmdir "$prism_test_bin"
 ```
