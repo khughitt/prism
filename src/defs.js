@@ -7,6 +7,7 @@ export const CONTROLS = ['slider', 'toggle', 'color', 'select', 'none'];
 
 export function loadDefs(dir) {
   const defs = new Map();
+  const orders = new Map();
   const files = fs.readdirSync(dir).filter((f) => f.endsWith('.yaml')).sort();
   if (files.length === 0) throw new Error(`no def files in ${dir}`);
   for (const f of files) {
@@ -15,6 +16,10 @@ export function loadDefs(dir) {
     for (const def of list) {
       validateDef(def, f);
       if (defs.has(def.key)) throw new Error(`duplicate def ${def.key} (${f})`);
+      if (def.ui.control !== 'none' && orders.has(def.ui.order)) {
+        throw new Error(`duplicate ui.order ${def.ui.order}: ${orders.get(def.ui.order)} and ${def.key}`);
+      }
+      if (def.ui.control !== 'none') orders.set(def.ui.order, def.key);
       defs.set(def.key, def);
     }
   }
@@ -27,6 +32,10 @@ export function validateDef(def, src) {
   if (!TYPES.includes(def.type)) fail(`type must be one of ${TYPES.join('|')}`);
   if (!CONTROLS.includes(def.ui?.control)) fail(`ui.control must be one of ${CONTROLS.join('|')}`);
   if (typeof def.ui?.group !== 'string') fail('ui.group required');
+  if (def.ui.control !== 'none') {
+    if (typeof def.ui.label !== 'string' || def.ui.label.trim() === '') fail('ui.label required');
+    if (!Number.isInteger(def.ui.order)) fail('ui.order must be an integer');
+  }
   if (typeof def.description !== 'string') fail('description required');
   if (def.type === 'enum' && !Array.isArray(def.values)) fail('enum requires values');
   if (def.type === 'list' && def.items !== 'string') fail('list requires items: string');

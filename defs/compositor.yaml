@@ -2,5 +2,5 @@
   type: int
   range: [0, 128]
   default: 24
-  ui: {group: compositor, control: slider, step: 1}
+  ui: {group: Quick, control: slider, step: 1, label: Window spacing, order: 30}
   description: Gap in logical pixels between tiled windows

@@ -30,3 +30,12 @@ test('the omitted keys are the two that moved, and nothing else', () => {
   assert.deepEqual(Object.keys(seed).filter((k) => k in MAPPED).sort(),
     ['layoutGaps', 'paneApps']);
 });
+
+test('visible numeric defaults lie on their slider grids', () => {
+  const defs = loadDefs(defsDir());
+  for (const def of defs.values()) {
+    if (def.ui.control === 'none' || (def.type !== 'float' && def.type !== 'int')) continue;
+    const n = (def.default - def.range[0]) / def.ui.step;
+    assert.ok(Math.abs(n - Math.round(n)) <= 1e-9, `${def.key} default is off-grid`);
+  }
+});
