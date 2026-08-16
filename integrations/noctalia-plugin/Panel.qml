@@ -3,41 +3,28 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Commons
 import qs.Widgets
+import "./presentation.mjs" as Presentation
 
 Item {
-  property var pluginApi: null
-
   id: root
 
+  property var pluginApi: null
   property bool allowAttach: true
   property real contentPreferredWidth: Math.round(560 * Style.uiScaleRatio)
   property real contentPreferredHeight: Math.round(760 * Style.uiScaleRatio)
   property var groups: []
+  property var expandedGroups: ({})
   readonly property var client: pluginApi && pluginApi.mainInstance ? pluginApi.mainInstance.client : null
   readonly property string errorMessage: client ? client.errorMessage : ""
 
-  function groupedParams(params) {
-    var byName = {};
-    var names = [];
-
-    for (var i = 0; i < params.length; i++) {
-      var param = params[i];
-      if (param.ui.control === "none") {
-        continue;
-      }
-      var name = param.ui.group;
-      if (!byName[name]) {
-        byName[name] = [];
-        names.push(name);
-      }
-      byName[name].push(param);
+  function setGroupExpanded(name, expanded) {
+    var next = {};
+    var keys = Object.keys(root.expandedGroups);
+    for (var i = 0; i < keys.length; i++) {
+      next[keys[i]] = root.expandedGroups[keys[i]];
     }
-
-    var result = [];
-    for (var j = 0; j < names.length; j++) {
-      result.push({ name: names[j], params: byName[names[j]] });
-    }
-    return result;
+    next[name] = expanded;
+    root.expandedGroups = next;
   }
 
   function resetGroup(params) {
@@ -48,26 +35,14 @@ Item {
     }
   }
 
-  function groupModified(params) {
+  function groupModifiedCount(params) {
+    var count = 0;
     for (var i = 0; i < params.length; i++) {
       if (params[i].modified) {
-        return true;
+        count++;
       }
     }
-    return false;
-  }
-
-  function selectOptions(values) {
-    var result = [];
-    for (var i = 0; i < values.length; i++) {
-      result.push({ key: values[i], name: values[i] });
-    }
-    return result;
-  }
-
-  function colorHex(color) {
-    var text = String(color);
-    return "#" + text.slice(text.length - 6).toLowerCase();
+    return count;
   }
 
   Component.onCompleted: client.refresh()
@@ -86,7 +61,7 @@ Item {
     target: client
 
     function onDescribed(model) {
-      root.groups = root.groupedParams(model.params);
+      root.groups = Presentation.groupParams(model.params);
     }
   }
 
@@ -135,138 +110,106 @@ Item {
         Repeater {
           model: root.groups
 
-          ColumnLayout {
+          Rectangle {
+            id: groupSurface
+
             required property var modelData
             property var groupParams: modelData.params
+            readonly property bool quick: modelData.name === "Quick"
+            readonly property bool expanded: root.expandedGroups[modelData.name] === true
+            readonly property int modifiedCount: root.groupModifiedCount(groupParams)
 
             Layout.fillWidth: true
-            spacing: Style.marginM
+            implicitHeight: groupContent.implicitHeight + (quick ? Style.marginM * 2 : 0)
+            radius: Style.radiusS
+            color: quick ? Qt.alpha(Color.mSurfaceVariant, 0.45) : "transparent"
 
-            RowLayout {
-              Layout.fillWidth: true
+            ColumnLayout {
+              id: groupContent
+
+              anchors.fill: parent
+              anchors.margins: groupSurface.quick ? Style.marginM : 0
+              spacing: Style.marginM
 
               NText {
-                Layout.fillWidth: true
-                text: modelData.name
+                visible: groupSurface.quick
+                text: "Quick"
                 pointSize: Style.fontSizeL
-                font.weight: Style.fontWeightBold
+                font.weight: Style.fontWeightSemiBold
               }
 
-              NButton {
-                visible: root.groupModified(groupParams)
-                text: "reset group"
-                outlined: true
-                onClicked: root.resetGroup(groupParams)
-              }
-            }
+              Rectangle {
+                id: groupHeader
 
-            Repeater {
-              model: groupParams
-
-              ColumnLayout {
-                required property var modelData
-
+                visible: !groupSurface.quick
                 Layout.fillWidth: true
-                spacing: Style.marginXS
-                enabled: modelData.effectiveLiveness !== null
+                implicitHeight: headerContent.implicitHeight + Style.marginS * 2
+                radius: Style.radiusS
+                color: headerArea.containsMouse ? Qt.alpha(Color.mOnSurface, 0.06) : "transparent"
+
+                MouseArea {
+                  id: headerArea
+                  anchors.fill: parent
+                  cursorShape: Qt.PointingHandCursor
+                  hoverEnabled: true
+                  onClicked: root.setGroupExpanded(groupSurface.modelData.name, !groupSurface.expanded)
+                }
 
                 RowLayout {
-                  Layout.fillWidth: true
+                  id: headerContent
+                  anchors.fill: parent
+                  anchors.leftMargin: Style.marginS
+                  anchors.rightMargin: Style.marginS
+                  spacing: Style.marginS
+
+                  NIconButton {
+                    baseSize: Style.baseWidgetSize * 0.65
+                    icon: groupSurface.expanded ? "chevron-down" : "chevron-right"
+                    tooltipText: groupSurface.expanded ? "Collapse section" : "Expand section"
+                    onClicked: root.setGroupExpanded(groupSurface.modelData.name, !groupSurface.expanded)
+                  }
 
                   NText {
                     Layout.fillWidth: true
-                    text: modelData.key.split(".").slice(1).join(" ")
+                    text: groupSurface.modelData.name
+                    pointSize: Style.fontSizeL
+                    font.weight: Style.fontWeightSemiBold
                   }
 
                   NText {
-                    text: modelData.effectiveLiveness || "unbound"
-                    opacity: modelData.effectiveLiveness ? 1.0 : 0.4
-                    color: Color.mOnSurfaceVariant
+                    visible: groupSurface.modifiedCount > 0
+                    text: groupSurface.modifiedCount + " modified"
                     pointSize: Style.fontSizeS
+                    color: Color.mOnSurfaceVariant
+                    opacity: 0.7
                   }
 
-                  NIconButton {
-                    visible: modelData.modified
-                    icon: "restore"
-                    tooltipText: "Reset to default"
-                    onClicked: client.unset(modelData.key)
-                  }
-                }
-
-                NValueSlider {
-                  id: valueSlider
-
-                  visible: modelData.ui.control === "slider"
-                  Layout.fillWidth: true
-                  property bool liveDrag: modelData.effectiveLiveness === "live"
-                  property bool pointerPressed: false
-                  property real pendingValue: 0
-                  from: modelData.range ? modelData.range[0] : 0
-                  to: modelData.range ? modelData.range[1] : 1
-                  stepSize: modelData.ui.step === undefined ? 0.01 : modelData.ui.step
-                  value: modelData.value
-                  text: String(value)
-
-                  Component.onDestruction: {
-                    if (commitGate.running) {
-                      commitGate.stop();
-                      client.set(modelData.key, valueSlider.pendingValue, false);
-                    }
-                  }
-
-                  Timer {
-                    id: sampleGate
-                    interval: 100
-                    repeat: false
-                  }
-
-                  Timer {
-                    id: commitGate
-                    interval: 100
-                    repeat: false
-                    onTriggered: client.set(modelData.key, valueSlider.pendingValue, false)
-                  }
-
-                  onMoved: function(value) {
-                    if (pointerPressed) {
-                      if (liveDrag && !sampleGate.running) {
-                        client.set(modelData.key, value, true);
-                        sampleGate.restart();
-                      }
-                    } else {
-                      pendingValue = value;
-                      commitGate.restart();
-                    }
-                  }
-
-                  onPressedChanged: function(pressed, value) {
-                    pointerPressed = pressed;
-                    commitGate.stop();
-                    if (!pressed) {
-                      client.set(modelData.key, value, false);
-                    }
+                  NButton {
+                    visible: groupSurface.modifiedCount > 0
+                    text: "Reset"
+                    outlined: true
+                    fontSize: Style.fontSizeS
+                    onClicked: root.resetGroup(groupSurface.groupParams)
                   }
                 }
+              }
 
-                NToggle {
-                  visible: modelData.ui.control === "toggle"
-                  checked: modelData.value === true
-                  onToggled: checked => client.set(modelData.key, checked, false)
-                }
+              ColumnLayout {
+                visible: groupSurface.quick || groupSurface.expanded
+                Layout.fillWidth: true
+                spacing: Style.marginM
 
-                NComboBox {
-                  visible: modelData.ui.control === "select"
-                  Layout.fillWidth: true
-                  model: root.selectOptions(modelData.values || [])
-                  currentKey: String(modelData.value)
-                  onSelected: key => client.set(modelData.key, key, false)
-                }
+                Repeater {
+                  model: groupSurface.groupParams
 
-                NColorPicker {
-                  visible: modelData.ui.control === "color"
-                  screen: root.pluginApi ? root.pluginApi.panelOpenScreen : null
-                  selectedColor: modelData.value
-                  onColorSelected: color => client.set(modelData.key, root.colorHex(color), false)
+                  ParamControl {
+                    required property var modelData
+
+                    Layout.fillWidth: true
+                    param: modelData
+                    client: root.client
+                    screen: root.pluginApi ? root.pluginApi.panelOpenScreen : null
+                  }
                 }
               }
             }

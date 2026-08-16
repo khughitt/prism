@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const source = await readFile(new URL('../integrations/noctalia-plugin/PrismClient.qml', import.meta.url), 'utf8');
 const panel = await readFile(new URL('../integrations/noctalia-plugin/Panel.qml', import.meta.url), 'utf8');
+const control = await readFile(new URL('../integrations/noctalia-plugin/ParamControl.qml', import.meta.url), 'utf8');
 
 test('describe refresh requests made in flight are coalesced and replayed after exit', () => {
   assert.match(source, /property bool refreshPending: false/);
@@ -20,6 +21,22 @@ test('panel Connections use explicit signal handlers accepted by current QML', (
   assert.doesNotMatch(panel, /onDescribed:\s*function/);
 });
 
+test('panel groups parameters and replaces root-local expansion state explicitly', () => {
+  assert.match(panel, /property var expandedGroups: \(\{\}\)/);
+  assert.match(panel, /function setGroupExpanded\(name, expanded\)/);
+  assert.match(panel, /root\.expandedGroups = next/);
+  assert.doesNotMatch(panel, /expandedGroups\[[^\]]+\]\s*=(?!=)/);
+  assert.match(panel, /Presentation\.groupParams\(model\.params\)/);
+});
+
+test('parameter rows use presentation metadata and one Prism reset action', () => {
+  assert.match(control, /readonly property bool liveDrag: param\.effectiveDrag === "live"/);
+  assert.match(control, /showReset: false/);
+  assert.match(control, /tooltipText: "Reset to default"/);
+  assert.equal(control.match(/tooltipText: "Reset to default"/g)?.length, 1);
+  assert.match(control, /Presentation\.formatValue\(value, stepSize\)/);
+});
+
 test('a sample-only drain does not refresh and replace the pressed slider', () => {
   const writeDone = source.slice(source.indexOf('function writeDone'), source.indexOf('Process {'));
 
@@ -28,17 +45,26 @@ test('a sample-only drain does not refresh and replace the pressed slider', () =
 });
 
 test('slider commits keyboard and wheel moves without changing pointer drag behavior', () => {
-  assert.match(panel, /property bool pointerPressed: false/);
-  assert.doesNotMatch(panel, /onTriggered: client\.set\(modelData\.key, valueSlider\.value, false\)/);
-  assert.match(panel, /property real pendingValue: 0/);
-  assert.match(panel, /id: commitGate\s*interval: 100\s*repeat: false\s*onTriggered: client\.set\(modelData\.key, valueSlider\.pendingValue, false\)/);
-  assert.match(panel, /onMoved: function\(value\) \{\s*if \(pointerPressed\) \{\s*if \(liveDrag && !sampleGate\.running\)/);
-  assert.match(panel, /\} else \{\s*pendingValue = value;\s*commitGate\.restart\(\);\s*\}\s*\}/);
-  assert.match(panel, /onPressedChanged: function\(pressed, value\) \{\s*pointerPressed = pressed;\s*commitGate\.stop\(\);\s*if \(!pressed\) \{\s*client\.set\(modelData\.key, value, false\);/);
+  assert.match(control, /property bool pointerPressed: false/);
+  assert.doesNotMatch(control, /onTriggered: client\.set\(param\.key, valueSlider\.value, false\)/);
+  assert.match(control, /property real pendingValue: 0/);
+  assert.match(control, /id: commitGate\s*interval: 100\s*repeat: false\s*onTriggered: sendSlider\(valueSlider\.pendingValue, false\)/);
+  assert.match(control, /onMoved: function\(value\) \{\s*if \(pointerPressed\) \{\s*if \(liveDrag && !sampleGate\.running\)/);
+  assert.match(control, /\} else \{\s*pendingValue = value;\s*commitGate\.restart\(\);\s*\}\s*\}/);
+  assert.match(control, /onPressedChanged: function\(pressed, value\) \{\s*pointerPressed = pressed;\s*commitGate\.stop\(\);\s*if \(!pressed\) \{\s*sendSlider\(value, false\);/);
 });
 
 test('slider flushes a pending keyboard or wheel write before destruction', () => {
-  const slider = panel.slice(panel.indexOf('NValueSlider {'), panel.indexOf('NToggle {'));
+  const slider = control.slice(control.indexOf('NValueSlider {'), control.indexOf('NToggle {'));
 
-  assert.match(slider, /Component\.onDestruction: \{\s*if \(commitGate\.running\) \{\s*commitGate\.stop\(\);\s*client\.set\(modelData\.key, valueSlider\.pendingValue, false\);\s*\}\s*\}/);
+  assert.match(slider, /Component\.onDestruction: \{\s*if \(commitGate\.running\) \{\s*commitGate\.stop\(\);\s*sendSlider\(valueSlider\.pendingValue, false\);\s*\}\s*\}/);
+});
+
+test('every slider write uses the quantizing helper', () => {
+  const helper = control.slice(control.indexOf('function sendSlider'), control.indexOf('function selectOptions'));
+  const slider = control.slice(control.indexOf('NValueSlider {'), control.indexOf('NToggle {'));
+
+  assert.match(helper, /client\.set\(param\.key, Presentation\.quantizeValue\(value, stepSize\), sample\)/);
+  assert.doesNotMatch(slider, /client\.set\(param\.key,/);
+  assert.equal(slider.match(/sendSlider\(/g)?.length, 4);
 });
