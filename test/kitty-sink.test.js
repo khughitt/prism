@@ -49,8 +49,19 @@ test('socket discovery deduplicates exact pid-suffixed kitty addresses', () => {
 test('socket application fails loudly when discovery finds no exact match', () => {
   assert.deepEqual(kittySockets('Num RefCount Protocol Flags Type St Inode Path\n'), []);
   assert.throws(
-    () => applyToKittySockets(resolved, '@not-dotfiles-kitty-1\n', () => {}),
+    () => applyToKittySockets(resolved, '@not-dotfiles-kitty-1\n', () => {}, () => ''),
     /no kitty remote-control sockets found/,
+  );
+});
+
+test('socket application requires a fresh proc-net-unix reader', () => {
+  assert.throws(
+    () => applyToKittySockets(
+      resolved,
+      '000: 2 0 10000 1 01 10 @dotfiles-kitty-12',
+      () => '',
+    ),
+    /fresh proc-net-unix reader is required/,
   );
 });
 
@@ -67,7 +78,9 @@ test('each discovered socket gets its own inactive, ls, optional nested-id activ
   applyToKittySockets(resolved, [
     '000: 2 0 10000 1 01 10 @dotfiles-kitty-12',
     '001: 2 0 10000 1 01 11 @dotfiles-kitty-34',
-  ].join('\n'), kitten);
+  ].join('\n'), kitten, () => {
+    throw new Error('fresh reader should not run after a successful apply');
+  });
 
   assert.deepEqual(calls, [
     ['unix:@dotfiles-kitty-12', 'set-background-opacity', '--all', '0.65'],
@@ -75,5 +88,57 @@ test('each discovered socket gets its own inactive, ls, optional nested-id activ
     ['unix:@dotfiles-kitty-34', 'set-background-opacity', '--all', '0.65'],
     ['unix:@dotfiles-kitty-34', 'ls'],
     ['unix:@dotfiles-kitty-34', 'set-background-opacity', '--match', 'id:21', '0.95'],
+  ]);
+});
+
+test('a vanished socket does not block a later socket from applying', () => {
+  const calls = [];
+  const kitten = (socket, args) => {
+    calls.push([socket, ...args]);
+    if (socket.endsWith('-12')) throw new Error('listener vanished');
+    return args[0] === 'ls' ? '[]' : '';
+  };
+
+  applyToKittySockets(resolved, [
+    '000: 2 0 10000 1 01 10 @dotfiles-kitty-12',
+    '001: 2 0 10000 1 01 11 @dotfiles-kitty-34',
+  ].join('\n'), kitten, () =>
+    '001: 2 0 10000 1 01 11 @dotfiles-kitty-34');
+
+  assert.deepEqual(calls, [
+    ['unix:@dotfiles-kitty-12', 'set-background-opacity', '--all', '0.65'],
+    ['unix:@dotfiles-kitty-34', 'set-background-opacity', '--all', '0.65'],
+    ['unix:@dotfiles-kitty-34', 'ls'],
+  ]);
+});
+
+test('a failed socket still present in fresh discovery rethrows the original error', () => {
+  const failure = new Error('command failed');
+  assert.throws(
+    () => applyToKittySockets(
+      resolved,
+      '000: 2 0 10000 1 01 10 @dotfiles-kitty-12',
+      () => { throw failure; },
+      () => '000: 2 0 10000 1 01 10 @dotfiles-kitty-12',
+    ),
+    (error) => error === failure,
+  );
+});
+
+test('socket application fails loudly when every discovered socket vanishes', () => {
+  const calls = [];
+  assert.throws(
+    () => applyToKittySockets(resolved, [
+      '000: 2 0 10000 1 01 10 @dotfiles-kitty-12',
+      '001: 2 0 10000 1 01 11 @dotfiles-kitty-34',
+    ].join('\n'), (socket) => {
+      calls.push(socket);
+      throw new Error('listener vanished');
+    }, () => 'Num RefCount Protocol Flags Type St Inode Path\n'),
+    /every discovered kitty remote-control socket vanished before apply/,
+  );
+  assert.deepEqual(calls, [
+    'unix:@dotfiles-kitty-12',
+    'unix:@dotfiles-kitty-34',
   ]);
 });

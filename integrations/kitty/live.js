@@ -26,12 +26,24 @@ export function kittySockets(procNetUnix) {
   return [...sockets];
 }
 
-export function applyToKittySockets(resolved, procNetUnix, kitten) {
+export function applyToKittySockets(resolved, procNetUnix, kitten, readProcNetUnix) {
+  if (typeof readProcNetUnix !== 'function') {
+    throw new TypeError('fresh proc-net-unix reader is required');
+  }
   const sockets = kittySockets(procNetUnix);
   if (sockets.length === 0) {
     throw new Error('no kitty remote-control sockets found matching unix:@dotfiles-kitty-<pid>');
   }
+  let applied = 0;
   for (const socket of sockets) {
-    applyLiveOpacity(resolved, (args) => kitten(socket, args));
+    try {
+      applyLiveOpacity(resolved, (args) => kitten(socket, args));
+      applied++;
+    } catch (error) {
+      if (kittySockets(readProcNetUnix()).includes(socket)) throw error;
+    }
+  }
+  if (applied === 0) {
+    throw new Error('every discovered kitty remote-control socket vanished before apply');
   }
 }

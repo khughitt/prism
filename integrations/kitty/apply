@@ -16,4 +16,9 @@ fs.renameSync(tmp, target);
 
 const kitten = (socket, args) =>
   execFileSync('kitten', ['@', '--to', socket, ...args], { stdio: 'pipe' });
-applyToKittySockets(resolved, fs.readFileSync('/proc/net/unix', 'utf8'), kitten);
+applyToKittySockets(
+  resolved,
+  fs.readFileSync('/proc/net/unix', 'utf8'),
+  kitten,
+  () => fs.readFileSync('/proc/net/unix', 'utf8'),
+);
