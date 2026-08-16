@@ -16,6 +16,13 @@ function integ(files) {
   return root;
 }
 
+function loadBinding(fields) {
+  const root = integ({
+    'alpha/manifest.yaml': `sink: alpha\nbinds:\n  - param: a.x\n${fields}\n`,
+  });
+  return loadManifests(root, defs)[0].binds[0];
+}
+
 test('loads manifests and skips manifest-less dirs', () => {
   const root = integ({
     'alpha/manifest.yaml': 'sink: alpha\nbinds:\n  - {param: a.x, liveness: live}\n',
@@ -54,4 +61,11 @@ test('binding an undefined param is a hard error', () => {
 test('unknown liveness is a hard error', () => {
   const root = integ({ 'alpha/manifest.yaml': 'sink: alpha\nbinds:\n  - {param: a.x, liveness: sometimes}\n' });
   assert.throws(() => loadManifests(root, defs), /liveness/);
+});
+
+test('drag release is the only accepted live binding override', () => {
+  assert.equal(loadBinding('    liveness: live\n    drag: release').drag, 'release');
+  assert.throws(() => loadBinding('    liveness: live\n    drag: sample'), /bad drag/);
+  assert.throws(() => loadBinding('    liveness: reload\n    drag: release'),
+    /drag: release requires liveness: live/);
 });

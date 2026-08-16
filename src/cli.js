@@ -116,13 +116,19 @@ export async function run(argv, opts = {}) {
         const described = [];
 
         for (const [key, def] of defs) {
-          const bindings = manifests.flatMap((manifest) => manifest.binds
+          const rawBindings = manifests.flatMap((manifest) => manifest.binds
             .filter((binding) => binding.param === key)
-            .map((binding) => ({ sink: manifest.sink, liveness: binding.liveness })));
+            .map((binding) => ({ ...binding, sink: manifest.sink })));
+          const bindings = rawBindings.map(({ sink, liveness }) => ({ sink, liveness }));
           const effectiveLiveness = bindings.reduce((slowest, binding) =>
             slowest === null || LIVENESS_ORDER[binding.liveness] > LIVENESS_ORDER[slowest]
               ? binding.liveness
               : slowest, null);
+          const effectiveDrag = rawBindings.length === 0
+            ? null
+            : rawBindings.some((binding) => binding.liveness !== 'live' || binding.drag === 'release')
+              ? 'release'
+              : 'live';
           described.push({
             key,
             type: def.type,
@@ -135,6 +141,7 @@ export async function run(argv, opts = {}) {
             description: def.description,
             bindings,
             effectiveLiveness,
+            effectiveDrag,
           });
         }
 

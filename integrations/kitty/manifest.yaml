@@ -1,5 +1,5 @@
 sink: kitty
 generates: [kitty.conf]
 binds:
-  - {param: terminal.background.opacity.active, liveness: live}
-  - {param: terminal.background.opacity.inactive, liveness: live}
+  - {param: terminal.background.opacity.active, liveness: live, drag: release}
+  - {param: terminal.background.opacity.inactive, liveness: live, drag: release}

@@ -112,7 +112,22 @@ test('set rejects out-of-range values, unknown keys, and stray flags without tou
   assert.equal(fs.readFileSync(resolvedPath(), 'utf8'), before);
 });
 
-test('describe emits bindings and slowest effectiveLiveness', async () => {
+test('describe emits bindings and slowest effectiveLiveness', async (t) => {
+  t.after(() => {
+    fs.rmSync(path.join(integ, 'draglive'), { recursive: true, force: true });
+    fs.rmSync(path.join(integ, 'dragreload'), { recursive: true, force: true });
+  });
+  fs.mkdirSync(path.join(integ, 'draglive'));
+  fs.writeFileSync(path.join(integ, 'draglive', 'manifest.yaml'),
+    'sink: draglive\nbinds:\n'
+    + '  - {param: glass.roughness, liveness: live}\n'
+    + '  - {param: terminal.background.opacity.active, liveness: live, drag: release}\n'
+    + '  - {param: glass.transmission, liveness: live}\n');
+  fs.mkdirSync(path.join(integ, 'dragreload'));
+  fs.writeFileSync(path.join(integ, 'dragreload', 'manifest.yaml'),
+    'sink: dragreload\nbinds:\n'
+    + '  - {param: glass.transmission, liveness: reload}\n');
+
   await cli.run(['set', 'terminal.background.opacity.inactive', '0.6'], { runner: () => {} });
   let out = '';
   await cli.run(['describe', '--json'], { runner: () => {}, print: (s) => { out += s; } });
@@ -121,8 +136,17 @@ test('describe emits bindings and slowest effectiveLiveness', async () => {
   assert.equal(p.modified, true);
   assert.equal(p.value, 0.6);
   assert.equal(p.effectiveLiveness, 'reload'); // slowest of live+reload
-  const unbound = d.params.find((x) => x.bindings.length === 0);
-  assert.equal(unbound.effectiveLiveness, null); // glass params are unbound in this fixture
+  assert.deepEqual(d.params.find((x) => x.key === 'glass.roughness').effectiveDrag, 'live');
+  assert.deepEqual(d.params.find((x) => x.key === 'terminal.background.opacity.active').effectiveDrag, 'release');
+  assert.deepEqual(d.params.find((x) => x.key === 'glass.transmission').effectiveDrag, 'release');
+  const unbound = d.params.find((x) => x.key === 'glass.ior');
+  assert.equal(unbound.effectiveDrag, null);
+  assert.equal(unbound.effectiveLiveness, null);
+  assert.equal(d.params.find((x) => x.key === 'glass.roughness').effectiveLiveness, 'live');
+  assert.equal(d.params.find((x) => x.key === 'terminal.background.opacity.active').effectiveLiveness, 'live');
+  assert.equal(d.params.find((x) => x.key === 'glass.transmission').effectiveLiveness, 'reload');
+  assert.deepEqual(d.params.find((x) => x.key === 'terminal.background.opacity.active').bindings,
+    [{ sink: 'draglive', liveness: 'live' }]);
 });
 
 test('describe emits only the public counter-free JSON shape', async () => {
@@ -133,7 +157,7 @@ test('describe emits only the public counter-free JSON shape', async () => {
   const p = described.params.find((item) => item.key === 'terminal.background.opacity.inactive');
   assert.deepEqual(Object.keys(p), [
     'key', 'type', 'range', 'default', 'value', 'modified', 'ui', 'description',
-    'bindings', 'effectiveLiveness',
+    'bindings', 'effectiveLiveness', 'effectiveDrag',
   ]);
 });
 
