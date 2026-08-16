@@ -212,12 +212,13 @@ Quickshell IPC, not Prism values. niri-glass exposes an `IpcHandler` target
 `prismGlass` with two idempotent calls:
 
 ```text
-showPreview(side: "left" | "right", diagnosticBackground: bool)
+showPreview(output: string, side: "left" | "right", diagnosticBackground: bool)
 hidePreview()
 ```
 
-Invalid sides fail loudly. Calling `showPreview` while visible updates the
-existing preview. Calling `hidePreview` while hidden succeeds.
+Unknown outputs and invalid sides fail loudly. Calling `showPreview` while
+visible updates or moves the existing preview. Calling `hidePreview` while
+hidden succeeds.
 
 Dotfiles setup installs the niri-glass source directory as the named
 Quickshell config `$XDG_CONFIG_HOME/quickshell/niri-glass`, and niri launches
@@ -244,11 +245,11 @@ than destroying its pressed delegate.
 
 When Preview is enabled, the panel compares its global center with its
 screen geometry's global center and asks niri-glass to anchor on the opposite
-side. Changing the diagnostic-background toggle calls `showPreview` again
-with the same side. `Panel.Component.onDestruction` enqueues `hidePreview`, so
-closing the panel clears preview even when the user forgets to toggle it off.
-Opening the panel starts from Preview off; restarting niri-glass also starts
-hidden.
+side, passing `panelOpenScreen.name` as the output. Changing the
+diagnostic-background toggle calls `showPreview` again with the same output
+and side. `Panel.Component.onDestruction` enqueues `hidePreview`, so closing
+the panel clears preview even when the user forgets to toggle it off. Opening
+the panel starts from Preview off; restarting niri-glass also starts hidden.
 
 The Preview and Diagnostic-background toggles form the first compact row in
 the existing Diagnostics section. Diagnostic background is visible/enabled
@@ -279,11 +280,12 @@ nor the generated configuration embeds that location.
 `dotfiles-health` gains an exact check that the consumer path exists and
 resolves to the generated file, plus an exact check that the named Quickshell
 config resolves to the niri-glass source directory. It also fails if
-`$XDG_CONFIG_HOME/quickshell/shell.qml` exists, because Quickshell then treats
-that root file as the default configuration and does not discover named
-subdirectories. `prism doctor` continues to validate Prism's generated target
-and sink snapshots; it does not claim ownership of external config-path
-wiring. Documentation must distinguish those two health boundaries.
+`$XDG_CONFIG_HOME/quickshell/shell.qml` exists or is a symlink, because
+Quickshell then treats that root path as the default configuration and does
+not discover named subdirectories. `prism doctor` continues to validate
+Prism's generated target and sink snapshots; it does not claim ownership of
+external config-path wiring. Documentation must distinguish those two health
+boundaries.
 
 The live repair preserves the current host `values.yaml`, including
 experimental geometry values. Tests snapshot and restore it atomically. No
