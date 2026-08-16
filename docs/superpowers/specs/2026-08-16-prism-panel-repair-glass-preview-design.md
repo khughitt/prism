@@ -1,0 +1,364 @@
+# Prism panel repair and isolated glass preview
+
+**Date:** 2026-08-16
+**Status:** Draft — awaiting written review
+
+## Context
+
+Live acceptance of the streamlined Noctalia panel exposed two separate
+problems.
+
+First, the panel is still denser and slower-feeling than intended. The
+`Quick` heading repeats information already conveyed by the panel, native
+Noctalia labels are too large for six basic controls at the current UI scale,
+Reset icons align to the full parameter row rather than the value/control
+line, and slider text waits for a complete `prism set` → fan-out → `prism
+describe` round trip before it reflects a move.
+
+Second, the glass controls were not changing the live layer. Prism correctly
+wrote `resolved.json` and the generated `niri-glass.json`, but the consumer
+path `~/.config/niri/niri-glass.json` was absent. The running niri-glass
+instance logged that it had fallen back to built-in defaults. Its initial
+niri event stream and wallpaper lookup also logged failures, so the layer
+must be restarted and checked after the config path is repaired.
+
+The observed milky appearance is not evidence that every material control is
+broken. The current shader simulates transmission by sampling the wallpaper;
+it does not sample compositor pixels. Its default material retains a white
+diffuse contribution, adds HDR probe reflections, applies pale attenuation,
+and outputs an effectively opaque wallpaper-derived surface. The broken
+consumer path prevented the controls that tune those terms from taking
+effect.
+
+## Goals
+
+- Make the six basic controls fit comfortably without renaming backend
+  groups or increasing the panel size.
+- Make displayed control values respond immediately while retaining Prism's
+  authoritative post-write refresh.
+- Align one subtle Reset affordance with each control's value.
+- Repair and health-check the generated niri-glass consumer path.
+- Add a persistent, live `Glass enabled` switch in the panel title row.
+- Add one transient, isolated preview that exposes the glass directly while
+  the settings panel remains usable.
+- Let the preview switch between the current wallpaper and a fixed neutral
+  diagnostic background with a high-contrast grid.
+- Determine the source of the milky appearance with a controlled neutral
+  material test before changing the shader or shipped defaults.
+
+## Non-goals
+
+- A persistent above-window placement mode.
+- Refracting or sampling terminal/compositor pixels from a Wayland client.
+- Hiding, moving, spawning, or changing the opacity of real terminals.
+- Dummy terminal processes.
+- A full-screen preview with a Noctalia-panel cutout.
+- User-selectable diagnostic colors, presets, or a preview color picker.
+- Persisting preview state in `values.yaml` or `resolved.json`.
+- A Prism daemon, a polling loop, or a second parameter transport.
+- A shader redesign before the neutral-material test proves one is needed.
+
+## 1. Panel layout
+
+The panel keeps its existing preferred dimensions. The title row becomes:
+
+```text
+Prism                                      Glass  [on]
+```
+
+`Glass enabled` is a compact switch bound to the otherwise hidden
+`glass.enabled` parameter. It is not a seventh basic-settings row.
+
+The `Quick` group remains the semantic group used by definitions and sorting,
+but its visible heading is removed. The six controls begin immediately below
+the title/error area. Advanced sections keep their existing collapsed
+headers and within-session expansion state.
+
+Parameter rows use one compact Prism-owned label/description treatment for
+all four control types. Labels step down from Noctalia's large setting label
+to the medium theme size; descriptions remain small. The panel title steps
+down from extra-large to large. Slider values step down from medium to small,
+`on release`/`unavailable` hints use the extra-small size, and repeated
+margins/row gaps shrink by one theme step. Global Noctalia font or UI scale is
+never changed.
+
+The Reset icon remains visible only for modified parameters. It sits in the
+same control row and vertical alignment as the slider value, toggle, select,
+or color value. The icon remains smaller and lower-contrast than the primary
+control. Section Reset remains in the advanced-section header.
+
+## 2. Optimistic control state
+
+Each `ParamControl` owns a local displayed value initialized from
+`param.value`. User interaction updates that local value before enqueueing the
+write:
+
+```text
+input → local displayed value → Prism queue → set/fan-out → describe refresh
+```
+
+Sliders bind both their thumb and formatted text to the local value. Toggle,
+select, and color controls use the same rule so the panel has one response
+model. Pointer samples still coalesce through the existing queue, and
+sample-only drains still skip `describe`; refreshing every sample would
+destroy the pressed delegate and regress live dragging.
+
+The post-write `describe` response remains authoritative. Delegate refresh
+reconciles the local value, `modified` state, and Reset visibility with the
+stored result. A failed write keeps the existing banner behavior and the
+following refresh rolls the optimistic value back. The CLI does not adopt
+optimistic or quantizing behavior.
+
+## 3. Persistent glass enablement
+
+Add one definition:
+
+```yaml
+- key: glass.enabled
+  type: bool
+  default: true
+  ui: {group: glass, control: none}
+  description: Render the niri glass layer
+```
+
+The niri-glass manifest binds it as `live`, and the generated JSON contains
+`enabled`. It stays `control: none` because the panel renders it explicitly
+in the title row; the generic grouping code must not also render it.
+
+niri-glass adds `conf.enabled: true`. When false, the normal glass scene is
+hidden without stopping Prism or the Noctalia panel. The config watcher stays
+alive so re-enabling is immediate. The isolated preview is independent: a
+user may preview and tune glass while the normal layer is disabled.
+
+`Glass enabled` uses the normal sparse-store rule. Setting it to its default
+removes the override; setting it false persists across panel openings,
+Noctalia restarts, login, and reboot.
+
+## 4. Isolated preview
+
+### Surface
+
+niri-glass owns a second, normally hidden `PanelWindow` on the panel's screen.
+It is a large bounded surface anchored on the side opposite the Prism panel,
+not a full-screen layer. It uses:
+
+```qml
+WlrLayershell.layer: WlrLayer.Overlay
+WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+exclusionMode: ExclusionMode.Ignore
+mask: Region {}
+```
+
+The surface therefore renders above ordinary windows but cannot take pointer,
+touch, or keyboard input and does not reserve workspace space. Because it is
+isolated from the panel rectangle, it does not rely on same-layer map order or
+a compositor-specific visual cutout.
+
+In logical pixels, its width is `min(1200, screen.width * 0.42)`, its height is
+`min(900, screen.height * 0.70)`, and it is vertically centered with a 32 px
+margin from the chosen screen edge. The representative slab occupies 75% of
+the preview in each dimension. These bounds leave the 560 px Prism panel and
+the preview side by side on the supported desktop while remaining useful on a
+1920 px output.
+
+The preview renders one representative, chamfered slab rather than replaying
+live terminal geometry. It consumes the same `conf` material values as real
+panes. niri-glass extracts the shared custom material/uniform bindings into a
+single composed component used by the real panes and the preview; the shader
+contract is not duplicated.
+
+### Background
+
+The preview has two panel-local background modes:
+
+- `Wallpaper`: crop-fill the current wallpaper.
+- `Diagnostic background`: replace it with neutral slate `#263238` and draw
+  the existing 40 px minor / 200 px major grid at increased contrast.
+
+The fixed color is deliberately not configurable. Spatial grid detail makes
+refraction, distortion, blur, and chromatic separation visible without
+wallpaper clutter. The preview's texture is the same background it displays,
+so the material samples a coherent backdrop.
+
+### Transient IPC contract
+
+Preview state belongs to niri-glass memory and is controlled through native
+Quickshell IPC, not Prism values. niri-glass exposes an `IpcHandler` target
+`prismGlass` with two idempotent calls:
+
+```text
+showPreview(side: "left" | "right", diagnosticBackground: bool)
+hidePreview()
+```
+
+Invalid sides fail loudly. Calling `showPreview` while visible updates the
+existing preview. Calling `hidePreview` while hidden succeeds.
+
+The plugin addresses the existing niri-glass Quickshell instance by its
+configured `$HOME/d/niri-glass/shell.qml` path. `PrismClient` serializes the
+fixed IPC command shape, reports non-zero exits through the existing error
+banner, and ensures a final `hidePreview` cannot be overtaken by an earlier
+toggle.
+
+When Preview is enabled, the panel compares its global center with its
+screen geometry's global center and asks niri-glass to anchor on the opposite
+side. Changing the diagnostic-background toggle calls `showPreview` again
+with the same side. `Panel.Component.onDestruction` enqueues `hidePreview`, so
+closing the panel clears preview even when the user forgets to toggle it off.
+Opening the panel starts from Preview off; restarting niri-glass also starts
+hidden.
+
+The Preview and Diagnostic-background toggles form the first compact row in
+the existing Diagnostics section. Diagnostic background is visible/enabled
+only while Preview is active. Preview state does not affect modified counts
+or Reset actions.
+
+## 5. Generated-file repair and health
+
+The persistent bus remains:
+
+```text
+values.yaml
+  → resolved.json
+  → generated/niri-glass.json
+  → ~/.config/niri/niri-glass.json symlink
+  → niri-glass FileView
+```
+
+Dotfiles setup remains the sole creator of the consumer symlink. The repair
+reruns that existing step after the generated file exists, then restarts
+niri-glass so the first successful load is observed.
+
+`dotfiles-health` gains an exact check that the consumer path exists and
+resolves to the generated file. `prism doctor` continues to validate Prism's
+generated target and sink snapshots; it does not claim ownership of external
+config-path wiring. Documentation must distinguish those two health
+boundaries.
+
+The live repair preserves the current host `values.yaml`, including
+experimental geometry values. Tests snapshot and restore it atomically. No
+default reset or cleanup is inferred from the dirty dotfiles worktree.
+
+After restart, acceptance verifies all of the following before material
+tuning:
+
+- FileView logs no missing-config warning.
+- Generated writes change the file observed through the consumer path.
+- The niri event stream has populated panes on a workspace containing a
+  configured terminal app.
+- Wallpaper IPC returns a non-empty current path.
+
+If the event stream or wallpaper lookup still fails after restart, diagnose
+that first broken link and add a focused regression. Do not add speculative
+polling or recovery code merely because the old instance logged one failure.
+
+## 6. Milky-glass diagnosis
+
+The preview provides a controlled test before changing shader behavior or
+defaults. Snapshot the user's values, then test this neutral material:
+
+```text
+probe exposure = 0
+roughness = 0
+transmission = 1
+attenuation color = #ffffff
+```
+
+On the diagnostic grid, the slab's flat face should reproduce the background
+without a white cast; chamfers may still refract and reflect. Change one
+material control at a time to identify which term introduces milkiness, then
+restore the snapshot atomically.
+
+If the neutral combination is clear, the transport repair and preview solve
+the reported inability to tune the look; shipped defaults do not change in
+this work. If it remains milky, add a failing shader/render regression where
+possible and change only the responsible diffuse/specular term. Do not mask
+the problem with arbitrary new presets.
+
+## 7. Error handling and ordering
+
+- Config-link failure is a dotfiles-health failure, not a silent successful
+  install.
+- Persistent parameter writes retain the existing FIFO, sample coalescing,
+  error banner, and authoritative refresh.
+- Preview calls are discrete and ordered; close-time `hidePreview` is last.
+- A preview IPC failure leaves the persistent settings usable and displays
+  the existing banner.
+- Closing the panel never writes Preview or Diagnostic background into
+  `values.yaml`.
+- `glass.enabled` is persistent and is not reset when the panel closes.
+
+## 8. Verification
+
+### Automated
+
+- Definition and manifest tests cover `glass.enabled`, default `true`, hidden
+  generic control, live binding, and generated output.
+- Shipped presentation tests retain exactly six generic Quick controls while
+  confirming the title switch's parameter exists.
+- Panel source-contract tests cover removal of the visible `Quick` heading,
+  compact type sizes, control-row Reset alignment, local optimistic values,
+  and close-time preview cleanup.
+- Queue/client tests prove preview calls are ordered and the final hide is not
+  dropped.
+- niri-glass tests cover IPC validation/idempotency, opposite-side selection,
+  background selection, shared material use, and `enabled` behavior.
+- Dotfiles health tests fail for a missing, dangling, or wrong consumer link.
+- Node suites, Qt 6 `qmllint`, niri-glass tests, `prism doctor`,
+  `dotfiles-health`, shell syntax, and diff checks pass.
+
+### Live acceptance
+
+1. Repair the consumer symlink, restart niri-glass, and prove config, event,
+   wallpaper, and pane data are healthy.
+2. Open Prism: the title switch and all six basic controls fit comfortably;
+   no `Quick` heading is shown.
+3. Move every control type: its displayed value changes immediately, then
+   agrees with the authoritative refresh.
+4. Modified Reset icons align with their values/controls and clear correctly.
+5. Disable glass, close/reopen the panel and restart Noctalia: the normal
+   layer remains disabled. Re-enable it and confirm immediate return.
+6. Enable Preview: a large isolated surface appears opposite the panel and
+   remains click-through and non-focusable while controls stay usable.
+7. Toggle Diagnostic background: the preview switches between wallpaper and
+   neutral grid without touching persistent values.
+8. Change several glass values: the preview responds live before pointer
+   release and stores the final values correctly.
+9. Toggle Preview off, then on again and close the panel: both paths remove
+   the preview. Reopening starts with Preview off.
+10. Run the neutral-material sequence, record whether milkiness remains, and
+    restore the user's values atomically.
+
+## 9. Alternatives rejected
+
+- **Hide real terminals:** affects interactive windows, crosses kitty/niri
+  behavior, and makes restoration a data-loss boundary.
+- **Full-screen overlay:** would need a panel-position cutout or accidental
+  same-layer ordering to keep settings visible.
+- **Persistent above mode:** cannot refract compositor pixels and would
+  misrepresent wallpaper-derived blending as terminal glass.
+- **Dummy terminal:** adds a process and lifecycle that contributes nothing
+  to material evaluation.
+- **Persist preview as a Prism definition:** pollutes host configuration and
+  can survive the panel it belongs to.
+- **Solid-color picker/presets:** a fixed neutral grid answers the diagnostic
+  question with less UI and no new persistent schema.
+- **Refresh after every drag sample:** recreates pressed delegates and revives
+  the failure the sample-refresh guard already prevents.
+
+## 10. Documentation impact
+
+Implementation must update:
+
+- the Prism/Noctalia plugin contract note;
+- the visual-bus design and v1 plan where visible-parameter counts, Quick
+  structure, live acceptance, generated-file health, or niri-glass ownership
+  are stated;
+- the streamlined-panel design and plan, whose live-acceptance claims are now
+  superseded by this repair;
+- niri-glass README/config documentation for `enabled`, the preview IPC, and
+  the material's wallpaper-sampling limitation;
+- dotfiles setup/health documentation for the consumer-link check.
+
+Status headers and checkboxes change only after their claims are verified
+against the relevant repository histories and live system.
