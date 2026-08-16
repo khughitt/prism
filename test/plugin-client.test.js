@@ -103,11 +103,23 @@ test('parameter rows use presentation metadata and one Prism reset action', () =
   assert.match(control, /Presentation\.formatValue\(root\.displayedValue, root\.stepSize\)/);
 });
 
-test('a sample-only drain does not refresh and replace the pressed slider', () => {
+test('drain refresh uses the parameter-write and non-sample-tail conjunction', () => {
   const writeDone = source.slice(source.indexOf('function writeDone'), source.indexOf('Process {'));
 
-  assert.match(writeDone, /var completedSample = Queue\.isSample\(queue\.inFlight\);\s*var result = Queue\.finish\(queue\);/);
-  assert.match(writeDone, /else if \(result\.drained\) \{\s*drained\(\);\s*if \(!completedSample\) \{\s*refresh\(\);\s*\}/);
+  assert.match(source, /property bool batchAffectsParams: false/);
+  assert.match(source, /batchAffectsParams = batchAffectsParams \|\| Queue\.affectsParams\(item\)/);
+  assert.match(writeDone, /var shouldRefresh = Queue\.shouldRefresh\(batchAffectsParams, queue\.inFlight\);\s*var result = Queue\.finish\(queue\);/);
+  assert.match(writeDone, /else if \(result\.drained\) \{\s*batchAffectsParams = false;\s*drained\(\);\s*if \(shouldRefresh\) refresh\(\);\s*\}/);
+});
+
+test('client and panel expose panel-local preview controls', () => {
+  assert.match(source, /function showPreview\(output, side, diagnosticBackground\)/);
+  assert.match(source, /function hidePreview\(\)/);
+  assert.match(panel, /property bool previewVisible: false/);
+  assert.match(panel, /property bool diagnosticBackground: false/);
+  assert.match(panel, /Component\.onDestruction: if \(root\.client\) root\.client\.hidePreview\(\)/);
+  assert.match(panel, /modelData\.name === "Diagnostics"/);
+  assert.doesNotMatch(panel, /glass\.enabled/);
 });
 
 test('slider commits keyboard and wheel moves without changing pointer drag behavior', () => {

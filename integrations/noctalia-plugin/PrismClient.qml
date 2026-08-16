@@ -13,6 +13,7 @@ Item {
   property string errorMessage: ""
   property string writeError: ""
   property bool refreshPending: false
+  property bool batchAffectsParams: false
 
   function refresh() {
     if (describeProcess.running) {
@@ -37,7 +38,17 @@ Item {
     push({ verb: "unset", key: key });
   }
 
+  function showPreview(output, side, diagnosticBackground) {
+    push({ verb: "preview-show", output: output, side: side,
+           diagnosticBackground: diagnosticBackground });
+  }
+
+  function hidePreview() {
+    push({ verb: "preview-hide" });
+  }
+
   function push(item) {
+    batchAffectsParams = batchAffectsParams || Queue.affectsParams(item);
     if (queue.inFlight === null) {
       writeError = "";
       errorMessage = "";
@@ -62,16 +73,15 @@ Item {
       failed(writeError);
     }
 
-    var completedSample = Queue.isSample(queue.inFlight);
+    var shouldRefresh = Queue.shouldRefresh(batchAffectsParams, queue.inFlight);
     var result = Queue.finish(queue);
     queue = result.state;
     if (result.launch) {
       launch(result.launch);
     } else if (result.drained) {
+      batchAffectsParams = false;
       drained();
-      if (!completedSample) {
-        refresh();
-      }
+      if (shouldRefresh) refresh();
     }
   }
 

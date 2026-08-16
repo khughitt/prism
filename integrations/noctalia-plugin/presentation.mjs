@@ -20,6 +20,10 @@ export function formatValue(value, step) {
   return String(quantizeValue(value, step));
 }
 
+export function oppositeSide(panelCenterX, screenCenterX) {
+  return panelCenterX <= screenCenterX ? 'right' : 'left';
+}
+
 export function titleParam(params) {
   var matches = [];
   for (var i = 0; i < params.length; i++) {

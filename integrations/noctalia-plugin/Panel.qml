@@ -16,6 +16,8 @@ Item {
   property var titleSetting: null
   property bool titleValue: true
   property var expandedGroups: ({})
+  property bool previewVisible: false
+  property bool diagnosticBackground: false
   readonly property var client: pluginApi && pluginApi.mainInstance ? pluginApi.mainInstance.client : null
   readonly property string errorMessage: client ? client.errorMessage : ""
 
@@ -47,7 +49,22 @@ Item {
     return count;
   }
 
+  function previewSide() {
+    var screen = root.pluginApi ? root.pluginApi.panelOpenScreen : null;
+    if (!screen) return "right";
+    var panelCenter = root.mapToGlobal(root.width / 2, root.height / 2).x;
+    return Presentation.oppositeSide(panelCenter, screen.x + screen.width / 2);
+  }
+
+  function updatePreview() {
+    var screen = root.pluginApi ? root.pluginApi.panelOpenScreen : null;
+    if (root.previewVisible && screen) {
+      root.client.showPreview(screen.name, root.previewSide(), root.diagnosticBackground);
+    }
+  }
+
   Component.onCompleted: client.refresh()
+  Component.onDestruction: if (root.client) root.client.hidePreview()
 
   Connections {
     target: pluginApi ? pluginApi : null
@@ -216,6 +233,34 @@ Item {
                 visible: groupSurface.quick || groupSurface.expanded
                 Layout.fillWidth: true
                 spacing: Style.marginS
+
+                RowLayout {
+                  visible: groupSurface.modelData.name === "Diagnostics"
+                  Layout.fillWidth: true
+
+                  NToggle {
+                    label: "Preview"
+                    description: "Show an isolated glass sample"
+                    checked: root.previewVisible
+                    onToggled: function(checked) {
+                      root.previewVisible = checked;
+                      if (checked) root.updatePreview();
+                      else root.client.hidePreview();
+                    }
+                  }
+
+                  NToggle {
+                    visible: root.previewVisible
+                    enabled: root.previewVisible
+                    label: "Diagnostic background"
+                    description: "Use a neutral grid instead of wallpaper"
+                    checked: root.diagnosticBackground
+                    onToggled: function(checked) {
+                      root.diagnosticBackground = checked;
+                      root.updatePreview();
+                    }
+                  }
+                }
 
                 Repeater {
                   model: groupSurface.groupParams

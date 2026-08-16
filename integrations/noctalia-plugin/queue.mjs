@@ -8,6 +8,14 @@ export function isSample(item) {
     && item.verb === 'set' && item.sample === true;
 }
 
+export function affectsParams(item) {
+  return item.verb === 'set' || item.verb === 'unset';
+}
+
+export function shouldRefresh(batchAffectsParams, lastItem) {
+  return batchAffectsParams && !isSample(lastItem);
+}
+
 export function enqueue(state, item) {
   if (state.inFlight === null) {
     return { state: { inFlight: item, pending: state.pending }, launch: item };
@@ -36,6 +44,14 @@ export function finish(state) {
 }
 
 export function argvFor(item) {
+  if (item.verb === 'set') return ['prism', 'set', item.key, String(item.value)];
   if (item.verb === 'unset') return ['prism', 'unset', item.key];
-  return ['prism', 'set', item.key, String(item.value)];
+  if (item.verb === 'preview-show') return [
+    'qs', '-c', 'niri-glass', 'ipc', 'call', 'prismGlass',
+    'showPreview', item.output, item.side, String(item.diagnosticBackground),
+  ];
+  if (item.verb === 'preview-hide') return [
+    'qs', '-c', 'niri-glass', 'ipc', 'call', 'prismGlass', 'hidePreview',
+  ];
+  throw new Error('unknown queue verb: ' + item.verb);
 }

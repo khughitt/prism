@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  formatValue, groupParams, quantizeValue, stepPrecision, titleParam,
+  formatValue, groupParams, oppositeSide, quantizeValue, stepPrecision, titleParam,
 } from '../integrations/noctalia-plugin/presentation.mjs';
 import { loadDefs } from '../src/defs.js';
 import { defsDir } from '../src/paths.js';
@@ -65,4 +65,9 @@ test('formats values without binary noise or trailing zeros', () => {
   assert.equal(formatValue(0.000100, 0.000001), '0.0001');
   assert.equal(formatValue(0.0040, 0.0001), '0.004');
   assert.equal(formatValue(0.0600, 0.01), '0.06');
+});
+
+test('preview opens opposite the panel', () => {
+  assert.equal(oppositeSide(300, 1000), 'right');
+  assert.equal(oppositeSide(1700, 1000), 'left');
 });
