@@ -1,3 +1,8 @@
+- key: glass.enabled
+  type: bool
+  default: true
+  ui: {group: Title, control: toggle, label: Glass, order: 0}
+  description: Render the niri glass layer
 - key: glass.paneLip
   type: int
   range: [0, 128]

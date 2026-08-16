@@ -2,6 +2,7 @@ sink: niri-glass
 generates: [niri-glass.json]
 binds:
   - {param: compositor.gaps, liveness: live}
+  - {param: glass.enabled, liveness: live}
   - {param: glass.paneLip, liveness: live}
   - {param: glass.paneShiftX, liveness: live}
   - {param: glass.paneShiftY, liveness: live}

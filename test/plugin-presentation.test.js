@@ -1,19 +1,23 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  formatValue, groupParams, quantizeValue, stepPrecision,
+  formatValue, groupParams, quantizeValue, stepPrecision, titleParam,
 } from '../integrations/noctalia-plugin/presentation.mjs';
 import { loadDefs } from '../src/defs.js';
 import { defsDir } from '../src/paths.js';
 
 test('groups visible params in presentation order with Quick first', () => {
   const params = [
+    { key: 'title.enabled', ui: { control: 'toggle', group: 'Title', order: 0 } },
     { key: 'b.two', ui: { control: 'toggle', group: 'Beta', order: 20 } },
     { key: 'q.one', ui: { control: 'slider', group: 'Quick', order: 50 } },
     { key: 'a.one', ui: { control: 'toggle', group: 'Alpha', order: 10 } },
     { key: 'hidden.one', ui: { control: 'none', group: 'CLI' } },
     { key: 'b.one', ui: { control: 'toggle', group: 'Beta', order: 15 } },
   ];
+  assert.equal(titleParam(params).key, 'title.enabled');
+  assert.equal(groupParams(params).flatMap((group) => group.params)
+    .some((param) => param.ui.group === 'Title'), false);
   assert.deepEqual(groupParams(params).map((group) => ({
     name: group.name,
     keys: group.params.map((param) => param.key),
@@ -40,9 +44,15 @@ test('shipped presentation has the exact Quick and advanced structure', () => {
     'glass.attenuationColor',
   ]);
   const renderedKeys = groups.flatMap((group) => group.params.map((param) => param.key));
+  const title = titleParam(defs);
+  assert.equal(title.key, 'glass.enabled');
+  assert.equal(title.ui.control, 'toggle');
   assert.equal(renderedKeys.length, 32);
   assert.equal(new Set(renderedKeys).size, 32);
-  assert.deepEqual(renderedKeys.slice().sort(), visible.map((def) => def.key).sort());
+  const allRenderedKeys = [title.key].concat(renderedKeys);
+  assert.equal(allRenderedKeys.length, 33);
+  assert.equal(new Set(allRenderedKeys).size, 33);
+  assert.deepEqual(allRenderedKeys.slice().sort(), visible.map((def) => def.key).sort());
 });
 
 test('quantizes panel writes to step precision', () => {

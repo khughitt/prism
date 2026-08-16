@@ -20,10 +20,25 @@ export function formatValue(value, step) {
   return String(quantizeValue(value, step));
 }
 
+export function titleParam(params) {
+  var matches = [];
+  for (var i = 0; i < params.length; i++) {
+    if (params[i].ui.control !== 'none' && params[i].ui.group === 'Title') {
+      matches.push(params[i]);
+    }
+  }
+  if (matches.length !== 1 || matches[0].ui.control !== 'toggle') {
+    throw new Error('Title must contain exactly one visible toggle');
+  }
+  return matches[0];
+}
+
 export function groupParams(params) {
   var visible = [];
   for (var i = 0; i < params.length; i++) {
-    if (params[i].ui.control !== 'none') visible.push(params[i]);
+    if (params[i].ui.control !== 'none' && params[i].ui.group !== 'Title') {
+      visible.push(params[i]);
+    }
   }
   visible.sort(function(a, b) { return a.ui.order - b.ui.order; });
 

@@ -32,3 +32,9 @@ test('mapped params flow through', () => {
   assert.equal(rendered.layoutGaps, 10);
   assert.deepEqual(rendered.paneApps, ['foot']);
 });
+
+test('glass enablement renders true by default and follows resolution', () => {
+  const defs = loadDefs(defsDir());
+  assert.equal(renderGlassConfig({ params: resolveParams(defs, {}) }).enabled, true);
+  assert.equal(renderGlassConfig({ params: resolveParams(defs, { 'glass.enabled': false }) }).enabled, false);
+});
