@@ -5,6 +5,7 @@ import test from 'node:test';
 const source = await readFile(new URL('../integrations/noctalia-plugin/PrismClient.qml', import.meta.url), 'utf8');
 const panel = await readFile(new URL('../integrations/noctalia-plugin/Panel.qml', import.meta.url), 'utf8');
 const control = await readFile(new URL('../integrations/noctalia-plugin/ParamControl.qml', import.meta.url), 'utf8');
+const bar = await readFile(new URL('../integrations/noctalia-plugin/BarWidget.qml', import.meta.url), 'utf8');
 
 test('describe refresh requests made in flight are coalesced and replayed after exit', () => {
   assert.match(source, /property bool refreshPending: false/);
@@ -14,6 +15,23 @@ test('describe refresh requests made in flight are coalesced and replayed after 
   const describeProcess = source.slice(source.indexOf('id: describeProcess'), source.indexOf('id: writeProcess'));
   assert.doesNotMatch(describeProcess, /\breturn;/, 'every describe exit path must reach the replay');
   assert.equal(describeProcess.match(/root\.finishRefresh\(\);/g)?.length, 1);
+});
+
+test('bar widget matches Noctalia native capsule contract', () => {
+  assert.match(bar, /import qs\.Services\.UI/);
+  assert.match(bar, /baseSize: Style\.getCapsuleHeightForScreen\(screen\?\.name\)/);
+  assert.match(bar, /applyUiScale: false/);
+  assert.match(bar, /customRadius: Style\.radiusL/);
+  assert.match(bar, /icon: "wand"/);
+  assert.match(bar, /colorBg: Style\.capsuleColor/);
+  assert.match(bar, /colorFg: Color\.mOnSurface/);
+  assert.match(bar, /colorBgHover: Color\.mHover/);
+  assert.match(bar, /colorFgHover: Color\.mOnHover/);
+  assert.match(bar, /colorBorder: "transparent"/);
+  assert.match(bar, /colorBorderHover: "transparent"/);
+  assert.match(bar, /border\.color: Style\.capsuleBorderColor/);
+  assert.match(bar, /border\.width: Style\.capsuleBorderWidth/);
+  assert.match(bar, /tooltipDirection: BarService\.getTooltipDirection\(screen\?\.name\)/);
 });
 
 test('panel Connections use explicit signal handlers accepted by current QML', () => {
