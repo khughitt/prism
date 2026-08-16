@@ -29,10 +29,9 @@ fixes that path only if the visible effect does not track the slider.
 - Keep every existing visible parameter available in collapsed, semantic
   advanced sections.
 - Show concise, always-visible help for each control.
-- Use Noctalia's native components and theme rather than a Prism-specific
-  visual system.
-- Make glass sliders visibly track pointer drags at the existing roughly
-  10 Hz sample rate.
+- Compose Noctalia's native controls and theme rather than introducing a
+  Prism-specific visual system.
+- Make glass sliders visibly track pointer drags before release.
 - Use `Reset` consistently for returning values to their definitions.
 - Make the bar widget look like its neighboring small monochrome icons.
 
@@ -62,18 +61,37 @@ ui:
 
 - `ui.label` is the human-facing control name.
 - `ui.group` is a human-facing semantic section, no longer backend ownership.
-- `ui.order` is a unique integer across visible definitions. Sorting visible
-  parameters by this number determines both section order and control order.
+- `ui.order` is a unique integer across visible definitions.
 - `ui.control` and `ui.step` keep their current meanings.
 
 Every definition whose control is not `none` must have a non-empty label and
 a unique integer order. Definition loading fails early when either condition
 is violated. Hidden definitions do not need `ui.label` or `ui.order`.
 
+`validateDef` checks one definition's label and integer order. `loadDefs`
+checks order uniqueness after every definition file has loaded, because that
+constraint crosses files. The presentation sort is explicit:
+
+1. `Quick` is rendered first regardless of its numeric orders.
+2. Advanced sections are ordered by their lowest member order.
+3. Controls within a section are ordered by their own order.
+
+Orders from different advanced sections may interleave; the minimum-member
+rule makes that case unambiguous, so contiguity is not a validation
+requirement.
+
 `Quick` is the one conventional group name understood by the panel. It is
-rendered directly and always open. Every other group uses Noctalia's native
-`NCollapsible` and starts collapsed. The panel is recreated when opened, so
-expanded state is deliberately not persisted.
+rendered directly and always open. Every other group starts collapsed behind
+a quiet inline header composed from Noctalia's `NIcon`, `NText`, and
+`NIconButton` primitives. The shipped `NCollapsible` is deliberately not
+used: its private saturated header cannot expose the agreed Reset action or
+modified count.
+
+The panel root holds an `expandedGroups` map keyed by group name. A refresh
+may replace `root.groups` and recreate every delegate, but each rebuilt
+section restores its state from that map. Closing the panel destroys the
+root and therefore discards the map, so all advanced sections start
+collapsed on the next open without persisted settings.
 
 The `describe` response shape changes additively: its existing `ui` object
 carries the new fields without changing the top-level shape or write
@@ -115,46 +133,73 @@ The existing panel header, scroll container, and error banner remain. Inside
 the scroll area:
 
 1. Quick renders in a simple themed surface with six controls.
-2. Advanced groups render below it as native collapsibles.
+2. Advanced groups render below it behind quiet, theme-native headers.
 3. Closing and reopening the panel returns all advanced groups to collapsed.
 
-Each parameter row has:
+`NValueSlider`, `NToggle`, and `NComboBox` receive `ui.label`, `description`,
+and `defaultValue` through their native properties, including their native
+modified indicator. `NColorPicker` is the only control wrapped in an
+`NLabel`, because it does not expose those properties.
 
-- a human label;
-- its existing definition description as a concise, always-visible line;
-- the existing slider, toggle, select, or color control;
-- a small, borderless Reset icon only when modified, with tooltip
-  `Reset to default`; and
-- a quiet `on release` hint only when `effectiveLiveness` is not `live`.
+Modified sliders set `showReset: true`, using `NValueSlider`'s compact native
+Reset button. That button emits `moved(defaultValue)`, so Prism sends a normal
+`set`; the CLI already deletes an override when its value equals the default,
+making this contract-equivalent to `unset`. Toggles, selects, and colors keep
+a small Reset icon that calls `unset`, since their native controls have no
+Reset action.
+
+Each control also shows a quiet `on release` hint when its effective
+liveness is `reload` or `restart`. A fully live control shows no hint. An
+unbound control (`effectiveLiveness === null`) is disabled and labeled
+`unavailable`; it is not misrepresented as merely slow.
 
 Fully live parameters have no badge. The implementation terms `live`,
 `reload`, sink names, and backend group names are not shown. Numeric values
 are formatted to the precision implied by `ui.step`, so values such as
 `2.2199999999999998` display as `2.22`.
 
-Modified labels and counts use Noctalia's normal accent color. Collapsed
-headers show a subtle modified count and a small Reset-section action only
-when the section contains modified values. The selected glass tint is the
-only parameter-specific color accent; the rest of the panel uses Noctalia's
-surface, text, outline, error, and accent colors.
+Two shipped steps are corrected in the same change so the slider can reach
+and display its own default:
 
-All Reset actions continue to call `prism unset` through the existing FIFO
-queue. Resetting a section enqueues one unset for each modified member; no
-special bulk command is added.
+- `glass.springEpsilon`: `0.01` -> `0.000001`
+- `glass.attenuationDistance`: `100` -> `1`
+
+Native control indicators and section modified counts use Noctalia's normal
+accent color. The quiet section header exposes a small Reset-section action
+only when the section contains modified values. The selected glass tint is
+the only parameter-specific color accent; the rest of the panel uses
+Noctalia's surface, text, outline, error, and accent colors.
+
+Resetting a section enqueues one `unset` for each modified member through the
+existing FIFO queue; no special bulk command is added.
 
 ## Bar widget
 
-The bar entry point keeps `NIconButton` and follows the same native capsule
-configuration as the installed Noctalia plugin widgets:
+The bar entry point keeps `NIconButton` and copies the installed
+`keybind-cheatsheet` capsule contract exactly:
 
-- `baseSize` comes from the screen's capsule height;
-- UI scaling is not applied twice;
-- background, border, hover, and tooltip direction use the bar's style;
-- foreground is `Color.mOnSurface`; and
-- the icon changes from `palette` to the monochrome `wand` glyph.
+- `baseSize: Style.getCapsuleHeightForScreen(screen?.name)`
+- `applyUiScale: false`
+- `customRadius: Style.radiusL`
+- `colorBg: Style.capsuleColor`
+- `colorFg: Color.mOnSurface`
+- `colorBgHover: Color.mHover`
+- `colorFgHover: Color.mOnHover`
+- `colorBorder: "transparent"`
+- `colorBorderHover: "transparent"`
+- `border.color: Style.capsuleBorderColor`
+- `border.width: Style.capsuleBorderWidth`
+- `tooltipDirection: BarService.getTooltipDirection(screen?.name)`
 
-This removes the oversized blue circular appearance while preserving the
-bar's normal hit target, hover behavior, and panel toggle API.
+`BarService` requires the `qs.Services.UI` import. The icon changes from
+`palette` to the monochrome `wand` glyph.
+
+The current mismatch is not the common rounded shape. On this bar,
+`showCapsule: false` makes the native capsule color transparent, while Prism
+currently uses `NIconButton`'s filled surface-variant background, outline,
+primary foreground, default size, and double UI scaling. Matching the native
+contract removes those conspicuous differences while preserving the normal
+hit target, hover behavior, and panel toggle API.
 
 ## Live glass behavior
 
@@ -162,7 +207,7 @@ The current data path is the intended real-time mechanism:
 
 ```text
 pointer drag
-  -> at most one sample each 100 ms
+  -> sample gate opens at most once each 100 ms
   -> serialized `prism set`
   -> atomic values/resolved update
   -> atomic niri-glass JSON replacement
@@ -175,20 +220,28 @@ samples while pressed and sends one ordinary final write on release. The
 sample marker affects queue coalescing only; it does not create a different
 CLI command. Toggle and accepted-color changes are discrete writes.
 
+The two terminal-background opacity parameters are also live through
+kitty's socket adapter and follow the same pointer-sampling contract.
+
 Parameters with reload or mixed bindings are not sampled during pointer
 drag. They show `on release` and write once on release, retaining Prism's
 no-partial-drift contract. `compositor.gaps`, for example, must not move the
 glass panes ahead of the compositor gaps.
 
-Acceptance requires visible tracking before pointer release, not merely a
-changing generated file. If that fails, diagnosis follows the existing path
-from QML signal through FileView reload. No parallel state channel is added.
+The 100 ms gate is an upper bound, not a promised observed rate: each sample
+still spawns and serializes a complete `prism set`, so slow writes reduce the
+frequency. Acceptance requires visible tracking before pointer release, not
+merely a changing generated file or a measured 10 Hz rate. If that fails,
+diagnosis follows the existing path from QML signal through FileView reload.
+No parallel state channel is added.
 
 ## Errors and write lifecycle
 
 The persistent `PrismClient`, serialized FIFO queue, sample coalescing,
 release ordering, refresh coalescing, and pending keyboard/wheel flush remain
-unchanged. Collapsing a section must not discard a pending write.
+unchanged. Replacing the described model must preserve the panel root's
+expanded-group map, and collapsing a section must not discard a pending
+write.
 
 CLI failures continue to appear in the existing error banner. Presentation
 errors fail at definition load time rather than silently placing a control in
@@ -199,30 +252,50 @@ an arbitrary section.
 Automated checks cover:
 
 - visible definitions require a label and unique integer order;
+- the cross-file duplicate-order check runs in `loadDefs`, while per-def
+  label/type checks remain in `validateDef`;
 - shipped definitions produce the exact six Quick keys and all remaining
   visible keys exactly once;
 - sorting produces the specified section and control order;
 - numeric formatting follows slider step precision;
+- every inline YAML fixture passed through `loadDefs` gains valid label/order
+  metadata before the error it intends to exercise, so validation tests
+  retain their original targets; direct `Map` fixtures for resolver/value
+  unit tests do not cross this loading boundary and remain minimal;
 - Reset still routes through the existing client/queue contract;
+- refreshing after a write preserves expanded sections within the current
+  panel instance;
+- Panel.qml's source-contract tests are re-anchored to the new delegates while
+  retaining their sample-refresh, keyboard/wheel, release, and destruction-
+  flush assertions;
 - the bar widget uses the native capsule properties and `wand`; and
 - QML lint plus the complete Node suite remain clean.
+
+Manual acceptance must load the code under test. Before restarting Noctalia,
+temporarily point its Prism plugin link at this worktree's
+`integrations/noctalia-plugin`, or run acceptance after the branch has merged
+and the permanent link resolves to that merge. Restore the permanent target
+if acceptance aborts.
 
 Manual acceptance covers:
 
 1. Open Prism: Quick is immediately visible and every advanced section is
    collapsed.
 2. Expand sections, close the panel, and reopen it: they are collapsed again.
-3. Drag several glass sliders: the visible panes track continuously at about
-   10 Hz, without waiting for release; the final displayed and stored values
-   agree.
-4. Drag Window spacing: nothing applies mid-drag; compositor gaps and glass
+3. Expand a section and change a value: the post-write refresh leaves that
+   section open for the rest of the current panel session.
+4. Drag several glass sliders: the visible panes track before release; the
+   final displayed and stored values agree.
+5. Drag the two terminal-background opacity sliders: kitty tracks before
+   release and the final focused/unfocused values agree with Prism.
+6. Drag Window spacing: nothing applies mid-drag; compositor gaps and glass
    panes move together on release.
-5. Use parameter and section Reset actions: defaults return, modified accents
+7. Use parameter and section Reset actions: defaults return, modified accents
    and counts clear, and no queued unset is lost.
-6. Exercise a failing sink: the error banner remains visible and the panel
+8. Exercise a failing sink: the error banner remains visible and the panel
    remains usable.
-7. Compare the bar beside neighboring widgets: `wand` is monochrome, capsule
-   sized, and has no conspicuous blue circular treatment.
+9. Compare the bar beside neighboring widgets: `wand` is monochrome and its
+   size, foreground, background, border, and hover treatment match them.
 
 ## Documentation impact
 
@@ -230,3 +303,6 @@ When implementation lands, update the v1 visual-bus design and plan where
 they still describe backend-named groups, visible liveness badges, or an open
 manual live-glass panel contract. Their status headers and checkboxes must be
 corrected only after the corresponding tree and manual evidence exist.
+Update `docs/notes/noctalia-plugin-contract.md` with the verified capsule
+properties, quiet section composition, and the reason `NCollapsible` is not
+used.
