@@ -1,7 +1,7 @@
 # Prism panel repair and isolated glass preview
 
 **Date:** 2026-08-16
-**Status:** Draft — awaiting written review
+**Status:** Approved — ready for implementation planning
 
 ## Context
 
@@ -127,12 +127,15 @@ Add one definition:
 
 The niri-glass manifest binds it as `live`, and the generated JSON contains
 `enabled`. `Title` joins `Quick` as a presentation convention understood by
-the grouping helper: `Title` is routed to the title row, `Quick` remains the
-six-control always-open body, and every other group remains collapsible. The
-shipped definitions must contain exactly one `Title` member and it must be a
-toggle. QML renders the routed definition and never names `glass.enabled`.
-This section supersedes the earlier streamlined-panel statement that `Quick`
-was the only conventional group.
+the presentation helper: `titleParam(params)` extracts the single `Title`
+member, while `groupParams(params)` excludes `Title` and retains its existing
+body-group result with `Quick` first. The body-group array and its 32-control
+coverage therefore stay unchanged; the extracted title toggle plus the body
+cover all 33 visible controls exactly once. The shipped definitions must
+contain exactly one `Title` member and it must be a toggle. QML renders the
+routed definition and never names `glass.enabled`. This section supersedes
+the earlier streamlined-panel statement that `Quick` was the only
+conventional group.
 
 The closed niri-glass schema makes the cross-repository landing order
 load-bearing:
@@ -232,10 +235,12 @@ non-zero exits through the existing error banner, and ensures a final
 Preview queue items have explicit `preview-show` and `preview-hide` command
 shapes in `Queue.argvFor`; they cannot fall through to the `prism set`
 default. `Queue.affectsParams(item)` distinguishes ordinary parameter writes
-from samples and preview calls. `PrismClient` remembers whether any item in a
-batch affects parameters and runs one `describe` when that batch drains.
-Preview-only batches do not refresh or rebuild delegates, while a parameter
-write followed by a preview command still receives its required refresh.
+from preview calls. `PrismClient` remembers whether any item in a batch
+affects parameters and refreshes at drain only when that flag is true **and**
+the last completed item is not a sample. Thus preview-only and sample-only
+batches do not refresh; a parameter write followed by Preview does refresh;
+and `[final, sample]` defers refresh to the active drag's later release rather
+than destroying its pressed delegate.
 
 When Preview is enabled, the panel compares its global center with its
 screen geometry's global center and asks niri-glass to anchor on the opposite
@@ -273,10 +278,12 @@ nor the generated configuration embeds that location.
 
 `dotfiles-health` gains an exact check that the consumer path exists and
 resolves to the generated file, plus an exact check that the named Quickshell
-config resolves to the niri-glass source directory. `prism doctor` continues
-to validate Prism's generated target and sink snapshots; it does not claim
-ownership of external config-path wiring. Documentation must distinguish
-those two health boundaries.
+config resolves to the niri-glass source directory. It also fails if
+`$XDG_CONFIG_HOME/quickshell/shell.qml` exists, because Quickshell then treats
+that root file as the default configuration and does not discover named
+subdirectories. `prism doctor` continues to validate Prism's generated target
+and sink snapshots; it does not claim ownership of external config-path
+wiring. Documentation must distinguish those two health boundaries.
 
 The live repair preserves the current host `values.yaml`, including
 experimental geometry values. Tests snapshot and restore it atomically. No
@@ -329,8 +336,9 @@ the problem with arbitrary new presets.
 - Persistent parameter writes retain the existing FIFO, sample coalescing,
   error banner, and authoritative refresh.
 - Preview calls are discrete and ordered; close-time `hidePreview` is last.
-- Preview-only queue drains do not run `describe`; mixed drains still refresh
-  once when any ordinary parameter write completed.
+- A drained batch runs `describe` only if it contained a parameter-affecting
+  write and its last completed item was not a sample. This preserves both
+  mixed preview refreshes and an active second drag.
 - A preview IPC failure leaves the persistent settings usable and displays
   the existing banner.
 - Closing the panel never writes Preview or Diagnostic background into
@@ -346,17 +354,21 @@ the problem with arbitrary new presets.
 - `test/glass-defs.test.js` proves the new QML default, seed key, and Prism
   default agree.
 - Shipped presentation tests retain exactly six Quick controls, route one
-  toggle through `Title`, and cover all 33 visible controls exactly once.
+  toggle through `titleParam`, keep `Title` out of `groupParams`, retain the
+  existing body-group order and 32-control coverage, and cover all 33 visible
+  controls exactly once across both results.
 - Panel source-contract tests cover removal of the visible `Quick` heading,
   compact type sizes, control-row Reset alignment, local optimistic values,
   and close-time preview cleanup.
 - Queue/client tests prove preview commands have explicit argv shapes, do not
   trigger preview-only refreshes, preserve a required mixed-batch refresh,
-  remain ordered, and never drop the final hide.
+  suppress refresh for `[final, sample]`, remain ordered, and never drop the
+  final hide.
 - niri-glass tests cover IPC validation/idempotency, opposite-side selection,
   background selection, shared material use, and `enabled` behavior.
 - Dotfiles health tests fail for a missing, dangling, or wrong consumer link
-  or named Quickshell config link.
+  or named Quickshell config link, and for a root
+  `quickshell/shell.qml` that disables named-config discovery.
 - Node suites, Qt 6 `qmllint`, niri-glass tests, `prism doctor`,
   `dotfiles-health`, shell syntax, and diff checks pass.
 
