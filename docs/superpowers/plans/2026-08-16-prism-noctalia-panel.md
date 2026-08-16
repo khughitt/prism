@@ -6,7 +6,7 @@
 
 **Architecture:** Definitions own labels, groups, order, and slider steps; manifests own sink-cost drag overrides; `describe` aggregates both into a consumer-ready model. A small import-free presentation module is shared by QML and Node tests, while the existing persistent client and FIFO write queue remain unchanged.
 
-**Tech Stack:** Node.js ESM, YAML definitions/manifests, Qt Quick/QML, Noctalia 5.x components, `node:test`, `qmllint`.
+**Tech Stack:** Node.js ESM, YAML definitions/manifests, Qt Quick/QML, Noctalia 5.x components, `node:test`, Qt 6 `qmllint`.
 
 ## Global Constraints
 
@@ -16,6 +16,7 @@
 - Keep `bindings[]` public entries exactly `{sink, liveness}` and retain `effectiveLiveness`; append `effectiveDrag` immediately after it.
 - Quantize only panel slider writes. Direct `prism set` input remains exact.
 - QML-shared JavaScript must be import-free and QV4-compatible: no object spread.
+- Run `/usr/lib/qt6/bin/qmllint`, not bare `qmllint` (which is Qt 5 on this host and cannot parse optional chaining). Noctalia ships no `qmldir` metadata, so unresolved `qs.*` import/type/unqualified warnings are expected; the lint gate is exit code 0, which still rejects Qt 6 syntax errors.
 - Use named-path staging and conventional commits. Do not stage unrelated files.
 - Do not write machine-specific absolute paths into code or documentation.
 
@@ -606,11 +607,11 @@ Run:
 
 ```bash
 node --test test/plugin-client.test.js test/plugin-presentation.test.js
-qmllint integrations/noctalia-plugin/Main.qml integrations/noctalia-plugin/PrismClient.qml integrations/noctalia-plugin/Panel.qml integrations/noctalia-plugin/ParamControl.qml integrations/noctalia-plugin/BarWidget.qml
+/usr/lib/qt6/bin/qmllint integrations/noctalia-plugin/Main.qml integrations/noctalia-plugin/PrismClient.qml integrations/noctalia-plugin/Panel.qml integrations/noctalia-plugin/ParamControl.qml integrations/noctalia-plugin/BarWidget.qml
 npm test
 ```
 
-Expected: all Node tests pass and `qmllint` exits 0.
+Expected: all Node tests pass and Qt 6 `qmllint` exits 0; the documented unresolved-`qs.*` warnings are expected.
 
 - [ ] **Step 6: Commit**
 
@@ -677,11 +678,11 @@ Run:
 
 ```bash
 node --test test/plugin-client.test.js
-qmllint integrations/noctalia-plugin/BarWidget.qml
+/usr/lib/qt6/bin/qmllint integrations/noctalia-plugin/BarWidget.qml
 npm test
 ```
 
-Expected: all tests pass and `qmllint` exits 0.
+Expected: all tests pass and Qt 6 `qmllint` exits 0; the documented unresolved-`qs.*` warnings are expected.
 
 - [ ] **Step 5: Commit**
 
@@ -723,7 +724,7 @@ Run the automated gates:
 
 ```bash
 npm test
-qmllint integrations/noctalia-plugin/Main.qml integrations/noctalia-plugin/PrismClient.qml integrations/noctalia-plugin/Panel.qml integrations/noctalia-plugin/ParamControl.qml integrations/noctalia-plugin/BarWidget.qml
+/usr/lib/qt6/bin/qmllint integrations/noctalia-plugin/Main.qml integrations/noctalia-plugin/PrismClient.qml integrations/noctalia-plugin/Panel.qml integrations/noctalia-plugin/ParamControl.qml integrations/noctalia-plugin/BarWidget.qml
 ```
 
 Expected: the `jq` predicate succeeds, all Node tests pass, and QML lint exits 0.
@@ -874,7 +875,7 @@ Run:
 
 ```bash
 npm test
-qmllint integrations/noctalia-plugin/Main.qml integrations/noctalia-plugin/PrismClient.qml integrations/noctalia-plugin/Panel.qml integrations/noctalia-plugin/ParamControl.qml integrations/noctalia-plugin/BarWidget.qml
+/usr/lib/qt6/bin/qmllint integrations/noctalia-plugin/Main.qml integrations/noctalia-plugin/PrismClient.qml integrations/noctalia-plugin/Panel.qml integrations/noctalia-plugin/ParamControl.qml integrations/noctalia-plugin/BarWidget.qml
 bin/prism doctor
 git diff --check
 git status --short
