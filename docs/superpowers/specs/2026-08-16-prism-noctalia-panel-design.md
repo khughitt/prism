@@ -1,6 +1,6 @@
 # Prism Noctalia panel design
 
-**Status:** Draft — interaction design approved; written-spec review pending
+**Status:** Approved — ready for implementation planning
 
 **Date:** 2026-08-16
 
@@ -125,6 +125,13 @@ valid only on a live binding; any other value or redundant override fails in
 - `release` when any binding is reload/restart or declares `drag: release`;
 - `live` only when every binding is live and none overrides drag.
 
+The raw `bindings[]` output remains `{sink, liveness}`; `drag` stays private
+to aggregation because consumers need the resulting interaction, not an
+adapter policy detail. `effectiveLiveness` is retained as the distinct sink-
+capability fact even though the revised panel does not render it.
+`effectiveDrag` is appended immediately after `effectiveLiveness` in each
+parameter object's literal key order.
+
 The two kitty opacity bindings declare `drag: release`. The other 26 shipped
 sliders need no extra field: their existing bindings already determine the
 right policy. This keeps adapter cost beside the adapter; a future cheaper
@@ -202,6 +209,10 @@ through one shared panel helper that quantizes the numeric value to
 `20.000000000000004` becomes `20`, so the CLI's exact default comparison
 deletes the override instead of storing float noise. The queue and CLI remain
 unchanged because they receive the already-quantized value.
+
+This guarantee is scoped to panel writes. A person who explicitly runs
+`prism set glass.thickness 20.000000000000004` still stores that exact
+in-range value; the CLI does not silently reinterpret shell input.
 
 Grouping/sorting, step precision, quantization, and display formatting live
 in one small import-free `presentation.mjs`, following the existing
@@ -333,6 +344,9 @@ Automated checks cover:
 - manifest bindings accept only the optional live-binding
   `drag: release` override, and `describe` aggregates exact `effectiveDrag`
   values for glass, kitty opacity, mixed gaps, and unbound fixtures;
+- `test/cli.test.js`'s exact ordered describe-key assertion adds
+  `effectiveDrag` immediately after retained `effectiveLiveness`, while its
+  `bindings[]` expectation remains `{sink, liveness}`;
 - shipped definitions produce the exact six Quick keys and all remaining
   visible keys exactly once;
 - sorting produces the specified section and control order;
@@ -392,6 +406,11 @@ capability from aggregated pointer-drag behavior: kitty remains live-capable
 but its two binding overrides make those opacity sliders release-only. Their
 status headers and checkboxes must be corrected only after the corresponding
 tree and manual evidence exist.
+
+The literal describe contract in
+`docs/superpowers/plans/2026-08-15-prism-v1.md:1070` must add
+`effectiveDrag` after `effectiveLiveness` while retaining
+`bindings: [{sink, liveness}]`.
 
 Update `docs/notes/noctalia-plugin-contract.md` with the verified capsule
 properties, quiet section composition, the reason `NCollapsible` is not used,
