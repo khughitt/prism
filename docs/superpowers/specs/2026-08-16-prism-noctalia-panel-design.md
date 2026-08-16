@@ -371,9 +371,10 @@ Automated checks cover:
 
 Manual acceptance must load the code under test. Before restarting Noctalia,
 temporarily point its Prism plugin link at this worktree's
-`integrations/noctalia-plugin`, or run acceptance after the branch has merged
-and the permanent link resolves to that merge. Restore the permanent target
-if acceptance aborts.
+`integrations/noctalia-plugin` and launch Noctalia with this worktree's
+`bin/prism` first on `PATH`, or run acceptance after the branch has merged and
+both permanent paths resolve to that merge. Restore the permanent plugin
+target and ordinary launch environment if acceptance aborts.
 
 Manual acceptance covers:
 
@@ -392,8 +393,10 @@ Manual acceptance covers:
    panes move together on release.
 7. Use parameter and section Reset actions: defaults return, modified accents
    and counts clear, and no queued unset is lost.
-8. Exercise a failing sink: the error banner remains visible and the panel
-   remains usable.
+8. Temporarily hide the test-only `prism` executable and attempt a write: the
+   error banner remains visible and the panel remains usable. Restore the
+   executable and retry the write to prove recovery without disturbing a
+   live sink.
 9. Compare the bar beside neighboring widgets: `wand` is monochrome and its
    size, foreground, background, border, and hover treatment match them.
 
