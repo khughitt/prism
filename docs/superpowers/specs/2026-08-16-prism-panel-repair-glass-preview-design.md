@@ -89,7 +89,10 @@ or color value. An extra-small `on release` or `unavailable` hint sits at the
 trailing edge of that control row immediately before Reset, so the hint stays
 attached to the interaction it qualifies. The icon remains smaller and
 lower-contrast than the primary control. Section Reset remains in the
-advanced-section header.
+advanced-section header. Because Prism owns the row labels, native control
+labels and `defaultValue` indicators are disabled deliberately; the Reset icon
+is the sole per-parameter modified marker, while the header count remains the
+section-level marker.
 
 ## 2. Optimistic control state
 
@@ -111,7 +114,10 @@ The post-write `describe` response remains authoritative. Delegate refresh
 reconciles the local value, `modified` state, and Reset visibility with the
 stored result. A failed write keeps the existing banner behavior and the
 following refresh rolls the optimistic value back. The CLI does not adopt
-optimistic or quantizing behavior.
+optimistic or quantizing behavior. Reassigning `root.groups` after `describe`
+is load-bearing: it recreates delegates and restores the `displayedValue`
+binding. Any future in-place model update must add explicit reconciliation
+before removing that assignment.
 
 ## 3. Persistent glass enablement
 
@@ -254,7 +260,10 @@ the panel starts from Preview off; restarting niri-glass also starts hidden.
 The Preview and Diagnostic-background toggles form the first compact row in
 the existing Diagnostics section. Diagnostic background is visible/enabled
 only while Preview is active. Preview state does not affect modified counts
-or Reset actions.
+or Reset actions. `Diagnostics` is the third and final presentation convention:
+the panel inserts these transient controls before that group's parameter
+repeater. Unlike `Title`, it remains a normal body group returned by
+`groupParams`.
 
 ## 5. Generated-file repair and health
 
@@ -357,11 +366,13 @@ the problem with arbitrary new presets.
   default agree.
 - Shipped presentation tests retain exactly six Quick controls, route one
   toggle through `titleParam`, keep `Title` out of `groupParams`, retain the
-  existing body-group order and 32-control coverage, and cover all 33 visible
-  controls exactly once across both results.
+  existing body-group order including the conventional `Diagnostics` group
+  and 32-control coverage, and cover all 33 visible controls exactly once
+  across both results.
 - Panel source-contract tests cover removal of the visible `Quick` heading,
-  compact type sizes, control-row Reset alignment, local optimistic values,
-  and close-time preview cleanup.
+  compact type sizes, control-row Reset alignment, the absence of inert native
+  `defaultValue` configuration, local optimistic values, the load-bearing
+  delegate rebuild, and close-time preview cleanup.
 - Queue/client tests prove preview commands have explicit argv shapes, do not
   trigger preview-only refreshes, preserve a required mixed-batch refresh,
   suppress refresh for `[final, sample]`, remain ordered, and never drop the

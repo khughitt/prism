@@ -138,6 +138,9 @@ node --test test/glass-defs.test.js
 ```
 
 Expected: FAIL with `missing def glass.enabled`. This proves the fixture is enforcing the cross-repository schema boundary.
+The focused command reports that intended failure; running the full suite at
+this intermediate point also makes `test/niri-glass-render.test.js` fail its
+closed rendered-key-set assertion until Step 3 lands.
 
 - [ ] **Step 2: Add failing title-routing and rendered-output assertions**
 
@@ -312,6 +315,10 @@ test('hint and reset share the trailing edge of the control row', () => {
   assert.match(row.slice(hintAt, resetAt), /pointSize: Style\.fontSizeXS/);
   assert.match(row.slice(resetAt), /baseSize: Style\.baseWidgetSize \* 0\.6/);
 });
+
+test('Prism owns the sole per-parameter modified indicator', () => {
+  assert.doesNotMatch(control, /defaultValue:/);
+});
 ```
 
 Adjust the existing grouping assertion to require both assignments:
@@ -320,6 +327,11 @@ Adjust the existing grouping assertion to require both assignments:
 assert.match(panel, /root\.titleSetting = Presentation\.titleParam\(model\.params\)/);
 assert.match(panel, /root\.groups = Presentation\.groupParams\(model\.params\)/);
 ```
+
+The second assertion is load-bearing for optimistic reconciliation: replacing
+the group model recreates delegates and restores each `displayedValue` binding.
+An in-place update must add explicit reconciliation before this assertion can
+be relaxed.
 
 - [ ] **Step 2: Run the focused tests and verify RED**
 
@@ -413,6 +425,11 @@ NText {
 ```
 
 Place all four mutually exclusive native controls in one `RowLayout { id: controlRow }`. Set every native `label` and `description` to `""`. Use these value bindings and handlers:
+
+Remove every native `defaultValue` assignment as well. With Prism-owned labels,
+the native label indicator is absent intentionally; the trailing Reset icon is
+the sole per-parameter modified marker, and the section count remains the
+group-level marker.
 
 ```qml
 NValueSlider {
@@ -1032,6 +1049,10 @@ test('preview opens opposite the panel', () => {
 
 Inside the expanded Diagnostics content, before its parameter `Repeater`, add one compact row visible only for that group:
 
+`Diagnostics` is the third and final presentation convention alongside
+`Title` and `Quick`. It remains a normal body group; QML uses its conventional
+name only to insert these transient controls before its parameter repeater.
+
 ```qml
 RowLayout {
   visible: groupSurface.modelData.name === "Diagnostics"
@@ -1063,6 +1084,12 @@ RowLayout {
 ```
 
 Preview toggles never enter modified counts or Reset lists because they are not definition parameters.
+
+Extend the panel source-contract test to assert the declared convention:
+
+```js
+assert.match(panel, /modelData\.name === "Diagnostics"/);
+```
 
 - [ ] **Step 7: Verify and commit**
 
@@ -1419,7 +1446,9 @@ PATH="$prism_test_bin:$PATH" "$HOME/d/dotfiles/bin/dotfiles-health" --skip-syste
 
 Required evidence:
 
-1. niri-glass is running from the named config and logs no missing `niri-glass.json` warning after restart.
+1. `qs list --all` shows exactly one niri-glass instance, running from the
+   named config, and its log has no missing `niri-glass.json` warning after
+   restart.
 2. The consumer and generated path resolve to the same device/inode.
 3. The event stream populates panes on a workspace containing a configured terminal.
 4. Wallpaper IPC returns a non-empty current path.
@@ -1432,7 +1461,8 @@ If any item fails, stop at that first broken link, add one focused regression in
 Record pass/fail for each item:
 
 1. The title shows a compact definition-driven Glass switch; no Quick heading is visible; all six basic controls fit comfortably.
-2. Slider, toggle, select, and color values change locally without waiting for `describe`, then reconcile to the stored value.
+2. Every shipped control type (slider, toggle, and color) changes locally
+   without waiting for `describe`, then reconciles to the stored value.
 3. Reset icons align with the control/value line; hints sit immediately before Reset; modified indicators clear after reset.
 4. Disable Glass, close/reopen the panel, and restart Noctalia: the normal layer stays disabled. Re-enable it and confirm immediate return.
 5. Expand Diagnostics and enable Preview: one bounded surface appears opposite the panel on the same output, does not take focus, and passes pointer input through.
