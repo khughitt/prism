@@ -48,7 +48,7 @@ fixes that path only if the visible effect does not track the slider.
 ## Definition-driven presentation contract
 
 The panel continues to render `prism describe --json`; it does not contain a
-list of Prism parameter keys. Existing `ui` metadata gains three fields:
+list of Prism parameter keys. Existing `ui` metadata gains two fields:
 
 ```yaml
 ui:
@@ -57,21 +57,16 @@ ui:
   order: 10
   control: slider
   step: 0.01
-  drag: release
 ```
 
 - `ui.label` is the human-facing control name.
 - `ui.group` is a human-facing semantic section, no longer backend ownership.
 - `ui.order` is a unique integer across visible definitions.
 - `ui.control` and `ui.step` keep their current meanings.
-- `ui.drag` is required for sliders and is either `live` or `release`.
-  Pointer sampling occurs only when it is `live` and every sink binding is
-  live. Other control types do not declare it.
 
 Every definition whose control is not `none` must have a non-empty label and
 a unique integer order. Definition loading fails early when either condition
-is violated. A slider must also have a valid drag mode. Hidden definitions do
-not need `ui.label` or `ui.order`.
+is violated. Hidden definitions do not need `ui.label` or `ui.order`.
 
 `validateDef` checks one definition's label and integer order. `loadDefs`
 checks order uniqueness after every definition file has loaded, because that
@@ -109,6 +104,32 @@ not preserved as backend names; the Noctalia panel is their only current
 consumer. A future integration can place a new control by declaring its
 label, group, and order; QML still does not need to know the parameter key or
 sink.
+
+### Pointer-drag policy
+
+Pointer sampling is a sink-cost policy, not definition metadata. A manifest
+binding may add one override:
+
+```yaml
+- {param: terminal.background.opacity.active, liveness: live, drag: release}
+```
+
+Absent `drag`, a live binding permits pointer sampling while a reload or
+restart binding requires release. The only explicit override is `release`,
+valid only on a live binding; any other value or redundant override fails in
+`loadManifests`, the boundary that owns both fields.
+
+`describe` aggregates bindings into `effectiveDrag`:
+
+- `null` when a parameter is unbound;
+- `release` when any binding is reload/restart or declares `drag: release`;
+- `live` only when every binding is live and none overrides drag.
+
+The two kitty opacity bindings declare `drag: release`. The other 26 shipped
+sliders need no extra field: their existing bindings already determine the
+right policy. This keeps adapter cost beside the adapter; a future cheaper
+kitty implementation removes the two manifest overrides without changing
+the terminal definitions.
 
 ## Information architecture
 
@@ -157,21 +178,42 @@ parameter is modified, with tooltip `Reset to default`. It calls `unset`.
 geometry and routes through `moved`, so mixing it with the other controls
 would make Reset inconsistent.
 
-Each slider also shows a quiet `on release` hint when `ui.drag` is `release`
-or any binding is not live. A fully live-drag slider shows no hint. An
-unbound control (`effectiveLiveness === null`) is disabled and labeled
+Each slider shows a quiet `on release` hint when `effectiveDrag` is
+`release`. A live-drag slider shows no hint. An unbound control
+(`effectiveDrag === null`) is disabled and labeled
 `unavailable`; it is not misrepresented as merely slow. The implementation
 terms `live`, `reload`, sink names, and backend group names are not shown.
+
+Quick deliberately contains three muted `on release` hints—both terminal
+opacity controls and Window spacing. That is acceptable in the six-row calm
+default because it explains real interaction timing without exposing backend
+terms; hiding it would make half the section appear broken during drag.
 
 Numeric values are rounded to the precision implied by `ui.step`, then
 trailing fractional zeros and a trailing decimal point are removed. Thus
 `2.2199999999999998` displays as `2.22`, `0.000100` as `0.0001`, and `0.0040`
 as `0.004`.
 
+Formatting is not the correctness boundary. Every slider write—drag sample,
+pointer release, keyboard/wheel debounce, and destruction flush—first passes
+through one shared panel helper that quantizes the numeric value to
+`ui.step`'s decimal precision and returns a Number before calling
+`PrismClient.set`. For example, Qt's snapped
+`20.000000000000004` becomes `20`, so the CLI's exact default comparison
+deletes the override instead of storing float noise. The queue and CLI remain
+unchanged because they receive the already-quantized value.
+
+Grouping/sorting, step precision, quantization, and display formatting live
+in one small import-free `presentation.mjs`, following the existing
+`queue.mjs` QML/Node pattern. Panel.qml and the Node tests therefore execute
+the same formulas.
+
 Every visible numeric definition must satisfy the snapped-slider invariant:
-`(default - range[0]) / step` is an integer within floating-point tolerance.
-An automated check covers the entire shipped definition set. Six current
-steps change so every default is representable:
+for `n = (default - range[0]) / step`,
+`Math.abs(n - Math.round(n)) <= 1e-9`. `Number.isInteger(n)` is explicitly
+wrong for this check because valid decimal grids are not exact in binary
+floating point. An automated check covers the entire shipped definition set.
+Six current steps change so every default is representable:
 
 - `glass.thickness`: `2` -> `0.1`
 - `glass.attenuationDistance`: `100` -> `1`
@@ -229,7 +271,7 @@ The current data path is the intended real-time mechanism:
 
 ```text
 pointer drag
-  -> `ui.drag: live` plus fully-live sink bindings
+  -> `effectiveDrag: live`
   -> sample gate opens at most once each 100 ms
   -> serialized `prism set`
   -> atomic values/resolved update
@@ -244,21 +286,22 @@ sample marker affects queue coalescing only; it does not create a different
 CLI command. Toggle and accepted-color changes are discrete writes.
 
 The two terminal-background opacity parameters remain live-capable through
-kitty's socket adapter but declare `ui.drag: release`. Each kitty apply first
-sets every OS window to the inactive opacity, performs a `kitten ls` JSON
-round-trip, then restores the focused window to the active opacity, per
-socket. Repeating up to three kitten subprocesses per socket during drag
-would be slow and could visibly flicker the focused terminal between inactive
-and active.
+kitty's socket adapter, whose bindings declare `drag: release`. Each kitty
+apply first sets every OS window to the inactive opacity, performs a
+`kitten ls` JSON round-trip, then restores the focused window to the active
+opacity, per socket. Repeating up to three kitten subprocesses per socket
+during drag would be slow and could visibly flicker the focused terminal
+between inactive and active.
+
 The panel therefore writes both opacity sliders once per pointer release and
 labels them `on release`; keyboard/wheel input retains its ordinary debounce,
 and discrete CLI sets still use the live adapter immediately.
 
 Parameters with reload or mixed bindings are not sampled during pointer
-drag. A `ui.drag: release` override has the same interaction. Both show `on
-release` and write once on release, retaining Prism's no-partial-drift
-contract. `compositor.gaps`, for example, must not move the glass panes ahead
-of the compositor gaps.
+drag. A binding-level `drag: release` override has the same interaction. Both
+produce `effectiveDrag: release`, show `on release`, and write once on
+release, retaining Prism's no-partial-drift contract. `compositor.gaps`, for
+example, must not move the glass panes ahead of the compositor gaps.
 
 The 100 ms gate is an upper bound, not a promised observed rate: each sample
 still spawns and serializes a complete `prism set`, so slow writes reduce the
@@ -276,35 +319,39 @@ expanded-group map, and collapsing a section must not discard a pending
 write.
 
 CLI failures continue to appear in the existing error banner. Presentation
-errors fail at definition load time rather than silently placing a control in
-an arbitrary section.
+label/order errors fail in `loadDefs` rather than silently placing a control
+in an arbitrary section. Binding drag-policy errors fail in `loadManifests`,
+which owns both liveness and the optional override.
 
 ## Verification
 
 Automated checks cover:
 
 - visible definitions require a label and unique integer order;
-- slider definitions require an explicit `live` or `release` drag mode;
-- every shipped `ui.drag: live` slider has fully live sink bindings;
 - the cross-file duplicate-order check runs in `loadDefs`, while per-def
   label/type checks remain in `validateDef`;
+- manifest bindings accept only the optional live-binding
+  `drag: release` override, and `describe` aggregates exact `effectiveDrag`
+  values for glass, kitty opacity, mixed gaps, and unbound fixtures;
 - shipped definitions produce the exact six Quick keys and all remaining
   visible keys exactly once;
 - sorting produces the specified section and control order;
 - every shipped numeric default satisfies the snapped-slider invariant;
-- numeric formatting follows slider step precision and trims trailing zeros;
-- every inline YAML fixture passed through `loadDefs` gains valid
-  label/order/drag metadata before the error it intends to exercise, so
-  validation tests retain their original targets; direct `Map` fixtures for
-  resolver/value unit tests do not cross this loading boundary and remain
-  minimal;
+- the invariant uses `Math.abs(n - Math.round(n)) <= 1e-9`, not
+  `Number.isInteger`;
+- every slider write path quantizes before enqueueing, while display
+  formatting follows slider step precision and trims trailing zeros;
+- every inline YAML fixture passed through `loadDefs` gains valid label/order
+  metadata before the error it intends to exercise, so validation tests
+  retain their original targets; direct `Map` fixtures for resolver/value
+  unit tests do not cross this loading boundary and remain minimal;
 - Reset still routes through the existing client/queue contract;
 - refreshing after a write preserves expanded sections within the current
   panel instance, and the map helper reassigns rather than mutating in place;
 - Panel.qml's source-contract tests are re-anchored to the new delegates while
   retaining their sample-refresh, keyboard/wheel, release, and destruction-
-  flush assertions; they also require both `ui.drag: live` and fully live
-  bindings before pointer sampling;
+  flush assertions; they require `effectiveDrag: live` before pointer
+  sampling;
 - the bar widget uses the native capsule properties and `wand`; and
 - QML lint plus the complete Node suite remain clean.
 
@@ -341,11 +388,11 @@ Manual acceptance covers:
 When implementation lands, update the v1 visual-bus design and plan where
 they still describe backend-named groups, visible liveness badges, or an open
 manual live-glass panel contract. They must also distinguish sink liveness
-capability from the new explicit pointer-drag mode: kitty remains live-capable
-but its opacity sliders are release-only. Their status headers and checkboxes
-must be corrected only after the corresponding tree and manual evidence
-exist.
+capability from aggregated pointer-drag behavior: kitty remains live-capable
+but its two binding overrides make those opacity sliders release-only. Their
+status headers and checkboxes must be corrected only after the corresponding
+tree and manual evidence exist.
 
 Update `docs/notes/noctalia-plugin-contract.md` with the verified capsule
-properties, quiet section composition, and the reason `NCollapsible` is not
-used.
+properties, quiet section composition, the reason `NCollapsible` is not used,
+and the manifest drag override consumed by `effectiveDrag`.
