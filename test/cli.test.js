@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 process.env.PRISM_CONFIG_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-cfg-'));
 process.env.PRISM_STATE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-state-'));
@@ -25,6 +27,7 @@ process.env.PRISM_INTEGRATIONS_DIR = integ;
 
 const cli = await import('../src/cli.js');
 const { lockPath, resolvedPath, valuesPath, generatedPath } = await import('../src/paths.js');
+const prismBin = fileURLToPath(new URL('../bin/prism', import.meta.url));
 
 // Every test starts from an identical clean store and arranges what it needs.
 // Node runs a file's top-level tests sequentially, so implicit ordering
@@ -132,6 +135,20 @@ test('describe emits only the public counter-free JSON shape', async () => {
     'key', 'type', 'range', 'default', 'value', 'modified', 'ui', 'description',
     'bindings', 'effectiveLiveness',
   ]);
+});
+
+test('entrypoint flushes complete describe JSON to piped stdout', () => {
+  const reader = "let s=''; process.stdin.on('data', d => s += d); "
+    + "process.stdin.on('end', () => JSON.parse(s));";
+  const child = spawnSync('/bin/sh', [
+    '-c', '"$1" "$2" describe --json | "$1" -e "$3"',
+    'sh', process.execPath, prismBin, reader,
+  ], {
+    encoding: 'utf8',
+    env: process.env,
+  });
+
+  assert.equal(child.status, 0, child.stderr);
 });
 
 test('apply re-resolves from values.yaml alone (recovery contract)', async () => {
