@@ -13,6 +13,8 @@ Item {
   property real contentPreferredWidth: Math.round(560 * Style.uiScaleRatio)
   property real contentPreferredHeight: Math.round(760 * Style.uiScaleRatio)
   property var groups: []
+  property var titleSetting: null
+  property bool titleValue: true
   property var expandedGroups: ({})
   readonly property var client: pluginApi && pluginApi.mainInstance ? pluginApi.mainInstance.client : null
   readonly property string errorMessage: client ? client.errorMessage : ""
@@ -61,19 +63,44 @@ Item {
     target: client
 
     function onDescribed(model) {
+      root.titleSetting = Presentation.titleParam(model.params);
+      root.titleValue = root.titleSetting.value === true;
       root.groups = Presentation.groupParams(model.params);
     }
   }
 
   ColumnLayout {
     anchors.fill: parent
-    anchors.margins: Style.marginL
+    anchors.margins: Style.marginM
     spacing: Style.marginM
 
-    NText {
-      text: "Prism"
-      pointSize: Style.fontSizeXL
-      font.weight: Style.fontWeightBold
+    RowLayout {
+      Layout.fillWidth: true
+
+      NText {
+        Layout.fillWidth: true
+        text: "Prism"
+        pointSize: Style.fontSizeL
+        font.weight: Style.fontWeightBold
+      }
+
+      NText {
+        visible: root.titleSetting !== null
+        text: root.titleSetting ? root.titleSetting.ui.label : ""
+        pointSize: Style.fontSizeS
+      }
+
+      NToggle {
+        visible: root.titleSetting !== null
+        Layout.fillWidth: false
+        label: ""
+        description: ""
+        checked: root.titleValue
+        onToggled: function(checked) {
+          root.titleValue = checked;
+          root.client.set(root.titleSetting.key, checked, false);
+        }
+      }
     }
 
     Rectangle {
@@ -105,7 +132,7 @@ Item {
 
       ColumnLayout {
         width: parent.width
-        spacing: Style.marginL
+        spacing: Style.marginM
 
         Repeater {
           model: root.groups
@@ -120,7 +147,7 @@ Item {
             readonly property int modifiedCount: root.groupModifiedCount(groupParams)
 
             Layout.fillWidth: true
-            implicitHeight: groupContent.implicitHeight + (quick ? Style.marginM * 2 : 0)
+            implicitHeight: groupContent.implicitHeight + (quick ? Style.marginS * 2 : 0)
             radius: Style.radiusS
             color: quick ? Qt.alpha(Color.mSurfaceVariant, 0.45) : "transparent"
 
@@ -128,15 +155,8 @@ Item {
               id: groupContent
 
               anchors.fill: parent
-              anchors.margins: groupSurface.quick ? Style.marginM : 0
+              anchors.margins: groupSurface.quick ? Style.marginS : 0
               spacing: Style.marginM
-
-              NText {
-                visible: groupSurface.quick
-                text: "Quick"
-                pointSize: Style.fontSizeL
-                font.weight: Style.fontWeightSemiBold
-              }
 
               Rectangle {
                 id: groupHeader
@@ -195,7 +215,7 @@ Item {
               ColumnLayout {
                 visible: groupSurface.quick || groupSurface.expanded
                 Layout.fillWidth: true
-                spacing: Style.marginM
+                spacing: Style.marginS
 
                 Repeater {
                   model: groupSurface.groupParams

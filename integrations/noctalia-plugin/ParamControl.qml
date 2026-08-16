@@ -5,17 +5,18 @@ import qs.Commons
 import qs.Widgets
 import "./presentation.mjs" as Presentation
 
-RowLayout {
+ColumnLayout {
   id: root
 
   required property var param
   required property var client
   property var screen: null
+  property var displayedValue: param.value
   readonly property real stepSize: param.ui.step === undefined ? 0.01 : param.ui.step
   readonly property bool liveDrag: param.effectiveDrag === "live"
 
   enabled: param.effectiveDrag !== null
-  spacing: Style.marginM
+  spacing: Style.marginXS
 
   function sendSlider(value, sample) {
     client.set(param.key, Presentation.quantizeValue(value, stepSize), sample);
@@ -34,18 +35,29 @@ RowLayout {
     return "#" + text.slice(text.length - 6).toLowerCase();
   }
 
-  ColumnLayout {
-    Layout.fillWidth: true
-    spacing: Style.marginXS
+  NText {
+    id: parameterLabel
 
-    NText {
-      visible: root.param.effectiveDrag === null || root.param.effectiveDrag === "release"
-      Layout.alignment: Qt.AlignRight
-      text: root.param.effectiveDrag === null ? "unavailable" : "on release"
-      color: Color.mOnSurfaceVariant
-      pointSize: Style.fontSizeS
-      opacity: 0.6
-    }
+    Layout.fillWidth: true
+    text: root.param.ui.label || ""
+    pointSize: Style.fontSizeM
+    font.weight: Style.fontWeightMedium
+  }
+
+  NText {
+    id: parameterDescription
+
+    Layout.fillWidth: true
+    text: root.param.description || ""
+    pointSize: Style.fontSizeS
+    color: Color.mOnSurfaceVariant
+    elide: Text.ElideRight
+  }
+
+  RowLayout {
+    id: controlRow
+
+    Layout.fillWidth: true
 
     NValueSlider {
       id: valueSlider
@@ -54,15 +66,15 @@ RowLayout {
       Layout.fillWidth: true
       property bool pointerPressed: false
       property real pendingValue: 0
-      label: root.param.ui.label || ""
-      description: root.param.description || ""
-      defaultValue: root.param.default
+      label: ""
+      description: ""
       showReset: false
       from: root.param.range ? root.param.range[0] : 0
       to: root.param.range ? root.param.range[1] : 1
       stepSize: root.stepSize
-      value: root.param.value
-      text: Presentation.formatValue(value, stepSize)
+      value: root.displayedValue
+      text: Presentation.formatValue(root.displayedValue, root.stepSize)
+      textSize: Style.fontSizeS
 
       Component.onDestruction: {
         if (commitGate.running) {
@@ -85,6 +97,7 @@ RowLayout {
       }
 
       onMoved: function(value) {
+        root.displayedValue = value;
         if (pointerPressed) {
           if (liveDrag && !sampleGate.running) {
             sendSlider(value, true);
@@ -100,6 +113,7 @@ RowLayout {
         pointerPressed = pressed;
         commitGate.stop();
         if (!pressed) {
+          root.displayedValue = value;
           sendSlider(value, false);
         }
       }
@@ -107,50 +121,65 @@ RowLayout {
 
     NToggle {
       visible: root.param.ui.control === "toggle"
-      label: root.param.ui.label || ""
-      description: root.param.description || ""
-      defaultValue: root.param.default
-      checked: root.param.value === true
-      onToggled: checked => root.client.set(root.param.key, checked, false)
+      label: ""
+      description: ""
+      checked: root.displayedValue === true
+      onToggled: function(checked) {
+        root.displayedValue = checked;
+        root.client.set(root.param.key, checked, false);
+      }
     }
 
     NComboBox {
       visible: root.param.ui.control === "select"
       Layout.fillWidth: true
-      label: root.param.ui.label || ""
-      description: root.param.description || ""
-      defaultValue: root.param.default
+      label: ""
+      description: ""
       model: root.selectOptions(root.param.values || [])
-      currentKey: String(root.param.value)
-      onSelected: key => root.client.set(root.param.key, key, false)
+      currentKey: String(root.displayedValue)
+      onSelected: function(key) {
+        root.displayedValue = key;
+        root.client.set(root.param.key, key, false);
+      }
     }
 
-    RowLayout {
+    NColorPicker {
       visible: root.param.ui.control === "color"
       Layout.fillWidth: true
-      spacing: Style.marginL
-
-      NLabel {
-        Layout.fillWidth: true
-        label: root.param.ui.label || ""
-        description: root.param.description || ""
-      }
-
-      NColorPicker {
-        screen: root.screen
-        selectedColor: root.param.value
-        onColorSelected: color => root.client.set(root.param.key, root.colorHex(color), false)
+      screen: root.screen
+      selectedColor: root.displayedValue
+      onColorSelected: function(color) {
+        var hex = root.colorHex(color);
+        root.displayedValue = hex;
+        root.client.set(root.param.key, hex, false);
       }
     }
-  }
 
-  NIconButton {
-    visible: root.param.modified
-    Layout.preferredWidth: Math.round(30 * Style.uiScaleRatio)
-    Layout.preferredHeight: Math.round(30 * Style.uiScaleRatio)
-    baseSize: Style.baseWidgetSize * 0.7
-    icon: "restore"
-    tooltipText: "Reset to default"
-    onClicked: root.client.unset(root.param.key)
+    Item {
+      Layout.fillWidth: true
+    }
+
+    NText {
+      id: livenessHint
+
+      visible: root.param.effectiveDrag === null || root.param.effectiveDrag === "release"
+      text: root.param.effectiveDrag === null ? "unavailable" : "on release"
+      pointSize: Style.fontSizeXS
+      color: Color.mOnSurfaceVariant
+      opacity: 0.55
+    }
+
+    NIconButton {
+      id: resetButton
+
+      visible: root.param.modified
+      baseSize: Style.baseWidgetSize * 0.6
+      icon: "restore"
+      tooltipText: "Reset to default"
+      onClicked: {
+        root.displayedValue = root.param.default;
+        root.client.unset(root.param.key);
+      }
+    }
   }
 }
