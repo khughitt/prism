@@ -24,11 +24,12 @@ must be restarted and checked after the config path is repaired.
 
 The observed milky appearance is not evidence that every material control is
 broken. The current shader simulates transmission by sampling the wallpaper;
-it does not sample compositor pixels. Its default material retains a white
-diffuse contribution, adds HDR probe reflections, applies pale attenuation,
-and outputs an effectively opaque wallpaper-derived surface. The broken
-consumer path prevented the controls that tune those terms from taking
-effect.
+it does not sample compositor pixels. Its leading white-cast term is already
+visible in the arithmetic: `mix(DIFFUSE, transmitted, 0.95)` retains 5% of
+the white-derived diffuse color before adding HDR probe reflections and pale
+attenuation. The output is an effectively opaque wallpaper-derived surface.
+The broken consumer path prevented the controls that tune those terms from
+taking effect.
 
 ## Goals
 
@@ -66,8 +67,8 @@ The panel keeps its existing preferred dimensions. The title row becomes:
 Prism                                      Glass  [on]
 ```
 
-`Glass enabled` is a compact switch bound to the otherwise hidden
-`glass.enabled` parameter. It is not a seventh basic-settings row.
+`Glass enabled` is a compact switch supplied by the conventional `Title`
+presentation group. It is not a seventh basic-settings row.
 
 The `Quick` group remains the semantic group used by definitions and sorting,
 but its visible heading is removed. The six controls begin immediately below
@@ -84,8 +85,11 @@ never changed.
 
 The Reset icon remains visible only for modified parameters. It sits in the
 same control row and vertical alignment as the slider value, toggle, select,
-or color value. The icon remains smaller and lower-contrast than the primary
-control. Section Reset remains in the advanced-section header.
+or color value. An extra-small `on release` or `unavailable` hint sits at the
+trailing edge of that control row immediately before Reset, so the hint stays
+attached to the interaction it qualifies. The icon remains smaller and
+lower-contrast than the primary control. Section Reset remains in the
+advanced-section header.
 
 ## 2. Optimistic control state
 
@@ -117,13 +121,31 @@ Add one definition:
 - key: glass.enabled
   type: bool
   default: true
-  ui: {group: glass, control: none}
+  ui: {group: Title, control: toggle, label: Glass, order: 0}
   description: Render the niri glass layer
 ```
 
 The niri-glass manifest binds it as `live`, and the generated JSON contains
-`enabled`. It stays `control: none` because the panel renders it explicitly
-in the title row; the generic grouping code must not also render it.
+`enabled`. `Title` joins `Quick` as a presentation convention understood by
+the grouping helper: `Title` is routed to the title row, `Quick` remains the
+six-control always-open body, and every other group remains collapsible. The
+shipped definitions must contain exactly one `Title` member and it must be a
+toggle. QML renders the routed definition and never names `glass.enabled`.
+This section supersedes the earlier streamlined-panel statement that `Quick`
+was the only conventional group.
+
+The closed niri-glass schema makes the cross-repository landing order
+load-bearing:
+
+1. Add `conf.enabled: true` to niri-glass first.
+2. Add `"enabled": true` to
+   `test/fixtures/niri-glass-seed.json`, which mirrors those QML defaults.
+3. Add the Prism definition and live manifest binding.
+
+Step 2 deliberately makes `test/glass-defs.test.js` fail on the missing
+definition; Step 3 returns it to green. The completed Prism change proves
+that every `glass.*` definition has a seed key and every seeded default equals
+QML.
 
 niri-glass adds `conf.enabled: true`. When false, the normal glass scene is
 hidden without stopping Prism or the Noctalia panel. The config watcher stays
@@ -194,11 +216,26 @@ hidePreview()
 Invalid sides fail loudly. Calling `showPreview` while visible updates the
 existing preview. Calling `hidePreview` while hidden succeeds.
 
-The plugin addresses the existing niri-glass Quickshell instance by its
-configured `$HOME/d/niri-glass/shell.qml` path. `PrismClient` serializes the
-fixed IPC command shape, reports non-zero exits through the existing error
-banner, and ensures a final `hidePreview` cannot be overtaken by an earlier
-toggle.
+Dotfiles setup installs the niri-glass source directory as the named
+Quickshell config `$XDG_CONFIG_HOME/quickshell/niri-glass`, and niri launches
+it with `qs -c niri-glass`. The plugin uses the same stable selector for IPC:
+
+```text
+qs -c niri-glass ipc call prismGlass ...
+```
+
+No personal source path, environment override, or `qs list` parser enters
+plugin code. `PrismClient` serializes the fixed IPC command shape, reports
+non-zero exits through the existing error banner, and ensures a final
+`hidePreview` cannot be overtaken by an earlier toggle.
+
+Preview queue items have explicit `preview-show` and `preview-hide` command
+shapes in `Queue.argvFor`; they cannot fall through to the `prism set`
+default. `Queue.affectsParams(item)` distinguishes ordinary parameter writes
+from samples and preview calls. `PrismClient` remembers whether any item in a
+batch affects parameters and runs one `describe` when that batch drains.
+Preview-only batches do not refresh or rebuild delegates, while a parameter
+write followed by a preview command still receives its required refresh.
 
 When Preview is enabled, the panel compares its global center with its
 screen geometry's global center and asks niri-glass to anchor on the opposite
@@ -229,11 +266,17 @@ Dotfiles setup remains the sole creator of the consumer symlink. The repair
 reruns that existing step after the generated file exists, then restarts
 niri-glass so the first successful load is observed.
 
+The same setup phase creates the named Quickshell config link and changes the
+niri startup command from a source-path launch to `qs -c niri-glass`. The
+source checkout remains wherever dotfiles setup expects it; neither Prism QML
+nor the generated configuration embeds that location.
+
 `dotfiles-health` gains an exact check that the consumer path exists and
-resolves to the generated file. `prism doctor` continues to validate Prism's
-generated target and sink snapshots; it does not claim ownership of external
-config-path wiring. Documentation must distinguish those two health
-boundaries.
+resolves to the generated file, plus an exact check that the named Quickshell
+config resolves to the niri-glass source directory. `prism doctor` continues
+to validate Prism's generated target and sink snapshots; it does not claim
+ownership of external config-path wiring. Documentation must distinguish
+those two health boundaries.
 
 The live repair preserves the current host `values.yaml`, including
 experimental geometry values. Tests snapshot and restore it atomically. No
@@ -255,19 +298,23 @@ polling or recovery code merely because the old instance logged one failure.
 ## 6. Milky-glass diagnosis
 
 The preview provides a controlled test before changing shader behavior or
-defaults. Snapshot the user's values, then test this neutral material:
+defaults. Snapshot the user's values, then apply this ordered cumulative
+sweep:
 
 ```text
-probe exposure = 0
-roughness = 0
 transmission = 1
+probe exposure = 0
 attenuation color = #ffffff
+roughness = 0
 ```
 
-On the diagnostic grid, the slab's flat face should reproduce the background
-without a white cast; chamfers may still refract and reflect. Change one
-material control at a time to identify which term introduces milkiness, then
-restore the snapshot atomically.
+The first step removes the white diffuse term exactly; if it substantially
+reduces the cast, the shader arithmetic has identified transmission as the
+cause. The second removes HDR probe contribution, the third removes volume
+tint, and the fourth removes mip blur. Record the visual delta after each
+step. At the final neutral state, the slab's flat face should reproduce the
+diagnostic grid without a white cast; chamfers may still refract. Restore the
+snapshot atomically afterward.
 
 If the neutral combination is clear, the transport repair and preview solve
 the reported inability to tune the look; shipped defaults do not change in
@@ -282,6 +329,8 @@ the problem with arbitrary new presets.
 - Persistent parameter writes retain the existing FIFO, sample coalescing,
   error banner, and authoritative refresh.
 - Preview calls are discrete and ordered; close-time `hidePreview` is last.
+- Preview-only queue drains do not run `describe`; mixed drains still refresh
+  once when any ordinary parameter write completed.
 - A preview IPC failure leaves the persistent settings usable and displays
   the existing banner.
 - Closing the panel never writes Preview or Diagnostic background into
@@ -292,18 +341,22 @@ the problem with arbitrary new presets.
 
 ### Automated
 
-- Definition and manifest tests cover `glass.enabled`, default `true`, hidden
-  generic control, live binding, and generated output.
-- Shipped presentation tests retain exactly six generic Quick controls while
-  confirming the title switch's parameter exists.
+- niri-glass lands `conf.enabled: true` before Prism updates the closed-schema
+  seed fixture, definition, manifest binding, and generated-output tests.
+- `test/glass-defs.test.js` proves the new QML default, seed key, and Prism
+  default agree.
+- Shipped presentation tests retain exactly six Quick controls, route one
+  toggle through `Title`, and cover all 33 visible controls exactly once.
 - Panel source-contract tests cover removal of the visible `Quick` heading,
   compact type sizes, control-row Reset alignment, local optimistic values,
   and close-time preview cleanup.
-- Queue/client tests prove preview calls are ordered and the final hide is not
-  dropped.
+- Queue/client tests prove preview commands have explicit argv shapes, do not
+  trigger preview-only refreshes, preserve a required mixed-batch refresh,
+  remain ordered, and never drop the final hide.
 - niri-glass tests cover IPC validation/idempotency, opposite-side selection,
   background selection, shared material use, and `enabled` behavior.
-- Dotfiles health tests fail for a missing, dangling, or wrong consumer link.
+- Dotfiles health tests fail for a missing, dangling, or wrong consumer link
+  or named Quickshell config link.
 - Node suites, Qt 6 `qmllint`, niri-glass tests, `prism doctor`,
   `dotfiles-health`, shell syntax, and diff checks pass.
 
@@ -355,7 +408,9 @@ Implementation must update:
   structure, live acceptance, generated-file health, or niri-glass ownership
   are stated;
 - the streamlined-panel design and plan, whose live-acceptance claims are now
-  superseded by this repair;
+  superseded by this repair, including the “one conventional group” wording;
+- Task 6 Step 1's literal `jq` predicate: total parameters become 34,
+  `ui.control != "none"` parameters become 33, and Quick remains six;
 - niri-glass README/config documentation for `enabled`, the preview IPC, and
   the material's wallpaper-sampling limitation;
 - dotfiles setup/health documentation for the consumer-link check.

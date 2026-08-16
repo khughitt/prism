@@ -1,6 +1,6 @@
 # Prism Noctalia panel design
 
-**Status:** Approved — ready for implementation planning
+**Status:** Implemented through Task 5 on `feat/prism-panel-ui`; live acceptance failed — superseded by `2026-08-16-prism-panel-repair-glass-preview-design.md`
 
 **Date:** 2026-08-16
 
@@ -17,9 +17,10 @@ tuning surface second. It presents a six-control Quick section, hides the
 remaining controls in semantic collapsed sections, explains each control in
 one line, and keeps the definition files as the source of UI organization.
 
-The same change also completes the manual acceptance check for live glass
-updates. The live path already exists; this work verifies it end to end and
-fixes that path only if the visible effect does not track the slider.
+The planned change included manual acceptance of live glass updates. That
+acceptance instead found a missing generated-config consumer link, so the
+transport repair and repeated live verification are specified by the
+superseding panel-repair/glass-preview design.
 
 ## Goals
 
@@ -80,12 +81,12 @@ Orders from different advanced sections may interleave; the minimum-member
 rule makes that case unambiguous, so contiguity is not a validation
 requirement.
 
-`Quick` is the one conventional group name understood by the panel. It is
-rendered directly and always open. Every other group starts collapsed behind
-a quiet inline header composed from Noctalia's `NIcon`, `NText`, and
-`NIconButton` primitives. The shipped `NCollapsible` is deliberately not
-used: its private saturated header cannot expose the agreed Reset action or
-modified count.
+`Quick` is rendered directly and always open. The superseding panel-repair
+design adds one other definition-driven convention: `Title` routes its single
+toggle to the title row. Every other group starts collapsed behind a quiet
+inline header composed from Noctalia's `NIcon`, `NText`, and `NIconButton`
+primitives. The shipped `NCollapsible` is deliberately not used: its private
+saturated header cannot expose the agreed Reset action or modified count.
 
 The panel root holds an `expandedGroups` map keyed by group name. Sections
 read it through a binding and toggles update it through a helper that copies
