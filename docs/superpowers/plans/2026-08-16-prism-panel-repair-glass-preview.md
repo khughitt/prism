@@ -1686,7 +1686,7 @@ bin/dotfiles-health --skip-systemd
 git diff --check
 ```
 
-- [ ] **Step 5: Commit only the documentation paths**
+- [x] **Step 5: Commit only the documentation paths**
 
 In Prism, stage exactly:
 
