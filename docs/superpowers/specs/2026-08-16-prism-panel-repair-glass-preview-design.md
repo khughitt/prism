@@ -9,6 +9,8 @@ Implementation commits: Prism `1c5d887`, `e480ffb`, `d392aad`, `a1fc62b`,
 `90bc36d`, and `bdb83e8`; dotfiles `0c7fb78`.
 Pressed-slider follow-ups are Prism `93790d9`, `c783d13`, `13ce02c`, and
 `c3a0a32`.
+Follow-up parameter-presentation design:
+`niri-glass/docs/superpowers/specs/2026-08-17-glass-parameter-presentation-design.md`.
 Transport, generated-consumer health, isolated preview creation, and
 restoration passed; the ordered neutral-material sweep completed. Manual
 Passes 1–2 accepted optimistic slider/toggle/color updates, reconciliation,
