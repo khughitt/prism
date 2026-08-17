@@ -63,8 +63,11 @@ test('basic controls start directly below the title and use compact type', () =>
   assert.match(control, /textSize: Style\.fontSizeS/);
 });
 
-test('panel keeps native scrollbar space so trailing controls are not clipped', () => {
+test('panel keeps preview controls stable and clear of the scrollbar', () => {
   assert.doesNotMatch(panel, /reserveScrollbarSpace: false/);
+  assert.match(panel, /userRightPadding: Style\.marginS/);
+  assert.match(panel, /ColumnLayout \{\s*visible: groupSurface\.modelData\.name === "Diagnostics"/);
+  assert.doesNotMatch(panel, /RowLayout \{\s*visible: groupSurface\.modelData\.name === "Diagnostics"/);
 });
 
 test('controls update local display state before writing', () => {

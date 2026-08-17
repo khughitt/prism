@@ -144,6 +144,7 @@ Item {
       Layout.fillHeight: true
       horizontalPolicy: ScrollBar.AlwaysOff
       verticalPolicy: ScrollBar.AsNeeded
+      userRightPadding: Style.marginS
       gradientColor: Color.mSurface
 
       ColumnLayout {
@@ -233,7 +234,7 @@ Item {
                 Layout.fillWidth: true
                 spacing: Style.marginS
 
-                RowLayout {
+                ColumnLayout {
                   visible: groupSurface.modelData.name === "Diagnostics"
                   Layout.fillWidth: true
 
