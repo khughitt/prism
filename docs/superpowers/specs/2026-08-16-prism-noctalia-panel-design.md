@@ -1,6 +1,6 @@
 # Prism Noctalia panel design
 
-**Status:** Implemented through Task 5 on `feat/prism-panel-ui`; live acceptance failed — superseded by `2026-08-16-prism-panel-repair-glass-preview-design.md`
+**Status:** Implemented on `main` through `be02040`; follow-up layout repairs `eb3a865` and `dc8ef4b` plus pressed-slider repair through `c3a0a32`; live acceptance exposed the missing consumer path — superseded by `2026-08-16-prism-panel-repair-glass-preview-design.md`
 
 **Date:** 2026-08-16
 

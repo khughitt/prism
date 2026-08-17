@@ -32,6 +32,84 @@ QML that launches Prism imports `Quickshell.Io` and uses its native `Process` ty
 
 Noctalia's settings UI exposes `NColorPicker` from `qs.Widgets`. Its input is `selectedColor`, it receives the current shell screen through `screen`, and it emits `colorSelected(color)` when the user accepts a color. Prism converts that opaque QML color value to lowercase `#rrggbb` before passing it to the CLI.
 
+## Prism presentation and lifecycle
+
+Prism's presentation helper recognizes three group conventions. `Title`
+must contain exactly one visible toggle and is extracted into the panel title;
+QML renders that returned definition and never names `glass.enabled`. `Quick`
+is the first, always-open body group. `Diagnostics` remains a normal body
+group, with the panel inserting its transient Preview controls before the
+definition-driven parameters.
+
+Manifest bindings may declare `drag: release` only beside `liveness: live`.
+The raw public `bindings[]` entries stay `{sink, liveness}`; `describe`
+retains `effectiveLiveness` as capability and emits `effectiveDrag` as the
+panel's aggregated pointer policy (`live`, `release`, or `null`).
+
+Each control updates a local displayed value before enqueueing its write. A
+drained parameter batch then runs authoritative `prism describe --json`;
+replacing the grouped model recreates delegates and reconciles their values,
+modified state, and Reset visibility. Sample-only drains skip that refresh so
+they cannot destroy a slider while it is pressed. A slider also reports its
+pressed lifetime to the persistent client: any reconciliation requested after
+a prior release but before the new drag's first sample is deferred until the
+pressed slider releases. Destruction clears the pressed state so a disappearing
+delegate cannot strand refresh suppression. Pressing also invalidates an
+already-running `describe`; its eventual result is discarded even if press and
+release both finish before that process exits, and one fresh replay follows.
+
+The persistent `PrismClient` lives in `Main.qml`, while `Panel.qml` is created
+and destroyed with the popout. That ownership lets panel destruction enqueue
+`hidePreview` safely: closing the panel does not destroy the FIFO or its
+in-flight process.
+
+Noctalia's SmartPanel closes when the user clicks outside it. Panel
+destruction then intentionally enqueues `hidePreview`, so preview
+click-through cannot be accepted by clicking outside the open settings panel:
+that action removes the preview by contract. Show the preview through direct
+IPC with the settings panel closed, then interact through it to validate the
+empty input region independently.
+
+## Write and preview queue
+
+Parameter writes and preview IPC share one FIFO. Preview verbs have explicit,
+path-free command shapes:
+
+```text
+qs -c niri-glass ipc call prismGlass showPreview <output> <left|right> <true|false>
+qs -c niri-glass ipc call prismGlass hidePreview
+```
+
+Preview items do not affect Prism parameters. At drain, the client refreshes
+only when the batch contained a parameter write **and** its last completed
+item was not a drag sample. This keeps `[final, preview-hide]` refreshable but
+suppresses `[final, sample]`, deferring reconciliation until the active
+second drag releases instead of replacing its pressed delegate.
+
+## Native Noctalia composition
+
+Prism composes quiet section headers from `NIcon`, `NText`, and
+`NIconButton`; `NCollapsible` cannot expose the required Reset action and
+modified count. It owns one label/description block and one trailing Reset
+button for every control type rather than mixing the native controls'
+different label and reset geometries.
+
+`NScrollView` reserves scrollbar space by default. Prism retains that native
+default; disabling it lets the vertical scrollbar overlap and clip trailing
+Reset buttons at the right edge. Prism also supplies
+`userRightPadding: Style.marginS`, extending the native reserved gutter
+without replacing the component's scrollbar calculation.
+
+Conditional controls that must not move their always-visible sibling use a
+`ColumnLayout`. The Diagnostics Preview toggle therefore stays fixed when its
+Diagnostic-background toggle appears or disappears.
+
+The bar widget matches Noctalia's native capsule contract: it uses
+`Style.getCapsuleHeightForScreen(screen?.name)`, disables a second UI-scale
+application, takes the capsule colors/border/radius from `Style`, and obtains
+tooltip direction from `BarService` via `qs.Services.UI`. Its icon is the
+monochrome `wand` glyph.
+
 ## Discovery and identity
 
 For a local plugin, the installed directory basename is the discovery key: the scanner reads `<plugins>/<key>/manifest.json`, stores the manifest under `<key>`, resolves entry-point paths from that directory, keys enablement in `plugins.json` by `<key>`, and registers the bar widget as `plugin:<key>`. The scanner accepts a directory symlink because it follows directory and file tests.
@@ -43,4 +121,6 @@ Noctalia requires `manifest.id` but its folder scanner does not verify that it e
 - Installed plugin: `wali-panel/manifest.json`, `Main.qml`, `BarWidget.qml`, and `Panel.qml`
 - Noctalia loader: `Services/Noctalia/PluginRegistry.qml` and `PluginService.qml`
 - Noctalia hosts: `Modules/Bar/Extras/BarWidgetLoader.qml`, `Modules/Panels/Plugins/PluginPanelSlot.qml`, and `Services/UI/BarWidgetRegistry.qml`
-- Noctalia color control: `Widgets/NColorPicker.qml` and its settings-UI consumers
+- Noctalia controls: `Widgets/NValueSlider.qml`, `NToggle.qml`,
+  `NComboBox.qml`, `NColorPicker.qml`, and `NCollapsible.qml`
+- Native capsule reference: `keybind-cheatsheet/BarWidget.qml`

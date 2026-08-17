@@ -18,16 +18,34 @@ tracked host. Explicit broken markers remain strict even on unknown hosts;
 doctor runs only after the ownership link matches. Hosts with neither marker
 do not acquire an unrelated Prism dependency.
 
-Approved final-review product fixes are committed at `e4e11a3`, `532cceb`,
-`76fe05e`, `7a337fe`, and `04b90bf`; the dotfiles final-review head is
-`74f35be`.
+Approved v1 product fixes are committed through `04b90bf`. The semantic panel
+landed in Prism at `4abda15`, `64cf1f2`, `b870c40`, `97cd04c`, and `be02040`;
+the panel repair and preview landed at `1c5d887`, `e480ffb`, and `d392aad`,
+with Kitty listener-race fixes at `a1fc62b` and `7665605`; native scrollbar
+reservation was restored at `eb3a865`, then Diagnostics stacking and right
+padding were repaired at `dc8ef4b`. The pressed-slider race was repaired by
+`93790d9`, `c783d13`, `13ce02c`, and `c3a0a32`. niri-glass owns the enable switch and
+preview at `6219993` and `12eb73d`, with normal/preview surface lifecycle
+fixes at `90bc36d` and `bdb83e8`; dotfiles consumer wiring is `0c7fb78`.
 
 The implementation and dotfiles wiring are merged to `main`. Dotfiles setup
-replaced the temporary live plugin link with the permanent
-`~/d/prism/integrations/noctalia-plugin` link, and a restarted Noctalia loaded
-Prism from that target. The full manual panel contract from Tasks 18–19
-remains: live glass/opacity drag, mixed gaps release, fast-release ordering,
-blur toggle, param/group reset, and error banner.
+installs the generated niri-glass consumer, the named `qs -c niri-glass`
+config, and the permanent Prism plugin link. Static gates, transport, preview
+creation, restoration, and interaction-dependent panel acceptance passed; the
+neutral-material sweep completed. The sweep also found that the neutral flat
+face is still opaque/milky, so shader work is deferred
+to a focused follow-up rather than guessed here. Manual Passes 1–2 accepted
+local slider/toggle/color updates, authoritative reconciliation, Reset
+alignment/clearing, and persistent Glass disable/re-enable across panel and
+controlled Noctalia lifecycles. Diagnostics layout, Preview show, diagnostic
+grid/wallpaper switching, panel-close/reopen cleanup, direct-IPC
+click-through/focus, live Preview dragging, immediate release/re-drag, and
+failed-write banner/recovery are accepted. Fix `93790d9`
+began the pressed-lifetime repair, `c783d13` covered an in-flight description,
+`13ce02c` invalidated that result at press time even when press and release
+finish before process exit, and final `c3a0a32` preserves invalidation across
+refresh/replay while pressed. Independent review passed, and the user accepted
+the post-restart retest: “Nope; sticking resolved - nice work!”
 
 ## Problem
 
@@ -142,7 +160,7 @@ key: terminal.background.opacity.inactive
 type: float          # float | int | bool | color | enum | string | list
 range: [0.0, 1.0]
 default: 0.65
-ui: {group: terminal, control: slider, step: 0.01}
+ui: {group: Quick, control: slider, step: 0.01, label: Unfocused terminal opacity, order: 20}
 description: Background opacity of unfocused terminal windows
 ```
 
@@ -154,6 +172,8 @@ Contract constraints (so `describe` can always generate a working UI):
   `none` means CLI/file-editable only — the panel hides it. `list` and
   `string` params have no v1 control and MUST declare `control: none`
   (e.g. `terminal.apps`).
+- Every visible definition carries a nonempty `ui.label` and a unique integer
+  `ui.order`. `ui.group` is a presentation group, not backend ownership.
 - Loading fails on a definition that violates these rules (fail early).
 
 ### Sink manifests
@@ -169,15 +189,17 @@ generates: [kitty.conf]   # optional; file names under the generated dir
 binds:
   - param: terminal.background.opacity.active
     liveness: live        # live | reload | restart
+    drag: release         # optional live-binding interaction override
   - param: terminal.background.opacity.inactive
     liveness: live
+    drag: release
 ```
 
 - The UI is generated entirely from `defs × manifests`: a control appears
-  because a definition exists; its liveness badge comes from the manifests
-  binding it. When multiple sinks bind one param with different liveness,
-  the badge shows the **slowest** class (live < reload < restart) — it
-  answers "when has everything settled".
+  because a definition exists. `describe` retains the slowest bound
+  `effectiveLiveness` capability and separately aggregates `effectiveDrag`
+  (`live | release | null`) for pointer behavior. The panel renders the
+  latter as a quiet interaction hint rather than exposing sink liveness.
 - A param no sink binds still shows (grayed) so users see what's available.
 - A sink binding an undefined param is a hard error at load (fail early).
 - `generates` lists the file **names** a sink writes under
@@ -349,10 +371,11 @@ the contract:
    During migration, the `include` line likewise lands only after `apply` is
    proven on the host.
 
-`prism doctor` (and `dotfiles-health` through it) treats a missing or
-dangling generated target as a **hard failure**, not a warning. It is the
-one condition that can prevent the desktop from starting, so it must never
-be reported in the same register as a dead kitty socket.
+`prism doctor` treats a missing generated target or stale/failed status
+snapshot as a **hard failure**, not a warning. `dotfiles-health` calls doctor
+only after separately validating the external consumer symlinks and named
+Quickshell config. Prism owns generated products and sink status; dotfiles
+owns the paths that consume them.
 
 ### v1 sinks
 
@@ -386,6 +409,13 @@ that niri-glass's QML defines, so **adding a knob to `shell.qml` requires
 adding the matching def to prism**, or the knob is unreachable through the
 generated file. That coupling is the price of ending the drift, and it is
 cheap to honor because both repos are local.
+
+The enable switch hides the normal `View3D` and calibration content, not its
+`PanelWindow`. Tearing down that transparent click-through layer on disable
+and recreating it on enable caused a Quick3D `setWindow` SIGSEGV. Keeping the
+window alive preserves its layer-shell/input contract and avoids recreating
+the Quick3D surface; regression `90bc36d` passed the 57-test suite, Qt 6 lint,
+and a live false→true transition with the same process.
 
 **kitty** — two channels in one adapter:
 
@@ -515,19 +545,25 @@ The next `set` or an explicit `prism apply` heals 1 and 3; `unset` heals 2.
 
 ## Section 4: The noctalia plugin UI
 
-A noctalia plugin (QML, same shape as the existing wali-panel/catwalk
-plugins) that is a **pure client of the CLI** — zero built-in knowledge of
-parameters, sinks, or semantics.
+The Noctalia plugin's persistent parameter UI is a **pure client of the
+CLI**: it knows presentation conventions, not parameter keys or sink binding
+layout. The separate transient preview knows only the stable named
+niri-glass IPC selector. `prism describe --json` currently returns 34
+parameters: 33 visible controls, including one `Title` toggle, six `Quick`
+controls, and 26 controls in collapsed semantic groups; `terminal.apps`
+remains hidden.
 
-- **Bootstrap**: on open, runs `prism describe --json` and builds the UI
-  from the result — one section per `ui.group`, one control per definition
-  (`slider` / `toggle` / `color` / `select`), each showing current effective
-  value and a liveness badge (live / reload / grayed-unbound).
-- **Writes**: drag sampling is **liveness-gated** — only a param whose
-  effective liveness is fully `live` is written during a pointer drag
-  (sampled at ~10 Hz as an ordinary `prism set`); a reload-class or
-  mixed-class pointer drag (e.g. gaps: glass live + niri reload) is not
-  sampled and is written once on release, so its surfaces move together.
+- **Bootstrap**: on open, the panel groups definitions by `ui.group` and
+  orders them by `ui.order`. `Title` is extracted to the title row, `Quick`
+  is always open without a redundant heading, and advanced groups retain
+  expansion state only for the current panel instance. Controls show concise
+  labels/descriptions and only the interaction hint `on release` or
+  `unavailable`; sink names and liveness classes stay out of the UI.
+- **Writes**: pointer drag follows aggregated `effectiveDrag`, which combines
+  sink capability with any manifest `drag: release` override. Only `live`
+  is sampled; `release` writes once when the pointer is released, so mixed
+  surfaces such as gaps move together and Kitty opacity avoids repeated
+  inactive/focused round trips.
   Keyboard/wheel slider movement has no press/release boundary, so `moved`
   debounces a 100 ms ordinary `set` for every liveness class. If its delegate
   is destroyed while that debounce is pending, it flushes the ordinary set
@@ -536,16 +572,26 @@ parameters, sinks, or semantics.
   gates are the only drag-rate protection in the system** — the CLI has no
   liveness filter to fall back on, so a future high-frequency writer that is
   not this panel must implement its own.
+  Each control updates its displayed value locally before enqueueing; the
+  authoritative post-write `describe` rebuild reconciles it afterward.
   Because independently spawned processes can acquire the store lock out of
   launch order, the plugin **serializes its writes**: at most one `prism`
   subprocess in flight, with a FIFO pending queue in which successive drag
   samples of the *same* param coalesce to the newest — discrete writes
   (toggles, selects, unsets, group resets) are never dropped or reordered.
   Release enqueues the final value and waits for the queue to drain,
-  guaranteeing the released value is the last write. A queue drain containing
-  only a drag sample deliberately skips `describe`: replacing the model while
-  the pointer is pressed would reset the slider. Release and every discrete
-  drain refresh normally, so badges and modified markers converge afterward.
+  guaranteeing the released value is the last write. Preview commands use
+  the same FIFO but explicit `qs -c niri-glass` argv and do not affect
+  parameter refresh accounting. A drain refreshes only if its batch contained
+  a parameter write and its last item was not a sample; `[final, sample]`
+  therefore preserves the active second drag.
+- **Preview lifecycle**: the transparent, input-empty preview `PanelWindow`
+  stays alive; only its `Image` and `View3D` are gated by selected state.
+  Toggling the window itself reproduced the same Quick3D `setWindow` SIGSEGV
+  as the normal enable switch. Noctalia closes SmartPanel on an outside click,
+  which destroys the panel and deliberately hides the preview, so pointer
+  pass-through is tested by showing preview through direct IPC with settings
+  closed.
 - **Reset affordances**: per-param revert (`prism unset`) and per-group
   reset; modified-from-default state comes through `describe`.
 - **No caching**: the panel re-runs `describe` on open rather than watching

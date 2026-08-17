@@ -1,7 +1,23 @@
 # Prism panel repair and isolated glass preview
 
 **Date:** 2026-08-16
-**Status:** Approved — ready for implementation planning
+**Status:** Implemented and interaction-accepted on `main`; opaque-glass shader follow-up pending
+
+Implementation commits: Prism `1c5d887`, `e480ffb`, `d392aad`, `a1fc62b`,
+`7665605`, `eb3a865`, and `dc8ef4b`; niri-glass `6219993`, `12eb73d`,
+`90bc36d`, and `bdb83e8`; dotfiles `0c7fb78`.
+Pressed-slider follow-ups are Prism `93790d9`, `c783d13`, `13ce02c`, and
+`c3a0a32`.
+Transport, generated-consumer health, isolated preview creation, and
+restoration passed; the ordered neutral-material sweep completed. Manual
+Passes 1–2 accepted optimistic slider/toggle/color updates, reconciliation,
+Reset alignment/clearing, and persistent Glass disable/re-enable across panel
+and controlled Noctalia lifecycles. Preview show, diagnostic grid/wallpaper
+switching, panel-close/reopen cleanup, Diagnostics layout, direct-IPC
+click-through/focus, live Preview dragging, and immediate release/re-drag are
+also accepted. Failed-write banner persistence, continued panel usability, and
+post-restore recovery passed as well. The neutral flat face stayed opaque/milky,
+so the design's stop condition deferred shader changes to a focused follow-up.
 
 ## Context
 
@@ -94,6 +110,13 @@ labels and `defaultValue` indicators are disabled deliberately; the Reset icon
 is the sole per-parameter modified marker, while the header count remains the
 section-level marker.
 
+When the body overflows, the native `NScrollView` scrollbar reservation stays
+enabled. Explicitly disabling `reserveScrollbarSpace` clipped the right edge
+of Diagnostics Reset buttons under the scrollbar; `eb3a865` removed that
+override. The native gutter was still visually tight, so `dc8ef4b` adds
+`userRightPadding: Style.marginS` without replacing the native reservation.
+Its final visual spacing remains an explicit acceptance check.
+
 ## 2. Optimistic control state
 
 Each `ParamControl` owns a local displayed value initialized from
@@ -109,6 +132,19 @@ select, and color controls use the same rule so the panel has one response
 model. Pointer samples still coalesce through the existing queue, and
 sample-only drains still skip `describe`; refreshing every sample would
 destroy the pressed delegate and regress live dragging.
+
+The client's pressed-slider state spans the full pointer press, not merely
+sample writes. If a prior release drains after the next press but before that
+new drag emits its first `onMoved` sample, reconciliation remains deferred
+until release. Otherwise `describe` can rebuild the delegate and strand the
+second grab. Fix `93790d9` implements that lifetime and clears it on
+release or delegate destruction; `c783d13` discards an in-flight result while
+pressed. `13ce02c` invalidates the process result at press time, so it remains
+discarded even if press and release both finish before exit, and then replays
+one fresh description. Final `c3a0a32` preserves that invalidation when a
+refresh/replay starts while the slider remains pressed. The series is reviewed,
+merged, and loaded. The user accepted the post-restart immediate release then
+re-click/drag retest with no sticking.
 
 The post-write `describe` response remains authoritative. Delegate refresh
 reconciles the local value, `modified` state, and Reset visibility with the
@@ -161,9 +197,25 @@ hidden without stopping Prism or the Noctalia panel. The config watcher stays
 alive so re-enabling is immediate. The isolated preview is independent: a
 user may preview and tune glass while the normal layer is disabled.
 
+Implementation keeps the transparent click-through `PanelWindow` alive and
+gates only its normal `View3D` and calibration overlay. The first
+implementation bound `PanelWindow.visible` directly to `conf.enabled`;
+false→true recreated the Quick3D surface and crashed in
+`QQuick3DSceneManager::setWindow`. Regression fix `90bc36d` preserves the
+layer-shell/input surface, passed 57/57 tests and Qt 6 lint, and survived a
+live false→true transition in the same process. Independent review approved
+the focused fix.
+
 `Glass enabled` uses the normal sparse-store rule. Setting it to its default
 removes the override; setting it false persists across panel openings,
 Noctalia restarts, login, and reboot.
+
+Live acceptance confirmed false persisted through panel close/reopen and a
+controlled Noctalia stop/start, the fresh panel still showed off, and enabling
+restored glass immediately. A second off/on cycle repeated the result without
+the prior `prism exited 255` banner. An earlier anomalous first restart was not
+reproducible when the value was checked before stop, while stopped, and after
+restart, so no speculative fix was added for it.
 
 ## 4. Isolated preview
 
@@ -197,6 +249,14 @@ live terminal geometry. It consumes the same `conf` material values as real
 panes. niri-glass extracts the shared custom material/uniform bindings into a
 single composed component used by the real panes and the preview; the shader
 contract is not duplicated.
+
+The transparent, input-empty preview `PanelWindow` remains mapped for the
+life of the niri-glass process. Preview selection gates its only visual
+children—the background `Image` and `View3D`—instead of toggling the window's
+`visible` property. The original show → panel-close/hide path recreated the
+Quick3D surface and crashed in `QQuick3DSceneManager::setWindow`; `bdb83e8`
+keeps the same process alive through show/hide while preserving an invisible,
+click-through idle surface.
 
 ### Background
 
@@ -257,6 +317,13 @@ and side. `Panel.Component.onDestruction` enqueues `hidePreview`, so closing
 the panel clears preview even when the user forgets to toggle it off. Opening
 the panel starts from Preview off; restarting niri-glass also starts hidden.
 
+Clicking outside Noctalia's `SmartPanel` closes it, and panel destruction
+enqueues `hidePreview` by contract. Pointer pass-through therefore cannot be
+validated by clicking behind the preview while the settings panel remains
+open: the panel closes first and intentionally hides the preview. Acceptance
+uses the same preview IPC directly, with the settings panel closed, to test
+click-through and focus behavior independently of SmartPanel dismissal.
+
 The Preview and Diagnostic-background toggles form the first compact row in
 the existing Diagnostics section. Diagnostic background is visible/enabled
 only while Preview is active. Preview state does not affect modified counts
@@ -264,6 +331,11 @@ or Reset actions. `Diagnostics` is the third and final presentation convention:
 the panel inserts these transient controls before that group's parameter
 repeater. Unlike `Title`, it remains a normal body group returned by
 `groupParams`.
+
+Those two controls use a `ColumnLayout`: making Diagnostic background visible
+must not shift the always-visible Preview toggle. The earlier `RowLayout`
+moved Preview when the conditional control appeared; `dc8ef4b` corrected the
+layout, subject to final visual confirmation.
 
 ## 5. Generated-file repair and health
 

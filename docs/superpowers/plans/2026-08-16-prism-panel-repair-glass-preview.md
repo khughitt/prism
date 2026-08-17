@@ -8,6 +8,24 @@
 
 **Tech Stack:** Node.js ESM, YAML definitions/manifests, Qt 6 QML/Qt Quick 3D, Quickshell IPC/layer shell, zsh/bash dotfiles tests, `node:test`.
 
+**Implementation status:** Tasks 1–6 landed on `main`: niri-glass `6219993`,
+`12eb73d`, normal-layer lifecycle fix `90bc36d`, and preview lifecycle fix
+`bdb83e8`; Prism `1c5d887`, `e480ffb`, `d392aad`, and scrollbar repair
+`eb3a865`, followed by Diagnostics layout/padding repair `dc8ef4b`; dotfiles
+`0c7fb78`. Task 7 additionally produced reviewed Kitty
+race fixes `a1fc62b` and `7665605`, passed static/transport/preview/restoration
+gates, and completed
+the neutral sweep. Manual Passes 1–2 accepted slider/toggle/color optimistic
+updates, reconciliation, Reset alignment/clearing, and persistent Glass
+disable/re-enable across panel and controlled Noctalia lifecycles; Preview
+show, diagnostic grid/wallpaper switch, and close/reopen cleanup are
+also accepted. Diagnostics layout, direct-IPC click-through/focus, and live
+Preview dragging have since passed. Overlapping-drag fix `93790d9` evolved
+through `c783d13` and `13ce02c` to final `c3a0a32`; the series is reviewed,
+merged, loaded, and manually accepted after restart. Failed-write banner/
+recovery also passed. The final neutral flat face remained opaque/milky, triggering the
+planned stop and a separate shader follow-up.
+
 ## Repositories and global constraints
 
 - `[prism]` tasks run in the existing `feat/prism-panel-ui` worktree.
@@ -35,7 +53,7 @@
 - Consumes: the existing `JsonAdapter` named `conf` and normal `PanelWindow` named `win`.
 - Produces: `conf.enabled: bool`, default `true`; the normal layer's visibility follows it without stopping config watching or IPC.
 
-- [ ] **Step 1: Add the failing source-contract test**
+- [x] **Step 1: Add the failing source-contract test**
 
 Create `test/shell-contract.test.mjs`:
 
@@ -59,7 +77,7 @@ test("disabling the normal layer does not disable the config watcher", () => {
 });
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run:
 
@@ -69,7 +87,7 @@ node --test test/shell-contract.test.mjs
 
 Expected: the enable-switch test fails because `conf.enabled` and the visibility binding do not exist.
 
-- [ ] **Step 3: Add the minimal schema and visibility binding**
+- [x] **Step 3: Add the minimal schema and visibility binding**
 
 In the `JsonAdapter`, add the property before the geometry values:
 
@@ -85,7 +103,7 @@ visible: conf.enabled
 
 Do not gate the `FileView`, wallpaper process, event stream, or shell root. Re-enabling must use already-live state.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 Run:
 
@@ -123,7 +141,7 @@ git commit -m "feat: add live glass enable switch"
 - Consumes: Task 1's `conf.enabled: true` and existing `groupParams(params)`.
 - Produces: persistent `glass.enabled`; `titleParam(params) -> param`; `groupParams(params)` excludes `Title` and keeps the existing six body groups with `Quick` first.
 
-- [ ] **Step 1: Add the QML-mirroring seed key and verify the intended RED transition**
+- [x] **Step 1: Add the QML-mirroring seed key and verify the intended RED transition**
 
 Add this first property to `test/fixtures/niri-glass-seed.json`:
 
@@ -142,7 +160,7 @@ The focused command reports that intended failure; running the full suite at
 this intermediate point also makes `test/niri-glass-render.test.js` fail its
 closed rendered-key-set assertion until Step 3 lands.
 
-- [ ] **Step 2: Add failing title-routing and rendered-output assertions**
+- [x] **Step 2: Add failing title-routing and rendered-output assertions**
 
 Import `titleParam` in `test/plugin-presentation.test.js` and extend the synthetic fixture with:
 
@@ -191,7 +209,7 @@ node --test test/glass-defs.test.js test/niri-glass-render.test.js test/plugin-p
 
 Expected: failures for the missing definition, binding/output, and `titleParam` export.
 
-- [ ] **Step 3: Add the definition and manifest binding**
+- [x] **Step 3: Add the definition and manifest binding**
 
 Add this first definition to `defs/glass.yaml`:
 
@@ -211,7 +229,7 @@ Add this first glass binding in `integrations/niri-glass/manifest.yaml`:
 
 No renderer branch is needed: `renderGlassConfig` already strips the `glass.` prefix generically.
 
-- [ ] **Step 4: Implement the title/body split in the existing helper**
+- [x] **Step 4: Implement the title/body split in the existing helper**
 
 Add to `presentation.mjs`:
 
@@ -244,7 +262,7 @@ Keep the existing Quick-first `unshift`; the exact body group order remains:
 Quick, Opacity & Focus, Glass Shape, Glass Optics, Motion, Diagnostics
 ```
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 Run:
 
@@ -278,7 +296,7 @@ git commit -m "feat: add glass enable presentation slot"
 - Consumes: Task 2's `Presentation.titleParam` and unchanged body-group array.
 - Produces: a definition-driven title toggle, no visible Quick heading, compact rows, locally immediate displayed values, and Reset/hint alignment on the control line.
 
-- [ ] **Step 1: Add failing structural assertions**
+- [x] **Step 1: Add failing structural assertions**
 
 In `test/plugin-client.test.js`, add:
 
@@ -333,7 +351,7 @@ the group model recreates delegates and restores each `displayedValue` binding.
 An in-place update must add explicit reconciliation before this assertion can
 be relaxed.
 
-- [ ] **Step 2: Run the focused tests and verify RED**
+- [x] **Step 2: Run the focused tests and verify RED**
 
 Run:
 
@@ -343,7 +361,7 @@ node --test test/plugin-client.test.js
 
 Expected: failures for title extraction, the visible Quick heading, compact type, local state, and row alignment.
 
-- [ ] **Step 3: Implement the title slot and compact group spacing**
+- [x] **Step 3: Implement the title slot and compact group spacing**
 
 In `Panel.qml`, add root state:
 
@@ -395,7 +413,7 @@ RowLayout {
 
 Remove the Quick `NText` completely. Retain the Quick surface and direct-open behavior. Reduce panel outer margins from `Style.marginL` to `Style.marginM`, group-list spacing from `Style.marginL` to `Style.marginM`, parameter-list spacing from `Style.marginM` to `Style.marginS`, and the Quick surface padding from `Style.marginM` to `Style.marginS`.
 
-- [ ] **Step 4: Recompose `ParamControl` around one Prism-owned label block and control row**
+- [x] **Step 4: Recompose `ParamControl` around one Prism-owned label block and control row**
 
 Add:
 
@@ -503,7 +521,7 @@ NIconButton {
 }
 ```
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 Run:
 
@@ -543,7 +561,7 @@ git commit -m "fix: compact prism controls and update values eagerly"
 - Consumes: Task 1's live `conf`, current wallpaper path, `WallMap.cropFillUv`, slab mesh, and production shaders.
 - Produces: `IpcHandler` target `prismGlass`; `showPreview(output, side, diagnosticBackground)`; idempotent `hidePreview()`; one preview surface on the selected output; one `GlassMaterial` used by normal panes and preview.
 
-- [ ] **Step 1: Add failing pure preview-state tests**
+- [x] **Step 1: Add failing pure preview-state tests**
 
 Create `test/preview.test.mjs`:
 
@@ -604,7 +622,7 @@ test("diagnostic background is the fixed neutral 40/200 grid", () => {
 });
 ```
 
-- [ ] **Step 2: Run focused tests and verify RED**
+- [x] **Step 2: Run focused tests and verify RED**
 
 Run:
 
@@ -614,7 +632,7 @@ node --test test/preview.test.mjs test/shell-contract.test.mjs
 
 Expected: failures for missing `preview.mjs`, shared material, preview surface, and IPC target.
 
-- [ ] **Step 3: Implement the import-free preview state helper**
+- [x] **Step 3: Implement the import-free preview state helper**
 
 Create `preview.mjs`:
 
@@ -641,7 +659,7 @@ export function hide() {
 
 Do not add history or persistence; current state is one replaced object.
 
-- [ ] **Step 4: Extract the production custom material once**
+- [x] **Step 4: Extract the production custom material once**
 
 Create `GlassMaterial.qml` as the existing `CustomMaterial` block with these inputs:
 
@@ -709,7 +727,7 @@ CustomMaterial {
 
 Replace the existing inline `CustomMaterial` in `shell.qml` with `GlassMaterial`, passing the same values. Do not move geometry, spring, jelly, shadow, or focus-glint behavior.
 
-- [ ] **Step 5: Add the fixed diagnostic texture and bounded preview surface**
+- [x] **Step 5: Add the fixed diagnostic texture and bounded preview surface**
 
 Create `assets/diagnostic-grid.svg` as this 200×200 neutral-slate tile:
 
@@ -763,7 +781,7 @@ environment: SceneEnvironment {
 This is load-bearing for the neutral sweep: preview and normal panes must see
 the same probe contribution.
 
-- [ ] **Step 6: Wire one global IPC state to per-output preview variants**
+- [x] **Step 6: Wire one global IPC state to per-output preview variants**
 
 Import `preview.mjs` in `shell.qml`, give `ShellRoot` the id `root`, and add
 root state for preview and the already-fetched per-output wallpaper paths:
@@ -813,7 +831,7 @@ Bind the preview wallpaper explicitly:
 wallpaperPath: root.wallpaperPaths[modelData.name] || ""
 ```
 
-- [ ] **Step 7: Document, verify, and commit**
+- [x] **Step 7: Document, verify, and commit**
 
 Update `README.md` with:
 
@@ -859,7 +877,7 @@ git commit -m "feat: add isolated glass material preview"
 - Consumes: Task 4's `prismGlass` IPC and Task 3's compact Diagnostics section.
 - Produces: FIFO verbs `preview-show`/`preview-hide`; `Queue.affectsParams(item)`; `Queue.shouldRefresh(batchAffectsParams, lastItem)`; panel-local Preview and Diagnostic-background toggles.
 
-- [ ] **Step 1: Add failing queue command and refresh truth-table tests**
+- [x] **Step 1: Add failing queue command and refresh truth-table tests**
 
 In `test/plugin-queue.test.js`, add:
 
@@ -897,7 +915,7 @@ test('drain refresh requires a parameter write and a non-sample tail', () => {
 
 Add a FIFO assertion that enqueues `release`, `previewHide`, and another `sample` and confirms all three remain ordered; preview verbs are discrete and never coalesce.
 
-- [ ] **Step 2: Add failing client/panel source contracts**
+- [x] **Step 2: Add failing client/panel source contracts**
 
 In `test/plugin-client.test.js`, add assertions for:
 
@@ -922,7 +940,7 @@ test('a final write followed by a new drag sample defers refresh', () => {
 });
 ```
 
-- [ ] **Step 3: Run focused tests and verify RED**
+- [x] **Step 3: Run focused tests and verify RED**
 
 Run:
 
@@ -932,7 +950,7 @@ node --test test/plugin-queue.test.js test/plugin-client.test.js
 
 Expected: failures for missing preview argv, parameter classification, refresh conjunction, client methods, and panel-local toggles.
 
-- [ ] **Step 4: Implement queue classification and exact argv**
+- [x] **Step 4: Implement queue classification and exact argv**
 
 Add to `queue.mjs`:
 
@@ -963,7 +981,7 @@ export function argvFor(item) {
 }
 ```
 
-- [ ] **Step 5: Apply the drain conjunction in `PrismClient`**
+- [x] **Step 5: Apply the drain conjunction in `PrismClient`**
 
 Add:
 
@@ -1005,7 +1023,7 @@ At drain, reset the batch flag before signals or refresh can enqueue more work:
 
 Remove `completedSample`; the new predicate subsumes it.
 
-- [ ] **Step 6: Add panel-local preview controls**
+- [x] **Step 6: Add panel-local preview controls**
 
 Add root properties and side calculation to `Panel.qml`:
 
@@ -1091,7 +1109,7 @@ Extend the panel source-contract test to assert the declared convention:
 assert.match(panel, /modelData\.name === "Diagnostics"/);
 ```
 
-- [ ] **Step 7: Verify and commit**
+- [x] **Step 7: Verify and commit**
 
 Run:
 
@@ -1125,7 +1143,7 @@ git commit -m "feat: control isolated glass preview"
 - Consumes: Task 4's named Quickshell config and the existing Prism-generated `niri-glass.json`.
 - Produces: `$XDG_CONFIG_HOME/quickshell/niri-glass` -> `${HOME}/d/niri-glass`; niri launch via `qs -c niri-glass`; exact health checks for both consumer links and the root-config exclusion.
 
-- [ ] **Step 1: Extend the test fixture and add failing dry-run setup assertions**
+- [x] **Step 1: Extend the test fixture and add failing dry-run setup assertions**
 
 In `run_setup`, create a real fixture source before invoking setup:
 
@@ -1166,7 +1184,7 @@ Register the test at the bottom of the file. Keep it dry-run: a real
 `graphical-config` invocation writes managed links under `${DOTS_HOME}/niri`,
 which belongs only in Task 7's live acceptance, not a temp-HOME test.
 
-- [ ] **Step 2: Add failing health cases with one healthy fixture helper**
+- [x] **Step 2: Add failing health cases with one healthy fixture helper**
 
 Add a helper that configures only the Prism-owned runtime seam:
 
@@ -1260,7 +1278,7 @@ test_dotfiles_health_rejects_root_quickshell_config() {
 Register the healthy test and all three failure tests at the bottom of the
 file.
 
-- [ ] **Step 3: Run the focused dotfiles suite and verify RED**
+- [x] **Step 3: Run the focused dotfiles suite and verify RED**
 
 Run:
 
@@ -1270,7 +1288,7 @@ zsh tests/setup_and_health.zsh
 
 Expected: failures for the absent named setup link and absent health checks.
 
-- [ ] **Step 4: Implement setup ordering and stable launch**
+- [x] **Step 4: Implement setup ordering and stable launch**
 
 In `setup_graphical_config_links`, before exposing the niri config:
 
@@ -1296,7 +1314,7 @@ with:
 spawn-at-startup "qs" "-c" "niri-glass"
 ```
 
-- [ ] **Step 5: Implement exact health boundaries**
+- [x] **Step 5: Implement exact health boundaries**
 
 Inside the existing configured-Prism health block, before `prism doctor`, add:
 
@@ -1323,7 +1341,7 @@ XDG_STATE_HOME="${XDG_STATE_HOME:-${HOME}/.local/state}"
 
 Run `prism doctor` only when the config link and both niri-glass links have added no failures. Keep this external wiring out of Prism doctor.
 
-- [ ] **Step 6: Verify and commit with an exact dotfiles gate**
+- [x] **Step 6: Verify and commit with an exact dotfiles gate**
 
 Run:
 
@@ -1359,7 +1377,7 @@ The cached path list must contain exactly those four paths. The existing modifie
 - Consumes: Tasks 1–6 and the live Noctalia/niri/niri-glass installation.
 - Produces: restored user values, permanent consumer wiring, and recorded evidence for transport, panel behavior, preview behavior, and milkiness attribution.
 
-- [ ] **Step 1: Run static gates before changing live state**
+- [x] **Step 1: Run static gates before changing live state**
 
 In Prism:
 
@@ -1387,7 +1405,7 @@ zsh tests/setup_and_health.zsh
 niri validate -c niri/config.kdl
 ```
 
-- [ ] **Step 2: Snapshot values and redirect only the unmerged Prism plugin/CLI**
+- [x] **Step 2: Snapshot values and redirect only the unmerged Prism plugin/CLI**
 
 Use one shell for Steps 2–7. From the Prism worktree:
 
@@ -1409,7 +1427,7 @@ fi
 
 Do not reset any current geometry values.
 
-- [ ] **Step 3: Materialize permanent consumer links, then restart both shells**
+- [x] **Step 3: Materialize permanent consumer links, then restart both shells**
 
 Run the committed dotfiles graphical phase, then verify before restart:
 
@@ -1432,7 +1450,7 @@ PATH="$prism_test_bin:$PATH" qs -d -c noctalia-shell
 
 If either shell fails to restart, restore Step 7 immediately before diagnosis.
 
-- [ ] **Step 4: Prove the repaired transport before tuning material**
+- [x] **Step 4: Prove the repaired transport before tuning material**
 
 Verify:
 
@@ -1456,23 +1474,75 @@ Required evidence:
 
 If any item fails, stop at that first broken link, add one focused regression in the owning repository, and request review before continuing.
 
-- [ ] **Step 5: Perform panel and preview acceptance**
+- [x] **Step 5: Perform panel and preview acceptance**
+
+Evidence to date: item 1 passed from the captured live panel. Manual Pass 1
+accepted item 2's slider/color paths and all of item 3; Pass 2 accepted toggle
+reconciliation and all of item 4. Glass remained false through panel reopen
+and a controlled Noctalia stop/start, a fresh panel showed off, enable restored
+the layer immediately, and a second off/on repeated the result without a
+`prism exited 255` banner. The earlier anomalous first restart was not
+reproducible with before/stopped/after value checks, so it produced no guessed
+fix. A first Preview attempt showed the bounded surface, but clicking outside
+the panel triggered Noctalia's expected SmartPanel dismissal and enqueued
+Preview hide. That old show/hide transition then crashed niri-glass PID
+2860003 in `QQuick3DSceneManager::setWindow`. Reviewed fix `bdb83e8` keeps the
+transparent, input-empty preview `PanelWindow` alive and gates its `Image` and
+`View3D`; 57/57 tests, Qt 6 lint, and a live same-PID show/hide check passed.
+Because clicking outside closes the SmartPanel and hides Preview by contract,
+item 5's pass-through/focus check must use direct IPC with the settings panel
+closed. Diagnostics overflow also exposed Reset clipping under the scrollbar;
+reviewed Prism fix `eb3a865` restored native `NScrollView` scrollbar
+reservation and passed 132/132 tests plus Qt 6 lint. Retest then accepted
+Preview show, the Diagnostic-background grid/wallpaper switch, and
+panel-close hide/reopen-off behavior without errors. It also found that the
+conditional Diagnostic toggle shifted Preview and the native gutter remained
+too tight. Reviewed Prism fix `dc8ef4b` stacks those controls in a
+`ColumnLayout` and adds native `NScrollView` `userRightPadding: Style.marginS`;
+133/133 tests, Qt 6 lint, diff check, and independent review passed. Visual
+retest accepted the stable Preview position, separate Diagnostic row, and
+scrollbar gutter. Direct IPC then kept Preview visible while niri focus moved
+from kitty window 308 to Brave window 625; its layer reported keyboard
+interactivity `None`, and hide succeeded. Preview/diagnostic IPC left Prism
+values semantically unchanged—the temporary YAML hash difference was only the
+user's `glass.gridOverlay: false` key changing order. A live Glass blur drag
+updated both its number and Preview before release; roughness was restored from
+the observed `0.07` to the original `0.02`. The immediate second press could
+still stick when a prior release drained before the new drag's first sample.
+Fix `93790d9` defers reconciliation for the full pressed lifetime;
+`c783d13` additionally discards an in-flight result while pressed. Final
+`13ce02c` invalidates that result at press time and discards it even when press
+and release finish before the process exits, then permits a fresh replay;
+`c3a0a32` preserves invalidation when that refresh/replay starts during the
+press. 134/134 tests, Qt 6 lint, diff check, and independent review pass; the
+series is merged and loaded. The user then repeated release followed by an
+immediate re-click/drag and reported, “Nope; sticking resolved - nice work!”
+Item 8 is accepted. For item 10, Noctalia first opened and populated through a
+temporary shim proxying the real CLI; switching that same shim to exit 255 made
+a Glass blur write show the persistent banner while controls, section collapse/
+expand, scrolling, and movement stayed usable, and the failed value did not
+apply. After restoring the proxy, a panel reopen showed no error and a Glass
+clarity write succeeded. Launching with the shim already broken had instead
+failed the initial `describe` and supplied no controls; that was corrected test
+setup, not a product defect. Cleanup restarted ordinary Noctalia, removed the
+temporary directory, and restored transmission to `0.95` and roughness to
+`0.02`. Item 10 and this combined step are accepted.
 
 Record pass/fail for each item:
 
-1. The title shows a compact definition-driven Glass switch; no Quick heading is visible; all six basic controls fit comfortably.
-2. Every shipped control type (slider, toggle, and color) changes locally
+1. **Accepted.** The title shows a compact definition-driven Glass switch; no Quick heading is visible; all six basic controls fit comfortably.
+2. **Accepted.** Every shipped control type (slider, toggle, and color) changes locally
    without waiting for `describe`, then reconciles to the stored value.
-3. Reset icons align with the control/value line; hints sit immediately before Reset; modified indicators clear after reset.
-4. Disable Glass, close/reopen the panel, and restart Noctalia: the normal layer stays disabled. Re-enable it and confirm immediate return.
-5. Expand Diagnostics and enable Preview: one bounded surface appears opposite the panel on the same output, does not take focus, and passes pointer input through.
-6. Toggle Diagnostic background: the preview changes between the wallpaper and fixed neutral grid without changing `values.yaml`.
-7. Drag glass sliders while Preview is visible: the local value and preview move before pointer release; the final stored value agrees.
-8. Start a release write, immediately begin a second drag before it drains, and confirm the pressed slider is not destroyed.
-9. Toggle Preview off, then on and close the panel; both paths hide it. Reopening starts with Preview off.
-10. Break the temporary `prism` command once, confirm the existing banner remains visible and the panel stays usable, restore it, and confirm recovery.
+3. **Accepted.** Reset icons align with the control/value line; hints sit immediately before Reset; modified indicators clear after reset.
+4. **Accepted.** Disable Glass, close/reopen the panel, and restart Noctalia: the normal layer stays disabled. Re-enable it and confirm immediate return.
+5. **Accepted.** Expanding Diagnostics and enabling Preview shows one bounded surface opposite the panel on the same output. Under direct IPC it remains visible and click-through while niri focus moves from kitty to Brave, and it reports no keyboard interactivity.
+6. **Accepted.** Diagnostic background switches the preview between wallpaper and the fixed neutral grid without errors or persistent-value changes.
+7. **Accepted.** Dragging Glass blur updates the local number and Preview before release; the observed roughness value stored correctly and was restored from `0.07` to `0.02`.
+8. **Accepted.** After reviewed, merged series `93790d9`, `c783d13`, `13ce02c`, and final `c3a0a32`, release followed by immediate re-click/drag retains the grab without sticking in the restarted live shell.
+9. **Accepted.** Preview show/hide is stable; closing the panel hides it, reopening starts off, and the post-`bdb83e8` transitions show no errors.
+10. **Accepted.** Breaking subsequent writes after the panel populated keeps the exit-255 banner visible and the panel usable; the failed value does not apply. Restoring the shim clears the error after reopen and a Glass clarity write succeeds.
 
-- [ ] **Step 6: Run the ordered neutral-material sweep**
+- [x] **Step 6: Run the ordered neutral-material sweep**
 
 With Diagnostic background visible, apply these cumulative values one at a time and record the visible delta after each:
 
@@ -1487,7 +1557,7 @@ The first step must remove the white diffuse term exactly. The following steps i
 
 If the final flat face is clear, leave shader code and defaults unchanged. If it remains milky, capture the evidence and stop: the responsible shader term requires a focused follow-up design and regression rather than a guessed change in this plan.
 
-- [ ] **Step 7: Restore user values and temporary live redirects atomically**
+- [x] **Step 7: Restore user values and temporary live redirects atomically**
 
 From the Prism worktree:
 
@@ -1536,7 +1606,7 @@ command -v prism
 - Consumes: committed implementation in all three repositories and Task 7's live evidence.
 - Produces: accurate historical statuses/checklists, updated public contracts/counts, and a final verified branch.
 
-- [ ] **Step 1: Update concrete contracts and counts**
+- [x] **Step 1: Update concrete contracts and counts**
 
 In `docs/notes/noctalia-plugin-contract.md`, record:
 
@@ -1557,7 +1627,7 @@ In the prior panel plan's Task 6 predicate, set exactly:
 ([.params[] | select(.ui.group == "Quick")] | length) == 6
 ```
 
-- [ ] **Step 2: Correct historical status and checkbox claims from evidence**
+- [x] **Step 2: Correct historical status and checkbox claims from evidence**
 
 Verify relevant commits are ancestors before changing status text:
 
@@ -1571,11 +1641,12 @@ Then:
 
 - mark Tasks 1–5 of the prior panel plan complete;
 - leave its failed/superseded live-acceptance task described historically rather than claiming it passed;
-- change the repair design status to `Implemented on feature branch — merge pending` only after Tasks 1–7 pass;
+- record the repair as implemented and interaction-accepted on `main` while
+  explicitly leaving the shader follow-up pending;
 - mark this plan's completed boxes from actual evidence, not from agent reports;
 - include the exact implementation commits from each repository.
 
-- [ ] **Step 3: Grep propagated claims**
+- [x] **Step 3: Grep propagated claims**
 
 Run:
 
@@ -1585,7 +1656,7 @@ rg -n 'live path already exists|one conventional group|params \| length|32 visib
 
 Read every hit. Update stale user-facing claims and current plan contracts; preserve historical rationale that is explicitly labeled superseded.
 
-- [ ] **Step 4: Run final verification across all repositories**
+- [x] **Step 4: Run final verification across all repositories**
 
 Prism:
 

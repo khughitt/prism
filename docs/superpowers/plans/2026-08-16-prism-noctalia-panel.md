@@ -8,6 +8,22 @@
 
 **Tech Stack:** Node.js ESM, YAML definitions/manifests, Qt Quick/QML, Noctalia 5.x components, `node:test`, Qt 6 `qmllint`.
 
+**Implementation status:** Tasks 1–5 landed on `main` as `4abda15`,
+`64cf1f2`, `b870c40`, `97cd04c`, and `be02040` (with focused corrections
+`e0329a8`, `7d6cd67`, scrollbar repair `eb3a865`, and Diagnostics layout/
+padding repair `dc8ef4b`, followed by pressed-slider repair through
+`c3a0a32`). Task 6's live acceptance exposed the missing
+niri-glass consumer path and was superseded by the panel-repair/preview plan;
+its unchecked interaction claims remain historical, not evidence of failure
+in the committed source. Superseding manual Passes 1–2 later accepted
+slider/toggle/color optimistic updates, reconciliation, Reset alignment/
+clearing, and Glass persistence across panel and controlled Noctalia
+lifecycles. Diagnostics layout, Preview show, diagnostic background switching,
+close/reopen cleanup, direct-IPC click-through/focus, and live Preview dragging
+are also accepted. The reviewed/merged pressed-slider repair passed its
+post-restart manual retest, and the superseding plan accepted failed-write
+banner persistence, continued usability, and recovery.
+
 ## Global Constraints
 
 - Use TDD for each behavior change: observe the focused test fail before editing production code.
@@ -36,7 +52,7 @@
 - Consumes: existing `validateDef(def, src)` and `loadDefs(dir)`.
 - Produces: every visible definition has `ui.label: string` and unique `ui.order: integer`; all visible numeric defaults lie on their slider grids.
 
-- [ ] **Step 1: Add failing validation and shipped-definition tests**
+- [x] **Step 1: Add failing validation and shipped-definition tests**
 
 Extend `test/defs.test.js` so inline YAML fixtures that pass `loadDefs` include valid metadata before the condition they intend to test. Add focused cases proving:
 
@@ -65,7 +81,7 @@ assert.ok(Math.abs(n - Math.round(n)) <= 1e-9, `${def.key} default is off-grid`)
 
 Do not use `Number.isInteger(n)`.
 
-- [ ] **Step 2: Run the focused tests and verify RED**
+- [x] **Step 2: Run the focused tests and verify RED**
 
 Run:
 
@@ -75,7 +91,7 @@ node --test test/defs.test.js test/glass-defs.test.js
 
 Expected: failures for absent validation, duplicate orders, and the six off-grid slider definitions.
 
-- [ ] **Step 3: Implement the minimal definition contract**
+- [x] **Step 3: Implement the minimal definition contract**
 
 In `validateDef`, require a trimmed non-empty label and integer order only when `ui.control !== 'none'`:
 
@@ -136,7 +152,7 @@ glass.springStiffness       1
 glass.springEpsilon         0.000001
 ```
 
-- [ ] **Step 4: Run focused and full tests**
+- [x] **Step 4: Run focused and full tests**
 
 Run:
 
@@ -147,7 +163,7 @@ npm test
 
 Expected: all tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/defs.js defs/compositor.yaml defs/glass.yaml defs/terminal.yaml test/defs.test.js test/glass-defs.test.js
@@ -170,7 +186,7 @@ git commit -m "feat: add semantic prism presentation metadata"
 - Consumes: manifest bindings `{param, liveness, drag?}`.
 - Produces: `describe --json` keeps public `bindings[]` as `{sink, liveness}`, retains `effectiveLiveness`, and appends `effectiveDrag: 'live' | 'release' | null`.
 
-- [ ] **Step 1: Add failing manifest-policy tests**
+- [x] **Step 1: Add failing manifest-policy tests**
 
 In `test/manifest.test.js`, add this small helper beside the existing `integ`
 fixture helper, then prove the only accepted override is `drag: release` on a
@@ -190,7 +206,7 @@ assert.throws(() => loadBinding('    liveness: reload\n    drag: release'),
   /drag: release requires liveness: live/);
 ```
 
-- [ ] **Step 2: Add failing describe-shape and aggregation tests**
+- [x] **Step 2: Add failing describe-shape and aggregation tests**
 
 In `describe emits bindings and slowest effectiveLiveness`, change the callback
 to `async (t)`, then create two dedicated fixture sink directories. Register
@@ -253,7 +269,7 @@ assert.deepEqual(Object.keys(p), [
 
 Preserve whatever existing conditional handling the test uses for the optional `values` key; the new key must be immediately after `effectiveLiveness` in `src/cli.js`'s object literal.
 
-- [ ] **Step 3: Run focused tests and verify RED**
+- [x] **Step 3: Run focused tests and verify RED**
 
 Run:
 
@@ -263,7 +279,7 @@ node --test test/manifest.test.js test/cli.test.js
 
 Expected: failures for missing validation and missing `effectiveDrag`.
 
-- [ ] **Step 4: Implement manifest validation and aggregation**
+- [x] **Step 4: Implement manifest validation and aggregation**
 
 In `loadManifests`, after liveness validation, fail explicitly unless the optional override is exactly valid:
 
@@ -292,7 +308,7 @@ const effectiveDrag = rawBindings.length === 0
 
 Append `effectiveDrag` directly after `effectiveLiveness`. Add `drag: release` to both terminal-background-opacity bindings in `integrations/kitty/manifest.yaml`; no other manifest gains the field.
 
-- [ ] **Step 5: Run focused and full tests**
+- [x] **Step 5: Run focused and full tests**
 
 Run:
 
@@ -303,7 +319,7 @@ npm test
 
 Expected: all tests pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/manifest.js src/cli.js integrations/kitty/manifest.yaml test/manifest.test.js test/cli.test.js
@@ -323,7 +339,7 @@ git commit -m "feat: describe effective pointer drag policy"
 - Produces: `groupParams(params) -> Array<{name, params}>`, `stepPrecision(step) -> integer`, `quantizeValue(value, step) -> number`, and `formatValue(value, step) -> string`.
 - Consumers: `Panel.qml`, `ParamControl.qml`, and Node tests. The module must remain import-free and QV4-compatible.
 
-- [ ] **Step 1: Write failing helper tests**
+- [x] **Step 1: Write failing helper tests**
 
 Create `test/plugin-presentation.test.js` with direct ESM imports and exact assertions:
 
@@ -388,7 +404,7 @@ test('formats values without binary noise or trailing zeros', () => {
 });
 ```
 
-- [ ] **Step 2: Run the helper test and verify RED**
+- [x] **Step 2: Run the helper test and verify RED**
 
 Run:
 
@@ -398,7 +414,7 @@ node --test test/plugin-presentation.test.js
 
 Expected: failure because `presentation.mjs` does not exist.
 
-- [ ] **Step 3: Implement the import-free helper**
+- [x] **Step 3: Implement the import-free helper**
 
 Create `presentation.mjs` with ordinary functions and explicit objects. Use this exact numeric boundary:
 
@@ -459,7 +475,7 @@ export function groupParams(params) {
 
 Do not add generic grouping options.
 
-- [ ] **Step 4: Run focused and full tests**
+- [x] **Step 4: Run focused and full tests**
 
 Run:
 
@@ -470,7 +486,7 @@ npm test
 
 Expected: all tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add integrations/noctalia-plugin/presentation.mjs test/plugin-presentation.test.js
@@ -491,7 +507,7 @@ git commit -m "feat: add noctalia presentation helpers"
 - Consumes: Task 2's `effectiveDrag`, Task 3's `Presentation.groupParams`, `Presentation.quantizeValue`, and `Presentation.formatValue`; existing `PrismClient.set(key, value, sample)` and `unset(key)`.
 - Produces: one parameter row component and a panel that retains expanded state across describe refreshes but resets it when the panel root is destroyed.
 
-- [ ] **Step 1: Re-anchor existing lifecycle tests before moving code**
+- [x] **Step 1: Re-anchor existing lifecycle tests before moving code**
 
 Make `test/plugin-client.test.js` read both files:
 
@@ -508,7 +524,7 @@ node --test test/plugin-client.test.js
 
 Expected: RED because `ParamControl.qml` does not exist; do not weaken or delete the lifecycle assertions.
 
-- [ ] **Step 2: Add failing structural assertions for the new behavior**
+- [x] **Step 2: Add failing structural assertions for the new behavior**
 
 Add source-contract tests that require all of these facts:
 
@@ -532,7 +548,7 @@ For write correctness, isolate the `sendSlider` helper and assert every slider w
 client.set(param.key, Presentation.quantizeValue(value, stepSize), sample)
 ```
 
-- [ ] **Step 3: Implement `ParamControl.qml` with native controls**
+- [x] **Step 3: Implement `ParamControl.qml` with native controls**
 
 Import the shared module in this file—QML imports are file-local—then give the
 component only these public inputs:
@@ -566,7 +582,7 @@ Configure native controls as follows:
 
 Use the existing `selectOptions` and `colorHex` logic locally in this component; they are two small control-format adapters, not new shared APIs.
 
-- [ ] **Step 4: Implement Quick and advanced section composition in `Panel.qml`**
+- [x] **Step 4: Implement Quick and advanced section composition in `Panel.qml`**
 
 Import the shared module:
 
@@ -601,7 +617,7 @@ Render `Quick` directly in one quiet themed surface. For every other group, comp
 
 Do not use `NCollapsible`, persist state outside the panel, or duplicate parameter keys in QML.
 
-- [ ] **Step 5: Run QML and Node verification**
+- [x] **Step 5: Run QML and Node verification**
 
 Run:
 
@@ -613,7 +629,7 @@ npm test
 
 Expected: all Node tests pass and Qt 6 `qmllint` exits 0; the documented unresolved-`qs.*` warnings are expected.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add integrations/noctalia-plugin/ParamControl.qml integrations/noctalia-plugin/Panel.qml test/plugin-client.test.js
@@ -633,7 +649,7 @@ git commit -m "feat: streamline noctalia prism controls"
 - Consumes: installed Noctalia `Style`, `Color`, and `BarService` APIs.
 - Produces: the existing panel toggle with the native capsule geometry/colors and monochrome `wand` icon.
 
-- [ ] **Step 1: Add a failing source-contract test**
+- [x] **Step 1: Add a failing source-contract test**
 
 Add one focused test that pins the copied Noctalia contract rather than merely matching the icon:
 
@@ -656,7 +672,7 @@ assert.match(bar, /border\.width: Style\.capsuleBorderWidth/);
 assert.match(bar, /tooltipDirection: BarService\.getTooltipDirection\(screen\?\.name\)/);
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run:
 
@@ -666,13 +682,13 @@ node --test test/plugin-client.test.js
 
 Expected: the new capsule assertions fail against the current `palette` button.
 
-- [ ] **Step 3: Copy the installed native capsule properties exactly**
+- [x] **Step 3: Copy the installed native capsule properties exactly**
 
 Add `import qs.Commons` and `import qs.Services.UI`, retain `NIconButton`, and set exactly the properties asserted above. Preserve `tooltipText: "Prism"`, all injected plugin properties, and the existing `pluginApi.togglePanel(screen, root)` handler.
 
 Do not add custom sizing, colors, animation, or a Prism-specific icon asset.
 
-- [ ] **Step 4: Run focused and QML verification**
+- [x] **Step 4: Run focused and QML verification**
 
 Run:
 
@@ -684,7 +700,7 @@ npm test
 
 Expected: all tests pass and Qt 6 `qmllint` exits 0; the documented unresolved-`qs.*` warnings are expected.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add integrations/noctalia-plugin/BarWidget.qml test/plugin-client.test.js
@@ -713,11 +729,10 @@ Run the worktree CLI directly and assert the shipped contract:
 
 ```bash
 bin/prism describe --json | jq -e '
-  (.params | length) == 33 and
-  ([.params[] | select(.ui.control != "none")] | length) == 32 and
-  ([.params[] | select(.ui.group == "Quick") | .key] | length) == 6 and
-  ([.params[] | select(.key | startswith("glass.")) | .effectiveDrag] | all(. == "live")) and
-  ([.params[] | select(.key == "terminal.background.opacity.active" or .key == "terminal.background.opacity.inactive") | .effectiveDrag] | all(. == "release"))'
+  (.params | length) == 34 and
+  ([.params[] | select(.ui.control != "none")] | length) == 33 and
+  ([.params[] | select(.ui.group == "Title")] | length) == 1 and
+  ([.params[] | select(.ui.group == "Quick")] | length) == 6'
 ```
 
 Run the automated gates:
