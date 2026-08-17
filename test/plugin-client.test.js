@@ -63,6 +63,10 @@ test('basic controls start directly below the title and use compact type', () =>
   assert.match(control, /textSize: Style\.fontSizeS/);
 });
 
+test('panel keeps native scrollbar space so trailing controls are not clipped', () => {
+  assert.doesNotMatch(panel, /reserveScrollbarSpace: false/);
+});
+
 test('controls update local display state before writing', () => {
   assert.match(control, /property var displayedValue: param\.value/);
   assert.match(control, /value: root\.displayedValue/);

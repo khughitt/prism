@@ -144,7 +144,6 @@ Item {
       Layout.fillHeight: true
       horizontalPolicy: ScrollBar.AlwaysOff
       verticalPolicy: ScrollBar.AsNeeded
-      reserveScrollbarSpace: false
       gradientColor: Color.mSurface
 
       ColumnLayout {
