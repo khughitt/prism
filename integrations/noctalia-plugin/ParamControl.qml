@@ -77,6 +77,7 @@ ColumnLayout {
       textSize: Style.fontSizeS
 
       Component.onDestruction: {
+        if (pointerPressed) root.client.setSliderPressed(false);
         if (commitGate.running) {
           commitGate.stop();
           sendSlider(valueSlider.pendingValue, false);
@@ -111,10 +112,12 @@ ColumnLayout {
 
       onPressedChanged: function(pressed, value) {
         pointerPressed = pressed;
+        if (pressed) root.client.setSliderPressed(true);
         commitGate.stop();
         if (!pressed) {
           root.displayedValue = value;
           sendSlider(value, false);
+          root.client.setSliderPressed(false);
         }
       }
     }

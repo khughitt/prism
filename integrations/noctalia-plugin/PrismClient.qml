@@ -14,6 +14,12 @@ Item {
   property string writeError: ""
   property bool refreshPending: false
   property bool batchAffectsParams: false
+  property bool sliderPressed: false
+  property bool refreshAfterDrag: false
+
+  function setSliderPressed(pressed) {
+    sliderPressed = pressed;
+  }
 
   function refresh() {
     if (describeProcess.running) {
@@ -81,7 +87,11 @@ Item {
     } else if (result.drained) {
       batchAffectsParams = false;
       drained();
-      if (shouldRefresh) refresh();
+      if (shouldRefresh) refreshAfterDrag = true;
+      if (!sliderPressed && refreshAfterDrag) {
+        refreshAfterDrag = false;
+        refresh();
+      }
     }
   }
 

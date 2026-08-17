@@ -116,7 +116,16 @@ test('drain refresh uses the parameter-write and non-sample-tail conjunction', (
   assert.match(source, /property bool batchAffectsParams: false/);
   assert.match(source, /batchAffectsParams = batchAffectsParams \|\| Queue\.affectsParams\(item\)/);
   assert.match(writeDone, /var shouldRefresh = Queue\.shouldRefresh\(batchAffectsParams, queue\.inFlight\);\s*var result = Queue\.finish\(queue\);/);
-  assert.match(writeDone, /else if \(result\.drained\) \{\s*batchAffectsParams = false;\s*drained\(\);\s*if \(shouldRefresh\) refresh\(\);\s*\}/);
+  assert.match(writeDone, /else if \(result\.drained\) \{\s*batchAffectsParams = false;\s*drained\(\);\s*if \(shouldRefresh\) refreshAfterDrag = true;\s*if \(!sliderPressed && refreshAfterDrag\) \{\s*refreshAfterDrag = false;\s*refresh\(\);\s*\}\s*\}/);
+});
+
+test('a pressed slider defers reconciliation until its release write drains', () => {
+  assert.match(source, /property bool sliderPressed: false/);
+  assert.match(source, /property bool refreshAfterDrag: false/);
+  assert.match(source, /function setSliderPressed\(pressed\) \{\s*sliderPressed = pressed;\s*\}/);
+
+  assert.match(control, /onPressedChanged: function\(pressed, value\) \{\s*pointerPressed = pressed;\s*if \(pressed\) root\.client\.setSliderPressed\(true\);[\s\S]*if \(!pressed\) \{[\s\S]*sendSlider\(value, false\);\s*root\.client\.setSliderPressed\(false\);/);
+  assert.match(control, /Component\.onDestruction:[\s\S]*if \(pointerPressed\) root\.client\.setSliderPressed\(false\)/);
 });
 
 test('client and panel expose panel-local preview controls', () => {
@@ -136,13 +145,13 @@ test('slider commits keyboard and wheel moves without changing pointer drag beha
   assert.match(control, /id: commitGate\s*interval: 100\s*repeat: false\s*onTriggered: sendSlider\(valueSlider\.pendingValue, false\)/);
   assert.match(control, /onMoved: function\(value\) \{\s*root\.displayedValue = value;\s*if \(pointerPressed\) \{\s*if \(liveDrag && !sampleGate\.running\)/);
   assert.match(control, /\} else \{\s*pendingValue = value;\s*commitGate\.restart\(\);\s*\}\s*\}/);
-  assert.match(control, /onPressedChanged: function\(pressed, value\) \{\s*pointerPressed = pressed;\s*commitGate\.stop\(\);\s*if \(!pressed\) \{\s*root\.displayedValue = value;\s*sendSlider\(value, false\);/);
+  assert.match(control, /onPressedChanged: function\(pressed, value\) \{\s*pointerPressed = pressed;\s*if \(pressed\) root\.client\.setSliderPressed\(true\);\s*commitGate\.stop\(\);\s*if \(!pressed\) \{\s*root\.displayedValue = value;\s*sendSlider\(value, false\);\s*root\.client\.setSliderPressed\(false\);/);
 });
 
 test('slider flushes a pending keyboard or wheel write before destruction', () => {
   const slider = control.slice(control.indexOf('NValueSlider {'), control.indexOf('NToggle {'));
 
-  assert.match(slider, /Component\.onDestruction: \{\s*if \(commitGate\.running\) \{\s*commitGate\.stop\(\);\s*sendSlider\(valueSlider\.pendingValue, false\);\s*\}\s*\}/);
+  assert.match(slider, /Component\.onDestruction: \{\s*if \(pointerPressed\) root\.client\.setSliderPressed\(false\);\s*if \(commitGate\.running\) \{\s*commitGate\.stop\(\);\s*sendSlider\(valueSlider\.pendingValue, false\);\s*\}\s*\}/);
 });
 
 test('every slider write uses the quantizing helper', () => {
