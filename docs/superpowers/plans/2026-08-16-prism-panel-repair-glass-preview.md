@@ -23,8 +23,11 @@ also accepted. Diagnostics layout, direct-IPC click-through/focus, and live
 Preview dragging have since passed. Overlapping-drag fix `93790d9` evolved
 through `c783d13` and `13ce02c` to final `c3a0a32`; the series is reviewed,
 merged, loaded, and manually accepted after restart. Failed-write banner/
-recovery also passed. The final neutral flat face remained opaque/milky, triggering the
-planned stop and a separate shader follow-up.
+recovery also passed. The historical neutral sweep found an opaque/milky flat
+face and correctly stopped before guessing a shader change. Focused niri-glass
+fix `af7b05f` found that encoded `#263238` entered linear shader math and Qt
+encoded it again as `#6c7a81`; its accepted runtime run reproduced `#263238`
+on the isolated neutral face and normal procedural-grid parity.
 
 ## Repositories and global constraints
 
@@ -1557,6 +1560,14 @@ The first step must remove the white diffuse term exactly. The following steps i
 
 If the final flat face is clear, leave shader code and defaults unchanged. If it remains milky, capture the evidence and stop: the responsible shader term requires a focused follow-up design and regression rather than a guessed change in this plan.
 
+> **Completion note (2026-08-17):** This historical sweep stopped at its
+> opaque/milky neutral face rather than guessing a shader change. Focused
+> niri-glass fix `af7b05f` found that encoded `#263238` entered linear shader
+> math and Qt encoded it again as `#6c7a81`; `tap()` now composites the
+> procedural grid in encoded space and decodes the completed sample once
+> before attenuation and lighting. Accepted runtime evidence reproduced
+> `#263238` on the isolated neutral face and normal procedural-grid parity.
+
 - [x] **Step 7: Restore user values and temporary live redirects atomically**
 
 From the Prism worktree:
@@ -1642,7 +1653,7 @@ Then:
 - mark Tasks 1–5 of the prior panel plan complete;
 - leave its failed/superseded live-acceptance task described historically rather than claiming it passed;
 - record the repair as implemented and interaction-accepted on `main` while
-  explicitly leaving the shader follow-up pending;
+  recording the historical shader stop and completed focused correction;
 - mark this plan's completed boxes from actual evidence, not from agent reports;
 - include the exact implementation commits from each repository.
 

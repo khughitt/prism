@@ -1,7 +1,8 @@
 # Prism panel repair and isolated glass preview
 
 **Date:** 2026-08-16
-**Status:** Implemented and interaction-accepted on `main`; opaque-glass shader follow-up pending
+**Status:** Implemented and interaction-accepted on `main`; color correction
+implemented in niri-glass `af7b05f`
 
 Implementation commits: Prism `1c5d887`, `e480ffb`, `d392aad`, `a1fc62b`,
 `7665605`, `eb3a865`, and `dc8ef4b`; niri-glass `6219993`, `12eb73d`,
@@ -16,8 +17,10 @@ and controlled Noctalia lifecycles. Preview show, diagnostic grid/wallpaper
 switching, panel-close/reopen cleanup, Diagnostics layout, direct-IPC
 click-through/focus, live Preview dragging, and immediate release/re-drag are
 also accepted. Failed-write banner persistence, continued panel usability, and
-post-restore recovery passed as well. The neutral flat face stayed opaque/milky,
-so the design's stop condition deferred shader changes to a focused follow-up.
+post-restore recovery passed as well. The historical neutral sweep found an
+opaque/milky flat face and correctly stopped before guessing a shader change.
+Focused niri-glass fix `af7b05f` found that encoded `#263238` entered linear
+shader math and Qt encoded it again as `#6c7a81`.
 
 ## Context
 
@@ -411,6 +414,11 @@ the reported inability to tune the look; shipped defaults do not change in
 this work. If it remains milky, add a failing shader/render regression where
 possible and change only the responsible diffuse/specular term. Do not mask
 the problem with arbitrary new presets.
+
+**Focused follow-up result (2026-08-17):** `tap()` now composites the
+procedural grid in encoded space and decodes the completed sample once before
+attenuation and lighting. Runtime acceptance reproduced `#263238` on the
+isolated neutral face and confirmed normal procedural-grid parity.
 
 ## 7. Error handling and ordering
 

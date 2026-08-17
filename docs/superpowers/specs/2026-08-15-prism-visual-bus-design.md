@@ -32,9 +32,12 @@ The implementation and dotfiles wiring are merged to `main`. Dotfiles setup
 installs the generated niri-glass consumer, the named `qs -c niri-glass`
 config, and the permanent Prism plugin link. Static gates, transport, preview
 creation, restoration, and interaction-dependent panel acceptance passed; the
-neutral-material sweep completed. The sweep also found that the neutral flat
-face is still opaque/milky, so shader work is deferred
-to a focused follow-up rather than guessed here. Manual Passes 1–2 accepted
+neutral-material sweep completed. That historical sweep found an opaque/milky
+neutral flat face and correctly stopped before guessing a shader change. The
+focused niri-glass fix `af7b05f` identified double encoding: encoded `#263238`
+entered linear shader math and Qt encoded it again as `#6c7a81`; `tap()` now
+composites the procedural grid in encoded space and decodes the completed
+sample once before attenuation and lighting. Manual Passes 1–2 accepted
 local slider/toggle/color updates, authoritative reconciliation, Reset
 alignment/clearing, and persistent Glass disable/re-enable across panel and
 controlled Noctalia lifecycles. Diagnostics layout, Preview show, diagnostic
