@@ -118,8 +118,12 @@ Item {
           if (!model || !Array.isArray(model.params)) {
             throw new Error("prism describe returned an invalid model");
           }
-          root.errorMessage = root.writeError;
-          root.described(model);
+          if (root.sliderPressed) {
+            root.refreshAfterDrag = true;
+          } else {
+            root.errorMessage = root.writeError;
+            root.described(model);
+          }
         } catch (error) {
           var message = error && error.message ? error.message : "Failed to parse prism describe output.";
           if (root.writeError === "") {

@@ -126,6 +126,9 @@ test('a pressed slider defers reconciliation until its release write drains', ()
 
   assert.match(control, /onPressedChanged: function\(pressed, value\) \{\s*pointerPressed = pressed;\s*if \(pressed\) root\.client\.setSliderPressed\(true\);[\s\S]*if \(!pressed\) \{[\s\S]*sendSlider\(value, false\);\s*root\.client\.setSliderPressed\(false\);/);
   assert.match(control, /Component\.onDestruction:[\s\S]*if \(pointerPressed\) root\.client\.setSliderPressed\(false\)/);
+
+  const describeExit = source.slice(source.indexOf('id: describeProcess'), source.indexOf('id: writeProcess'));
+  assert.match(describeExit, /if \(root\.sliderPressed\) \{\s*root\.refreshAfterDrag = true;\s*\} else \{[\s\S]*root\.described\(model\);\s*\}/);
 });
 
 test('client and panel expose panel-local preview controls', () => {
