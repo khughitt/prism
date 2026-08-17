@@ -16,8 +16,10 @@ Item {
   property bool batchAffectsParams: false
   property bool sliderPressed: false
   property bool refreshAfterDrag: false
+  property bool describeInvalidated: false
 
   function setSliderPressed(pressed) {
+    if (pressed && describeProcess.running) describeInvalidated = true;
     sliderPressed = pressed;
   }
 
@@ -26,12 +28,14 @@ Item {
       refreshPending = true;
       return;
     }
+    describeInvalidated = false;
     describeProcess.running = true;
   }
 
   function finishRefresh() {
     if (refreshPending) {
       refreshPending = false;
+      describeInvalidated = false;
       describeProcess.running = true;
     }
   }
@@ -105,6 +109,8 @@ Item {
     onExited: function(exitCode) {
       var output = String(describeProcess.stdout.text || "");
       var errorText = String(describeProcess.stderr.text || "").trim();
+      var invalidated = root.describeInvalidated;
+      root.describeInvalidated = false;
 
       if (exitCode !== 0) {
         var message = errorText || "prism describe exited " + exitCode;
@@ -118,8 +124,8 @@ Item {
           if (!model || !Array.isArray(model.params)) {
             throw new Error("prism describe returned an invalid model");
           }
-          if (root.sliderPressed) {
-            root.refreshAfterDrag = true;
+          if (invalidated) {
+            if (!root.refreshPending) root.refreshAfterDrag = true;
           } else {
             root.errorMessage = root.writeError;
             root.described(model);
