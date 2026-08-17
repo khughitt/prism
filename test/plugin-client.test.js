@@ -10,7 +10,7 @@ const bar = await readFile(new URL('../integrations/noctalia-plugin/BarWidget.qm
 test('describe refresh requests made in flight are coalesced and replayed after exit', () => {
   assert.match(source, /property bool refreshPending: false/);
   assert.match(source, /if \(describeProcess\.running\) \{\s*refreshPending = true;\s*return;/);
-  assert.match(source, /function finishRefresh\(\) \{\s*if \(refreshPending\) \{\s*refreshPending = false;\s*describeInvalidated = false;\s*describeProcess\.running = true;/);
+  assert.match(source, /function finishRefresh\(\) \{\s*if \(refreshPending\) \{\s*refreshPending = false;\s*describeInvalidated = sliderPressed;\s*describeProcess\.running = true;/);
 
   const describeProcess = source.slice(source.indexOf('id: describeProcess'), source.indexOf('id: writeProcess'));
   assert.doesNotMatch(describeProcess, /\breturn;/, 'every describe exit path must reach the replay');
@@ -124,6 +124,7 @@ test('a pressed slider defers reconciliation until its release write drains', ()
   assert.match(source, /property bool refreshAfterDrag: false/);
   assert.match(source, /property bool describeInvalidated: false/);
   assert.match(source, /function setSliderPressed\(pressed\) \{\s*if \(pressed && describeProcess\.running\) describeInvalidated = true;\s*sliderPressed = pressed;\s*\}/);
+  assert.match(source, /function refresh\(\) \{[\s\S]*describeInvalidated = sliderPressed;\s*describeProcess\.running = true;/);
 
   assert.match(control, /onPressedChanged: function\(pressed, value\) \{\s*pointerPressed = pressed;\s*if \(pressed\) root\.client\.setSliderPressed\(true\);[\s\S]*if \(!pressed\) \{[\s\S]*sendSlider\(value, false\);\s*root\.client\.setSliderPressed\(false\);/);
   assert.match(control, /Component\.onDestruction:[\s\S]*if \(pointerPressed\) root\.client\.setSliderPressed\(false\)/);

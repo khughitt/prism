@@ -28,14 +28,14 @@ Item {
       refreshPending = true;
       return;
     }
-    describeInvalidated = false;
+    describeInvalidated = sliderPressed;
     describeProcess.running = true;
   }
 
   function finishRefresh() {
     if (refreshPending) {
       refreshPending = false;
-      describeInvalidated = false;
+      describeInvalidated = sliderPressed;
       describeProcess.running = true;
     }
   }
