@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  formatValue, groupParams, oppositeSide, quantizeValue, stepPrecision, titleParam,
+  canonicalFromSlider, formatValue, groupParams, oppositeSide, sliderFrom,
+  sliderStep, sliderTo, snapValue, stepCanonicalValue, stepPrecision,
+  titleParam, toSliderValue,
 } from '../integrations/noctalia-plugin/presentation.mjs';
 import { loadDefs } from '../src/defs.js';
 import { defsDir } from '../src/paths.js';
@@ -55,16 +57,54 @@ test('shipped presentation has the exact Quick and advanced structure', () => {
   assert.deepEqual(allRenderedKeys.slice().sort(), visible.map((def) => def.key).sort());
 });
 
-test('quantizes panel writes to step precision', () => {
-  assert.equal(stepPrecision(0.000001), 6);
-  assert.equal(quantizeValue(20.000000000000004, 0.1), 20);
-  assert.equal(quantizeValue(2.2199999999999998, 0.01), 2.22);
+const slider = (range, step, ui = {}) => ({
+  range,
+  ui: { control: 'slider', step, ...ui },
 });
 
-test('formats values without binary noise or trailing zeros', () => {
-  assert.equal(formatValue(0.000100, 0.000001), '0.0001');
-  assert.equal(formatValue(0.0040, 0.0001), '0.004');
-  assert.equal(formatValue(0.0600, 0.01), '0.06');
+test('snaps to a range-minimum-relative canonical grid', () => {
+  assert.equal(stepPrecision(0.000001), 6);
+  assert.equal(snapValue(100.04, [0.1, 200], 0.1), 100);
+  assert.equal(snapValue(100.06, [0.1, 200], 0.1), 100.1);
+  assert.equal(snapValue(-1, [0.1, 200], 0.1), 0.1);
+  assert.equal(snapValue(201, [0.1, 200], 0.1), 200);
+});
+
+test('maps raw, percent, normalized, and logarithmic sliders', () => {
+  const raw = slider([0, 2], 0.05, { unit: '×' });
+  const percent = slider([0, 1], 0.01, { display: 'percent' });
+  const depth = slider([0.1, 200], 0.1, { display: 'normalized' });
+  const tint = slider([1, 10000], 1, { display: 'normalized', scale: 'logarithmic' });
+
+  assert.deepEqual([sliderFrom(raw), sliderTo(raw), sliderStep(raw)], [0, 2, 0.05]);
+  assert.deepEqual([sliderFrom(percent), sliderTo(percent), sliderStep(percent)], [0, 100, 1]);
+  assert.deepEqual([sliderFrom(depth), sliderTo(depth), sliderStep(depth)], [0, 1, 0]);
+  assert.deepEqual([sliderFrom(tint), sliderTo(tint), sliderStep(tint)], [0, 1, 0]);
+  assert.equal(toSliderValue(1, tint), 0);
+  assert.equal(toSliderValue(10000, tint), 1);
+  assert.equal(canonicalFromSlider(0.5, tint), 100);
+
+  const midpoint = canonicalFromSlider(0.5, depth);
+  assert.ok(Math.abs(midpoint - 100.05) <= depth.ui.step / 2 + 1e-9);
+  assert.ok(Math.abs(toSliderValue(midpoint, depth) - 0.5)
+    <= depth.ui.step / (depth.range[1] - depth.range[0]));
+});
+
+test('keyboard and wheel direction advances one canonical step', () => {
+  const tint = slider([1, 10000], 1, { display: 'normalized', scale: 'logarithmic' });
+  assert.equal(stepCanonicalValue(1, 1, tint), 2);
+  assert.equal(stepCanonicalValue(2, -1, tint), 1);
+  assert.equal(stepCanonicalValue(1, -1, tint), 1);
+  assert.equal(stepCanonicalValue(10000, 1, tint), 10000);
+});
+
+test('formats presentation without changing canonical values', () => {
+  assert.equal(formatValue(0.08, slider([0, 1], 0.01, { display: 'percent' })), '8%');
+  assert.equal(formatValue(6, slider([-128, 128], 1, { unit: 'px' })), '6px');
+  assert.equal(formatValue(0.5, slider([0, 2], 0.02, { unit: '×' })), '0.5×');
+  assert.equal(formatValue(20, slider([0.1, 200], 0.1, { display: 'normalized' })), '0.1');
+  assert.equal(formatValue(20.2, slider([0.1, 200], 0.1, { display: 'normalized' })), '0.101');
+  assert.equal(formatValue(0.0001, slider([0.000001, 1], 0.000001)), '0.0001');
 });
 
 test('preview opens opposite the panel', () => {

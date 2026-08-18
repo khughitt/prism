@@ -12,14 +12,13 @@ ColumnLayout {
   required property var client
   property var screen: null
   property var displayedValue: param.value
-  readonly property real stepSize: param.ui.step === undefined ? 0.01 : param.ui.step
   readonly property bool liveDrag: param.effectiveDrag === "live"
 
   enabled: param.effectiveDrag !== null
   spacing: Style.marginXS
 
   function sendSlider(value, sample) {
-    client.set(param.key, Presentation.quantizeValue(value, stepSize), sample);
+    client.set(param.key, value, sample);
   }
 
   function selectOptions(values) {
@@ -28,6 +27,15 @@ ColumnLayout {
       result.push({ key: values[i], name: values[i] });
     }
     return result;
+  }
+
+  function canonicalForMove(value) {
+    if (valueSlider.stepSize === 0 && !valueSlider.pointerPressed) {
+      var current = Presentation.toSliderValue(root.displayedValue, root.param);
+      return Presentation.stepCanonicalValue(
+        root.displayedValue, Math.sign(value - current), root.param);
+    }
+    return Presentation.canonicalFromSlider(value, root.param);
   }
 
   function colorHex(color) {
@@ -69,11 +77,11 @@ ColumnLayout {
       label: ""
       description: ""
       showReset: false
-      from: root.param.range ? root.param.range[0] : 0
-      to: root.param.range ? root.param.range[1] : 1
-      stepSize: root.stepSize
-      value: root.displayedValue
-      text: Presentation.formatValue(root.displayedValue, root.stepSize)
+      from: Presentation.sliderFrom(root.param)
+      to: Presentation.sliderTo(root.param)
+      stepSize: Presentation.sliderStep(root.param)
+      value: Presentation.toSliderValue(root.displayedValue, root.param)
+      text: Presentation.formatValue(root.displayedValue, root.param)
       textSize: Style.fontSizeS
 
       Component.onDestruction: {
@@ -98,14 +106,15 @@ ColumnLayout {
       }
 
       onMoved: function(value) {
-        root.displayedValue = value;
+        var canonical = root.canonicalForMove(value);
+        root.displayedValue = canonical;
         if (pointerPressed) {
           if (liveDrag && !sampleGate.running) {
-            sendSlider(value, true);
+            sendSlider(canonical, true);
             sampleGate.restart();
           }
         } else {
-          pendingValue = value;
+          pendingValue = canonical;
           commitGate.restart();
         }
       }
@@ -115,8 +124,9 @@ ColumnLayout {
         if (pressed) root.client.setSliderPressed(true);
         commitGate.stop();
         if (!pressed) {
-          root.displayedValue = value;
-          sendSlider(value, false);
+          var canonical = Presentation.canonicalFromSlider(value, root.param);
+          root.displayedValue = canonical;
+          sendSlider(canonical, false);
           root.client.setSliderPressed(false);
         }
       }

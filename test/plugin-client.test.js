@@ -72,8 +72,9 @@ test('panel keeps preview controls stable and clear of the scrollbar', () => {
 
 test('controls update local display state before writing', () => {
   assert.match(control, /property var displayedValue: param\.value/);
-  assert.match(control, /value: root\.displayedValue/);
-  assert.match(control, /root\.displayedValue = value;[\s\S]*sendSlider\(value,/);
+  assert.match(control, /value: Presentation\.toSliderValue\(root\.displayedValue, root\.param\)/);
+  assert.match(control,
+    /var canonical = root\.canonicalForMove\(value\);[\s\S]*root\.displayedValue = canonical;[\s\S]*sendSlider\(canonical,/);
   assert.match(control, /root\.displayedValue = checked;[\s\S]*root\.client\.set\(root\.param\.key, checked, false\)/);
   assert.match(control, /root\.displayedValue = key;[\s\S]*root\.client\.set\(root\.param\.key, key, false\)/);
   assert.match(control, /root\.displayedValue = hex;[\s\S]*root\.client\.set\(root\.param\.key, hex, false\)/);
@@ -107,7 +108,18 @@ test('parameter rows use presentation metadata and one Prism reset action', () =
   assert.match(control, /showReset: false/);
   assert.match(control, /tooltipText: "Reset to default"/);
   assert.equal(control.match(/tooltipText: "Reset to default"/g)?.length, 1);
-  assert.match(control, /Presentation\.formatValue\(root\.displayedValue, root\.stepSize\)/);
+  assert.match(control, /Presentation\.formatValue\(root\.displayedValue, root\.param\)/);
+});
+
+test('sliders present mapped values but write canonical grid values', () => {
+  assert.doesNotMatch(control, /param\.ui\.step === undefined/);
+  assert.match(control, /from: Presentation\.sliderFrom\(root\.param\)/);
+  assert.match(control, /to: Presentation\.sliderTo\(root\.param\)/);
+  assert.match(control, /stepSize: Presentation\.sliderStep\(root\.param\)/);
+  assert.match(control, /value: Presentation\.toSliderValue\(root\.displayedValue, root\.param\)/);
+  assert.match(control, /text: Presentation\.formatValue\(root\.displayedValue, root\.param\)/);
+  assert.match(control, /Presentation\.canonicalFromSlider\(value, root\.param\)/);
+  assert.match(control, /Presentation\.stepCanonicalValue\(/);
 });
 
 test('drain refresh uses the parameter-write and non-sample-tail conjunction', () => {
@@ -126,7 +138,7 @@ test('a pressed slider defers reconciliation until its release write drains', ()
   assert.match(source, /function setSliderPressed\(pressed\) \{\s*if \(pressed && describeProcess\.running\) describeInvalidated = true;\s*sliderPressed = pressed;\s*\}/);
   assert.match(source, /function refresh\(\) \{[\s\S]*describeInvalidated = sliderPressed;\s*describeProcess\.running = true;/);
 
-  assert.match(control, /onPressedChanged: function\(pressed, value\) \{\s*pointerPressed = pressed;\s*if \(pressed\) root\.client\.setSliderPressed\(true\);[\s\S]*if \(!pressed\) \{[\s\S]*sendSlider\(value, false\);\s*root\.client\.setSliderPressed\(false\);/);
+  assert.match(control, /onPressedChanged: function\(pressed, value\) \{\s*pointerPressed = pressed;\s*if \(pressed\) root\.client\.setSliderPressed\(true\);[\s\S]*if \(!pressed\) \{[\s\S]*sendSlider\(canonical, false\);\s*root\.client\.setSliderPressed\(false\);/);
   assert.match(control, /Component\.onDestruction:[\s\S]*if \(pointerPressed\) root\.client\.setSliderPressed\(false\)/);
 
   const describeExit = source.slice(source.indexOf('id: describeProcess'), source.indexOf('id: writeProcess'));
@@ -150,9 +162,9 @@ test('slider commits keyboard and wheel moves without changing pointer drag beha
   assert.doesNotMatch(control, /onTriggered: client\.set\(param\.key, valueSlider\.value, false\)/);
   assert.match(control, /property real pendingValue: 0/);
   assert.match(control, /id: commitGate\s*interval: 100\s*repeat: false\s*onTriggered: sendSlider\(valueSlider\.pendingValue, false\)/);
-  assert.match(control, /onMoved: function\(value\) \{\s*root\.displayedValue = value;\s*if \(pointerPressed\) \{\s*if \(liveDrag && !sampleGate\.running\)/);
-  assert.match(control, /\} else \{\s*pendingValue = value;\s*commitGate\.restart\(\);\s*\}\s*\}/);
-  assert.match(control, /onPressedChanged: function\(pressed, value\) \{\s*pointerPressed = pressed;\s*if \(pressed\) root\.client\.setSliderPressed\(true\);\s*commitGate\.stop\(\);\s*if \(!pressed\) \{\s*root\.displayedValue = value;\s*sendSlider\(value, false\);\s*root\.client\.setSliderPressed\(false\);/);
+  assert.match(control, /onMoved: function\(value\) \{\s*var canonical = root\.canonicalForMove\(value\);\s*root\.displayedValue = canonical;\s*if \(pointerPressed\) \{\s*if \(liveDrag && !sampleGate\.running\)/);
+  assert.match(control, /\} else \{\s*pendingValue = canonical;\s*commitGate\.restart\(\);\s*\}\s*\}/);
+  assert.match(control, /if \(!pressed\) \{\s*var canonical = Presentation\.canonicalFromSlider\(value, root\.param\);\s*root\.displayedValue = canonical;\s*sendSlider\(canonical, false\);/);
 });
 
 test('slider flushes a pending keyboard or wheel write before destruction', () => {
@@ -161,11 +173,12 @@ test('slider flushes a pending keyboard or wheel write before destruction', () =
   assert.match(slider, /Component\.onDestruction: \{\s*if \(pointerPressed\) root\.client\.setSliderPressed\(false\);\s*if \(commitGate\.running\) \{\s*commitGate\.stop\(\);\s*sendSlider\(valueSlider\.pendingValue, false\);\s*\}\s*\}/);
 });
 
-test('every slider write uses the quantizing helper', () => {
+test('every slider write receives a canonical value', () => {
   const helper = control.slice(control.indexOf('function sendSlider'), control.indexOf('function selectOptions'));
   const slider = control.slice(control.indexOf('NValueSlider {'), control.indexOf('NToggle {'));
 
-  assert.match(helper, /client\.set\(param\.key, Presentation\.quantizeValue\(value, stepSize\), sample\)/);
+  assert.match(helper, /client\.set\(param\.key, value, sample\)/);
+  assert.doesNotMatch(helper, /quantizeValue|stepSize/);
   assert.doesNotMatch(slider, /client\.set\(param\.key,/);
   assert.equal(slider.match(/sendSlider\(/g)?.length, 4);
 });

@@ -12,12 +12,93 @@ export function stepPrecision(step) {
   return text.indexOf('.') === -1 ? 0 : text.length - text.indexOf('.') - 1;
 }
 
-export function quantizeValue(value, step) {
-  return Number(Number(value).toFixed(stepPrecision(step)));
+function display(param) {
+  return param.ui.display === undefined ? 'raw' : param.ui.display;
 }
 
-export function formatValue(value, step) {
-  return String(quantizeValue(value, step));
+function scale(param) {
+  return param.ui.scale === undefined ? 'linear' : param.ui.scale;
+}
+
+function normalized(value, param) {
+  var low = param.range[0];
+  var high = param.range[1];
+  if (scale(param) === 'logarithmic') {
+    return Math.log(value / low) / Math.log(high / low);
+  }
+  return (value - low) / (high - low);
+}
+
+function denormalized(value, param) {
+  var low = param.range[0];
+  var high = param.range[1];
+  if (scale(param) === 'logarithmic') {
+    return low * Math.pow(high / low, value);
+  }
+  return low + value * (high - low);
+}
+
+export function snapValue(value, range, step) {
+  var clamped = Math.max(range[0], Math.min(range[1], value));
+  var snapped = range[0] + Math.round((clamped - range[0]) / step) * step;
+  snapped = Math.max(range[0], Math.min(range[1], snapped));
+  return Number(snapped.toFixed(stepPrecision(step)));
+}
+
+export function sliderFrom(param) {
+  if (display(param) === 'percent') return param.range[0] * 100;
+  if (display(param) === 'normalized' || scale(param) === 'logarithmic') return 0;
+  return param.range[0];
+}
+
+export function sliderTo(param) {
+  if (display(param) === 'percent') return param.range[1] * 100;
+  if (display(param) === 'normalized' || scale(param) === 'logarithmic') return 1;
+  return param.range[1];
+}
+
+export function sliderStep(param) {
+  if (display(param) === 'percent') return param.ui.step * 100;
+  if (display(param) === 'normalized' || scale(param) === 'logarithmic') return 0;
+  return param.ui.step;
+}
+
+export function toSliderValue(value, param) {
+  if (display(param) === 'percent') return value * 100;
+  if (display(param) === 'normalized' || scale(param) === 'logarithmic') {
+    return normalized(value, param);
+  }
+  return value;
+}
+
+export function canonicalFromSlider(value, param) {
+  var canonical = value;
+  if (display(param) === 'percent') canonical = value / 100;
+  else if (display(param) === 'normalized' || scale(param) === 'logarithmic') {
+    canonical = denormalized(value, param);
+  }
+  return snapValue(canonical, param.range, param.ui.step);
+}
+
+export function stepCanonicalValue(value, direction, param) {
+  if (direction === 0) return value;
+  return snapValue(value + Math.sign(direction) * param.ui.step,
+                   param.range, param.ui.step);
+}
+
+export function formatValue(value, param) {
+  var shown = value;
+  var precision = stepPrecision(param.ui.step);
+  var suffix = param.ui.unit === undefined ? '' : param.ui.unit;
+  if (display(param) === 'percent') {
+    shown = value * 100;
+    precision = stepPrecision(param.ui.step * 100);
+    suffix = '%';
+  } else if (display(param) === 'normalized') {
+    shown = normalized(value, param);
+    precision = 3;
+  }
+  return String(Number(shown.toFixed(precision))) + suffix;
 }
 
 export function oppositeSide(panelCenterX, screenCenterX) {
