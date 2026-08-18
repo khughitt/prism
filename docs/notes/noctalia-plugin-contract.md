@@ -41,6 +41,18 @@ is the first, always-open body group. `Diagnostics` remains a normal body
 group, with the panel inserting its transient Preview controls before the
 definition-driven parameters.
 
+Numeric sliders may declare `ui.display` (`raw`, `percent`, or `normalized`),
+`ui.scale` (`linear` or `logarithmic`), and a raw-only `ui.unit`. Any visible
+control may declare boolean `ui.affectsPreview`. Definition loading rejects
+invalid combinations before they reach QML.
+
+The panel keeps stored and written values canonical. Slider writes snap to the
+canonical grid relative to the range minimum. Normalized and logarithmic
+tracks use continuous pointer coordinates while keyboard and wheel events move
+one canonical step. While Preview is open, rows without
+`affectsPreview: true` are dimmed and marked `Not in preview`; the note explains
+that they still update their normal consumers, and the controls remain enabled.
+
 Manifest bindings may declare `drag: release` only beside `liveness: live`.
 The raw public `bindings[]` entries stay `{sink, liveness}`; `describe`
 retains `effectiveLiveness` as capability and emits `effectiveDrag` as the
