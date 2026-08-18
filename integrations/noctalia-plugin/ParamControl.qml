@@ -11,10 +11,14 @@ ColumnLayout {
   required property var param
   required property var client
   property var screen: null
+  property bool previewVisible: false
   property var displayedValue: param.value
   readonly property bool liveDrag: param.effectiveDrag === "live"
+  readonly property bool notInPreview:
+    previewVisible && param.ui.affectsPreview !== true
 
   enabled: param.effectiveDrag !== null
+  opacity: notInPreview ? 0.55 : 1
   spacing: Style.marginXS
 
   function sendSlider(value, sample) {
@@ -43,13 +47,24 @@ ColumnLayout {
     return "#" + text.slice(text.length - 6).toLowerCase();
   }
 
-  NText {
-    id: parameterLabel
-
+  RowLayout {
     Layout.fillWidth: true
-    text: root.param.ui.label || ""
-    pointSize: Style.fontSizeM
-    font.weight: Style.fontWeightMedium
+
+    NText {
+      id: parameterLabel
+
+      Layout.fillWidth: true
+      text: root.param.ui.label || ""
+      pointSize: Style.fontSizeM
+      font.weight: Style.fontWeightMedium
+    }
+
+    NText {
+      visible: root.notInPreview
+      text: "Not in preview"
+      pointSize: Style.fontSizeXS
+      color: Color.mOnSurfaceVariant
+    }
   }
 
   NText {

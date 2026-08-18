@@ -107,6 +107,14 @@ Item {
         pointSize: Style.fontSizeS
       }
 
+      NText {
+        visible: root.previewVisible && root.titleSetting !== null
+          && root.titleSetting.ui.affectsPreview !== true
+        text: "Not in preview"
+        pointSize: Style.fontSizeXS
+        color: Color.mOnSurfaceVariant
+      }
+
       NToggle {
         visible: root.titleSetting !== null
         Layout.fillWidth: false
@@ -249,6 +257,15 @@ Item {
                     }
                   }
 
+                  NText {
+                    visible: root.previewVisible
+                    Layout.fillWidth: true
+                    text: "Dimmed settings are not reflected in the preview; they remain usable and still update their normal consumers."
+                    pointSize: Style.fontSizeS
+                    color: Color.mOnSurfaceVariant
+                    wrapMode: Text.WordWrap
+                  }
+
                   NToggle {
                     visible: root.previewVisible
                     enabled: root.previewVisible
@@ -272,6 +289,7 @@ Item {
                     param: modelData
                     client: root.client
                     screen: root.pluginApi ? root.pluginApi.panelOpenScreen : null
+                    previewVisible: root.previewVisible
                   }
                 }
               }
