@@ -159,6 +159,7 @@ test('client and panel expose panel-local preview controls', () => {
 
 test('slider commits keyboard and wheel moves without changing pointer drag behavior', () => {
   assert.match(control, /property bool pointerPressed: false/);
+  assert.match(control, /WheelHandler \{[\s\S]*onWheel: function\(event\) \{[\s\S]*var direction = Math\.sign\(event\.angleDelta\.y\);[\s\S]*valueSlider\.moved\(/);
   assert.doesNotMatch(control, /onTriggered: client\.set\(param\.key, valueSlider\.value, false\)/);
   assert.match(control, /property real pendingValue: 0/);
   assert.match(control, /id: commitGate\s*interval: 100\s*repeat: false\s*onTriggered: sendSlider\(valueSlider\.pendingValue, false\)/);

@@ -84,6 +84,16 @@ ColumnLayout {
       text: Presentation.formatValue(root.displayedValue, root.param)
       textSize: Style.fontSizeS
 
+      WheelHandler {
+        onWheel: function(event) {
+          var direction = Math.sign(event.angleDelta.y);
+          if (direction === 0) return;
+          var step = valueSlider.stepSize === 0 ? 1 : valueSlider.stepSize;
+          var current = Presentation.toSliderValue(root.displayedValue, root.param);
+          valueSlider.moved(current + direction * step);
+        }
+      }
+
       Component.onDestruction: {
         if (pointerPressed) root.client.setSliderPressed(false);
         if (commitGate.running) {

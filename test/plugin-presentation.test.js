@@ -68,16 +68,25 @@ test('snaps to a range-minimum-relative canonical grid', () => {
   assert.equal(snapValue(100.06, [0.1, 200], 0.1), 100.1);
   assert.equal(snapValue(-1, [0.1, 200], 0.1), 0.1);
   assert.equal(snapValue(201, [0.1, 200], 0.1), 200);
+  assert.equal(snapValue(0.05, [0.05, 1.05], 0.1), 0.05);
+  assert.equal(snapValue(0.15, [0.05, 1.05], 0.1), 0.15);
+  assert.equal(snapValue(1.05, [0.05, 1.05], 0.1), 1.05);
 });
 
 test('maps raw, percent, normalized, and logarithmic sliders', () => {
   const raw = slider([0, 2], 0.05, { unit: '×' });
   const percent = slider([0, 1], 0.01, { display: 'percent' });
+  const coarsePercent = slider([0, 0.98], 0.07, { display: 'percent' });
+  const offsetPercent = slider([0.005, 1.005], 0.01, { display: 'percent' });
   const depth = slider([0.1, 200], 0.1, { display: 'normalized' });
   const tint = slider([1, 10000], 1, { display: 'normalized', scale: 'logarithmic' });
 
   assert.deepEqual([sliderFrom(raw), sliderTo(raw), sliderStep(raw)], [0, 2, 0.05]);
   assert.deepEqual([sliderFrom(percent), sliderTo(percent), sliderStep(percent)], [0, 100, 1]);
+  assert.equal(sliderStep(coarsePercent), 7);
+  assert.deepEqual(
+    [sliderFrom(offsetPercent), sliderTo(offsetPercent), sliderStep(offsetPercent)],
+    [0.5, 100.5, 1]);
   assert.deepEqual([sliderFrom(depth), sliderTo(depth), sliderStep(depth)], [0, 1, 0]);
   assert.deepEqual([sliderFrom(tint), sliderTo(tint), sliderStep(tint)], [0, 1, 0]);
   assert.equal(toSliderValue(1, tint), 0);
@@ -100,6 +109,8 @@ test('keyboard and wheel direction advances one canonical step', () => {
 
 test('formats presentation without changing canonical values', () => {
   assert.equal(formatValue(0.08, slider([0, 1], 0.01, { display: 'percent' })), '8%');
+  assert.equal(formatValue(0.14, slider([0, 0.98], 0.07, { display: 'percent' })), '14%');
+  assert.equal(formatValue(0.015, slider([0.005, 1.005], 0.01, { display: 'percent' })), '1.5%');
   assert.equal(formatValue(6, slider([-128, 128], 1, { unit: 'px' })), '6px');
   assert.equal(formatValue(0.5, slider([0, 2], 0.02, { unit: '×' })), '0.5×');
   assert.equal(formatValue(20, slider([0.1, 200], 0.1, { display: 'normalized' })), '0.1');

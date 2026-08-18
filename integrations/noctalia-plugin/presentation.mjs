@@ -20,6 +20,16 @@ function scale(param) {
   return param.ui.scale === undefined ? 'linear' : param.ui.scale;
 }
 
+function percentPrecision(param) {
+  var precision = Math.max(stepPrecision(param.ui.step),
+                           stepPrecision(param.range[0]), stepPrecision(param.range[1]));
+  return Math.max(0, precision - 2);
+}
+
+function asPercent(value, param) {
+  return Number((value * 100).toFixed(percentPrecision(param)));
+}
+
 function normalized(value, param) {
   var low = param.range[0];
   var high = param.range[1];
@@ -42,29 +52,31 @@ export function snapValue(value, range, step) {
   var clamped = Math.max(range[0], Math.min(range[1], value));
   var snapped = range[0] + Math.round((clamped - range[0]) / step) * step;
   snapped = Math.max(range[0], Math.min(range[1], snapped));
-  return Number(snapped.toFixed(stepPrecision(step)));
+  var precision = Math.max(stepPrecision(step),
+                           stepPrecision(range[0]), stepPrecision(range[1]));
+  return Number(snapped.toFixed(precision));
 }
 
 export function sliderFrom(param) {
-  if (display(param) === 'percent') return param.range[0] * 100;
+  if (display(param) === 'percent') return asPercent(param.range[0], param);
   if (display(param) === 'normalized' || scale(param) === 'logarithmic') return 0;
   return param.range[0];
 }
 
 export function sliderTo(param) {
-  if (display(param) === 'percent') return param.range[1] * 100;
+  if (display(param) === 'percent') return asPercent(param.range[1], param);
   if (display(param) === 'normalized' || scale(param) === 'logarithmic') return 1;
   return param.range[1];
 }
 
 export function sliderStep(param) {
-  if (display(param) === 'percent') return param.ui.step * 100;
+  if (display(param) === 'percent') return asPercent(param.ui.step, param);
   if (display(param) === 'normalized' || scale(param) === 'logarithmic') return 0;
   return param.ui.step;
 }
 
 export function toSliderValue(value, param) {
-  if (display(param) === 'percent') return value * 100;
+  if (display(param) === 'percent') return asPercent(value, param);
   if (display(param) === 'normalized' || scale(param) === 'logarithmic') {
     return normalized(value, param);
   }
@@ -91,8 +103,8 @@ export function formatValue(value, param) {
   var precision = stepPrecision(param.ui.step);
   var suffix = param.ui.unit === undefined ? '' : param.ui.unit;
   if (display(param) === 'percent') {
-    shown = value * 100;
-    precision = stepPrecision(param.ui.step * 100);
+    shown = asPercent(value, param);
+    precision = percentPrecision(param);
     suffix = '%';
   } else if (display(param) === 'normalized') {
     shown = normalized(value, param);
