@@ -188,7 +188,8 @@ test('preview scope is contextual, textual, and does not disable controls', () =
   assert.match(control, /property bool previewVisible: false/);
   assert.match(control, /param\.ui\.affectsPreview !== true/);
   assert.match(control, /text: "Not in preview"/);
-  assert.doesNotMatch(control, /enabled:.*affectsPreview/);
+  assert.match(control, /enabled: param\.effectiveDrag !== null/);
+  assert.match(control, /opacity: notInPreview \? 0\.55 : 1/);
   assert.match(panel, /previewVisible: root\.previewVisible/);
   assert.match(panel, /Dimmed settings are not reflected in the preview/);
   assert.match(panel, /root\.titleSetting\.ui\.affectsPreview !== true/);
