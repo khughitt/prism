@@ -72,7 +72,7 @@ test('panel keeps preview controls stable and clear of the scrollbar', () => {
 
 test('controls update local display state before writing', () => {
   assert.match(control, /property var displayedValue: param\.value/);
-  assert.match(control, /value: Presentation\.toSliderValue\(root\.displayedValue, root\.param\)/);
+  assert.match(control, /value: root\.param\.ui\.control === "slider" \? Presentation\.toSliderValue\(root\.displayedValue, root\.param\) : 0/);
   assert.match(control,
     /var canonical = root\.canonicalForMove\(value\);[\s\S]*root\.displayedValue = canonical;[\s\S]*sendSlider\(canonical,/);
   assert.match(control, /root\.displayedValue = checked;[\s\S]*root\.client\.set\(root\.param\.key, checked, false\)/);
@@ -113,11 +113,11 @@ test('parameter rows use presentation metadata and one Prism reset action', () =
 
 test('sliders present mapped values but write canonical grid values', () => {
   assert.doesNotMatch(control, /param\.ui\.step === undefined/);
-  assert.match(control, /from: Presentation\.sliderFrom\(root\.param\)/);
-  assert.match(control, /to: Presentation\.sliderTo\(root\.param\)/);
-  assert.match(control, /stepSize: Presentation\.sliderStep\(root\.param\)/);
-  assert.match(control, /value: Presentation\.toSliderValue\(root\.displayedValue, root\.param\)/);
-  assert.match(control, /text: Presentation\.formatValue\(root\.displayedValue, root\.param\)/);
+  assert.match(control, /from: root\.param\.ui\.control === "slider" \? Presentation\.sliderFrom\(root\.param\) : 0/);
+  assert.match(control, /to: root\.param\.ui\.control === "slider" \? Presentation\.sliderTo\(root\.param\) : 1/);
+  assert.match(control, /stepSize: root\.param\.ui\.control === "slider" \? Presentation\.sliderStep\(root\.param\) : 0/);
+  assert.match(control, /value: root\.param\.ui\.control === "slider" \? Presentation\.toSliderValue\(root\.displayedValue, root\.param\) : 0/);
+  assert.match(control, /text: root\.param\.ui\.control === "slider" \? Presentation\.formatValue\(root\.displayedValue, root\.param\) : ""/);
   assert.match(control, /Presentation\.canonicalFromSlider\(value, root\.param\)/);
   assert.match(control, /Presentation\.stepCanonicalValue\(/);
 });

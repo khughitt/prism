@@ -92,11 +92,11 @@ ColumnLayout {
       label: ""
       description: ""
       showReset: false
-      from: Presentation.sliderFrom(root.param)
-      to: Presentation.sliderTo(root.param)
-      stepSize: Presentation.sliderStep(root.param)
-      value: Presentation.toSliderValue(root.displayedValue, root.param)
-      text: Presentation.formatValue(root.displayedValue, root.param)
+      from: root.param.ui.control === "slider" ? Presentation.sliderFrom(root.param) : 0
+      to: root.param.ui.control === "slider" ? Presentation.sliderTo(root.param) : 1
+      stepSize: root.param.ui.control === "slider" ? Presentation.sliderStep(root.param) : 0
+      value: root.param.ui.control === "slider" ? Presentation.toSliderValue(root.displayedValue, root.param) : 0
+      text: root.param.ui.control === "slider" ? Presentation.formatValue(root.displayedValue, root.param) : ""
       textSize: Style.fontSizeS
 
       WheelHandler {
