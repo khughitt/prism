@@ -12,7 +12,6 @@ binds:
   - {param: glass.ior, liveness: live}
   - {param: glass.thickness, liveness: live}
   - {param: glass.roughness, liveness: live}
-  - {param: glass.transmission, liveness: live}
   - {param: glass.attenuationColor, liveness: live}
   - {param: glass.attenuationDistance, liveness: live}
   - {param: glass.chromaticAberration, liveness: live}

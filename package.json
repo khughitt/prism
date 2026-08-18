@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "engines": { "node": ">=20" },
-  "scripts": { "test": "node --test test/*.test.js integrations/noctalia-plugin/contract.test.mjs" },
+  "scripts": {
+    "test": "node --test test/*.test.js integrations/noctalia-plugin/contract.test.mjs",
+    "test:niri-glass-contract": "node test/niri-glass-preview-contract.mjs"
+  },
   "dependencies": { "yaml": "^2.4.0" }
 }

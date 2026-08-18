@@ -42,19 +42,36 @@ test('shipped presentation has the exact Quick and advanced structure', () => {
     'terminal.background.opacity.inactive',
     'compositor.gaps',
     'glass.roughness',
-    'glass.transmission',
     'glass.attenuationColor',
   ]);
   const renderedKeys = groups.flatMap((group) => group.params.map((param) => param.key));
   const title = titleParam(defs);
   assert.equal(title.key, 'glass.enabled');
   assert.equal(title.ui.control, 'toggle');
-  assert.equal(renderedKeys.length, 32);
-  assert.equal(new Set(renderedKeys).size, 32);
+  assert.equal(renderedKeys.length, 31);
+  assert.equal(new Set(renderedKeys).size, 31);
   const allRenderedKeys = [title.key].concat(renderedKeys);
-  assert.equal(allRenderedKeys.length, 33);
-  assert.equal(new Set(allRenderedKeys).size, 33);
+  assert.equal(allRenderedKeys.length, 32);
+  assert.equal(new Set(allRenderedKeys).size, 32);
   assert.deepEqual(allRenderedKeys.slice().sort(), visible.map((def) => def.key).sort());
+});
+
+test('shipped defs declare exact value and preview presentation', () => {
+  const defs = loadDefs(defsDir());
+  assert.equal(defs.has('glass.transmission'), false);
+  assert.equal(defs.get('terminal.background.opacity.active').ui.display, 'percent');
+  assert.equal(defs.get('compositor.gaps').ui.unit, 'px');
+  assert.deepEqual(
+    [...defs.values()].filter((def) => def.ui.affectsPreview === true)
+      .map((def) => def.key).sort(),
+    [
+      'glass.anisotropicBlur', 'glass.attenuationColor',
+      'glass.attenuationDistance', 'glass.chromaticAberration',
+      'glass.distortion', 'glass.distortionScale', 'glass.ior',
+      'glass.probeExposure', 'glass.roughness', 'glass.samples',
+      'glass.thickness',
+    ],
+  );
 });
 
 const slider = (range, step, ui = {}) => ({

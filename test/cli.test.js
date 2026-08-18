@@ -122,11 +122,11 @@ test('describe emits bindings and slowest effectiveLiveness', async (t) => {
     'sink: draglive\nbinds:\n'
     + '  - {param: glass.roughness, liveness: live}\n'
     + '  - {param: terminal.background.opacity.active, liveness: live, drag: release}\n'
-    + '  - {param: glass.transmission, liveness: live}\n');
+    + '  - {param: glass.ior, liveness: live}\n');
   fs.mkdirSync(path.join(integ, 'dragreload'));
   fs.writeFileSync(path.join(integ, 'dragreload', 'manifest.yaml'),
     'sink: dragreload\nbinds:\n'
-    + '  - {param: glass.transmission, liveness: reload}\n');
+    + '  - {param: glass.ior, liveness: reload}\n');
 
   await cli.run(['set', 'terminal.background.opacity.inactive', '0.6'], { runner: () => {} });
   let out = '';
@@ -138,13 +138,13 @@ test('describe emits bindings and slowest effectiveLiveness', async (t) => {
   assert.equal(p.effectiveLiveness, 'reload'); // slowest of live+reload
   assert.deepEqual(d.params.find((x) => x.key === 'glass.roughness').effectiveDrag, 'live');
   assert.deepEqual(d.params.find((x) => x.key === 'terminal.background.opacity.active').effectiveDrag, 'release');
-  assert.deepEqual(d.params.find((x) => x.key === 'glass.transmission').effectiveDrag, 'release');
-  const unbound = d.params.find((x) => x.key === 'glass.ior');
+  assert.deepEqual(d.params.find((x) => x.key === 'glass.ior').effectiveDrag, 'release');
+  const unbound = d.params.find((x) => x.key === 'glass.thickness');
   assert.equal(unbound.effectiveDrag, null);
   assert.equal(unbound.effectiveLiveness, null);
   assert.equal(d.params.find((x) => x.key === 'glass.roughness').effectiveLiveness, 'live');
   assert.equal(d.params.find((x) => x.key === 'terminal.background.opacity.active').effectiveLiveness, 'live');
-  assert.equal(d.params.find((x) => x.key === 'glass.transmission').effectiveLiveness, 'reload');
+  assert.equal(d.params.find((x) => x.key === 'glass.ior').effectiveLiveness, 'reload');
   assert.deepEqual(d.params.find((x) => x.key === 'terminal.background.opacity.active').bindings,
     [{ sink: 'draglive', liveness: 'live' }]);
 });
