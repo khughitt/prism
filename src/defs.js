@@ -42,8 +42,8 @@ export function validateDef(def, src) {
   const numeric = def.type === 'float' || def.type === 'int';
   const slider = def.ui.control === 'slider';
   const has = (key) => Object.hasOwn(def.ui, key);
-  const display = def.ui.display ?? 'raw';
-  const scale = def.ui.scale ?? 'linear';
+  const display = has('display') ? def.ui.display : 'raw';
+  const scale = has('scale') ? def.ui.scale : 'linear';
   if (def.type === 'enum' && !Array.isArray(def.values)) fail('enum requires values');
   if (def.type === 'list' && def.items !== 'string') fail('list requires items: string');
   if ((def.type === 'list' || def.type === 'string') && def.ui.control !== 'none') fail(`${def.type} must declare control: none`);
@@ -61,7 +61,11 @@ export function validateDef(def, src) {
     if (!DISPLAYS.includes(display)) fail(`ui.display must be one of ${DISPLAYS.join('|')}`);
     if (!SCALES.includes(scale)) fail(`ui.scale must be one of ${SCALES.join('|')}`);
     if (!numeric) fail('slider requires a numeric definition');
+    if (def.type === 'int' && !def.range.every(Number.isInteger)) {
+      fail('int slider requires integer range endpoints');
+    }
     if (!Number.isFinite(def.ui.step) || def.ui.step <= 0) fail('slider requires finite positive ui.step');
+    if (def.type === 'int' && !Number.isInteger(def.ui.step)) fail('int slider requires integer ui.step');
     if (has('unit') && (typeof def.ui.unit !== 'string' || def.ui.unit === '')) fail('ui.unit must be a non-empty string');
     if (has('unit') && display !== 'raw') fail('ui.unit requires raw display');
     if (scale === 'logarithmic' && def.range[0] <= 0) fail('logarithmic scale requires a positive range');

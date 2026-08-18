@@ -79,6 +79,12 @@ test('slider presentation metadata is validated', () => {
   const badDisplay = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1, step: 0.1, display: mystery}, description: d}\n');
   assert.throws(() => loadDefs(badDisplay), /ui\.display/);
 
+  const nullDisplay = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1, step: 0.1, display: null}, description: d}\n');
+  assert.throws(() => loadDefs(nullDisplay), /ui\.display/);
+
+  const nullScale = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1, step: 0.1, scale: null}, description: d}\n');
+  assert.throws(() => loadDefs(nullScale), /ui\.scale/);
+
   const badToggle = dirWith('- {key: a.b, type: bool, default: true, ui: {group: A, control: toggle, label: B, order: 1, display: raw}, description: d}\n');
   assert.throws(() => loadDefs(badToggle), /slider-only/);
 
@@ -92,6 +98,12 @@ test('slider presentation metadata is validated', () => {
 test('numeric slider grids fail early', () => {
   const noStep = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1}, description: d}\n');
   assert.throws(() => loadDefs(noStep), /finite positive ui\.step/);
+
+  const fractionalIntRange = dirWith('- {key: a.b, type: int, range: [0.5, 10.5], default: 1, ui: {group: A, control: slider, label: B, order: 1, step: 1}, description: d}\n');
+  assert.throws(() => loadDefs(fractionalIntRange), /integer range endpoints/);
+
+  const fractionalIntStep = dirWith('- {key: a.b, type: int, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1, step: 0.5}, description: d}\n');
+  assert.throws(() => loadDefs(fractionalIntStep), /integer ui\.step/);
 
   const shortLastStep = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1, step: 0.3}, description: d}\n');
   assert.throws(() => loadDefs(shortLastStep), /range span.*ui\.step/);
