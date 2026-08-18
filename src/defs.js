@@ -4,6 +4,8 @@ import { parse } from 'yaml';
 
 export const TYPES = ['float', 'int', 'bool', 'color', 'enum', 'string', 'list'];
 export const CONTROLS = ['slider', 'toggle', 'color', 'select', 'none'];
+export const DISPLAYS = ['raw', 'percent', 'normalized'];
+export const SCALES = ['linear', 'logarithmic'];
 
 export function loadDefs(dir) {
   const defs = new Map();
@@ -37,10 +39,38 @@ export function validateDef(def, src) {
     if (!Number.isInteger(def.ui.order)) fail('ui.order must be an integer');
   }
   if (typeof def.description !== 'string') fail('description required');
+  const numeric = def.type === 'float' || def.type === 'int';
+  const slider = def.ui.control === 'slider';
+  const has = (key) => Object.hasOwn(def.ui, key);
+  const display = def.ui.display ?? 'raw';
+  const scale = def.ui.scale ?? 'linear';
   if (def.type === 'enum' && !Array.isArray(def.values)) fail('enum requires values');
   if (def.type === 'list' && def.items !== 'string') fail('list requires items: string');
   if ((def.type === 'list' || def.type === 'string') && def.ui.control !== 'none') fail(`${def.type} must declare control: none`);
-  if ((def.type === 'float' || def.type === 'int')
-      && !(Array.isArray(def.range) && def.range.length === 2)) fail('numeric def requires range');
+  if (numeric && (!(Array.isArray(def.range) && def.range.length === 2)
+      || !def.range.every(Number.isFinite) || def.range[0] >= def.range[1])) {
+    fail('numeric def requires range with two finite increasing endpoints');
+  }
+  if (has('affectsPreview') && typeof def.ui.affectsPreview !== 'boolean') {
+    fail('ui.affectsPreview must be a boolean');
+  }
+  if (!slider && ['display', 'scale', 'unit'].some(has)) {
+    fail('ui.display, ui.scale, and ui.unit are slider-only');
+  }
+  if (slider) {
+    if (!DISPLAYS.includes(display)) fail(`ui.display must be one of ${DISPLAYS.join('|')}`);
+    if (!SCALES.includes(scale)) fail(`ui.scale must be one of ${SCALES.join('|')}`);
+    if (!numeric) fail('slider requires a numeric definition');
+    if (!Number.isFinite(def.ui.step) || def.ui.step <= 0) fail('slider requires finite positive ui.step');
+    if (has('unit') && (typeof def.ui.unit !== 'string' || def.ui.unit === '')) fail('ui.unit must be a non-empty string');
+    if (has('unit') && display !== 'raw') fail('ui.unit requires raw display');
+    if (scale === 'logarithmic' && def.range[0] <= 0) fail('logarithmic scale requires a positive range');
+    if (display === 'percent' && scale !== 'linear') fail('percent display must be linear');
+    const stepCount = (def.range[1] - def.range[0]) / def.ui.step;
+    const tolerance = Number.EPSILON * Math.max(1, Math.abs(stepCount)) * 16;
+    if (Math.abs(stepCount - Math.round(stepCount)) > tolerance) {
+      fail('range span must be an integer multiple of ui.step');
+    }
+  }
   if (def.default === undefined) fail('default required');
 }

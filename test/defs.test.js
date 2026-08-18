@@ -68,3 +68,37 @@ test('hidden definitions do not require presentation metadata', () => {
   const dir = dirWith('- {key: a.one, type: list, items: string, default: [], ui: {group: A, control: none}, description: d}\n');
   assert.doesNotThrow(() => loadDefs(dir));
 });
+
+test('slider presentation metadata is validated', () => {
+  const valid = dirWith(`
+- {key: a.depth, type: float, range: [0.1, 200], default: 20, ui: {group: A, control: slider, label: Depth, order: 1, step: 0.1, display: normalized, scale: logarithmic, affectsPreview: true}, description: d}
+- {key: a.tint, type: color, default: '#ffffff', ui: {group: A, control: color, label: Tint, order: 2, affectsPreview: true}, description: d}
+`);
+  assert.doesNotThrow(() => loadDefs(valid));
+
+  const badDisplay = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1, step: 0.1, display: mystery}, description: d}\n');
+  assert.throws(() => loadDefs(badDisplay), /ui\.display/);
+
+  const badToggle = dirWith('- {key: a.b, type: bool, default: true, ui: {group: A, control: toggle, label: B, order: 1, display: raw}, description: d}\n');
+  assert.throws(() => loadDefs(badToggle), /slider-only/);
+
+  const badUnit = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1, step: 0.1, display: normalized, unit: px}, description: d}\n');
+  assert.throws(() => loadDefs(badUnit), /unit.*raw/);
+
+  const badPreview = dirWith('- {key: a.b, type: color, default: x, ui: {group: A, control: color, label: B, order: 1, affectsPreview: yes}, description: d}\n');
+  assert.throws(() => loadDefs(badPreview), /affectsPreview.*boolean/);
+});
+
+test('numeric slider grids fail early', () => {
+  const noStep = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1}, description: d}\n');
+  assert.throws(() => loadDefs(noStep), /finite positive ui\.step/);
+
+  const shortLastStep = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1, step: 0.3}, description: d}\n');
+  assert.throws(() => loadDefs(shortLastStep), /range span.*ui\.step/);
+
+  const zeroLog = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1, step: 0.1, scale: logarithmic}, description: d}\n');
+  assert.throws(() => loadDefs(zeroLog), /logarithmic.*positive/);
+
+  const percentLog = dirWith('- {key: a.b, type: float, range: [1, 2], default: 1, ui: {group: A, control: slider, label: B, order: 1, step: 0.1, display: percent, scale: logarithmic}, description: d}\n');
+  assert.throws(() => loadDefs(percentLog), /percent.*linear/);
+});
