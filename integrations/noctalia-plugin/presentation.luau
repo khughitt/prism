@@ -23,11 +23,22 @@ end
 
 local function rounded(value, precision)
   local sign = value < 0 and -1 or 1
-  local text = string.format("%.17f", math.abs(value))
-  local point = text:find(".", 1, true)
-  local whole = text:sub(1, point - 1)
-  local fraction = text:sub(point + 1)
-  local scaled = tonumber(whole .. fraction:sub(1, precision))
+  local text = string.format("%.17g", math.abs(value))
+  local mantissa, exponent = text:match("^(.+)[eE]([+-]?%d+)$")
+  mantissa, exponent = mantissa or text, tonumber(exponent) or 0
+  local point = mantissa:find(".", 1, true)
+  local digits = point and mantissa:gsub("%.", "") or mantissa
+  local decimal = (point and point - 1 or #mantissa) + exponent
+  local whole, fraction
+  if decimal <= 0 then
+    whole, fraction = "0", string.rep("0", -decimal) .. digits
+  elseif decimal >= #digits then
+    whole, fraction = digits .. string.rep("0", decimal - #digits), ""
+  else
+    whole, fraction = digits:sub(1, decimal), digits:sub(decimal + 1)
+  end
+  local kept = fraction:sub(1, precision)
+  local scaled = tonumber(whole .. kept .. string.rep("0", precision - #kept))
   if fraction:sub(precision + 1, precision + 1) >= "5" then scaled = scaled + 1 end
   local result = scaled / 10 ^ precision
   if result % 1 == 0 then return sign * math.floor(result) end
