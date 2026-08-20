@@ -109,6 +109,22 @@ function M.stepCanonicalValue(value, direction, param)
   return M.snapValue(value + (direction > 0 and 1 or -1) * param.ui.step, param.range, param.ui.step)
 end
 
+function M.canonicalFromSliderStep(value, currentValue, param)
+  if M.sliderStep(param) ~= 0 then return nil end
+  local current = M.toSliderValue(currentValue, param)
+  local nativeStep = (M.sliderTo(param) - M.sliderFrom(param)) * 0.05
+  local delta = value - current
+  local tolerance = 1e-9 * math.max(1, math.abs(current), math.abs(value))
+  if math.abs(math.abs(delta) - nativeStep) > tolerance then return nil end
+  return M.stepCanonicalValue(currentValue, delta, param)
+end
+
+local function fixed(value, precision)
+  local text = string.format("%." .. precision .. "f", value)
+  if precision > 0 then text = text:gsub("0+$", ""):gsub("%.$", "") end
+  return text == "-0" and "0" or text
+end
+
 function M.formatValue(value, param)
   local shown, precision, suffix = value, M.stepPrecision(param.ui.step), param.ui.unit or ""
   if display(param) == "percent" then
@@ -116,7 +132,7 @@ function M.formatValue(value, param)
   elseif display(param) == "normalized" then
     shown, precision = normalized(value, param), 3
   end
-  return tostring(rounded(shown, precision)) .. suffix
+  return fixed(rounded(shown, precision), precision) .. suffix
 end
 
 function M.titleParam(params)

@@ -106,6 +106,14 @@ equal(Presentation.formatValue(0.5, slider({ 0, 2 }, 0.02, { unit = "×" })), "0
 equal(Presentation.formatValue(20, slider({ 0.1, 200 }, 0.1, { display = "normalized" })), "0.1")
 equal(Presentation.formatValue(20.2, slider({ 0.1, 200 }, 0.1, { display = "normalized" })), "0.101")
 equal(Presentation.formatValue(0.0001, slider({ 0.000001, 1 }, 0.000001)), "0.0001")
+equal(Presentation.formatValue(0.000001, slider({ 0.000001, 1 }, 0.000001)), "0.000001")
+equal(Presentation.formatValue(0.00001, slider({ 0.000001, 1 }, 0.000001, { unit = "s" })), "0.00001s")
+
+equal(Presentation.canonicalFromSliderStep(0.5497498749374688, 100, depth), 100.1)
+equal(Presentation.canonicalFromSliderStep(0.4497498749374687, 100, depth), 99.9)
+equal(Presentation.canonicalFromSliderStep(0.55, 100, tint), 101)
+equal(Presentation.canonicalFromSliderStep(0.45, 100, tint), 99)
+equal(Presentation.canonicalFromSliderStep(0.6, 100, tint), nil)
 
 -- Queue golden vectors.
 local result = Queue.enqueue(Queue.new(), sample("a.x", 1))

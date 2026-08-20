@@ -199,14 +199,22 @@ local function resetGroup(params)
 end
 
 local function beginDrag(param, sliderValue)
-  local canonical = Presentation.canonicalFromSlider(tonumber(sliderValue), param)
+  sliderValue = tonumber(sliderValue)
+  local canonical = Presentation.canonicalFromSlider(sliderValue, param)
   if not state.drag or state.drag.key ~= param.key then
-    state.drag = {key = param.key, value = canonical, pendingSample = nil}
+    state.drag = {
+      key = param.key,
+      value = canonical,
+      sliderValue = sliderValue,
+      originValue = param.value,
+      pendingSample = nil,
+    }
     state.sampleElapsedMs = 0
     if describeRunning then state.describeInvalidated = true end
     if param.effectiveDrag == "live" then panel.setNeedsFrameTick(true) end
   else
     state.drag.value = canonical
+    state.drag.sliderValue = sliderValue
   end
   updateParam(param, canonical)
   if param.effectiveDrag == "live" then
@@ -220,6 +228,12 @@ end
 local function endDrag(param)
   local drag = state.drag
   if not drag or drag.key ~= param.key then return end
+  -- ponytail: A pointer release after exactly Noctalia's 5% step is indistinguishable until it exposes interaction source.
+  local canonical = Presentation.canonicalFromSliderStep(drag.sliderValue, drag.originValue, param)
+  if canonical ~= nil then
+    drag.value = canonical
+    updateParam(param, canonical)
+  end
   state.drag = nil
   state.sampleElapsedMs = 0
   panel.setNeedsFrameTick(false)
@@ -339,6 +353,7 @@ local function parameterRow(param)
   local available = param.effectiveDrag ~= nil
   local notInPreview = state.previewVisible and param.ui.affectsPreview ~= true
   local releaseHint = param.effectiveDrag == "release"
+  local formattedValue = param.ui.control == "slider" and Presentation.formatValue(param.value, param) or nil
 
   return ui.column({key = param.key, gap = 4, paddingV = 4, opacity = notInPreview and 0.55 or 1}, {
     ui.row({gap = 8, align = "center"}, {
@@ -346,6 +361,7 @@ local function parameterRow(param)
         ui.label({text = param.ui.label or param.key, fontWeight = "medium"}),
         ui.label({text = param.description or "", fontSize = 12, color = "on_surface_variant", maxLines = 2}),
       }),
+      ui.label({text = formattedValue or "", fontSize = 12, color = "on_surface_variant", visible = formattedValue ~= nil}),
       nativeControl(param, available),
       resetButton(param, available),
     }),

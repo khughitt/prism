@@ -57,6 +57,14 @@ emits a final non-sample write on release. Release-mode sliders emit only that
 final write. A describe started before or during a drag is discarded when its
 result is stale and replayed only after the drag and write queue are idle.
 
+Noctalia API 22 exposes slider `step`, `onChange`, and `onDragEnd`, but no
+interaction-source callback. Normalized and logarithmic sliders retain a zero
+presentation step for pointer mapping. On release, the panel recognizes the
+host's exact 5%-of-range keyboard/wheel delta and applies one canonical Prism
+step; all other values keep the pointer mapping. A pointer release after
+exactly that same 5% movement is indistinguishable until Noctalia exposes the
+interaction source.
+
 Closing the panel clears drag frame ticks and enqueues `hidePreview` through
 the same FIFO. Panel-runtime survival after close is verified live before
 cutover; it is not promised by lint or manifest metadata.
@@ -74,7 +82,8 @@ The presentation module defines the panel's stable grouping contract:
 - Controls without `ui.affectsPreview = true` stay enabled while Preview is
   open, are dimmed, and are marked `Not in preview`.
 - Numeric controls preserve canonical values while supporting raw, percent,
-  normalized, linear, and logarithmic display metadata.
+  normalized, linear, and logarithmic display metadata, and render their
+  formatted value beside the native slider.
 
 The widget and panel use Noctalia's native v5 entries and controls. No
 additional runtime dependency or compatibility layer is part of this

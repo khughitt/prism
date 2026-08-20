@@ -91,6 +91,24 @@ test('every native parameter control keeps its required write boundary', async (
   assert.match(source, /param\.effectiveDrag == "release"/);
 });
 
+test('slider release recognizes canonical keyboard and wheel steps before final commit', async () => {
+  const source = await readEntry('panel.luau');
+  const endDrag = source.slice(source.indexOf('local function endDrag'), source.indexOf('local function previewItem'));
+
+  assert.match(endDrag, /Presentation\.canonicalFromSliderStep\(drag\.sliderValue, drag\.originValue, param\)/);
+  assert.match(endDrag, /updateParam\(param, canonical\)[\s\S]*enqueue\(\{verb = "set", key = param\.key, value = drag\.value, sample = false\}\)/);
+  assert.match(source, /-- ponytail:.*5%.*interaction source/);
+});
+
+test('slider rows render the formatted local value beside the native control', async () => {
+  const source = await readEntry('panel.luau');
+  const parameterRow = source.slice(source.indexOf('local function parameterRow'), source.indexOf('local function diagnosticRows'));
+
+  assert.match(parameterRow, /local formattedValue = param\.ui\.control == "slider" and Presentation\.formatValue\(param\.value, param\) or nil/);
+  assert.match(parameterRow, /ui\.label\(\{text = formattedValue or ""[\s\S]*visible = formattedValue ~= nil\}\)[\s\S]*nativeControl\(param, available\)/);
+  assert.match(source, /local function beginDrag[\s\S]*updateParam\(param, canonical\)[\s\S]*render\(\)/);
+});
+
 test('presentation grouping keeps Quick open and exposes group and row resets', async () => {
   const source = await readEntry('panel.luau');
 
