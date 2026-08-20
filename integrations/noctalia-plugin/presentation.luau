@@ -22,7 +22,11 @@ local function percentPrecision(param)
 end
 
 local function rounded(value, precision)
-  return tonumber(string.format("%." .. precision .. "f", value))
+  local factor = 10 ^ precision
+  local result = value < 0 and math.ceil(value * factor - 0.5) / factor
+    or math.floor(value * factor + 0.5) / factor
+  if result % 1 == 0 then return math.floor(result) end
+  return result
 end
 
 local function asPercent(value, param)
