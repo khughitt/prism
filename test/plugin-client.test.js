@@ -54,6 +54,18 @@ test('describe refresh validates visible parameters and discards stale results',
   assert.match(source, /exitCode ~= 0/);
 });
 
+test('pending refreshes wait for drag release and an idle write queue', async () => {
+  const source = await readEntry('panel.luau');
+  const finishRefresh = source.slice(
+    source.indexOf('local function finishRefresh'),
+    source.indexOf('local function described'),
+  );
+
+  assert.match(finishRefresh, /if state\.drag or state\.queue\.inFlight ~= nil then return end/);
+  assert.match(finishRefresh, /if state\.refreshPending or state\.refreshAfterDrag then[\s\S]*state\.refreshPending = false[\s\S]*state\.refreshAfterDrag = false[\s\S]*refresh\(\)/);
+  assert.equal(finishRefresh.match(/refresh\(\)/g)?.length, 1);
+});
+
 test('queue is the sole serialization point and refreshes only after a completed batch', async () => {
   const source = await readEntry('panel.luau');
 

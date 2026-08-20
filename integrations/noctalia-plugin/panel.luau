@@ -96,10 +96,9 @@ local function originOutput()
 end
 
 local function finishRefresh()
-  if state.refreshPending then
+  if state.drag or state.queue.inFlight ~= nil then return end
+  if state.refreshPending or state.refreshAfterDrag then
     state.refreshPending = false
-    refresh()
-  elseif not state.drag and state.queue.inFlight == nil and state.refreshAfterDrag then
     state.refreshAfterDrag = false
     refresh()
   end
