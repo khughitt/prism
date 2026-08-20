@@ -4,7 +4,8 @@
   "type": "module",
   "engines": { "node": ">=20" },
   "scripts": {
-    "test": "node --test test/*.test.js integrations/noctalia-plugin/contract.test.mjs",
+    "test": "node --test test/*.test.js integrations/noctalia-plugin/contract.test.mjs && npm run test:plugin-lua",
+    "test:plugin-lua": "command -v lua >/dev/null || { echo 'lua is required for the Noctalia plugin tests' >&2; exit 127; }; lua integrations/noctalia-plugin/plugin_test.lua",
     "test:niri-glass-contract": "node test/niri-glass-preview-contract.mjs"
   },
   "dependencies": { "yaml": "^2.4.0" }
