@@ -73,6 +73,7 @@ equal(Presentation.formatValue(-0.5, slider({ -1, 1 }, 1)), "-1")
 equal(Presentation.formatValue(0.125, slider({ 0, 1 }, 0.01)), "0.13")
 equal(Presentation.formatValue(2.675, slider({ 0, 3 }, 0.01)), "2.67")
 equal(Presentation.formatValue(0.015, slider({ 0, 1 }, 0.01)), "0.01")
+equal(Presentation.formatValue(0.105, slider({ 0, 2 }, 0.02, { unit = "×" })), "0.1×")
 
 local raw = slider({ 0, 2 }, 0.05, { unit = "×" })
 local percent = slider({ 0, 1 }, 0.01, { display = "percent" })

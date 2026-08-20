@@ -21,26 +21,28 @@ local function percentPrecision(param)
     M.stepPrecision(param.range[2])) - 2)
 end
 
+local function multiplicationError(left, right, product)
+  local splitter = 134217729 -- 2^27 + 1 splits an IEEE-754 double's significand.
+  local splitLeft = splitter * left
+  local leftHigh = splitLeft - (splitLeft - left)
+  local leftLow = left - leftHigh
+  local splitRight = splitter * right
+  local rightHigh = splitRight - (splitRight - right)
+  local rightLow = right - rightHigh
+  return ((leftHigh * rightHigh - product) + leftHigh * rightLow + leftLow * rightHigh)
+    + leftLow * rightLow
+end
+
 local function rounded(value, precision)
-  local sign = value < 0 and -1 or 1
-  local text = string.format("%.17g", math.abs(value))
-  local mantissa, exponent = text:match("^(.+)[eE]([+-]?%d+)$")
-  mantissa, exponent = mantissa or text, tonumber(exponent) or 0
-  local point = mantissa:find(".", 1, true)
-  local digits = point and mantissa:gsub("%.", "") or mantissa
-  local decimal = (point and point - 1 or #mantissa) + exponent
-  local whole, fraction
-  if decimal <= 0 then
-    whole, fraction = "0", string.rep("0", -decimal) .. digits
-  elseif decimal >= #digits then
-    whole, fraction = digits .. string.rep("0", decimal - #digits), ""
-  else
-    whole, fraction = digits:sub(1, decimal), digits:sub(decimal + 1)
+  local sign, magnitude = value < 0 and -1 or 1, math.abs(value)
+  local factor = 10 ^ precision
+  local scaled = magnitude * factor
+  local whole = math.floor(scaled)
+  local fraction = scaled - whole
+  if fraction > 0.5 or fraction == 0.5 and multiplicationError(magnitude, factor, scaled) >= 0 then
+    whole = whole + 1
   end
-  local kept = fraction:sub(1, precision)
-  local scaled = tonumber(whole .. kept .. string.rep("0", precision - #kept))
-  if fraction:sub(precision + 1, precision + 1) >= "5" then scaled = scaled + 1 end
-  local result = scaled / 10 ^ precision
+  local result = whole / factor
   if result % 1 == 0 then return sign * math.floor(result) end
   return sign * result
 end
