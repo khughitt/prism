@@ -108,6 +108,7 @@ equal(Presentation.formatValue(20.2, slider({ 0.1, 200 }, 0.1, { display = "norm
 equal(Presentation.formatValue(0.0001, slider({ 0.000001, 1 }, 0.000001)), "0.0001")
 equal(Presentation.formatValue(0.000001, slider({ 0.000001, 1 }, 0.000001)), "0.000001")
 equal(Presentation.formatValue(0.00001, slider({ 0.000001, 1 }, 0.000001, { unit = "s" })), "0.00001s")
+equal(Presentation.formatValue(-0.0, slider({ -1, 1 }, 0.000001, { unit = "px" })), "0px")
 
 equal(Presentation.canonicalFromSliderStep(0.5497498749374688, 100, depth), 100.1)
 equal(Presentation.canonicalFromSliderStep(0.4497498749374687, 100, depth), 99.9)

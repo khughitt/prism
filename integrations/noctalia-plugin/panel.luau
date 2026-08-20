@@ -15,9 +15,12 @@ local state = {
   previewVisible = false,
   diagnosticBackground = false,
   expandedGroups = {},
+  renderedSliderCorrection = nil,
 }
 
 local describeRunning = false
+-- Noctalia Slider::setValue suppresses changes smaller than this epsilon.
+local hostSliderEpsilon = 0.0001
 local render
 local refresh
 local enqueue
@@ -200,6 +203,12 @@ end
 
 local function beginDrag(param, sliderValue)
   sliderValue = tonumber(sliderValue)
+  local correction = state.renderedSliderCorrection
+  if correction and correction.key == param.key
+    and math.abs(sliderValue - correction.expectedPresentationValue) < hostSliderEpsilon then
+    state.renderedSliderCorrection = nil
+    return
+  end
   local canonical = Presentation.canonicalFromSlider(sliderValue, param)
   if not state.drag or state.drag.key ~= param.key then
     state.drag = {
@@ -230,15 +239,21 @@ local function endDrag(param)
   if not drag or drag.key ~= param.key then return end
   -- ponytail: A pointer release after exactly Noctalia's 5% step is indistinguishable until it exposes interaction source.
   local canonical = Presentation.canonicalFromSliderStep(drag.sliderValue, drag.originValue, param)
+  local correctedSliderValue
   if canonical ~= nil then
     drag.value = canonical
     updateParam(param, canonical)
+    correctedSliderValue = Presentation.toSliderValue(canonical, param)
   end
   state.drag = nil
   state.sampleElapsedMs = 0
   panel.setNeedsFrameTick(false)
   enqueue({verb = "set", key = param.key, value = drag.value, sample = false})
+  if correctedSliderValue ~= nil then
+    state.renderedSliderCorrection = {key = param.key, expectedPresentationValue = correctedSliderValue}
+  end
   render()
+  state.renderedSliderCorrection = nil
 end
 
 local function previewItem()
