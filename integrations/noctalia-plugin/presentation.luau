@@ -22,11 +22,16 @@ local function percentPrecision(param)
 end
 
 local function rounded(value, precision)
-  local factor = 10 ^ precision
-  local result = value < 0 and math.ceil(value * factor - 0.5) / factor
-    or math.floor(value * factor + 0.5) / factor
-  if result % 1 == 0 then return math.floor(result) end
-  return result
+  local sign = value < 0 and -1 or 1
+  local text = string.format("%.17f", math.abs(value))
+  local point = text:find(".", 1, true)
+  local whole = text:sub(1, point - 1)
+  local fraction = text:sub(point + 1)
+  local scaled = tonumber(whole .. fraction:sub(1, precision))
+  if fraction:sub(precision + 1, precision + 1) >= "5" then scaled = scaled + 1 end
+  local result = scaled / 10 ^ precision
+  if result % 1 == 0 then return sign * math.floor(result) end
+  return sign * result
 end
 
 local function asPercent(value, param)
