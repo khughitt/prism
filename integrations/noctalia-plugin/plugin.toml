@@ -1,0 +1,20 @@
+id = "khughitt/prism"
+name = "Prism"
+description = "Control Prism appearance and glass preview from Noctalia"
+version = "1.0.0"
+author = "Keith Hughitt"
+plugin_api = 22
+dependencies = ["prism", "qs"]
+
+[[widget]]
+id = "widget"
+entry = "widget.luau"
+
+[[panel]]
+id = "panel"
+entry = "panel.luau"
+# Preserve the v4 560x760 preferred size at dotfiles' tracked 1.05 UI scale.
+width = 588
+height = 798
+placement = "attached"
+position = "auto"

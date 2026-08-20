@@ -2,195 +2,112 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-const source = await readFile(new URL('../integrations/noctalia-plugin/PrismClient.qml', import.meta.url), 'utf8');
-const panel = await readFile(new URL('../integrations/noctalia-plugin/Panel.qml', import.meta.url), 'utf8');
-const control = await readFile(new URL('../integrations/noctalia-plugin/ParamControl.qml', import.meta.url), 'utf8');
-const bar = await readFile(new URL('../integrations/noctalia-plugin/BarWidget.qml', import.meta.url), 'utf8');
+const plugin = new URL('../integrations/noctalia-plugin/', import.meta.url);
+const readEntry = (name) => readFile(new URL(name, plugin), 'utf8');
 
-test('describe refresh requests made in flight are coalesced and replayed after exit', () => {
-  assert.match(source, /property bool refreshPending: false/);
-  assert.match(source, /if \(describeProcess\.running\) \{\s*refreshPending = true;\s*return;/);
-  assert.match(source, /function finishRefresh\(\) \{\s*if \(refreshPending\) \{\s*refreshPending = false;\s*describeInvalidated = sliderPressed;\s*describeProcess\.running = true;/);
+test('widget stores its output before toggling the fully qualified panel', async () => {
+  const source = await readEntry('widget.luau');
+  const outputAt = source.indexOf('barWidget.outputName()');
+  const storeAt = source.indexOf('noctalia.state.set("originOutput", output)');
+  const toggleAt = source.indexOf('noctalia.togglePanel("khughitt/prism:panel")');
 
-  const describeProcess = source.slice(source.indexOf('id: describeProcess'), source.indexOf('id: writeProcess'));
-  assert.doesNotMatch(describeProcess, /\breturn;/, 'every describe exit path must reach the replay');
-  assert.equal(describeProcess.match(/root\.finishRefresh\(\);/g)?.length, 1);
+  assert.ok(outputAt >= 0 && storeAt > outputAt && toggleAt > storeAt);
+  assert.match(source, /barWidget\.setGlyph\("wand"\)/);
+  assert.doesNotMatch(source, /screen|oppositeSide/);
 });
 
-test('bar widget matches Noctalia native capsule contract', () => {
-  assert.match(bar, /import qs\.Services\.UI/);
-  assert.match(bar, /baseSize: Style\.getCapsuleHeightForScreen\(screen\?\.name\)/);
-  assert.match(bar, /applyUiScale: false/);
-  assert.match(bar, /customRadius: Style\.radiusL/);
-  assert.match(bar, /icon: "wand"/);
-  assert.match(bar, /colorBg: Style\.capsuleColor/);
-  assert.match(bar, /colorFg: Color\.mOnSurface/);
-  assert.match(bar, /colorBgHover: Color\.mHover/);
-  assert.match(bar, /colorFgHover: Color\.mOnHover/);
-  assert.match(bar, /colorBorder: "transparent"/);
-  assert.match(bar, /colorBorderHover: "transparent"/);
-  assert.match(bar, /border\.color: Style\.capsuleBorderColor/);
-  assert.match(bar, /border\.width: Style\.capsuleBorderWidth/);
-  assert.match(bar, /tooltipDirection: BarService\.getTooltipDirection\(screen\?\.name\)/);
+test('panel consumes the Task 2 modules and runs argv through the shell boundary', async () => {
+  const source = await readEntry('panel.luau');
+
+  assert.match(source, /require\("\.\/presentation\.luau"\)/);
+  assert.match(source, /require\("\.\/queue\.luau"\)/);
+  assert.match(source, /require\("\.\/shell\.luau"\)/);
+  assert.match(source, /local function run\(argv, callback\)[\s\S]*noctalia\.runAsync\(Shell\.command\(argv\), callback, 10000\)/);
+  assert.equal(source.match(/noctalia\.runAsync\(/g)?.length, 1);
+  assert.doesNotMatch(source, /noctalia\.runAsync\(\s*["']/);
 });
 
-test('panel Connections use explicit signal handlers accepted by current QML', () => {
-  assert.match(panel, /function onDescribed\(model\) \{/);
-  assert.doesNotMatch(panel, /onDescribed:\s*function/);
+test('panel lifecycle owns refresh, preview cleanup, and live-drag frame ticks', async () => {
+  const source = await readEntry('panel.luau');
+
+  assert.match(source, /function onOpen\(context\) refresh\(\) end/);
+  assert.match(source, /function onClose\(\)[\s\S]*state\.drag = nil[\s\S]*state\.sampleElapsedMs = 0[\s\S]*panel\.setNeedsFrameTick\(false\)[\s\S]*enqueue\(\{verb = "preview-hide"\}\)/);
+  assert.match(source, /function onFrameTick\(deltaMs\)[\s\S]*if not state\.drag or not state\.drag\.pendingSample then return end[\s\S]*state\.sampleElapsedMs = state\.sampleElapsedMs \+ deltaMs[\s\S]*state\.sampleElapsedMs < 100[\s\S]*enqueue\(state\.drag\.pendingSample\)[\s\S]*state\.drag\.pendingSample = nil/);
+
+  const liveDrag = source.slice(source.indexOf('local function beginDrag'), source.indexOf('local function endDrag'));
+  assert.match(liveDrag, /effectiveDrag == "live"[\s\S]*panel\.setNeedsFrameTick\(true\)/);
+  assert.equal(source.match(/panel\.setNeedsFrameTick\(true\)/g)?.length, 1);
 });
 
-test('panel groups parameters and replaces root-local expansion state explicitly', () => {
-  assert.match(panel, /property var expandedGroups: \(\{\}\)/);
-  assert.match(panel, /function setGroupExpanded\(name, expanded\)/);
-  assert.match(panel, /root\.expandedGroups = next/);
-  assert.doesNotMatch(panel, /expandedGroups\[[^\]]+\]\s*=(?!=)/);
-  assert.match(panel, /root\.titleSetting = Presentation\.titleParam\(model\.params\)/);
-  assert.match(panel, /root\.groups = Presentation\.groupParams\(model\.params\)/);
+test('describe refresh validates visible parameters and discards stale results', async () => {
+  const source = await readEntry('panel.luau');
+
+  for (const field of ['key', 'value', 'default', 'modified', 'control', 'group']) {
+    assert.match(source, new RegExp(`param(?:\\.ui)?\\.${field}`));
+  }
+  assert.match(source, /type\(model\.params\) ~= "table"/);
+  assert.match(source, /state\.describeInvalidated/);
+  assert.match(source, /state\.refreshAfterDrag = true/);
+  assert.match(source, /if invalidated[\s\S]*state\.model = model/);
+  assert.match(source, /noctalia\.json\.decode\(result\.stdout\)/);
+  assert.match(source, /timedOut/);
+  assert.match(source, /exitCode ~= 0/);
 });
 
-test('panel extracts the title toggle without naming its parameter key', () => {
-  assert.match(panel, /property var titleSetting: null/);
-  assert.match(panel, /root\.titleSetting = Presentation\.titleParam\(model\.params\)/);
-  assert.match(panel, /root\.client\.set\(root\.titleSetting\.key, checked, false\)/);
-  assert.doesNotMatch(panel, /glass\.enabled/);
+test('queue is the sole serialization point and refreshes only after a completed batch', async () => {
+  const source = await readEntry('panel.luau');
+
+  assert.match(source, /Queue\.enqueue\(state\.queue, item\)/);
+  assert.match(source, /Queue\.argvFor\(item\)/);
+  assert.match(source, /Queue\.shouldRefresh\(state\.batchAffectsParams, state\.queue\.inFlight\)/);
+  assert.match(source, /Queue\.finish\(state\.queue\)/);
+  assert.match(source, /local next = Queue\.finish\(state\.queue\)[\s\S]*if next\.launch then[\s\S]*launch\(next\.launch\)[\s\S]*elseif next\.drained then/);
 });
 
-test('basic controls start directly below the title and use compact type', () => {
-  assert.doesNotMatch(panel, /text: "Quick"/);
-  assert.match(panel, /text: "Prism"[\s\S]*pointSize: Style\.fontSizeL/);
-  assert.match(control, /id: parameterLabel[\s\S]*pointSize: Style\.fontSizeM/);
-  assert.match(control, /id: parameterDescription[\s\S]*pointSize: Style\.fontSizeS/);
-  assert.match(control, /textSize: Style\.fontSizeS/);
+test('every native parameter control keeps its required write boundary', async () => {
+  const source = await readEntry('panel.luau');
+
+  assert.match(source, /ui\.toggle\(/);
+  assert.match(source, /ui\.select\(/);
+  assert.match(source, /ui\.slider\(/);
+  assert.match(source, /ui\.button\(/);
+  assert.match(source, /noctalia\.openColorPicker\(/);
+  assert.match(source, /local available = param\.effectiveDrag ~= nil/);
+  assert.match(source, /enabled = available/);
+  assert.match(source, /pendingSample = \{verb = "set", key = param\.key, value = canonical, sample = true\}/);
+  assert.match(source, /local function endDrag[\s\S]*enqueue\(\{verb = "set", key = param\.key, value = drag\.value, sample = false\}\)/);
+  assert.match(source, /param\.effectiveDrag == "release"/);
 });
 
-test('panel keeps preview controls stable and clear of the scrollbar', () => {
-  assert.doesNotMatch(panel, /reserveScrollbarSpace: false/);
-  assert.match(panel, /userRightPadding: Style\.marginS/);
-  assert.match(panel, /ColumnLayout \{\s*visible: groupSurface\.modelData\.name === "Diagnostics"/);
-  assert.doesNotMatch(panel, /RowLayout \{\s*visible: groupSurface\.modelData\.name === "Diagnostics"/);
+test('presentation grouping keeps Quick open and exposes group and row resets', async () => {
+  const source = await readEntry('panel.luau');
+
+  assert.match(source, /Presentation\.titleParam\(state\.model\.params\)/);
+  assert.match(source, /Presentation\.groupParams\(state\.model\.params\)/);
+  assert.match(source, /group\.name == "Quick" or state\.expandedGroups\[group\.name\] == true/);
+  assert.match(source, /Presentation\.modifiedCount\(group\.params\)/);
+  assert.match(source, /local function resetGroup[\s\S]*if param\.modified then[\s\S]*unsetParam\(param\)/);
+  assert.match(source, /tooltip = "Reset to default"/);
 });
 
-test('controls update local display state before writing', () => {
-  assert.match(control, /property var displayedValue: param\.value/);
-  assert.match(control, /value: root\.param\.ui\.control === "slider" \? Presentation\.toSliderValue\(root\.displayedValue, root\.param\) : 0/);
-  assert.match(control,
-    /var canonical = root\.canonicalForMove\(value\);[\s\S]*root\.displayedValue = canonical;[\s\S]*sendSlider\(canonical,/);
-  assert.match(control, /root\.displayedValue = checked;[\s\S]*root\.client\.set\(root\.param\.key, checked, false\)/);
-  assert.match(control, /root\.displayedValue = key;[\s\S]*root\.client\.set\(root\.param\.key, key, false\)/);
-  assert.match(control, /root\.displayedValue = hex;[\s\S]*root\.client\.set\(root\.param\.key, hex, false\)/);
+test('preview is output-scoped, left-sided, and keeps contextual controls usable', async () => {
+  const source = await readEntry('panel.luau');
+
+  assert.match(source, /noctalia\.state\.get\("originOutput"\)/);
+  assert.match(source, /if output == nil then output = noctalia\.focusedOutputName\(\) end/);
+  assert.match(source, /verb = "preview-show", output = output, side = "left"/);
+  assert.match(source, /ui\.affectsPreview ~= true/);
+  assert.match(source, /text = "Not in preview"/);
+  assert.match(source, /opacity = notInPreview and 0\.55 or 1/);
+  assert.match(source, /text = "Preview"/);
+  assert.match(source, /text = "Diagnostic background"/);
 });
 
-test('hint and reset share the trailing edge of the control row', () => {
-  const row = control.slice(control.indexOf('id: controlRow'));
-  const hintAt = row.indexOf('id: livenessHint');
-  const resetAt = row.indexOf('id: resetButton');
-  assert.ok(hintAt >= 0 && resetAt > hintAt);
-  assert.match(row.slice(hintAt, resetAt), /pointSize: Style\.fontSizeXS/);
-  assert.match(row.slice(resetAt), /baseSize: Style\.baseWidgetSize \* 0\.6/);
-});
+test('errors and unavailable controls are visible without legacy or opposite-side paths', async () => {
+  const source = await readEntry('panel.luau');
 
-test('Prism owns the sole per-parameter modified indicator', () => {
-  assert.doesNotMatch(control, /defaultValue:/);
-});
-
-test('advanced headers use a passive chevron and quiet icon reset', () => {
-  const start = panel.indexOf('id: groupHeader');
-  const header = panel.slice(start, panel.indexOf('ColumnLayout {', start));
-
-  assert.match(header, /NIcon\s*\{[\s\S]*icon: groupSurface\.expanded \? "chevron-down" : "chevron-right"/);
-  assert.match(header, /NText\s*\{[\s\S]*text: groupSurface\.modelData\.name/);
-  assert.match(header, /NIconButton\s*\{[\s\S]*visible: groupSurface\.modifiedCount > 0[\s\S]*icon: "restore"[\s\S]*onClicked: root\.resetGroup\(groupSurface\.groupParams\)/);
-  assert.doesNotMatch(header, /\bNButton\s*\{/);
-});
-
-test('parameter rows use presentation metadata and one Prism reset action', () => {
-  assert.match(control, /readonly property bool liveDrag: param\.effectiveDrag === "live"/);
-  assert.match(control, /showReset: false/);
-  assert.match(control, /tooltipText: "Reset to default"/);
-  assert.equal(control.match(/tooltipText: "Reset to default"/g)?.length, 1);
-  assert.match(control, /Presentation\.formatValue\(root\.displayedValue, root\.param\)/);
-});
-
-test('sliders present mapped values but write canonical grid values', () => {
-  assert.doesNotMatch(control, /param\.ui\.step === undefined/);
-  assert.match(control, /from: root\.param\.ui\.control === "slider" \? Presentation\.sliderFrom\(root\.param\) : 0/);
-  assert.match(control, /to: root\.param\.ui\.control === "slider" \? Presentation\.sliderTo\(root\.param\) : 1/);
-  assert.match(control, /stepSize: root\.param\.ui\.control === "slider" \? Presentation\.sliderStep\(root\.param\) : 0/);
-  assert.match(control, /value: root\.param\.ui\.control === "slider" \? Presentation\.toSliderValue\(root\.displayedValue, root\.param\) : 0/);
-  assert.match(control, /text: root\.param\.ui\.control === "slider" \? Presentation\.formatValue\(root\.displayedValue, root\.param\) : ""/);
-  assert.match(control, /Presentation\.canonicalFromSlider\(value, root\.param\)/);
-  assert.match(control, /Presentation\.stepCanonicalValue\(/);
-});
-
-test('drain refresh uses the parameter-write and non-sample-tail conjunction', () => {
-  const writeDone = source.slice(source.indexOf('function writeDone'), source.indexOf('Process {'));
-
-  assert.match(source, /property bool batchAffectsParams: false/);
-  assert.match(source, /batchAffectsParams = batchAffectsParams \|\| Queue\.affectsParams\(item\)/);
-  assert.match(writeDone, /var shouldRefresh = Queue\.shouldRefresh\(batchAffectsParams, queue\.inFlight\);\s*var result = Queue\.finish\(queue\);/);
-  assert.match(writeDone, /else if \(result\.drained\) \{\s*batchAffectsParams = false;\s*drained\(\);\s*if \(shouldRefresh\) refreshAfterDrag = true;\s*if \(!sliderPressed && refreshAfterDrag\) \{\s*refreshAfterDrag = false;\s*refresh\(\);\s*\}\s*\}/);
-});
-
-test('a pressed slider defers reconciliation until its release write drains', () => {
-  assert.match(source, /property bool sliderPressed: false/);
-  assert.match(source, /property bool refreshAfterDrag: false/);
-  assert.match(source, /property bool describeInvalidated: false/);
-  assert.match(source, /function setSliderPressed\(pressed\) \{\s*if \(pressed && describeProcess\.running\) describeInvalidated = true;\s*sliderPressed = pressed;\s*\}/);
-  assert.match(source, /function refresh\(\) \{[\s\S]*describeInvalidated = sliderPressed;\s*describeProcess\.running = true;/);
-
-  assert.match(control, /onPressedChanged: function\(pressed, value\) \{\s*pointerPressed = pressed;\s*if \(pressed\) root\.client\.setSliderPressed\(true\);[\s\S]*if \(!pressed\) \{[\s\S]*sendSlider\(canonical, false\);\s*root\.client\.setSliderPressed\(false\);/);
-  assert.match(control, /Component\.onDestruction:[\s\S]*if \(pointerPressed\) root\.client\.setSliderPressed\(false\)/);
-
-  const describeExit = source.slice(source.indexOf('id: describeProcess'), source.indexOf('id: writeProcess'));
-  assert.match(describeExit, /var invalidated = root\.describeInvalidated;\s*root\.describeInvalidated = false;/);
-  assert.match(describeExit, /if \(invalidated\) \{\s*if \(!root\.refreshPending\) root\.refreshAfterDrag = true;\s*\} else \{[\s\S]*root\.described\(model\);\s*\}/);
-  assert.doesNotMatch(describeExit, /if \(root\.sliderPressed\)/);
-});
-
-test('client and panel expose panel-local preview controls', () => {
-  assert.match(source, /function showPreview\(output, side, diagnosticBackground\)/);
-  assert.match(source, /function hidePreview\(\)/);
-  assert.match(panel, /property bool previewVisible: false/);
-  assert.match(panel, /property bool diagnosticBackground: false/);
-  assert.match(panel, /Component\.onDestruction: if \(root\.client\) root\.client\.hidePreview\(\)/);
-  assert.match(panel, /modelData\.name === "Diagnostics"/);
-  assert.doesNotMatch(panel, /glass\.enabled/);
-});
-
-test('slider commits keyboard and wheel moves without changing pointer drag behavior', () => {
-  assert.match(control, /property bool pointerPressed: false/);
-  assert.match(control, /WheelHandler \{[\s\S]*onWheel: function\(event\) \{[\s\S]*var direction = Math\.sign\(event\.angleDelta\.y\);[\s\S]*valueSlider\.moved\(/);
-  assert.doesNotMatch(control, /onTriggered: client\.set\(param\.key, valueSlider\.value, false\)/);
-  assert.match(control, /property real pendingValue: 0/);
-  assert.match(control, /id: commitGate\s*interval: 100\s*repeat: false\s*onTriggered: sendSlider\(valueSlider\.pendingValue, false\)/);
-  assert.match(control, /onMoved: function\(value\) \{\s*var canonical = root\.canonicalForMove\(value\);\s*root\.displayedValue = canonical;\s*if \(pointerPressed\) \{\s*if \(liveDrag && !sampleGate\.running\)/);
-  assert.match(control, /\} else \{\s*pendingValue = canonical;\s*commitGate\.restart\(\);\s*\}\s*\}/);
-  assert.match(control, /if \(!pressed\) \{\s*var canonical = Presentation\.canonicalFromSlider\(value, root\.param\);\s*root\.displayedValue = canonical;\s*sendSlider\(canonical, false\);/);
-});
-
-test('slider flushes a pending keyboard or wheel write before destruction', () => {
-  const slider = control.slice(control.indexOf('NValueSlider {'), control.indexOf('NToggle {'));
-
-  assert.match(slider, /Component\.onDestruction: \{\s*if \(pointerPressed\) root\.client\.setSliderPressed\(false\);\s*if \(commitGate\.running\) \{\s*commitGate\.stop\(\);\s*sendSlider\(valueSlider\.pendingValue, false\);\s*\}\s*\}/);
-});
-
-test('every slider write receives a canonical value', () => {
-  const helper = control.slice(control.indexOf('function sendSlider'), control.indexOf('function selectOptions'));
-  const slider = control.slice(control.indexOf('NValueSlider {'), control.indexOf('NToggle {'));
-
-  assert.match(helper, /client\.set\(param\.key, value, sample\)/);
-  assert.doesNotMatch(helper, /quantizeValue|stepSize/);
-  assert.doesNotMatch(slider, /client\.set\(param\.key,/);
-  assert.equal(slider.match(/sendSlider\(/g)?.length, 4);
-});
-
-test('preview scope is contextual, textual, and does not disable controls', () => {
-  assert.match(control, /property bool previewVisible: false/);
-  assert.match(control, /param\.ui\.affectsPreview !== true/);
-  assert.match(control, /text: "Not in preview"/);
-  assert.match(control, /enabled: param\.effectiveDrag !== null/);
-  assert.match(control, /opacity: notInPreview \? 0\.55 : 1/);
-  assert.match(panel, /previewVisible: root\.previewVisible/);
-  assert.match(panel, /Dimmed settings are not reflected in the preview/);
-  assert.match(panel, /root\.titleSetting\.ui\.affectsPreview !== true/);
+  assert.match(source, /errorText = nil/);
+  assert.match(source, /text = state\.errorText/);
+  assert.match(source, /text = "Unavailable"/);
+  assert.doesNotMatch(source, /oppositeSide|manifest\.json|\.qml/);
 });
