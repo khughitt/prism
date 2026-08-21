@@ -1,9 +1,10 @@
 function rule(app, active, params) {
   const state = active ? 'active' : 'inactive';
+  const opacity = params[`terminal.window.opacity.${state}`];
   return [
     'window-rule {',
     `    match app-id=${JSON.stringify(app)} is-active=${active}`,
-    `    opacity ${params[`terminal.window.opacity.${state}`]}`,
+    `    opacity ${Number.isInteger(opacity) ? `${opacity}.0` : opacity}`,
     '    background-effect {',
     ...(params['terminal.blur'] ? ['        blur true'] : []),
     '        xray false',

@@ -57,6 +57,48 @@ equal(groups[2], { name = "Alpha", params = { params[4] } })
 equal(groups[3], { name = "Beta", params = { params[6], params[2] } })
 equal(Presentation.modifiedCount({ { modified = true }, { modified = false }, { modified = true } }), 2)
 
+-- The panel must give its scroll root the host-owned viewport height both
+-- before and after the asynchronous model arrives.
+local rendered
+local described
+local model = { params = {
+  {
+    key = "glass.enabled", value = true, default = true, modified = false,
+    effectiveDrag = "release",
+    ui = { control = "toggle", group = "Title", order = 0, label = "Glass" },
+  },
+  {
+    key = "compositor.gaps", value = 24, default = 24, modified = false,
+    effectiveDrag = "release", range = { 0, 128 },
+    ui = { control = "slider", group = "Quick", order = 10, step = 1, label = "Gaps" },
+  },
+} }
+
+ui = setmetatable({}, { __index = function(_, kind)
+  return function(props, children) return { kind = kind, props = props or {}, children = children or {} } end
+end })
+panel = {
+  render = function(tree) rendered = tree end,
+  setNeedsFrameTick = function() end,
+}
+noctalia = {
+  runAsync = function(_, callback)
+    described = callback
+    return true
+  end,
+  json = { decode = function() return model end },
+}
+package.loaded["./presentation.luau"] = Presentation
+package.loaded["./queue.luau"] = Queue
+package.loaded["./shell.luau"] = Shell
+dofile(here .. "panel.luau")
+
+onOpen({})
+equal(rendered.kind, "scroll")
+equal(rendered.props.flexGrow, 1, "loading scroll must fill the panel viewport")
+described({ exitCode = 0, stdout = "{}" })
+equal(rendered.props.flexGrow, 1, "populated scroll must fill the panel viewport")
+
 equal(Presentation.stepPrecision(0.000001), 6)
 equal(Presentation.snapValue(100.04, { 0.1, 200 }, 0.1), 100)
 equal(Presentation.snapValue(100.06, { 0.1, 200 }, 0.1), 100.1)

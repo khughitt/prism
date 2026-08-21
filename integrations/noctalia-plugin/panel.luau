@@ -465,7 +465,7 @@ render = function()
     })
     for _, group in ipairs(Presentation.groupParams(state.model.params)) do appendGroup(children, group) end
   end
-  panel.render(ui.scroll({gap = 8, padding = 16}, children))
+  panel.render(ui.scroll({flexGrow = 1, gap = 8, padding = 16}, children))
 end
 
 function onOpen(context) refresh() end

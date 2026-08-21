@@ -43,6 +43,14 @@ test('disabled blur omits blur while retaining the other background effects', ()
   assert.match(kdl, /background-effect \{\n        xray false\n        saturation 1\n        noise 0\.1\n    \}/);
 });
 
+test('whole-number opacity remains a KDL float', () => {
+  const kdl = renderNiriFragment({
+    params: { ...resolved.params, 'terminal.window.opacity.active': 1 },
+  });
+
+  assert.match(kdl, /match app-id="kitty" is-active=true\n    opacity 1\.0\n/);
+});
+
 test('fragment is stable', () => {
   assert.equal(renderNiriFragment(resolved), renderNiriFragment(resolved));
 });
