@@ -31,7 +31,7 @@
 **Interfaces:**
 - Produces: `debug.backdrop: bool`, default `false`, bound only to sink `debug-backdrop` with `liveness: live`.
 
-- [ ] **Step 1: Write the failing definition test**
+- [x] **Step 1: Write the failing definition test**
 
 ```js
 test('debug.backdrop is one live toggle outside the native glass grammar', () => {
@@ -48,11 +48,11 @@ test('debug.backdrop is one live toggle outside the native glass grammar', () =>
 });
 ```
 
-- [ ] **Step 2: Run the test and verify it fails because the definition is absent**
+- [x] **Step 2: Run the test and verify it fails because the definition is absent**
 
 Run: `node --test test/debug-defs.test.js`
 
-- [ ] **Step 3: Add the minimal YAML definition and manifest from the spec**
+- [x] **Step 3: Add the minimal YAML definition and manifest from the spec**
 
 ```yaml
 - key: debug.backdrop
@@ -69,9 +69,9 @@ binds:
   - {param: debug.backdrop, liveness: live}
 ```
 
-- [ ] **Step 4: Run the focused test, `test/glass-defs.test.js`, and `test/manifest.test.js`**
+- [x] **Step 4: Run the focused test, `test/glass-defs.test.js`, and `test/manifest.test.js`**
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add defs/debug.yaml integrations/debug-backdrop/manifest.yaml test/debug-defs.test.js
@@ -86,7 +86,7 @@ git commit -m "feat(prism): define the debug backdrop sink"
 **Interfaces:**
 - Produces: one click-through `Background` `PanelWindow` per `Quickshell.screens` entry with namespace `prism-debug-backdrop`.
 
-- [ ] **Step 1: Add the minimal QML surface**
+- [x] **Step 1: Add the minimal QML surface**
 
 Use the existing Quickshell `Variants`/`PanelWindow` pattern, an empty `Region`, a static 64 px Canvas checkerboard, and two centered red rectangles. No material code, settings, IPC, or assets.
 
@@ -140,11 +140,11 @@ ShellRoot {
 }
 ```
 
-- [ ] **Step 2: Validate the configuration**
+- [x] **Step 2: Validate the configuration**
 
 Run: `qmllint integrations/debug-backdrop/shell.qml`
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add integrations/debug-backdrop/shell.qml
@@ -161,7 +161,7 @@ git commit -m "feat(prism): render the debug backdrop"
 - Consumes: resolved JSON path in `process.argv[2]`, reading `params['debug.backdrop']`.
 - Produces: exit 0 only when the selected config path's running-instance state equals the requested boolean.
 
-- [ ] **Step 1: Write a fake-`qs` fixture and failing behavior tests**
+- [x] **Step 1: Write a fake-`qs` fixture and failing behavior tests**
 
 The fixture copies the real integration into a temporary directory, writes a resolved JSON file, and puts this behavior-controlled executable first on `PATH`:
 
@@ -193,15 +193,15 @@ for (const c of [
 }
 ```
 
-- [ ] **Step 2: Run `node --test test/debug-backdrop-sink.test.js` and verify the missing apply executable is the failure**
+- [x] **Step 2: Run `node --test test/debug-backdrop-sink.test.js` and verify the missing apply executable is the failure**
 
-- [ ] **Step 3: Implement the minimum apply script**
+- [x] **Step 3: Implement the minimum apply script**
 
 Use `spawnSync` so stdout, stderr, and exit status are available even when start exits 0 after a QML failure. Resolve `shell.qml` with `fileURLToPath(new URL('./shell.qml', import.meta.url))`, require readable access, run the selected start/stop command, then run `qs list -p <path> --json`. Parse either a JSON array or the exact measured empty response; reject everything else. Throw with the captured Quickshell diagnostic when the postcondition fails.
 
-- [ ] **Step 4: Run the focused test and `test/fanout.test.js`**
+- [x] **Step 4: Run the focused test and `test/fanout.test.js`**
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add integrations/debug-backdrop/apply test/debug-backdrop-sink.test.js
@@ -221,7 +221,7 @@ git commit -m "feat(prism): converge the debug backdrop process"
 - Consumes: `prism get debug.backdrop`, `niri msg -j outputs`, and `niri msg -j layers`.
 - Produces: one `prism apply debug-backdrop` after false immediately or true after all enabled outputs are ready; exits nonzero without applying after thirty seconds.
 
-- [ ] **Step 1: Write failing pytest subprocess tests with fake `prism`, `niri`, and `sleep` executables**
+- [x] **Step 1: Write failing pytest subprocess tests with fake `prism`, `niri`, and `sleep` executables**
 
 The fixture runs the real script with a temporary `PATH`. Fake `prism` prints `PRISM_FAKE_VALUE` for `get` and records `apply`; fake `niri` prints complete literal outputs JSON or successive literal layer arrays from an environment-supplied JSON sequence; fake `sleep` exits immediately. Assert the real script's status and apply log:
 
@@ -245,25 +245,25 @@ def test_true_waits_for_wallpaper_on_every_enabled_output(rig):
 
 Add literal cases for false-immediate/no-layers, disabled-output exclusion, and thirty empty layer results producing timeout/no-apply.
 
-- [ ] **Step 2: Run the focused pytest file and verify the script is absent**
+- [x] **Step 2: Run the focused pytest file and verify the script is absent**
 
 Run: `uv run --frozen pytest -q tests/niri/test_debug_backdrop_startup.py`
 
-- [ ] **Step 3: Implement the minimal executable startup script**
+- [x] **Step 3: Implement the minimal executable startup script**
 
 Use Bash with `set -euo pipefail`, jq set subtraction over enabled output names and ready Background wallpaper output names, a one-second interval, and thirty attempts. Print one actionable timeout line to stderr; emit no success noise.
 
-- [ ] **Step 4: Run the focused pytest file and verify it passes**
+- [x] **Step 4: Run the focused pytest file and verify it passes**
 
-- [ ] **Step 5: Add `spawn-at-startup "~/.config/niri/scripts/prism-debug-backdrop-startup"` and graphical setup apply**
+- [x] **Step 5: Add `spawn-at-startup "~/.config/niri/scripts/prism-debug-backdrop-startup"` and graphical setup apply**
 
 Place the spawn beside Noctalia. Run `prism apply debug-backdrop` after the existing niri apply handling; unlike niri, any failure is fatal.
 
-- [ ] **Step 6: Extend setup tests for the new apply and startup entry, then run them**
+- [x] **Step 6: Extend setup tests for the new apply and startup entry, then run them**
 
 Run: `zsh tests/setup_and_health.zsh`
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add niri/config.kdl niri/scripts/prism-debug-backdrop-startup setup.sh \
@@ -280,23 +280,23 @@ git commit -m "feat(niri): restore the Prism debug backdrop"
 **Interfaces:**
 - Produces: verified branch state and an ordered Prism-first rollout.
 
-- [ ] **Step 1: Run the full Prism suite and QML lint**
+- [x] **Step 1: Run the full Prism suite and QML lint**
 
 Run: `npm test && qmllint integrations/debug-backdrop/shell.qml`
 
-- [ ] **Step 2: Run the full dotfiles suite**
+- [x] **Step 2: Run the full dotfiles suite**
 
 Run: `just test`
 
-- [ ] **Step 3: Review both diffs and run whitespace checks**
+- [x] **Step 3: Review both diffs and run whitespace checks**
 
 Run in each repository: `git diff --check` and `git status --short --branch`
 
-- [ ] **Step 4: Record implementation commits without claiming deployment**
+- [x] **Step 4: Record implementation commits without claiming deployment**
 
 Change the design status to `Implemented on feature branches; ordered handoff pending`, naming both commits. Keep the live manual checks and final merged-status update unchecked in prose rather than claiming they happened.
 
-- [ ] **Step 5: Commit Prism documentation**
+- [x] **Step 5: Commit Prism documentation**
 
 ```bash
 git add docs/superpowers/specs/2026-08-29-prism-debug-backdrop-design.md \

@@ -1,7 +1,9 @@
 # Debug backdrop sink
 
 **Date:** 2026-08-29
-**Status:** Proposed. Depends on the native niri material sink
+**Status:** Implemented on feature branches; ordered handoff pending. Prism
+implementation is complete through `83a3b17`; the dotfiles implementation is
+prepared as `635ea4e`. Depends on the native niri material sink
 (`docs/superpowers/specs/2026-08-28-niri-native-material-sink-design.md`),
 whose Prism and dotfiles changes are implemented but not yet burned in.
 
@@ -372,8 +374,8 @@ makes `prism doctor` and therefore `dotfiles-health` red until it is applied.
    value only after every active output has its wallpaper surface. Verify the
    false path applies immediately.
 5. After both repositories have landed and the live checks pass, update this
-   document's status with the actual Prism and dotfiles commits. Until then it
-   remains Proposed.
+   document's status with the landed Prism and dotfiles commits. Until then the
+   ordered handoff remains pending.
 
 ## Alternatives rejected
 
