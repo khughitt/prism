@@ -12,8 +12,6 @@ local state = {
   refreshAfterDrag = false,
   drag = nil,
   sampleElapsedMs = 0,
-  previewVisible = false,
-  diagnosticBackground = false,
   expandedGroups = {},
   renderedSliderCorrection = nil,
 }
@@ -90,12 +88,6 @@ local function validateModel(model)
   local groupsOk, groupsError = pcall(Presentation.groupParams, model.params)
   if not groupsOk then return tostring(groupsError) end
   return nil
-end
-
-local function originOutput()
-  local output = noctalia.state.get("originOutput")
-  if output == nil then output = noctalia.focusedOutputName() end
-  return output
 end
 
 local function finishRefresh()
@@ -256,36 +248,6 @@ local function endDrag(param)
   state.renderedSliderCorrection = nil
 end
 
-local function previewItem()
-  local output = originOutput()
-  if output == nil then
-    state.errorText = "No output is available for the preview"
-    state.previewVisible = false
-    return nil
-  end
-  return {verb = "preview-show", output = output, side = "left", diagnosticBackground = state.diagnosticBackground}
-end
-
-local function setPreview(value)
-  state.previewVisible = value == true or value == "true"
-  if state.previewVisible then
-    local item = previewItem()
-    if item then enqueue(item) end
-  else
-    enqueue({verb = "preview-hide"})
-  end
-  render()
-end
-
-local function setDiagnosticBackground(value)
-  state.diagnosticBackground = value == true or value == "true"
-  if state.previewVisible then
-    local item = previewItem()
-    if item then enqueue(item) end
-  end
-  render()
-end
-
 local function selectIndex(param)
   for index, value in ipairs(param.values) do
     if value == param.value then return index - 1 end
@@ -366,11 +328,10 @@ end
 
 local function parameterRow(param)
   local available = param.effectiveDrag ~= nil
-  local notInPreview = state.previewVisible and param.ui.affectsPreview ~= true
   local releaseHint = param.effectiveDrag == "release"
   local formattedValue = param.ui.control == "slider" and Presentation.formatValue(param.value, param) or nil
 
-  return ui.column({key = param.key, gap = 4, paddingV = 4, opacity = notInPreview and 0.55 or 1}, {
+  return ui.column({key = param.key, gap = 4, paddingV = 4}, {
     ui.row({gap = 8, align = "center"}, {
       ui.column({gap = 2, flexGrow = 1}, {
         ui.label({text = param.ui.label or param.key, fontWeight = "medium"}),
@@ -381,30 +342,10 @@ local function parameterRow(param)
       resetButton(param, available),
     }),
     ui.row({gap = 8, align = "center", justify = "end"}, {
-      ui.label({text = "Not in preview", fontSize = 11, color = "on_surface_variant", visible = notInPreview}),
       ui.label({text = "On release", fontSize = 11, color = "on_surface_variant", visible = releaseHint}),
       ui.label({text = "Unavailable", fontSize = 11, color = "error", visible = param.effectiveDrag == nil}),
     }),
   })
-end
-
-local function diagnosticRows()
-  return {
-    ui.row({gap = 8, align = "center"}, {
-      ui.label({text = "Preview", flexGrow = 1}),
-      ui.toggle({checked = state.previewVisible, onChange = setPreview}),
-    }),
-    ui.row({gap = 8, align = "center"}, {
-      ui.label({text = "Diagnostic background", flexGrow = 1}),
-      ui.toggle({checked = state.diagnosticBackground, onChange = setDiagnosticBackground}),
-    }),
-    ui.label({
-      text = "Dimmed settings are not reflected in the preview",
-      fontSize = 11,
-      color = "on_surface_variant",
-      visible = state.previewVisible,
-    }),
-  }
 end
 
 local function appendGroup(children, group)
@@ -435,9 +376,6 @@ local function appendGroup(children, group)
   end
   if not expanded then return end
   for _, param in ipairs(group.params) do children[#children + 1] = parameterRow(param) end
-  if group.name == "Diagnostics" then
-    for _, row in ipairs(diagnosticRows()) do children[#children + 1] = row end
-  end
 end
 
 render = function()
@@ -453,10 +391,8 @@ render = function()
     children[#children + 1] = ui.label({text = "Loading Prism…", color = "on_surface_variant"})
   else
     local title = Presentation.titleParam(state.model.params)
-    local titleNotInPreview = state.previewVisible and title.ui.affectsPreview ~= true
-    children[#children + 1] = ui.row({gap = 10, align = "center", opacity = titleNotInPreview and 0.55 or 1}, {
+    children[#children + 1] = ui.row({gap = 10, align = "center"}, {
       ui.label({text = "Prism", fontSize = 18, fontWeight = "bold", flexGrow = 1}),
-      ui.label({text = "Not in preview", fontSize = 11, color = "on_surface_variant", visible = titleNotInPreview}),
       ui.toggle({
         checked = title.value == true,
         enabled = title.effectiveDrag ~= nil,
@@ -473,9 +409,7 @@ function onOpen(context) refresh() end
 function onClose()
   state.drag = nil
   state.sampleElapsedMs = 0
-  state.previewVisible = false
   panel.setNeedsFrameTick(false)
-  enqueue({verb = "preview-hide"})
 end
 
 function onFrameTick(deltaMs)

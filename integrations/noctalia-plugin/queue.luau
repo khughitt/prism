@@ -45,12 +45,6 @@ end
 function M.argvFor(item)
   if item.verb == "set" then return { "prism", "set", item.key, tostring(item.value) } end
   if item.verb == "unset" then return { "prism", "unset", item.key } end
-  if item.verb == "preview-show" then
-    return { "qs", "-c", "niri-glass", "ipc", "call", "prismGlass", "showPreview", item.output, "left", tostring(item.diagnosticBackground) }
-  end
-  if item.verb == "preview-hide" then
-    return { "qs", "-c", "niri-glass", "ipc", "call", "prismGlass", "hidePreview" }
-  end
   error("unknown queue verb: " .. item.verb)
 end
 

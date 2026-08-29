@@ -1,8 +1,10 @@
 # Prism
 
 Prism resolves appearance definitions and applies them to the configured
-backends. The Noctalia integration is a native v5 plugin under
-`integrations/noctalia-plugin/`.
+backends. The `niri` sink is the sole compositor integration: it generates one
+`prism.kdl` carrying layout, terminal opacity, and the native niri glass
+material and its terminal assignment. The Noctalia integration is a native v5
+plugin under `integrations/noctalia-plugin/`.
 
 ## Development prerequisites
 

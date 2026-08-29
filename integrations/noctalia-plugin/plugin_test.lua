@@ -25,10 +25,6 @@ end
 local function sample(key, value) return { verb = "set", key = key, value = value, sample = true } end
 local function release(key, value) return { verb = "set", key = key, value = value, sample = false } end
 local function unset(key) return { verb = "unset", key = key } end
-local function preview_show(output, side, diagnosticBackground)
-  return { verb = "preview-show", output = output, side = side, diagnosticBackground = diagnosticBackground }
-end
-local function preview_hide() return { verb = "preview-hide" } end
 
 local function drain(state)
   local ran = {}
@@ -186,25 +182,23 @@ local ran = drain(state)
 equal(ran[#ran].sample, false)
 
 result = Queue.enqueue(Queue.new(), release("a.x", 1))
-state = Queue.enqueue(result.state, preview_hide()).state
+state = Queue.enqueue(result.state, unset("b.y")).state
 state = Queue.enqueue(state, sample("a.x", 2)).state
-equal({ result.launch, table.unpack(drain(state)) }, { release("a.x", 1), preview_hide(), sample("a.x", 2) })
+equal({ result.launch, table.unpack(drain(state)) }, { release("a.x", 1), unset("b.y"), sample("a.x", 2) })
 
 equal(Queue.argvFor(sample("a.x", 0.5)), { "prism", "set", "a.x", "0.5" })
 equal(Queue.argvFor(release("a.x", 0.5)), { "prism", "set", "a.x", "0.5" })
 equal(Queue.argvFor(unset("a.x")), { "prism", "unset", "a.x" })
-equal(Queue.argvFor(preview_show("DP-1", "right", true)), {
-  "qs", "-c", "niri-glass", "ipc", "call", "prismGlass", "showPreview", "DP-1", "left", "true",
-})
-equal(Queue.argvFor(preview_hide()), { "qs", "-c", "niri-glass", "ipc", "call", "prismGlass", "hidePreview" })
+-- prism is the only backend: a retired transport verb must fail loudly, not
+-- fall through to some other command.
+equal(pcall(Queue.argvFor, { verb = "preview-show", output = "DP-1" }), false)
+equal(pcall(Queue.argvFor, { verb = "preview-hide" }), false)
 equal(Queue.affectsParams(sample("a.x", 1)), true)
 equal(Queue.affectsParams(release("a.x", 1)), true)
 equal(Queue.affectsParams(unset("a.x")), true)
-equal(Queue.affectsParams(preview_show("DP-1", "right", false)), false)
-equal(Queue.affectsParams(preview_hide()), false)
-equal(Queue.shouldRefresh(false, preview_hide()), false)
+equal(Queue.shouldRefresh(false, unset("a.x")), false)
 equal(Queue.shouldRefresh(true, release("a.x", 1)), true)
-equal(Queue.shouldRefresh(true, preview_hide()), true)
+equal(Queue.shouldRefresh(true, unset("a.x")), true)
 equal(Queue.shouldRefresh(true, sample("a.x", 1)), false)
 equal(Queue.shouldRefresh(true, sample("a.x", 2)), false)
 equal(Queue.isSample(sample("a.x", 0.5)), true)

@@ -27,11 +27,14 @@ test('panel consumes the Task 2 modules and runs argv through the shell boundary
   assert.doesNotMatch(source, /noctalia\.runAsync\(\s*["']/);
 });
 
-test('panel lifecycle owns refresh, preview cleanup, and live-drag frame ticks', async () => {
+test('panel lifecycle owns refresh, drag cleanup, and live-drag frame ticks', async () => {
   const source = await readEntry('panel.luau');
 
   assert.match(source, /function onOpen\(context\) refresh\(\) end/);
-  assert.match(source, /function onClose\(\)[\s\S]*state\.drag = nil[\s\S]*state\.sampleElapsedMs = 0[\s\S]*panel\.setNeedsFrameTick\(false\)[\s\S]*enqueue\(\{verb = "preview-hide"\}\)/);
+  assert.match(source, /function onClose\(\)[\s\S]*state\.drag = nil[\s\S]*state\.sampleElapsedMs = 0[\s\S]*panel\.setNeedsFrameTick\(false\)/);
+  // Closing the panel has no backend action: there is no preview to tear down.
+  const onClose = source.slice(source.indexOf('function onClose()'));
+  assert.doesNotMatch(onClose.slice(0, onClose.indexOf('end')), /enqueue|run\(/);
   assert.match(source, /function onFrameTick\(deltaMs\)[\s\S]*if not state\.drag or not state\.drag\.pendingSample then return end[\s\S]*state\.sampleElapsedMs = state\.sampleElapsedMs \+ deltaMs[\s\S]*state\.sampleElapsedMs < 100[\s\S]*enqueue\(state\.drag\.pendingSample\)[\s\S]*state\.drag\.pendingSample = nil/);
 
   const liveDrag = source.slice(source.indexOf('local function beginDrag'), source.indexOf('local function endDrag'));
@@ -93,7 +96,7 @@ test('every native parameter control keeps its required write boundary', async (
 
 test('slider release recognizes canonical keyboard and wheel steps before final commit', async () => {
   const source = await readEntry('panel.luau');
-  const endDrag = source.slice(source.indexOf('local function endDrag'), source.indexOf('local function previewItem'));
+  const endDrag = source.slice(source.indexOf('local function endDrag'), source.indexOf('local function selectIndex'));
 
   assert.match(endDrag, /Presentation\.canonicalFromSliderStep\(drag\.sliderValue, drag\.originValue, param\)/);
   assert.match(endDrag, /updateParam\(param, canonical\)[\s\S]*enqueue\(\{verb = "set", key = param\.key, value = drag\.value, sample = false\}\)/);
@@ -102,7 +105,7 @@ test('slider release recognizes canonical keyboard and wheel steps before final 
 
 test('slider rows render the formatted local value beside the native control', async () => {
   const source = await readEntry('panel.luau');
-  const parameterRow = source.slice(source.indexOf('local function parameterRow'), source.indexOf('local function diagnosticRows'));
+  const parameterRow = source.slice(source.indexOf('local function parameterRow'), source.indexOf('local function appendGroup'));
 
   assert.match(parameterRow, /local formattedValue = param\.ui\.control == "slider" and Presentation\.formatValue\(param\.value, param\) or nil/);
   assert.match(parameterRow, /ui\.label\(\{text = formattedValue or ""[\s\S]*visible = formattedValue ~= nil\}\)[\s\S]*nativeControl\(param, available\)/);
@@ -120,17 +123,40 @@ test('presentation grouping keeps Quick open and exposes group and row resets', 
   assert.match(source, /tooltip = "Reset to default"/);
 });
 
-test('preview is output-scoped, left-sided, and keeps contextual controls usable', async () => {
+test('the isolated preview surface is gone, leaving live terminals as feedback', async () => {
   const source = await readEntry('panel.luau');
 
-  assert.match(source, /noctalia\.state\.get\("originOutput"\)/);
-  assert.match(source, /if output == nil then output = noctalia\.focusedOutputName\(\) end/);
-  assert.match(source, /verb = "preview-show", output = output, side = "left"/);
-  assert.match(source, /ui\.affectsPreview ~= true/);
-  assert.match(source, /text = "Not in preview"/);
-  assert.match(source, /opacity = notInPreview and 0\.55 or 1/);
-  assert.match(source, /text = "Preview"/);
-  assert.match(source, /text = "Diagnostic background"/);
+  for (const gone of [
+    /previewVisible/, /previewItem/, /setPreview/, /diagnosticBackground/,
+    /diagnosticRows/, /preview-show/, /preview-hide/, /affectsPreview/,
+    /Not in preview/, /Diagnostic background/, /originOutput/,
+    /focusedOutputName/, /\bqs\b/,
+  ]) {
+    assert.doesNotMatch(source, gone, `panel still carries ${gone}`);
+  }
+
+  // What replaced it: the release hint on reload-bound rows, and nothing else.
+  assert.match(source, /local releaseHint = param\.effectiveDrag == "release"/);
+  assert.match(source, /text = "On release"[\s\S]*visible = releaseHint/);
+});
+
+test('the queue speaks only to prism', async () => {
+  const source = await readEntry('queue.luau');
+
+  assert.match(source, /if item\.verb == "set" then return \{ "prism", "set", item\.key, tostring\(item\.value\) \} end/);
+  assert.match(source, /if item\.verb == "unset" then return \{ "prism", "unset", item\.key \} end/);
+  assert.match(source, /error\("unknown queue verb: "/);
+  assert.doesNotMatch(source, /preview|niri-glass|prismGlass|"qs"/);
+  assert.match(source, /function M\.affectsParams\(item\)\n  return item\.verb == "set" or item\.verb == "unset"\n/);
+});
+
+test('the plugin describes native material control, not a separate preview', async () => {
+  const manifest = await readEntry('plugin.toml');
+
+  assert.doesNotMatch(manifest, /preview/i);
+  assert.doesNotMatch(manifest, /"qs"/);
+  assert.match(manifest, /dependencies = \["prism"\]/);
+  assert.match(manifest, /description = "[^"]*native niri material[^"]*"/);
 });
 
 test('errors and unavailable controls are visible without legacy or opposite-side paths', async () => {

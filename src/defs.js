@@ -51,9 +51,6 @@ export function validateDef(def, src) {
       || !def.range.every(Number.isFinite) || def.range[0] >= def.range[1])) {
     fail('numeric def requires range with two finite increasing endpoints');
   }
-  if (has('affectsPreview') && typeof def.ui.affectsPreview !== 'boolean') {
-    fail('ui.affectsPreview must be a boolean');
-  }
   if (!slider && ['display', 'scale', 'unit'].some(has)) {
     fail('ui.display, ui.scale, and ui.unit are slider-only');
   }

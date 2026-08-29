@@ -1,10 +1,10 @@
 id = "khughitt/prism"
 name = "Prism"
-description = "Control Prism appearance and glass preview from Noctalia"
+description = "Control Prism appearance and the native niri material from Noctalia"
 version = "1.0.0"
 author = "Keith Hughitt"
 plugin_api = 22
-dependencies = ["prism", "qs"]
+dependencies = ["prism"]
 
 [[widget]]
 id = "widget"

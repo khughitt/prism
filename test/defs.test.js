@@ -71,8 +71,8 @@ test('hidden definitions do not require presentation metadata', () => {
 
 test('slider presentation metadata is validated', () => {
   const valid = dirWith(`
-- {key: a.depth, type: float, range: [0.1, 200], default: 20, ui: {group: A, control: slider, label: Depth, order: 1, step: 0.1, display: normalized, scale: logarithmic, affectsPreview: true}, description: d}
-- {key: a.tint, type: color, default: '#ffffff', ui: {group: A, control: color, label: Tint, order: 2, affectsPreview: true}, description: d}
+- {key: a.depth, type: float, range: [0.1, 200], default: 20, ui: {group: A, control: slider, label: Depth, order: 1, step: 0.1, display: normalized, scale: logarithmic}, description: d}
+- {key: a.tint, type: color, default: '#ffffff', ui: {group: A, control: color, label: Tint, order: 2}, description: d}
 `);
   assert.doesNotThrow(() => loadDefs(valid));
 
@@ -90,9 +90,6 @@ test('slider presentation metadata is validated', () => {
 
   const badUnit = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1, step: 0.1, display: normalized, unit: px}, description: d}\n');
   assert.throws(() => loadDefs(badUnit), /unit.*raw/);
-
-  const badPreview = dirWith('- {key: a.b, type: color, default: x, ui: {group: A, control: color, label: B, order: 1, affectsPreview: yes}, description: d}\n');
-  assert.throws(() => loadDefs(badPreview), /affectsPreview.*boolean/);
 });
 
 test('numeric slider grids fail early', () => {

@@ -18,7 +18,7 @@ test('v5 manifest declares the Prism widget and panel only', async () => {
   assert.equal(manifest.id, 'khughitt/prism');
   assert.equal(manifest.plugin_api, 22);
   assert.ok(manifest.plugin_api <= 23);
-  assert.deepEqual(manifest.dependencies, ['prism', 'qs']);
+  assert.deepEqual(manifest.dependencies, ['prism']);
   assert.deepEqual(manifest.widget, [{ id: 'widget', entry: 'widget.luau' }]);
   assert.deepEqual(manifest.panel, [{
     id: 'panel',
