@@ -11,11 +11,11 @@ test('shipped presentation has the exact Quick and advanced structure', () => {
   const ordered = visible.slice().sort((a, b) => a.ui.order - b.ui.order);
   const groups = [
     { name: 'Quick', params: ordered.filter((def) => def.ui.group === 'Quick') },
-    ...['Opacity & Focus', 'Glass Shape', 'Glass Optics', 'Motion']
+    ...['Opacity & Focus', 'Glass Shape', 'Glass Optics', 'Motion', 'Debug']
       .map((name) => ({ name, params: ordered.filter((def) => def.ui.group === name) })),
   ];
   assert.deepEqual(groups.map((group) => group.name), [
-    'Quick', 'Opacity & Focus', 'Glass Shape', 'Glass Optics', 'Motion',
+    'Quick', 'Opacity & Focus', 'Glass Shape', 'Glass Optics', 'Motion', 'Debug',
   ]);
   // The Diagnostics group had no native consumer and is gone with its members.
   assert.equal(visible.some((def) => def.ui.group === 'Diagnostics'), false);
@@ -25,15 +25,16 @@ test('shipped presentation has the exact Quick and advanced structure', () => {
     'compositor.gaps',
     'glass.attenuationColor',
   ]);
+  assert.deepEqual(groups.at(-1).params.map((param) => param.key), ['debug.backdrop']);
   const renderedKeys = groups.flatMap((group) => group.params.map((param) => param.key));
   const title = defs.find((def) => def.ui.group === 'Title');
   assert.equal(title.key, 'glass.enabled');
   assert.equal(title.ui.control, 'toggle');
-  assert.equal(renderedKeys.length, 18);
-  assert.equal(new Set(renderedKeys).size, 18);
+  assert.equal(renderedKeys.length, 19);
+  assert.equal(new Set(renderedKeys).size, 19);
   const allRenderedKeys = [title.key].concat(renderedKeys);
-  assert.equal(allRenderedKeys.length, 19);
-  assert.equal(new Set(allRenderedKeys).size, 19);
+  assert.equal(allRenderedKeys.length, 20);
+  assert.equal(new Set(allRenderedKeys).size, 20);
   assert.deepEqual(allRenderedKeys.slice().sort(), visible.map((def) => def.key).sort());
 });
 
