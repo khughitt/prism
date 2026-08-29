@@ -354,6 +354,27 @@ clicks pass through to the desktop; toggle off, confirm the wallpaper returns
 and `noctalia msg wallpaper-get` is unchanged; confirm `prism doctor` is ok at
 both values.
 
+## Ordered handoff
+
+The two repositories cannot land in arbitrary order. Dotfiles first would call
+an unknown sink from setup and an unknown parameter from session startup.
+Prism first is safe for the running desktop, but adds a never-applied sink that
+makes `prism doctor` and therefore `dotfiles-health` red until it is applied.
+
+1. Implement and test the Prism and dotfiles branches without landing either.
+2. Land Prism first, then immediately run `prism apply debug-backdrop`. At the
+   tracked default of false this needs no compositor or Wayland session. Run
+   `prism doctor` before continuing; the temporary never-applied state must be
+   the only failure this step clears.
+3. Land dotfiles only after the new Prism sink is installed. Rerun the dotfiles
+   suite and `dotfiles-health`.
+4. On the next fresh niri session, verify the startup script restores a true
+   value only after every active output has its wallpaper surface. Verify the
+   false path applies immediately.
+5. After both repositories have landed and the live checks pass, update this
+   document's status with the actual Prism and dotfiles commits. Until then it
+   remains Proposed.
+
 ## Alternatives rejected
 
 ### Swap the wallpaper through Noctalia or wali
