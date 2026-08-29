@@ -3,7 +3,7 @@
 **Date:** 2026-08-29
 **Status:** Implemented on feature branches; ordered handoff pending. Prism
 implementation is complete through `83a3b17`; the dotfiles implementation is
-prepared as `635ea4e`. Depends on the native niri material sink
+prepared as `295ed3d`. Depends on the native niri material sink
 (`docs/superpowers/specs/2026-08-28-niri-native-material-sink-design.md`),
 whose Prism and dotfiles changes are implemented but not yet burned in.
 
