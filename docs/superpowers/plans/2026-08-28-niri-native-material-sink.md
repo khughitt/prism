@@ -29,6 +29,7 @@
 | Repository/file | Responsibility | Task |
 | --- | --- | --- |
 | Prism `defs/{glass,terminal}.yaml` | Native parameter surface and exact terminal IDs | 1 |
+| Prism `src/paths.js` | Test-injectable definition directory | 1 |
 | Prism `integrations/niri/{manifest.yaml,render.js}` | Sole native compositor renderer | 1 |
 | Prism `integrations/niri/apply` | Atomic generation, validation, restore, reload | 2 |
 | Prism `integrations/noctalia-plugin/{panel,queue}.luau` | Live-terminal controls without preview IPC | 3 |
@@ -50,6 +51,8 @@
 - Modify: `test/niri-render.test.js`
 - Modify: `test/glass-defs.test.js`
 - Modify: `test/cli.test.js`
+- Modify: `src/paths.js`
+- Modify: `test/store.test.js`
 - Delete: `integrations/niri-glass/apply`
 - Delete: `integrations/niri-glass/manifest.yaml`
 - Delete: `integrations/niri-glass/render.js`
@@ -132,11 +135,21 @@ unanchored per-app matchers, and emits four background-effect rules.
 
 Rewrite `test/glass-defs.test.js` to assert the exact supported glass key set,
 native ranges, defaults, and UI units. Assert absence of every removed key and
-that no shipped definition contains `ui.affectsPreview` or
-`display: normalized`. Update `test/cli.test.js` fixtures that name
-`glass.roughness` to use a retained live-bound parameter while keeping the
-existing assertion that a parameter with any `reload` binding has
-`effectiveDrag === 'release'`.
+that no shipped definition contains `ui.affectsPreview`. Require native-unit
+display for `glass.thickness`, `glass.attenuationDistance`,
+`glass.chromaticAberration`, `glass.distortion`, and `glass.distortionScale`;
+leave the motion controls' existing `display: normalized` metadata unchanged.
+
+Update `test/cli.test.js` fixtures that name `glass.roughness` to use a retained
+live-bound parameter while keeping the existing assertion that a parameter
+with any `reload` binding has `effectiveDrag === 'release'`. Add the same
+one-line `PRISM_DEFS_DIR` override pattern that `integrationsDir()` already
+uses, cover it in `test/store.test.js`, and point this CLI test at a temporary
+copy of the shipped definitions plus one synthetic unbound definition. Assert
+that the synthetic definition has null effective drag and liveness. Do not add
+an unbound production definition: this test preserves the panel's
+`effectiveDrag == nil` / `Unavailable` path after every shipped parameter has a
+consumer.
 
 Update `test/plugin-presentation.test.js` only as needed for the new visible
 definition set: 19 visible parameters total, 18 in body groups, one Title
@@ -148,7 +161,8 @@ opacity controls, gaps, and attenuation color.
 Run:
 
 ```bash
-node --test test/glass-defs.test.js test/cli.test.js test/plugin-presentation.test.js
+node --test test/glass-defs.test.js test/cli.test.js test/store.test.js \
+  test/plugin-presentation.test.js
 ```
 
 Expected: FAIL on legacy-only definitions, old ranges, old terminal IDs, and
@@ -169,9 +183,10 @@ glass.distortion: [0, 1]
 glass.distortionScale: [0.01, 2]
 ```
 
-Use native units/descriptions and remove every `affectsPreview` and
-`display: normalized` field. In `defs/terminal.yaml`, remove blur,
-saturation, and noise definitions and set:
+Use native units/descriptions and remove every `affectsPreview` field and the
+five obsolete `display: normalized` fields named in Step 3. Preserve that
+metadata on `glass.jellyFlex` and `glass.jellyRipple`. In
+`defs/terminal.yaml`, remove blur, saturation, and noise definitions and set:
 
 ```yaml
 default: [kitty, com.mitchellh.ghostty]
@@ -224,7 +239,8 @@ Run:
 
 ```bash
 node --test test/niri-render.test.js test/glass-defs.test.js \
-  test/cli.test.js test/plugin-presentation.test.js test/manifest.test.js
+  test/cli.test.js test/store.test.js test/plugin-presentation.test.js \
+  test/manifest.test.js
 npm test
 git diff --check
 ```
@@ -236,8 +252,9 @@ Expected: all tests pass and no source/test references require
 
 ```bash
 git add defs/glass.yaml defs/terminal.yaml integrations/niri/manifest.yaml \
-  integrations/niri/render.js test/niri-render.test.js test/glass-defs.test.js \
-  test/cli.test.js test/plugin-presentation.test.js package.json
+  integrations/niri/render.js src/paths.js test/niri-render.test.js \
+  test/glass-defs.test.js test/cli.test.js test/store.test.js \
+  test/plugin-presentation.test.js package.json
 git add -u integrations/niri-glass test
 git commit -m "feat(niri): generate native terminal material"
 ```
@@ -268,6 +285,11 @@ Cover four cases:
 3. successful validation plus failed reload keeps the nonempty new target,
    changes its inode, and exits nonzero; and
 4. both commands succeeding keeps the target and exits zero.
+
+Also drive the first case once through `fanOut`/`runApply`: make the fake
+validator name a deliberately offending KDL key and assert `sink-status.json`
+preserves that key in its recorded failure reason. Retain niri's diagnostic
+text; do not add a second formatting layer.
 
 The reload-failure test must run with `NIRI_SOCKET` unset and assert the three
 facts dotfiles setup consumes: nonempty target, changed inode, and nonzero
@@ -486,10 +508,18 @@ with a generated-native-material contract. It must reject static
 `materials.kdl`, its include, legacy JSON planning, and the named Quickshell
 link while requiring `prism.kdl` and `NIRI_CONFIG` on pre-link apply.
 
-Delete `configure_prism_glass_runtime` and the two wrong-legacy-link tests.
-Update the healthy fixture so `prism doctor` is the only Prism runtime health
-check. Add an assertion that `.gitignore` no longer names
-`niri/niri-glass.json`.
+Reduce `configure_prism_glass_runtime` to the one surviving prerequisite and
+rename it accordingly: it must still link
+`"${repo_root}/prism/titan"` to `"${tmp}/config/prism"`, otherwise the healthy
+and doctor-failure tests never enter the Prism health block. Delete
+`test_dotfiles_health_fails_wrong_niri_glass_consumer`,
+`test_dotfiles_health_fails_wrong_named_niri_glass_config`, and
+`test_dotfiles_health_rejects_root_quickshell_config`, including their calls at
+the bottom of the test file. Keep
+`test_dotfiles_health_accepts_prism_glass_runtime` and
+`test_dotfiles_health_fails_when_prism_doctor_fails` using the reduced helper,
+so `prism doctor` remains the runtime health check. Add an assertion that
+`.gitignore` no longer names `niri/niri-glass.json`.
 
 - [ ] **Step 5: Run the focused dotfiles test and verify it fails**
 
@@ -503,11 +533,21 @@ legacy paths and static material.
 - [ ] **Step 6: Implement the ownership cleanup**
 
 In `setup.sh`, delete the legacy JSON link, named-config guard, and Quickshell
-link. Invoke the existing pre-link apply as:
+link. Keep the existing deferred-reload branch and change only its `if ! run`
+condition to:
 
 ```bash
-run env NIRI_CONFIG="${DOTS_HOME}/niri/config.kdl" \
+if ! run env NIRI_CONFIG="${DOTS_HOME}/niri/config.kdl" \
   "${DOTS_HOME}/bin/prism" apply niri
+then
+    local niri_generated_after
+    niri_generated_after="$(stat -Lc '%d:%i' "$niri_generated" 2>/dev/null || true)"
+    if [[ -n "${NIRI_SOCKET:-}" || ! -s "$niri_generated" ||
+          -z "$niri_generated_after" || "$niri_generated_after" == "$niri_generated_before" ]]; then
+        return 1
+    fi
+    echo "Niri is not running; prism.kdl was generated and reload is deferred."
+fi
 ```
 
 Keep the current deferred-reload inode/nonempty checks and the subsequent
@@ -585,16 +625,22 @@ git -C "$HOME/d/prism/.worktrees/niri-native-material" log --oneline main..HEAD
 git -C "$dotfiles_wt" log --oneline main..HEAD
 git -C "$HOME/d/prism/.worktrees/niri-native-material" status --short
 git -C "$dotfiles_wt" status --short
+git -C "$HOME/d/dotfiles" diff -- prism/titan/values.yaml
 ```
 
-Pause for explicit approval. Stop if either worktree is dirty or commit order
-is not value migration then cleanup.
+Pause for explicit approval of the two live merges and of discarding exactly
+the displayed live `prism/titan/values.yaml` drift before the first merge. The
+accepted values commit replaces that file with the pinned set. Stop if either
+feature worktree is dirty or commit order is not value migration then cleanup;
+unrelated dirty paths in dotfiles `main` remain untouched.
 
-- [ ] **Step 2: Fast-forward only the value migration into dotfiles main**
+- [ ] **Step 2: Discard approved live value drift and fast-forward only the value migration**
 
 ```bash
 test "$(git -C "$dotfiles_repo" branch --show-current)" = main
-git -C "$dotfiles_repo" diff --quiet -- prism/titan/values.yaml niri/materials.kdl niri/config.kdl
+git -C "$dotfiles_repo" diff --quiet -- niri/materials.kdl niri/config.kdl
+git -C "$dotfiles_repo" restore --worktree -- prism/titan/values.yaml
+git -C "$dotfiles_repo" diff --quiet -- prism/titan/values.yaml
 git -C "$dotfiles_repo" merge --ff-only "$values_commit"
 test "$(git -C "$dotfiles_repo" rev-parse HEAD)" = "$values_commit"
 PRISM_CONFIG_DIR="$dotfiles_repo/prism/titan" "$HOME/d/prism/bin/prism" describe --json >/dev/null
@@ -609,15 +655,34 @@ active.
 rollout_root=/mnt/ssd3/niri-material/v1-daily-driver-138697be
 materials="$dotfiles_repo/niri/materials.kdl"
 saved="$rollout_root/materials.kdl.pre-prism-handoff"
+test "$(rg -o -F 'terminal-glass' "$materials" | wc -l)" -eq 2
+! rg -q -F 'terminal-glass-handoff' "$materials"
 cp "$materials" "$saved"
 sha256sum "$saved" | tee "$rollout_root/materials.kdl.pre-prism-handoff.sha256"
 perl -0pi -e 's/terminal-glass/terminal-glass-handoff/g' "$materials"
+test "$(rg -o -F 'terminal-glass-handoff' "$materials" | wc -l)" -eq 2
 /usr/bin/niri validate -c "$dotfiles_repo/niri/config.kdl"
+git -C "$dotfiles_repo" diff -- niri/materials.kdl
 ```
 
-Install an EXIT/HUP/INT/TERM trap that restores `$saved` before the temporary
-edit. Verify the only dotfiles diff is the two name occurrences and manually
-confirm the accepted appearance remains.
+Verify the displayed diff contains only the two intended name substitutions
+and manually confirm the accepted appearance remains. The preconditions make
+the rename refuse a rerun rather than producing
+`terminal-glass-handoff-handoff`.
+
+**Abort obligation for Steps 3–5:** if any check fails or work must stop after
+the rename and before the cleanup merge completes, restore and verify the
+tracked bytes before ending the action or agent turn:
+
+```bash
+cp "$saved" "$materials"
+(cd "$rollout_root" && sha256sum --check materials.kdl.pre-prism-handoff.sha256)
+cmp -s "$saved" "$materials"
+git -C "$dotfiles_repo" diff --quiet -- niri/materials.kdl
+```
+
+This explicit cross-step recovery replaces a shell trap, which cannot survive
+the separate one-shot shells used by an agentic worker.
 
 - [ ] **Step 4: Fast-forward Prism and apply the distinct generated material**
 
@@ -646,7 +711,8 @@ test "$(git -C "$dotfiles_repo" rev-parse HEAD)" = "$cleanup_commit"
 ```
 
 Do not wait for or require the bounded duplicate notification between restore
-and merge. Clear the restore trap only after the cleanup fast-forward succeeds.
+and merge. The successful cleanup merge removes the restored static file; no
+cross-step trap exists to clear.
 
 - [ ] **Step 6: Validate final generated ownership**
 
