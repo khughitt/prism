@@ -1,7 +1,7 @@
 # Native niri material sink
 
 **Date:** 2026-08-28
-**Status:** Proposed; written-review changes applied, re-review pending
+**Status:** Accepted 2026-08-28; not implemented
 
 ## Context
 
@@ -322,15 +322,17 @@ to resolve values for deleted definitions:
    accepts every remaining key; removed overrides fall back only in the dead
    legacy sink or are masked by the later static material rule. The static
    `terminal-glass` definition and assignment remain active and unchanged.
-3. Save the exact static `materials.kdl`, then temporarily rename both its
-   definition and reference to `terminal-glass-handoff`. Validate and observe
-   the same parameter bytes under the temporary name. This avoids a duplicate
-   while leaving the later static rule visually authoritative.
+3. Save the exact static `materials.kdl`, record its SHA-256, then temporarily
+   rename both its definition and reference to `terminal-glass-handoff`.
+   Validate and observe the same parameter bytes under the temporary name.
+   This avoids a duplicate while leaving the later static rule visually
+   authoritative.
 4. Merge Prism and run `prism apply niri`. The generated material name remains
    exactly `terminal-glass`; validation succeeds because the temporary static
    name is distinct, while include order keeps the static handoff rule active.
-5. Restore the saved static bytes exactly, verify the dotfiles worktree is
-   clean, then immediately fast-forward the dotfiles ownership-cleanup commit.
+5. Restore the saved static bytes, verify their SHA-256 against step 3, verify
+   the dotfiles worktree is clean, then immediately fast-forward the dotfiles
+   ownership-cleanup commit.
    `$XDG_CONFIG_HOME/niri` points at that same worktree, and Git would refuse
    to fast-forward the cleanup commit—which deletes `niri/materials.kdl`—over
    a dirty copy. The restored name briefly duplicates generated
@@ -360,6 +362,8 @@ Prism tests prove:
 - empty `terminal.apps` emits no matching rules;
 - a failed composed-config validation restores the prior generated target and
   records a failed niri sink;
+- a valid composed config survives a failed reload request: the target is kept,
+  the sink is recorded failed, and reapplying once niri is running clears it;
 - reload-bound sliders write only on release;
 - removed definitions, sink, generated JSON, preview UI, and IPC commands are
   absent, including `ui.affectsPreview`;
