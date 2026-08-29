@@ -1,0 +1,4 @@
+sink: debug-backdrop
+generates: []
+binds:
+  - {param: debug.backdrop, liveness: live}

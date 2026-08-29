@@ -1,0 +1,5 @@
+- key: debug.backdrop
+  type: bool
+  default: false
+  ui: {group: Debug, control: toggle, label: Debug backdrop, order: 500}
+  description: Cover the wallpaper with a checkerboard so refraction is visible
