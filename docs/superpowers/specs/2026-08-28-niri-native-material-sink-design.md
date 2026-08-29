@@ -219,13 +219,13 @@ preview labels, `preview-show`/`preview-hide` queue verbs, and all
 `qs -c niri-glass` commands are deleted. `ui.affectsPreview`, its definition
 validation, and its presentation tests are deleted with their only consumer.
 
-The manifest schema permits `drag: release` for `reload` as well as `live`
-bindings, while continuing to reject it for `restart`. Every native material
-slider uses `liveness: reload, drag: release`: the local Noctalia thumb and
-value remain immediate, but Prism rewrites and reloads niri once on release
-instead of at the panel's 100 ms sample cadence. Toggles and the color control
-apply immediately. Open terminals remain the direct feedback surface without
-driving ten compositor reloads per second.
+Every native material parameter uses plain `liveness: reload`. Prism's
+existing `effectiveDrag` contract already resolves any non-`live` binding to
+`release`, so the local Noctalia thumb and value remain immediate while the
+write and niri reload occur once on release. Toggles and the color control
+apply once per discrete change. The manifest schema does not need a redundant
+`drag` declaration or any relaxation. Open terminals remain the direct
+feedback surface without sample-time compositor reloads.
 
 The plugin description no longer promises a separate glass preview. Closing
 the panel has no preview cleanup action because no preview state exists.
@@ -234,10 +234,23 @@ the panel has no preview cleanup action because no preview state exists.
 
 The niri sink preserves the previous target bytes or its prior absence, writes
 the candidate `prism.kdl` to a sibling temporary file, and renames it
-atomically. It then runs `niri validate` against the composed default config
-before requesting a live reload. Canonical range checks and the derived bevel
-rule prevent invalid material combinations from reaching the renderer, while
-the explicit validation also catches conflicts in surrounding includes.
+atomically. It then runs `niri validate` before requesting a live reload.
+Native niri resolves that validation path from `NIRI_CONFIG` when nonempty,
+otherwise from `$XDG_CONFIG_HOME/niri/config.kdl`, then its system path; its
+normal `-c` precedence remains available to direct operator validation. A
+missing resolved config is an error rather than a default-config fallback.
+Canonical range checks and the derived bevel rule prevent invalid material
+combinations from reaching the renderer, while whole-config validation also
+catches conflicts or unrelated errors in surrounding includes. That broader
+failure is deliberate under the fail-early contract and makes the niri sink
+and `prism doctor` red until the composed config is corrected.
+
+Fresh graphical setup invokes `prism apply niri` with
+`NIRI_CONFIG` set to the tracked dotfiles `niri/config.kdl`. At that point
+setup has already linked the generated `prism.kdl` into the tracked niri
+directory, so the sink and setup's subsequent explicit `niri validate -c`
+check validate the same composed file even before `$XDG_CONFIG_HOME/niri` is
+linked.
 
 On validation failure, the sink atomically restores the previous
 `prism.kdl`—or removes the candidate when no previous target existed—and exits
@@ -248,10 +261,23 @@ reports it accurately. Correcting the value or running `prism apply niri`
 retries the same authoritative sink. No defaults or compatibility consumer
 are substituted.
 
+If validation succeeds but `niri msg action load-config-file` fails because
+the compositor is not running, the sink keeps the newly validated target and
+exits nonzero. Prism records the deferred reload as failed, while dotfiles
+setup accepts it only when the generated file is nonempty and its inode
+changed. The valid file then loads on cold start; applying the sink once niri
+is running clears the failed status. A transport failure never rolls back
+valid generated configuration.
+
 `niri msg action load-config-file` remains the success-path reload request,
 not the validation signal: its IPC reply only confirms that the action was
 queued. Tests must prove target restoration and failed sink status when the
 new `niri validate` step exits nonzero.
+
+Because the watcher may see a rejected candidate before restoration, a live
+session may briefly show niri's config-error notification. The notification
+clears after the watcher observes the restored valid file on its next poll; it
+is visible failure feedback, not silent fallback.
 
 ## Dotfiles ownership and cleanup
 
@@ -260,7 +286,8 @@ Dotfiles removes `niri/materials.kdl` and its include because generated
 bounded to all current owners of the obsolete live consumers:
 
 - `setup.sh` removes the generated-JSON link, named Quickshell link, and the
-  root-Quickshell guard that existed only for named-config discovery;
+  root-Quickshell guard that existed only for named-config discovery, and sets
+  `NIRI_CONFIG` to the tracked niri config for the pre-link Prism apply;
 - `bin/dotfiles-health` removes both link checks and the same obsolete guard;
 - `.gitignore` removes `niri/niri-glass.json`;
 - `tests/setup_and_health.zsh` removes the setup/health fixtures and assertions
@@ -302,11 +329,15 @@ to resolve values for deleted definitions:
 4. Merge Prism and run `prism apply niri`. The generated material name remains
    exactly `terminal-glass`; validation succeeds because the temporary static
    name is distinct, while include order keeps the static handoff rule active.
-5. Restore the saved static bytes. The duplicate `terminal-glass` definition
-   is expected to be rejected by the watcher, which retains the last valid
-   config. Verify that exact diagnostic, then immediately fast-forward the
-   dotfiles ownership-cleanup commit. Its removal of the static include/file
-   leaves generated `terminal-glass` as the sole valid definition and rule.
+5. Restore the saved static bytes exactly, verify the dotfiles worktree is
+   clean, then immediately fast-forward the dotfiles ownership-cleanup commit.
+   `$XDG_CONFIG_HOME/niri` points at that same worktree, and Git would refuse
+   to fast-forward the cleanup commit—which deletes `niri/materials.kdl`—over
+   a dirty copy. The restored name briefly duplicates generated
+   `terminal-glass`; the watcher may show its config-error notification while
+   retaining the last valid config. The cleanup commit removes the static
+   include/file and leaves generated `terminal-glass` as the sole valid
+   definition and rule. No separate diagnostic wait is required.
 6. Run `prism apply niri`, `niri validate`, and `prism doctor` against the
    final composed config. Restart Noctalia so its panel loads the reduced
    control surface.
@@ -314,9 +345,10 @@ to resolve values for deleted definitions:
    generated JSON.
 
 The temporary static rename is protected by exact-byte save/restore and signal
-cleanup. The generated name stays `terminal-glass`; the expected duplicate is
-bounded to the manually verified restore-to-clean handoff, not misreported as
-a Prism sink failure. An untreated intermediate config is not accepted.
+cleanup. The generated name stays `terminal-glass`; the brief duplicate exists
+only to restore a clean Git tree before the ownership fast-forward and is not
+misreported as a Prism sink failure. An untreated intermediate config is not
+accepted.
 
 ## Verification
 
