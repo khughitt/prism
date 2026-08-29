@@ -30,11 +30,11 @@ test('shipped presentation has the exact Quick and advanced structure', () => {
   const title = defs.find((def) => def.ui.group === 'Title');
   assert.equal(title.key, 'glass.enabled');
   assert.equal(title.ui.control, 'toggle');
-  assert.equal(renderedKeys.length, 19);
-  assert.equal(new Set(renderedKeys).size, 19);
+  assert.equal(renderedKeys.length, 20);
+  assert.equal(new Set(renderedKeys).size, 20);
   const allRenderedKeys = [title.key].concat(renderedKeys);
-  assert.equal(allRenderedKeys.length, 20);
-  assert.equal(new Set(allRenderedKeys).size, 20);
+  assert.equal(allRenderedKeys.length, 21);
+  assert.equal(new Set(allRenderedKeys).size, 21);
   assert.deepEqual(allRenderedKeys.slice().sort(), visible.map((def) => def.key).sort());
 });
 

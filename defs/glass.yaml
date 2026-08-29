@@ -68,6 +68,11 @@
   default: 0
   ui: {group: Glass Optics, control: slider, step: 0.01, label: Directional blur, order: 360, display: percent}
   description: Directional blur applied through the glass
+- key: glass.backdropBlur
+  type: bool
+  default: false
+  ui: {group: Glass Optics, control: toggle, label: Frosted backdrop, order: 370}
+  description: Refract the blurred backdrop for a frosted look; strength comes from niri's global blur block
 - key: glass.jellyFlex
   type: float
   range: [0, 0.02]

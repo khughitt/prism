@@ -19,6 +19,7 @@ const resolved = { params: {
   'glass.distortion': 0.32,
   'glass.distortionScale': 0.05,
   'glass.anisotropicBlur': 0,
+  'glass.backdropBlur': true,
   'glass.jellyFlex': 0.0038,
   'glass.jellyRipple': 0.15,
 } };
@@ -48,6 +49,7 @@ material "terminal-glass" {
         chromatic-aberration 0.68
         distortion 0.32 scale=0.05
         anisotropic-blur 0
+        backdrop-blur true
         jelly-flex 0.0038
         jelly-ripple 0.15
         bevel 9
@@ -77,7 +79,8 @@ test('the material definition carries every supported native parameter', () => {
   for (const line of [
     'ior 1.38', 'thickness 32', 'attenuation-color "#bbc7db"',
     'attenuation-distance 178', 'chromatic-aberration 0.68',
-    'distortion 0.32 scale=0.05', 'anisotropic-blur 0', 'jelly-flex 0.0038',
+    'distortion 0.32 scale=0.05', 'anisotropic-blur 0', 'backdrop-blur true',
+    'jelly-flex 0.0038',
     'jelly-ripple 0.15', 'bevel 9', 'offset-x 4', 'offset-y 4',
   ]) {
     assert.ok(kdl.includes(`        ${line}\n`), `missing glass line: ${line}`);

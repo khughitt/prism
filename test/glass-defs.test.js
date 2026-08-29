@@ -15,6 +15,7 @@ const NATIVE = {
   'glass.distortion': { range: [0, 1], default: 0 },
   'glass.distortionScale': { range: [0.01, 2], default: 0.5 },
   'glass.anisotropicBlur': { range: [0, 1], default: 0 },
+  'glass.backdropBlur': { default: false },
   'glass.jellyFlex': { range: [0, 0.02], default: 0.004 },
   'glass.jellyRipple': { range: [0, 0.5], default: 0.06 },
   'glass.paneLip': { range: [0, 64], default: 6 },

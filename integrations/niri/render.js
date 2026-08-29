@@ -42,6 +42,7 @@ function definition(params) {
     `        chromatic-aberration ${params['glass.chromaticAberration']}`,
     `        distortion ${params['glass.distortion']} scale=${params['glass.distortionScale']}`,
     `        anisotropic-blur ${params['glass.anisotropicBlur']}`,
+    `        backdrop-blur ${params['glass.backdropBlur']}`,
     `        jelly-flex ${params['glass.jellyFlex']}`,
     `        jelly-ripple ${params['glass.jellyRipple']}`,
     `        bevel ${bevel}`,
