@@ -66,9 +66,19 @@ A diagnostic backdrop is not a material parameter, and putting it under
 `glass.` would mean weakening the one test that keeps the material surface
 honest.
 
-The definition is `{type: bool, default: false, ui: {group: Debug, control:
-toggle, label: Debug backdrop, order: 500}}`. `ui.order` is unique across every
-definition, not per group, and 500 sits clear of the current maximum of 410.
+The definition carries a `description`, which `validateDef` requires of every
+definition:
+
+```yaml
+- key: debug.backdrop
+  type: bool
+  default: false
+  ui: {group: Debug, control: toggle, label: Debug backdrop, order: 500}
+  description: Cover the wallpaper with a checkerboard so refraction is visible
+```
+
+`ui.order` is unique across every definition, not per group, and 500 sits clear
+of the current maximum of 410.
 
 ## Goals
 
@@ -119,31 +129,44 @@ sink produces no file, so there is nothing to link into dotfiles and nothing
 for `prism doctor`'s generated-file check to look for.
 
 `integrations/debug-backdrop/apply` resolves the absolute path of its sibling
-`shell.qml` from `import.meta.url` and converges:
+`shell.qml` from `import.meta.url`, asserts that file exists, and converges:
 
-| Value | Command | Meaning |
-|-------|---------|---------|
-| true  | `qs -d -n -p <shell.qml>` | daemonize; `-n` exits immediately if an instance of this config already runs |
-| false | `qs kill -p <shell.qml>` | kill the instance for this config |
+| Value | Command | Then |
+|-------|---------|------|
+| true  | `qs -d -n -p <shell.qml>` | verify an instance exists |
+| false | `qs kill -p <shell.qml>`  | verify no instance exists |
 
-The exit codes were verified against the installed `qs`:
+Both directions are confirmed by `qs list -p <shell.qml> --json` rather than by
+the command's exit code, because the exit codes are not sufficient on their
+own. Measured against the installed `qs`:
 
-- `qs -d -n -p` exits 0 both when it starts an instance and when it declines
-  because one is already running. Start is therefore idempotent by
-  construction, and any nonzero exit is a real failure.
-- `qs kill -p` exits 0 when it killed an instance and 255 when there was none
-  running. Both are the converged "stopped" state; any other nonzero exit is a
-  real failure.
+- `qs -d -n -p` exits **0 when the configuration fails to load**. A QML syntax
+  error prints `Failed to load configuration`, exits 0, and leaves no instance
+  behind. Trusting that exit code would let Prism record success and leave
+  `doctor` green with no backdrop on screen. Exit 0 means the launcher ran, not
+  that the shell started.
+- `qs -d -n -p` also exits 0 when it declines a duplicate, so start stays
+  idempotent — but that is the same code as the silent failure above, which is
+  why the instance list is the authority.
+- `qs kill -p` exits 255 both when no instance was running and when the config
+  path does not exist. The existence assertion above separates those, so a
+  damaged installation fails loudly instead of being read as converged.
 
-Convergence is driven by those exit codes rather than by parsing the instance
-list, because `qs list --json` prints the plain sentence `No running
-instances.` instead of `[]` when there is nothing to list — the empty case is
-not valid JSON, so a list-parsing sink would need a special case for exactly
-the state the exit codes already report unambiguously.
+The readiness check needs no polling: `qs -d` returns only after the instance is
+registered, so a single `qs list` immediately after start observes it. When the
+listing does not contain an entry whose `config_path` equals the resolved path,
+the sink fails and surfaces quickshell's own diagnostic.
 
-`-d` means `qs` daemonizes itself and the apply process returns immediately, so
-the sink needs no detached-spawn machinery and finishes well inside `fanOut`'s
-five-second timeout.
+Reading that listing has one quirk to encode explicitly. `qs list --json` prints
+the plain sentence `No running instances.` instead of `[]` when there is nothing
+to list, so its output is valid JSON only when at least one instance exists.
+The sink treats output that does not parse as a JSON array as an empty list —
+correct for the verification it performs, and pinned by test so the assumption
+cannot rot silently.
+
+Because `-d` makes `qs` daemonize itself, apply returns as soon as the shell has
+loaded and needs no detached-spawn machinery of its own; both directions finish
+well inside `fanOut`'s five-second timeout.
 
 `liveness: live` is correct: a toggle takes effect at once with nothing to
 reload or restart. Prism's `effectiveDrag` leaves it `live`, which is right for
@@ -172,33 +195,60 @@ plugin's.
 
 ## Failure behavior
 
-A nonzero exit other than the converged cases above fails the sink. `fanOut`
+A nonzero exit from `qs`, a missing `shell.qml`, or a post-command instance
+listing that disagrees with the requested value fails the sink. `fanOut`
 records it, `prism doctor` reports it, and nothing is retried or substituted.
-The most likely cause is `qs` missing or no Wayland session, and both should be
-loud.
+The likely causes are `qs` missing, no Wayland session, or QML that does not
+load, and all three should be loud.
+
+## Session ownership
 
 Because the sink generates no file, `prism doctor` would otherwise report
-`debug-backdrop: never applied` forever on a fresh machine. Dotfiles setup
-therefore runs `prism apply debug-backdrop` in its graphical phase alongside
-`prism apply niri`. Unlike the niri sink, this one has no cold-start artifact
-to defer to, so setup treats its failure as fatal rather than accepting a
-deferred case. At the tracked default of false this converges by way of `qs
-kill` reporting nothing to kill, which needs no compositor and no Wayland
-session.
+`debug-backdrop: never applied` forever on a fresh machine, so dotfiles setup
+runs `prism apply debug-backdrop` in its graphical phase alongside `prism apply
+niri`. At the tracked default of false this converges by way of `qs kill`
+reporting nothing to kill, which needs no compositor and no Wayland session.
 
-The value is authoritative, like every other Prism value: leaving the backdrop
-on across a reboot brings it back on at setup. Adding a special
-do-not-persist rule for this one parameter would break the declarative
-contract for no real benefit, since the panel toggle is one click away.
+Setup is not enough on its own. `setup.sh` is a manually invoked configuration
+script, not a login hook, so a value left at true would survive a reboot with
+no process to match it — Prism would still report the sink applied and green
+while nothing was on screen. The per-session owner is a niri
+`spawn-at-startup` entry, joining the `noctalia`, `wl-clip-persist`, and
+`fill-new-window` entries dotfiles already spawns.
+
+That entry cannot simply be `prism apply debug-backdrop`. Ordering inside the
+`Background` layer is creation order, the sink's start blocks until its own
+surface has loaded, and Noctalia takes seconds to come up — so a bare apply at
+login would reliably win the race and place the backdrop *underneath* the
+wallpaper, making the common case the broken one. The entry is instead a small
+`niri/scripts/prism-debug-backdrop-startup`, alongside the glue scripts that
+directory already holds:
+
+- Read `prism get debug.backdrop`. If false, apply immediately; there is no
+  surface to order and nothing to wait for.
+- If true, wait for `noctalia-wallpaper` to appear in `niri msg layers`,
+  bounded at thirty seconds, then apply so the backdrop is created second and
+  stacks above.
+- If that wait times out, exit nonzero without applying. The journal records
+  it and `doctor` reports the sink as unapplied for that boot, rather than
+  quietly producing an invisible backdrop.
+
+With that owner in place the value is authoritative in the ordinary Prism
+sense: leaving the backdrop on across a reboot brings it back on, correctly
+stacked. A do-not-persist rule for this one parameter was considered and
+rejected — it would have removed the ordering problem by never starting the
+backdrop at login, but at the cost of making one definition behave unlike
+every other value Prism owns.
 
 ## Known limitation
 
 Ordering within the `Background` layer is creation order, and layer-shell
-offers no way to pin it. If Noctalia restarts while the backdrop is running,
-Noctalia's wallpaper surface is created last and covers the backdrop. Toggling
-the backdrop off and on restores it. This is worth documenting rather than
-engineering around: Noctalia restarts are rare, the failure is obvious, and the
-recovery is one click.
+offers no way to pin it. The startup script removes the login case, but a
+Noctalia restart while the backdrop is running still creates the wallpaper
+surface last and covers the backdrop. Toggling the backdrop off and on
+restores it. This is worth documenting rather than engineering around:
+mid-session Noctalia restarts are rare, the failure is obvious on screen, and
+the recovery is one click.
 
 ## Verification
 
@@ -206,9 +256,16 @@ Automated, in `test/debug-backdrop-sink.test.js`, modelled on
 `test/niri-apply.test.js` with a fake `qs` on `PATH` that records its argv and
 returns a scripted exit code:
 
-- true invokes `qs` with exactly `-d -n -p <absolute shell.qml>`.
-- false invokes `qs kill -p <absolute shell.qml>`.
-- `kill` exiting 255 succeeds; `kill` exiting 1 fails the sink.
+- true invokes `qs` with exactly `-d -n -p <absolute shell.qml>`, then lists.
+- false invokes `qs kill -p <absolute shell.qml>`, then lists.
+- **start exiting 0 while the instance list stays empty fails the sink.** This
+  is the silent-failure case measured above and the single most important test
+  in the file.
+- `kill` exiting 255 with an empty listing succeeds; `kill` exiting 255 while
+  the instance is still listed fails.
+- a missing `shell.qml` fails both directions before `qs` is invoked at all.
+- the listing parser reads `No running instances.` as an empty list, pinning
+  the quirk the verification depends on.
 - start exiting nonzero fails the sink and the recorded status names it.
 
 In `test/debug-defs.test.js`:
