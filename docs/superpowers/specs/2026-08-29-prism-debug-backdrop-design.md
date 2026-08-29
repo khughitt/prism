@@ -1,9 +1,9 @@
 # Debug backdrop sink
 
 **Date:** 2026-08-29
-**Status:** Prism feature commits through `83a3b17` are on local `main`; runtime
-initialization and the ordered dotfiles handoff remain pending. The dotfiles
-implementation is prepared as `295ed3d`. Depends on the native niri material sink
+**Status:** Prism feature commits through `83a3b17` are on local `main`; the
+sink was initialized and `prism doctor` passed on 2026-08-29. The ordered
+dotfiles handoff remains pending, prepared as `f79de82`. Depends on the native niri material sink
 (`docs/superpowers/specs/2026-08-28-niri-native-material-sink-design.md`),
 whose Prism and dotfiles changes are implemented but not yet burned in.
 
