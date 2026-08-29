@@ -2,99 +2,71 @@
   type: bool
   default: true
   ui: {group: Title, control: toggle, label: Glass, order: 0}
-  description: Render the niri glass layer
+  description: Assign the native niri glass material to terminal windows
 - key: glass.paneLip
   type: int
-  range: [0, 128]
+  range: [0, 64]
   default: 6
   ui: {group: Glass Shape, control: slider, step: 1, label: Edge bevel, order: 200, unit: px}
-  description: Chamfer width on each glass pane
+  description: Width the glass slab is inflated beyond the window on each edge
 - key: glass.paneShiftX
   type: int
-  range: [-128, 128]
+  range: [-64, 64]
   default: 6
   ui: {group: Glass Shape, control: slider, step: 1, label: Horizontal pane offset, order: 210, unit: px}
-  description: Horizontal shift of each glass pane
+  description: Horizontal shift of the glass slab
 - key: glass.paneShiftY
   type: int
-  range: [-128, 128]
+  range: [-64, 64]
   default: 6
   ui: {group: Glass Shape, control: slider, step: 1, label: Vertical pane offset, order: 220, unit: px}
-  description: Vertical shift of each glass pane
-- key: glass.gridOverlay
-  type: bool
-  default: true
-  ui: {group: Diagnostics, control: toggle, label: Desktop drafting grid, order: 500}
-  description: Draw the drafting grid in the normal desktop glass layer
-- key: glass.calibrate
-  type: bool
-  default: false
-  ui: {group: Diagnostics, control: toggle, label: Desktop calibration rulers, order: 510}
-  description: Draw screen-space rulers over the normal desktop glass layer
-- key: glass.probeExposure
-  type: float
-  range: [0, 2]
-  default: 0.5
-  ui: {group: Diagnostics, control: slider, step: 0.02, label: Environment exposure, order: 520, unit: ×, affectsPreview: true}
-  description: Brightness of environment reflections; does not affect wallpaper transmission or the emissive focus glint
+  description: Vertical shift of the glass slab
 - key: glass.ior
   type: float
   range: [1, 3]
   default: 1.5
-  ui: {group: Glass Optics, control: slider, step: 0.02, label: Refraction, order: 300, affectsPreview: true}
+  ui: {group: Glass Optics, control: slider, step: 0.02, label: Refraction, order: 300}
   description: Glass index of refraction
 - key: glass.thickness
   type: float
-  range: [0.1, 200]
+  range: [0, 200]
   default: 20
-  ui: {group: Glass Optics, control: slider, step: 0.1, label: Glass depth, order: 310, display: normalized, affectsPreview: true}
-  description: Normalized refraction path length; higher values bend and tint farther
-- key: glass.roughness
-  type: float
-  range: [0, 1]
-  default: 0.08
-  ui: {group: Quick, control: slider, step: 0.01, label: Glass blur, order: 40, display: percent, affectsPreview: true}
-  description: Glass surface roughness
+  ui: {group: Glass Optics, control: slider, step: 0.1, label: Glass depth, order: 310, unit: px}
+  description: Depth of the glass slab; higher values bend and tint farther
 - key: glass.attenuationColor
   type: color
   default: '#dfe8ff'
-  ui: {group: Quick, control: color, label: Glass tint, order: 60, affectsPreview: true}
+  ui: {group: Quick, control: color, label: Glass tint, order: 60}
   description: Color absorbed by the glass volume
 - key: glass.attenuationDistance
   type: float
-  range: [1, 10000]
+  range: [1, 65535]
   default: 60
-  ui: {group: Glass Optics, control: slider, step: 1, label: Tint distance, order: 320, display: normalized, scale: logarithmic, affectsPreview: true}
-  description: Normalized absorption distance; higher values preserve the wallpaper color farther through the glass
+  ui: {group: Glass Optics, control: slider, step: 1, label: Tint distance, order: 320, scale: logarithmic, unit: px}
+  description: Absorption distance; higher values preserve the wallpaper color farther through the glass
 - key: glass.chromaticAberration
   type: float
-  range: [0, 2]
+  range: [0, 1]
   default: 0
-  ui: {group: Glass Optics, control: slider, step: 0.02, label: Color fringing, order: 330, display: normalized, affectsPreview: true}
+  ui: {group: Glass Optics, control: slider, step: 0.02, label: Color fringing, order: 330}
   description: Color-channel separation at refracted edges
 - key: glass.distortion
   type: float
-  range: [0, 2]
+  range: [0, 1]
   default: 0
-  ui: {group: Glass Optics, control: slider, step: 0.02, label: Distortion, order: 340, display: normalized, affectsPreview: true}
+  ui: {group: Glass Optics, control: slider, step: 0.02, label: Distortion, order: 340}
   description: Strength of the glass distortion effect
 - key: glass.distortionScale
   type: float
-  range: [0.01, 10]
+  range: [0.01, 2]
   default: 0.5
-  ui: {group: Glass Optics, control: slider, step: 0.01, label: Distortion detail, order: 350, display: normalized, scale: logarithmic, affectsPreview: true}
-  description: Normalized distortion frequency; higher values create finer variation
-- key: glass.samples
-  type: int
-  range: [1, 8]
-  default: 4
-  ui: {group: Diagnostics, control: slider, step: 1, label: Render samples, order: 530, affectsPreview: true}
-  description: Number of samples used for glass rendering
+  ui: {group: Glass Optics, control: slider, step: 0.01, label: Distortion detail, order: 350, scale: logarithmic}
+  description: Distortion frequency; higher values create finer variation
 - key: glass.anisotropicBlur
   type: float
   range: [0, 1]
   default: 0
-  ui: {group: Glass Optics, control: slider, step: 0.01, label: Directional blur, order: 360, display: percent, affectsPreview: true}
+  ui: {group: Glass Optics, control: slider, step: 0.01, label: Directional blur, order: 360, display: percent}
   description: Directional blur applied through the glass
 - key: glass.jellyFlex
   type: float
@@ -108,21 +80,3 @@
   default: 0.06
   ui: {group: Motion, control: slider, step: 0.005, label: Ripple, order: 410, display: normalized}
   description: Ripple strength of the jelly pane motion
-- key: glass.springDampingRatio
-  type: float
-  range: [0.05, 10]
-  default: 1.0
-  ui: {group: Motion, control: slider, step: 0.05, label: Motion damping, order: 420, scale: logarithmic}
-  description: Damping ratio for glass pane motion
-- key: glass.springStiffness
-  type: float
-  range: [1, 10000]
-  default: 800
-  ui: {group: Motion, control: slider, step: 1, label: Motion stiffness, order: 430, scale: logarithmic}
-  description: Spring stiffness for glass pane motion
-- key: glass.springEpsilon
-  type: float
-  range: [0.000001, 1]
-  default: 0.0001
-  ui: {group: Motion, control: slider, step: 0.000001, label: Settle threshold, order: 440, scale: logarithmic}
-  description: Motion threshold at which a spring is settled

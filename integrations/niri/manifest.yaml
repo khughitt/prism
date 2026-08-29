@@ -5,8 +5,17 @@ binds:
   - {param: terminal.apps, liveness: reload}
   - {param: terminal.window.opacity.active, liveness: reload}
   - {param: terminal.window.opacity.inactive, liveness: reload}
-  - {param: terminal.blur, liveness: reload}
-  - {param: terminal.saturation.active, liveness: reload}
-  - {param: terminal.saturation.inactive, liveness: reload}
-  - {param: terminal.noise.active, liveness: reload}
-  - {param: terminal.noise.inactive, liveness: reload}
+  - {param: glass.enabled, liveness: reload}
+  - {param: glass.paneLip, liveness: reload}
+  - {param: glass.paneShiftX, liveness: reload}
+  - {param: glass.paneShiftY, liveness: reload}
+  - {param: glass.ior, liveness: reload}
+  - {param: glass.thickness, liveness: reload}
+  - {param: glass.attenuationColor, liveness: reload}
+  - {param: glass.attenuationDistance, liveness: reload}
+  - {param: glass.chromaticAberration, liveness: reload}
+  - {param: glass.distortion, liveness: reload}
+  - {param: glass.distortionScale, liveness: reload}
+  - {param: glass.anisotropicBlur, liveness: reload}
+  - {param: glass.jellyFlex, liveness: reload}
+  - {param: glass.jellyRipple, liveness: reload}

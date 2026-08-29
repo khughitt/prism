@@ -22,38 +22,9 @@
   default: 0.95
   ui: {group: Opacity & Focus, control: slider, step: 0.01, label: Unfocused window opacity, order: 110, display: percent}
   description: Compositor whole-window opacity of unfocused terminals
-- key: terminal.blur
-  type: bool
-  default: true
-  ui: {group: Opacity & Focus, control: toggle, label: Background blur, order: 120}
-  description: Blur the area behind terminal windows
-- key: terminal.saturation.active
-  type: float
-  range: [0.0, 2.0]
-  default: 1.0
-  ui: {group: Opacity & Focus, control: slider, step: 0.05, label: Focused saturation, order: 130, unit: ×}
-  description: Backdrop saturation behind the focused terminal
-- key: terminal.saturation.inactive
-  type: float
-  range: [0.0, 2.0]
-  default: 0.85
-  ui: {group: Opacity & Focus, control: slider, step: 0.05, label: Unfocused saturation, order: 140, unit: ×}
-  description: Backdrop saturation behind unfocused terminals
-- key: terminal.noise.active
-  type: float
-  range: [0.0, 1.0]
-  default: 0.1
-  ui: {group: Opacity & Focus, control: slider, step: 0.01, label: Focused noise, order: 150, display: percent}
-  description: Backdrop noise behind the focused terminal
-- key: terminal.noise.inactive
-  type: float
-  range: [0.0, 1.0]
-  default: 0.01
-  ui: {group: Opacity & Focus, control: slider, step: 0.01, label: Unfocused noise, order: 160, display: percent}
-  description: Backdrop noise behind unfocused terminals
 - key: terminal.apps
   type: list
   items: string
-  default: [kitty, ghostty]
+  default: [kitty, com.mitchellh.ghostty]
   ui: {group: terminal, control: none}
-  description: App ids treated as terminals by compositor rules and glass panes
+  description: Exact app ids treated as terminals by compositor rules and the glass material

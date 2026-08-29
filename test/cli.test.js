@@ -22,7 +22,7 @@ fs.writeFileSync(path.join(integ, 'slowsink', 'manifest.yaml'),
 // param no other test touches, so it never perturbs the fan-out call counts.
 fs.mkdirSync(path.join(integ, 'gensink'));
 fs.writeFileSync(path.join(integ, 'gensink', 'manifest.yaml'),
-  'sink: gensink\nbinds:\n  - {param: terminal.blur, liveness: reload}\ngenerates: [gen.out]\n');
+  'sink: gensink\nbinds:\n  - {param: terminal.window.opacity.active, liveness: reload}\ngenerates: [gen.out]\n');
 process.env.PRISM_INTEGRATIONS_DIR = integ;
 
 const cli = await import('../src/cli.js');
@@ -120,7 +120,7 @@ test('describe emits bindings and slowest effectiveLiveness', async (t) => {
   fs.mkdirSync(path.join(integ, 'draglive'));
   fs.writeFileSync(path.join(integ, 'draglive', 'manifest.yaml'),
     'sink: draglive\nbinds:\n'
-    + '  - {param: glass.roughness, liveness: live}\n'
+    + '  - {param: glass.jellyRipple, liveness: live}\n'
     + '  - {param: terminal.background.opacity.active, liveness: live, drag: release}\n'
     + '  - {param: glass.ior, liveness: live}\n');
   fs.mkdirSync(path.join(integ, 'dragreload'));
@@ -136,13 +136,13 @@ test('describe emits bindings and slowest effectiveLiveness', async (t) => {
   assert.equal(p.modified, true);
   assert.equal(p.value, 0.6);
   assert.equal(p.effectiveLiveness, 'reload'); // slowest of live+reload
-  assert.deepEqual(d.params.find((x) => x.key === 'glass.roughness').effectiveDrag, 'live');
+  assert.deepEqual(d.params.find((x) => x.key === 'glass.jellyRipple').effectiveDrag, 'live');
   assert.deepEqual(d.params.find((x) => x.key === 'terminal.background.opacity.active').effectiveDrag, 'release');
   assert.deepEqual(d.params.find((x) => x.key === 'glass.ior').effectiveDrag, 'release');
   const unbound = d.params.find((x) => x.key === 'glass.thickness');
   assert.equal(unbound.effectiveDrag, null);
   assert.equal(unbound.effectiveLiveness, null);
-  assert.equal(d.params.find((x) => x.key === 'glass.roughness').effectiveLiveness, 'live');
+  assert.equal(d.params.find((x) => x.key === 'glass.jellyRipple').effectiveLiveness, 'live');
   assert.equal(d.params.find((x) => x.key === 'terminal.background.opacity.active').effectiveLiveness, 'live');
   assert.equal(d.params.find((x) => x.key === 'glass.ior').effectiveLiveness, 'reload');
   assert.deepEqual(d.params.find((x) => x.key === 'terminal.background.opacity.active').bindings,
@@ -194,7 +194,7 @@ test('apply targets only validated sink names and passes every bound target key'
     ['terminal.background.opacity.inactive'],
   ]]);
 
-  fs.writeFileSync(valuesPath(), 'terminal.blur: false\n');
+  fs.writeFileSync(valuesPath(), 'terminal.window.opacity.active: 0.5\n');
   const before = fs.readFileSync(resolvedPath(), 'utf8');
   const missing = await runCaptured(['apply', 'missing-sink'], { runner: () => {} });
   assert.notEqual(missing.code, 0);
@@ -267,7 +267,7 @@ test('doctor: a sink whose snapshot drifted is stale', async () => {
   // A pulled values.yaml changes a canonical value with no fan-out behind it —
   // the only way to reach the stale branch, since a failed apply is reported as
   // failed and never gets as far as comparing snapshots.
-  fs.writeFileSync(valuesPath(), 'terminal.blur: false\n');   // default is true
+  fs.writeFileSync(valuesPath(), 'terminal.window.opacity.active: 0.5\n');   // default is 0.98
   let out = '';
   const code = await cli.run(['doctor'], { runner: () => {}, print: (s) => { out += s; } });
   assert.equal(code, 1);
@@ -312,7 +312,7 @@ test('orphan keys: unset digs out, every other verb fails loudly', async () => {
     ['list'],
     ['describe', '--json'],
     ['apply'],
-    ['set', 'terminal.blur', 'false'],
+    ['set', 'terminal.window.opacity.active', '0.5'],
   ]) {
     const failure = await runCaptured(argv, { runner: () => {}, print: () => {} });
     assert.notEqual(failure.code, 0);
@@ -335,7 +335,7 @@ test('orphans block mutation; orphan unsets remove exactly one per invocation', 
   const resolvedBefore = fs.readFileSync(resolvedPath(), 'utf8');
   fs.writeFileSync(valuesPath(), 'first.orphan: 1\nsecond.orphan: 2\n');
 
-  const blocked = await runCaptured(['set', 'terminal.blur', 'false'], { runner: () => {} });
+  const blocked = await runCaptured(['set', 'terminal.window.opacity.active', '0.5'], { runner: () => {} });
   assert.notEqual(blocked.code, 0);
   assert.match(blocked.stderr, /unknown param first\.orphan in values/);
   assert.deepEqual(fs.readFileSync(valuesPath(), 'utf8'), 'first.orphan: 1\nsecond.orphan: 2\n');
@@ -353,8 +353,8 @@ test('orphans block mutation; orphan unsets remove exactly one per invocation', 
 
 test('every public verb enforces its required and stray arguments', async () => {
   const invalid = [
-    ['unset'], ['unset', 'terminal.blur', 'extra'],
-    ['get'], ['get', 'terminal.blur', 'extra'],
+    ['unset'], ['unset', 'terminal.window.opacity.active', 'extra'],
+    ['get'], ['get', 'terminal.window.opacity.active', 'extra'],
     ['list', 'extra'],
     ['describe'], ['describe', '--json', 'extra'], ['describe', '--yaml'],
     ['doctor', 'extra'],
