@@ -157,12 +157,22 @@ registered, so a single `qs list` immediately after start observes it. When the
 listing does not contain an entry whose `config_path` equals the resolved path,
 the sink fails and surfaces quickshell's own diagnostic.
 
-Reading that listing has one quirk to encode explicitly. `qs list --json` prints
-the plain sentence `No running instances.` instead of `[]` when there is nothing
-to list, so its output is valid JSON only when at least one instance exists.
-The sink treats output that does not parse as a JSON array as an empty list —
-correct for the verification it performs, and pinned by test so the assumption
-cannot rot silently.
+Reading that listing has one quirk to encode explicitly. `qs list --json` does
+not print `[]` when there is nothing to list; its output is valid JSON only
+when at least one instance exists. With `-p` it prints exactly two lines on
+stdout and still exits 0:
+
+```text
+No running instances for "<resolved shell.qml path>"
+Use --all to list all instances.
+```
+
+The sink recognises that measured form — exit 0, first line matching that
+sentence for this exact path — as an empty list. Any *other* output that fails
+to parse as a JSON array is an error, not an empty list. Treating all
+unparseable output as "nothing running" would turn a future change in
+quickshell's output, or a diagnostic printed on stdout, into a false report
+that the backdrop had stopped. Both branches are pinned by test.
 
 Because `-d` makes `qs` daemonize itself, apply returns as soon as the shell has
 loaded and needs no detached-spawn machinery of its own; both directions finish
@@ -195,11 +205,26 @@ plugin's.
 
 ## Failure behavior
 
-A nonzero exit from `qs`, a missing `shell.qml`, or a post-command instance
-listing that disagrees with the requested value fails the sink. `fanOut`
-records it, `prism doctor` reports it, and nothing is retried or substituted.
-The likely causes are `qs` missing, no Wayland session, or QML that does not
-load, and all three should be loud.
+The accepted outcomes are exactly these, and nothing else succeeds:
+
+| Step | Accepted | Fails the sink |
+|------|----------|----------------|
+| `shell.qml` exists | file present | absent or unreadable |
+| start (`qs -d -n -p`) | exit 0 | any nonzero exit |
+| stop (`qs kill -p`) | exit 0 or 255 | any other nonzero exit |
+| verify (`qs list -p --json`) | exit 0 | any nonzero exit |
+| verify, after start | listing contains this path | path absent |
+| verify, after stop | listing does not contain this path | path still present |
+
+`qs kill -p` exiting 255 is accepted only in combination with the last row:
+255 means "nothing to kill", and the listing is what confirms that is now
+true. It is not a blanket exemption. Start has no equivalent allowance —
+exit 0 there is necessary but never sufficient, which is the whole point of
+the verification step.
+
+`fanOut` records any failure, `prism doctor` reports it, and nothing is retried
+or substituted. The likely causes are `qs` missing, no Wayland session, or QML
+that does not load, and all three should be loud.
 
 ## Session ownership
 
@@ -226,12 +251,25 @@ directory already holds:
 
 - Read `prism get debug.backdrop`. If false, apply immediately; there is no
   surface to order and nothing to wait for.
-- If true, wait for `noctalia-wallpaper` to appear in `niri msg layers`,
-  bounded at thirty seconds, then apply so the backdrop is created second and
-  stacks above.
-- If that wait times out, exit nonzero without applying. The journal records
-  it and `doctor` reports the sink as unapplied for that boot, rather than
-  quietly producing an invisible backdrop.
+- If true, wait until *every* active output has its wallpaper surface, then
+  apply so each backdrop surface is created second and stacks above.
+- If that wait times out at thirty seconds, exit nonzero without applying.
+
+The readiness condition must be per-output, not global. The backdrop creates
+one surface per screen through `Variants`, and so does Noctalia; waiting only
+for the first `noctalia-wallpaper` surface to appear would let Noctalia create
+the remaining outputs' wallpapers after the backdrop and cover it on every
+screen but one. Both native queries are already JSON:
+
+- `niri msg -j outputs` returns an object keyed by connector name, where an
+  enabled output has a non-null `logical`. Disabled outputs carry `logical:
+  null` and are excluded, so a connected-but-off monitor cannot block startup
+  forever.
+- `niri msg -j layers` returns one entry per surface with `namespace`, `output`,
+  and `layer`.
+
+The condition is satisfied when every enabled output name appears in the layers
+listing with `namespace: "noctalia-wallpaper"` and `layer: "Background"`.
 
 With that owner in place the value is authoritative in the ordinary Prism
 sense: leaving the backdrop on across a reboot brings it back on, correctly
@@ -239,6 +277,25 @@ stacked. A do-not-persist rule for this one parameter was considered and
 rejected — it would have removed the ordering problem by never starting the
 backdrop at login, but at the cost of making one definition behave unlike
 every other value Prism owns.
+
+The timeout branch reports to the journal only, and this is a deliberate limit
+rather than an oversight. `prism doctor` reads the persisted sink status, which
+is written by `fanOut` when a sink actually runs; a startup script that
+declines to apply writes nothing, so the previous boot's green status stands
+while no backdrop is on screen. The alternatives were both worse. Making the
+sink itself wait would put a thirty-second block inside an apply that `fanOut`
+kills at five seconds, and would freeze the panel toggle for the same interval.
+Flipping the value to false on timeout would leave every recorded state
+consistent, but only by silently discarding what the operator asked for.
+
+So the promise is narrow and explicit: for this sink, `doctor` reports the last
+apply, not whether a backdrop is currently on screen. The timeout case is
+visible in the journal under the spawned script, and the next toggle reconciles
+it. Reaching further would mean giving Prism a general per-sink liveness probe,
+which is a real feature worth its own design rather than something to smuggle
+in behind a debug toggle. Note also that a thirty-second wait for Noctalia's
+wallpaper expiring means the session is already badly broken, and the backdrop
+is not the symptom the operator will be chasing.
 
 ## Known limitation
 
@@ -264,9 +321,23 @@ returns a scripted exit code:
 - `kill` exiting 255 with an empty listing succeeds; `kill` exiting 255 while
   the instance is still listed fails.
 - a missing `shell.qml` fails both directions before `qs` is invoked at all.
-- the listing parser reads `No running instances.` as an empty list, pinning
-  the quirk the verification depends on.
+- the listing parser reads the measured two-line `No running instances for
+  "<path>"` output as an empty list, and rejects other unparseable output as an
+  error rather than reading it as empty.
 - start exiting nonzero fails the sink and the recorded status names it.
+- `qs list` exiting nonzero fails the sink in both directions.
+
+In dotfiles, `tests/niri/test_debug_backdrop_startup.py`, following
+`tests/niri/test_column_pager.py`, with fake `niri` and `prism` executables on
+`PATH`:
+
+- value false applies immediately and never queries `niri msg layers`.
+- value true with two enabled outputs waits until *both* carry a
+  `noctalia-wallpaper` Background surface before applying, and does not apply
+  when only the first is present.
+- an output whose `logical` is null is excluded from the condition, so a
+  connected-but-disabled monitor cannot block startup.
+- the wait timing out exits nonzero and does not invoke `prism apply`.
 
 In `test/debug-defs.test.js`:
 
