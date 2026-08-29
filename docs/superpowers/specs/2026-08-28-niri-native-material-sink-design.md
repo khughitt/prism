@@ -1,7 +1,9 @@
 # Native niri material sink
 
 **Date:** 2026-08-28
-**Status:** Accepted 2026-08-28; not implemented
+**Status:** Accepted 2026-08-28. Prism and dotfiles changes implemented on
+feature branches; not yet deployed. Handoff revised 2026-08-29 after a
+compositor panic on material removal (niri-material `7f6e69c3`).
 
 ## Context
 
@@ -49,7 +51,8 @@ preview surface.
 ## Goals
 
 - Make every visible Prism glass control affect native niri material state.
-- Preserve the accepted daily-driver appearance during the ownership handoff.
+- Reproduce the accepted daily-driver appearance exactly once Prism owns it,
+  accepting one sub-second flicker at the ownership switch.
 - Keep one generated compositor file, one sink status, and one reload path.
 - Match Kitty and Ghostty by exact literal app IDs.
 - Remove controls and transports that native niri cannot consume.
@@ -313,8 +316,15 @@ being rewritten as current instructions.
 
 ## Ordered handoff
 
-The transition keeps the accepted material visible and never asks new Prism
-to resolve values for deleted definitions:
+The transition never asks new Prism to resolve values for deleted definitions,
+and every intermediate configuration is valid.
+
+**Prerequisite.** Step 4 removes the static `terminal-glass` while terminal
+windows resolve it. Before the fix in niri-material `7f6e69c3`, re-resolving a
+tile against a config that no longer defines its material panicked the
+compositor, so this handoff requires `niri-material 26.04.r106.g7f6e69c3-1` or
+later. Renaming the material instead of removing it took the same path; there
+was no ordering that avoided it.
 
 1. Implement and test Prism without applying its new niri output. Prepare two
    ordered dotfiles commits: value migration first, ownership cleanup second.
@@ -322,35 +332,38 @@ to resolve values for deleted definitions:
    accepts every remaining key; removed overrides fall back only in the dead
    legacy sink or are masked by the later static material rule. The static
    `terminal-glass` definition and assignment remain active and unchanged.
-3. Save the exact static `materials.kdl`, record its SHA-256, then temporarily
-   rename both its definition and reference to `terminal-glass-handoff`.
-   Validate and observe the same parameter bytes under the temporary name.
-   This avoids a duplicate while leaving the later static rule visually
-   authoritative.
-4. Merge Prism and run `prism apply niri`. The generated material name remains
-   exactly `terminal-glass`; validation succeeds because the temporary static
-   name is distinct, while include order keeps the static handoff rule active.
-5. Restore the saved static bytes, verify their SHA-256 against step 3, verify
-   the dotfiles worktree is clean, then immediately fast-forward the dotfiles
-   ownership-cleanup commit.
-   `$XDG_CONFIG_HOME/niri` points at that same worktree, and Git would refuse
-   to fast-forward the cleanup commit—which deletes `niri/materials.kdl`—over
-   a dirty copy. The restored name briefly duplicates generated
-   `terminal-glass`; the watcher may show its config-error notification while
-   retaining the last valid config. The cleanup commit removes the static
-   include/file and leaves generated `terminal-glass` as the sole valid
-   definition and rule. No separate diagnostic wait is required.
-6. Run `prism apply niri`, `niri validate`, and `prism doctor` against the
-   final composed config. Restart Noctalia so its panel loads the reduced
-   control surface.
-7. Verify exact targets and remove only the obsolete live symlinks and
-   generated JSON.
+3. Merge Prism and run `prism apply niri`, which is expected to fail. The
+   generated definition duplicates the static one, so the sink's own
+   `niri validate` rejects the candidate, restores the previous generated
+   target, exits nonzero, and records the niri sink as failed with niri's
+   `duplicate material: terminal-glass`. The appearance does not change. This
+   step is kept because it exercises the sink's validate-and-restore path
+   against the live system at no risk. A *successful* apply here means the
+   static material is not where this handoff assumes: stop and investigate.
+4. Hand ownership over in one chained command, so the merge that deletes the
+   static material and the apply that replaces it are not separated by an
+   operator step:
 
-The temporary static rename is protected by exact-byte save/restore and signal
-cleanup. The generated name stays `terminal-glass`; the brief duplicate exists
-only to restore a clean Git tree before the ownership fast-forward and is not
-misreported as a Prism sink failure. An untreated intermediate config is not
-accepted.
+   ```bash
+   git -C "$dotfiles_repo" merge --ff-only "$cleanup_commit" && prism apply niri
+   ```
+
+   Between the two, terminals briefly fall back to the superseded blur pass
+   that the old generated file still carries. The window is normally shorter
+   than niri's 500 ms configuration poll. This brief flicker is accepted
+   deliberately in exchange for removing the temporary-rename mechanics that
+   previously bought continuity.
+5. Run `niri validate` and `prism doctor` against the final composed config,
+   confirm the generated `prism.kdl` carries the material, and rerun the
+   dotfiles suite. Restart Noctalia so its panel loads the reduced control
+   surface, then verify exact targets and remove only the obsolete live
+   symlinks and generated JSON.
+
+Nothing in this sequence edits a tracked file outside a commit, so no
+save-and-restore, checksum, or cross-step abort obligation applies. If the
+apply in step 4 fails for an unrelated reason, terminals keep the superseded
+pass until it is corrected, `prism doctor` reports the failed sink, and the
+composed configuration remains valid.
 
 ## Verification
 

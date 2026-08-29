@@ -10,7 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-28-niri-native-material-sink-design.md`
 
-**Status:** Ready; not implemented
+**Status:** Tasks 1-4 implemented on feature branches; Task 5 revised
+2026-08-29 and not yet run; Task 6 not started.
 
 ## Global Constraints
 
@@ -20,7 +21,8 @@
 - Keep generated material name exactly `terminal-glass`.
 - Treat `terminal.apps` as literal exact app IDs; empty means no terminal rules.
 - Do not retain aliases, hidden definitions, a compatibility sink, or preview IPC.
-- Preserve the accepted Titan material values and continuous visible treatment during handoff.
+- Preserve the accepted Titan material values; one sub-second flicker at the
+  ownership switch is accepted, and nothing else changes appearance.
 - Use conventional commits with no attribution trailers. Stage named paths only.
 - Require explicit approval before live repository merges, Noctalia restart, legacy-link deletion, pushes, rollback deletion, or external build-tree cleanup.
 
@@ -622,14 +624,29 @@ Expected: clean worktree with exactly two ordered commits.
 ### Task 5: Perform the live ownership handoff
 
 **Files:**
-- Temporarily edit and restore: live dotfiles `niri/materials.kdl`
 - Merge: Prism `feat/niri-native-material`
 - Merge in two stages: dotfiles `feat/prism-native-material`
 - Delete after explicit approval: exact obsolete live links/artifact
 
 **Interfaces:**
 - Consumes: reviewed green Prism branch and two reviewed dotfiles commits.
-- Produces: generated native material controlled by Prism with continuous accepted appearance.
+- Produces: generated native material controlled by Prism, reproducing the
+  accepted appearance after one sub-second flicker at the ownership switch.
+
+**Prerequisite:** Step 4 deletes the static `terminal-glass` while terminals
+resolve it. That panicked the compositor before niri-material `7f6e69c3`, so
+confirm the installed package first:
+
+```bash
+set -euo pipefail
+pacman -Q niri-material
+niri --version
+test "$(pgrep -xo niri | xargs -I{} readlink /proc/{}/exe)" = /usr/bin/niri
+```
+
+Expected: `26.04.r106.g7f6e69c3-1` or later, and the running process is that
+binary. A renamed material takes the identical path, so no reordering avoids
+this requirement.
 
 - [ ] **Step 1: Review commit boundaries and obtain merge approval**
 
@@ -666,55 +683,7 @@ PRISM_CONFIG_DIR="$dotfiles_repo/prism/titan" "$HOME/d/prism/bin/prism" describe
 Expected: current Prism still resolves and static `terminal-glass` remains
 active.
 
-- [ ] **Step 3: Save, hash, and temporarily rename the live static material**
-
-```bash
-set -euo pipefail
-rollout_root=/mnt/ssd3/niri-material/v1-daily-driver-138697be
-materials="$dotfiles_repo/niri/materials.kdl"
-saved="$rollout_root/materials.kdl.pre-prism-handoff"
-test "$(rg -o -F 'terminal-glass' "$materials" | wc -l)" -eq 2
-if rg -q -F 'terminal-glass-handoff' "$materials"; then
-    echo 'materials.kdl is already renamed; refusing a rerun'; exit 1
-fi
-cp "$materials" "$saved"
-sha256sum "$saved" | tee "$rollout_root/materials.kdl.pre-prism-handoff.sha256"
-perl -0pi -e 's/terminal-glass/terminal-glass-handoff/g' "$materials"
-test "$(rg -o -F 'terminal-glass-handoff' "$materials" | wc -l)" -eq 2
-/usr/bin/niri validate -c "$dotfiles_repo/niri/config.kdl"
-git -C "$dotfiles_repo" diff -- niri/materials.kdl
-```
-
-Verify the displayed diff contains only the two intended name substitutions
-and manually confirm the accepted appearance remains. `set -euo pipefail` is
-required, not decorative: without it a failed `test` does not stop the block,
-and the preconditions would let a rerun produce
-`terminal-glass-handoff-handoff` instead of refusing. Every multi-command block
-whose leading checks guard a destructive or irreversible action carries the
-same prologue.
-
-`set -e` alone is not enough for a negative assertion: the shell exempts any
-command whose status is inverted with `!`, so `! rg -q …` never aborts a block.
-Negative checks in this plan are therefore written as
-`if <cmd>; then echo <reason>; exit 1; fi`.
-
-**Abort obligation for Steps 3–5:** if any check fails or work must stop after
-the rename and before the cleanup merge completes, restore and verify the
-tracked bytes before ending the action or agent turn:
-
-```bash
-set -euo pipefail
-cp "$saved" "$materials"
-(cd "$rollout_root" && sha256sum --check materials.kdl.pre-prism-handoff.sha256)
-cmp -s "$saved" "$materials"
-git -C "$dotfiles_repo" diff --quiet -- niri/materials.kdl
-git -C "$dotfiles_repo" diff --cached --quiet -- niri/materials.kdl
-```
-
-This explicit cross-step recovery replaces a shell trap, which cannot survive
-the separate one-shot shells used by an agentic worker.
-
-- [ ] **Step 4: Fast-forward Prism and apply the distinct generated material**
+- [ ] **Step 3: Merge Prism and prove the sink refuses the duplicate**
 
 ```bash
 set -euo pipefail
@@ -722,34 +691,60 @@ prism_repo="$HOME/d/prism"
 test "$(git -C "$prism_repo" branch --show-current)" = main
 test -z "$(git -C "$prism_repo" status --short)"
 git -C "$prism_repo" merge --ff-only feat/niri-native-material
-prism apply niri
-/usr/bin/niri validate -c "$dotfiles_repo/niri/config.kdl"
-prism doctor
+generated="$HOME/.local/state/prism/generated/prism.kdl"
+before=$(sha256sum "$generated" | cut -d" " -f1)
+if prism apply niri; then
+    echo 'apply unexpectedly succeeded: the static material is not where this handoff assumes'
+    exit 1
+fi
+test "$(sha256sum "$generated" | cut -d" " -f1)" = "$before"
+prism doctor || true
 ```
 
-Expected: generated `terminal-glass` coexists with later
-`terminal-glass-handoff`; static accepted values remain visually authoritative.
+Expected: the apply fails, `prism doctor` reports the niri sink failed and
+quotes niri's `duplicate material: terminal-glass`, the generated target is
+byte-identical to before, and the accepted appearance is unchanged. This is the
+live exercise of the sink's validate-and-restore path; the guard above stops
+the handoff if the duplicate does not materialize.
 
-- [ ] **Step 5: Restore exact bytes and fast-forward ownership cleanup**
+- [ ] **Step 4: Hand over ownership in one chained command**
 
 ```bash
 set -euo pipefail
-cp "$saved" "$materials"
-(cd "$rollout_root" && sha256sum --check materials.kdl.pre-prism-handoff.sha256)
-git -C "$dotfiles_repo" diff --quiet -- niri/materials.kdl
-git -C "$dotfiles_repo" diff --cached --quiet -- niri/materials.kdl
-git -C "$dotfiles_repo" merge --ff-only "$cleanup_commit"
+git -C "$dotfiles_repo" merge --ff-only "$cleanup_commit" && prism apply niri
 test "$(git -C "$dotfiles_repo" rev-parse HEAD)" = "$cleanup_commit"
 ```
 
-Do not wait for or require the bounded duplicate notification between restore
-and merge. The successful cleanup merge removes the restored static file; no
-cross-step trap exists to clear.
+The merge deletes the static material and its include; the apply supplies the
+replacement. Between them terminals briefly show the superseded blur pass the
+old generated file still carries — normally shorter than niri's 500 ms
+configuration poll, and accepted deliberately.
+
+If the apply fails here, terminals keep that superseded pass and `prism doctor`
+reports the failed sink. The composed config stays valid; correct the cause and
+rerun `prism apply niri` rather than reverting the merge.
+
+- [ ] **Step 5: Confirm the accepted appearance is reproduced**
+
+```bash
+set -euo pipefail
+diff -u -B <(sed -n '/^material /,$p' "$HOME/.local/state/prism/generated/prism.kdl") \
+  /mnt/ssd3/niri-material/v1-daily-driver-138697be/materials.kdl.accepted
+echo "generated material reproduces the accepted baseline"
+```
+
+`-B` is required, not cosmetic: the generated file separates the definition
+from the assignment rule with a blank line and the accepted baseline does not,
+so a plain `diff` exits nonzero and `set -e` would abort the step.
+
+The baseline is the file the daily-driver rollout signed off. Reproducing it is
+the whole point of the value migration in step 2, and it is what makes the
+flicker in step 4 the only visible change of the handoff.
 
 - [ ] **Step 6: Validate final generated ownership**
 
 ```bash
-prism apply niri
+set -euo pipefail
 niri validate -c "$dotfiles_repo/niri/config.kdl"
 prism doctor
 zsh "$dotfiles_repo/tests/setup_and_health.zsh"
