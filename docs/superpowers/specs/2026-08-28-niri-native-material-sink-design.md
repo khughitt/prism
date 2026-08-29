@@ -1,9 +1,13 @@
 # Native niri material sink
 
 **Date:** 2026-08-28
-**Status:** Accepted 2026-08-28. Prism and dotfiles changes implemented on
-feature branches; not yet deployed. Handoff revised 2026-08-29 after a
-compositor panic on material removal (niri-material `7f6e69c3`).
+**Status:** Accepted 2026-08-28; deployed 2026-08-29 and live. Prism `main`
+through `5888970`, dotfiles `main` through `7b0efad`. Prism now generates the
+sole compositor fragment and the manual Noctalia acceptance PASSed. The handoff
+was revised 2026-08-29 after a compositor panic on material removal, fixed in
+niri-material `7f6e69c3` and installed as `26.04.r106.g7f6e69c3-1`. Burn-in
+resumed 2026-08-29; the normal-session scan, cold start, and operator PASS are
+outstanding, so this is deployed but not yet burned in.
 
 ## Context
 

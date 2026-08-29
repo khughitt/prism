@@ -10,8 +10,11 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-28-niri-native-material-sink-design.md`
 
-**Status:** Tasks 1-4 implemented on feature branches; Task 5 revised
-2026-08-29 and not yet run; Task 6 not started.
+**Status:** Tasks 1-5 implemented and merged — Prism `main` through `5888970`,
+dotfiles `main` through `7b0efad`. The live ownership handoff ran 2026-08-29
+and its manual Noctalia acceptance PASSed. Task 6 burn-in is in progress: the
+journal boundary was reset 2026-08-29, and the normal-session scan, cold start,
+and operator PASS remain.
 
 ## Global Constraints
 
@@ -836,9 +839,18 @@ rest of the session.
 ```bash
 acceptance_since=$(sed -n 's/^acceptance_since=//p' "$rollout_root/burn-in.txt" | tail -n 1)
 journalctl --user -u niri.service --since "$acceptance_since" --no-pager > "$rollout_root/niri-normal-session.log"
+
+# One pre-existing signature is excluded by name. It was measured on stock Arch
+# niri 26.04-1 before niri-material was ever installed (5 occurrences), at the
+# same rate as after, and originates in smithay's GLES backend rather than in
+# any material code. See the burn-in record and pre-material-gl-baseline.log.
+# Nothing else may be filtered: the criterion is that no OTHER relevant
+# warning or error appears.
+rg -v 'GL_INVALID_VALUE error generated\. Size and/or offset out of range\.' \
+  "$rollout_root/niri-normal-session.log" > "$rollout_root/niri-normal-session.filtered.log"
 scan_status=0
 rg -ni '(warn|error).*(material|shader|render|config)|(material|shader|render|config).*(warn|error)' \
-  "$rollout_root/niri-normal-session.log" || scan_status=$?
+  "$rollout_root/niri-normal-session.filtered.log" || scan_status=$?
 test "$scan_status" = 1
 ```
 
@@ -847,7 +859,8 @@ Expected: no relevant warning/error and no observed defect.
 - [ ] **Step 3: Perform one full cold start and repeat essentials**
 
 After full shutdown/start, verify package-owned `/usr/bin/niri`, commit
-`138697be`, no legacy process/layer/artifact, `prism doctor`, composed config,
+`7f6e69c3` (the hotfix installed 2026-08-29, superseding `138697be`), no legacy
+process/layer/artifact, `prism doctor`, composed config,
 and fresh Kitty/Ghostty material. Repeat focus, movement, overview, workspace
 switching, close/remap, and one Noctalia slider set/reset. Capture
 `journalctl --user -u niri.service -b` and require the same clean scan.

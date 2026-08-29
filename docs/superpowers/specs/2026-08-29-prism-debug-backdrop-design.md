@@ -1,13 +1,13 @@
 # Debug backdrop sink
 
 **Date:** 2026-08-29
-**Status:** Prism feature commits through `83a3b17` are on local `main`; the
-sink was initialized and `prism doctor` passed on 2026-08-29. The dotfiles
-implementation landed as `9562732` and `dotfiles-health` passed. Final suite
-verification is blocked by dotfiles `60c61b3` removing `REPORTTIME=5` while
-`tests/dotfiles_check.zsh` still requires it. Depends on the native niri material sink
+**Status:** Implemented and merged 2026-08-29 — Prism `main` through `cacf232`,
+dotfiles `main` through `9562732`. `prism doctor` passes and both suites are
+green: the earlier blocker, dotfiles `60c61b3` removing `REPORTTIME=5` while
+`tests/dotfiles_check.zsh` still required it, was fixed by `2feb546`. Depends on
+the native niri material sink
 (`docs/superpowers/specs/2026-08-28-niri-native-material-sink-design.md`),
-whose Prism and dotfiles changes are implemented but not yet burned in.
+which is deployed and live but not yet through burn-in.
 
 ## Context
 
