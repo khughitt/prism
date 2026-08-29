@@ -29,7 +29,6 @@
 | Repository/file | Responsibility | Task |
 | --- | --- | --- |
 | Prism `defs/{glass,terminal}.yaml` | Native parameter surface and exact terminal IDs | 1 |
-| Prism `src/paths.js` | Test-injectable definition directory | 1 |
 | Prism `integrations/niri/{manifest.yaml,render.js}` | Sole native compositor renderer | 1 |
 | Prism `integrations/niri/apply` | Atomic generation, validation, restore, reload | 2 |
 | Prism `integrations/noctalia-plugin/{panel,queue}.luau` | Live-terminal controls without preview IPC | 3 |
@@ -51,8 +50,6 @@
 - Modify: `test/niri-render.test.js`
 - Modify: `test/glass-defs.test.js`
 - Modify: `test/cli.test.js`
-- Modify: `src/paths.js`
-- Modify: `test/store.test.js`
 - Delete: `integrations/niri-glass/apply`
 - Delete: `integrations/niri-glass/manifest.yaml`
 - Delete: `integrations/niri-glass/render.js`
@@ -140,16 +137,30 @@ display for `glass.thickness`, `glass.attenuationDistance`,
 `glass.chromaticAberration`, `glass.distortion`, and `glass.distortionScale`;
 leave the motion controls' existing `display: normalized` metadata unchanged.
 
-Update `test/cli.test.js` fixtures that name `glass.roughness` to use a retained
-live-bound parameter while keeping the existing assertion that a parameter
-with any `reload` binding has `effectiveDrag === 'release'`. Add the same
-one-line `PRISM_DEFS_DIR` override pattern that `integrationsDir()` already
-uses, cover it in `test/store.test.js`, and point this CLI test at a temporary
-copy of the shipped definitions plus one synthetic unbound definition. Assert
-that the synthetic definition has null effective drag and liveness. Do not add
-an unbound production definition: this test preserves the panel's
-`effectiveDrag == nil` / `Unavailable` path after every shipped parameter has a
-consumer.
+Update every `test/cli.test.js` fixture that names a deleted definition. Two
+parameters are load-bearing there:
+
+- `glass.roughness` in the `draglive` manifest and its two `effectiveDrag` /
+  `effectiveLiveness` assertions. Replace it with a retained live-bound
+  parameter and keep the existing assertion that a parameter with any `reload`
+  binding has `effectiveDrag === 'release'`.
+- `terminal.blur` at seven sites. One is fatal at import: it is the `gensink`
+  fixture's only bind, so `loadManifests` throws `binds undefined param
+  terminal.blur` before any test in the file runs. The rest are a `values.yaml`
+  fixture written twice and four `set`/`unset`/`get` argument fixtures.
+
+`gensink`'s replacement must preserve that fixture's stated property of binding
+a parameter no other test touches: use `terminal.window.opacity.active`,
+`terminal.window.opacity.inactive`, or `terminal.apps`. Do not use
+`compositor.gaps` — the doctor staleness test deliberately sets it as the
+untouched parameter, and reusing it would invert what that test proves.
+
+This file points `PRISM_INTEGRATIONS_DIR` at a fixtures-only directory, so no
+shipped definition is bound inside it. `glass.thickness` therefore stays
+unbound and its existing null `effectiveDrag` / `effectiveLiveness` assertions
+— the only coverage for the panel's `effectiveDrag == nil` / `Unavailable`
+path — keep passing unchanged. Do not add a definition-directory override or a
+synthetic definition.
 
 Update `test/plugin-presentation.test.js` only as needed for the new visible
 definition set: 19 visible parameters total, 18 in body groups, one Title
@@ -161,8 +172,7 @@ opacity controls, gaps, and attenuation color.
 Run:
 
 ```bash
-node --test test/glass-defs.test.js test/cli.test.js test/store.test.js \
-  test/plugin-presentation.test.js
+node --test test/glass-defs.test.js test/cli.test.js test/plugin-presentation.test.js
 ```
 
 Expected: FAIL on legacy-only definitions, old ranges, old terminal IDs, and
@@ -239,8 +249,7 @@ Run:
 
 ```bash
 node --test test/niri-render.test.js test/glass-defs.test.js \
-  test/cli.test.js test/store.test.js test/plugin-presentation.test.js \
-  test/manifest.test.js
+  test/cli.test.js test/plugin-presentation.test.js test/manifest.test.js
 npm test
 git diff --check
 ```
@@ -252,9 +261,8 @@ Expected: all tests pass and no source/test references require
 
 ```bash
 git add defs/glass.yaml defs/terminal.yaml integrations/niri/manifest.yaml \
-  integrations/niri/render.js src/paths.js test/niri-render.test.js \
-  test/glass-defs.test.js test/cli.test.js test/store.test.js \
-  test/plugin-presentation.test.js package.json
+  integrations/niri/render.js test/niri-render.test.js test/glass-defs.test.js \
+  test/cli.test.js test/plugin-presentation.test.js package.json
 git add -u integrations/niri-glass test
 git commit -m "feat(niri): generate native terminal material"
 ```
@@ -410,9 +418,12 @@ the native niri sink.
 - [ ] **Step 4: Run the full suite and drift grep**
 
 ```bash
+set -euo pipefail
 npm test
-! rg -n 'qs -c niri-glass|preview-show|preview-hide|affectsPreview' \
-  src defs integrations test docs/notes README.md
+if rg -n 'qs -c niri-glass|preview-show|preview-hide|affectsPreview' \
+  src defs integrations test docs/notes README.md; then
+    echo 'preview IPC or preview metadata still present'; exit 1
+fi
 git diff --check
 ```
 
@@ -449,6 +460,7 @@ git commit -m "refactor(noctalia): remove legacy glass preview"
 - [ ] **Step 1: Create and baseline the isolated dotfiles worktree**
 
 ```bash
+set -euo pipefail
 dotfiles_repo="$HOME/d/dotfiles"
 dotfiles_wt="$dotfiles_repo/.worktrees/prism-native-material"
 test ! -e "$dotfiles_wt"
@@ -516,10 +528,11 @@ and doctor-failure tests never enter the Prism health block. Delete
 `test_dotfiles_health_fails_wrong_named_niri_glass_config`, and
 `test_dotfiles_health_rejects_root_quickshell_config`, including their calls at
 the bottom of the test file. Keep
-`test_dotfiles_health_accepts_prism_glass_runtime` and
-`test_dotfiles_health_fails_when_prism_doctor_fails` using the reduced helper,
-so `prism doctor` remains the runtime health check. Add an assertion that
-`.gitignore` no longer names `niri/niri-glass.json`.
+`test_dotfiles_health_fails_when_prism_doctor_fails` and
+`test_dotfiles_health_accepts_prism_glass_runtime` using the reduced helper, so
+`prism doctor` remains the runtime health check; rename the latter to drop its
+now-inaccurate glass-runtime name, updating its call at the bottom of the file.
+Add an assertion that `.gitignore` no longer names `niri/niri-glass.json`.
 
 - [ ] **Step 5: Run the focused dotfiles test and verify it fails**
 
@@ -565,6 +578,7 @@ Generate native KDL with a fake successful niri transport, then compose the
 three ignored host/generated includes explicitly:
 
 ```bash
+set -euo pipefail
 stage=$(mktemp -d)
 trap 'rm -rf -- "$stage"' EXIT HUP INT TERM
 mkdir -p "$stage/bin" "$stage/state" "$stage/config"
@@ -591,6 +605,7 @@ live generated file or the dotfiles worktree's ignored includes.
 - [ ] **Step 8: Commit cleanup separately and record both boundaries**
 
 ```bash
+set -euo pipefail
 git -C "$dotfiles_wt" add .gitignore setup.sh bin/dotfiles-health \
   tests/setup_and_health.zsh niri/config.kdl noctalia/noctalia.md
 git -C "$dotfiles_wt" add -u niri/materials.kdl
@@ -637,10 +652,12 @@ unrelated dirty paths in dotfiles `main` remain untouched.
 - [ ] **Step 2: Discard approved live value drift and fast-forward only the value migration**
 
 ```bash
+set -euo pipefail
 test "$(git -C "$dotfiles_repo" branch --show-current)" = main
 git -C "$dotfiles_repo" diff --quiet -- niri/materials.kdl niri/config.kdl
-git -C "$dotfiles_repo" restore --worktree -- prism/titan/values.yaml
+git -C "$dotfiles_repo" restore --source=HEAD --staged --worktree -- prism/titan/values.yaml
 git -C "$dotfiles_repo" diff --quiet -- prism/titan/values.yaml
+git -C "$dotfiles_repo" diff --cached --quiet -- prism/titan/values.yaml
 git -C "$dotfiles_repo" merge --ff-only "$values_commit"
 test "$(git -C "$dotfiles_repo" rev-parse HEAD)" = "$values_commit"
 PRISM_CONFIG_DIR="$dotfiles_repo/prism/titan" "$HOME/d/prism/bin/prism" describe --json >/dev/null
@@ -652,11 +669,14 @@ active.
 - [ ] **Step 3: Save, hash, and temporarily rename the live static material**
 
 ```bash
+set -euo pipefail
 rollout_root=/mnt/ssd3/niri-material/v1-daily-driver-138697be
 materials="$dotfiles_repo/niri/materials.kdl"
 saved="$rollout_root/materials.kdl.pre-prism-handoff"
 test "$(rg -o -F 'terminal-glass' "$materials" | wc -l)" -eq 2
-! rg -q -F 'terminal-glass-handoff' "$materials"
+if rg -q -F 'terminal-glass-handoff' "$materials"; then
+    echo 'materials.kdl is already renamed; refusing a rerun'; exit 1
+fi
 cp "$materials" "$saved"
 sha256sum "$saved" | tee "$rollout_root/materials.kdl.pre-prism-handoff.sha256"
 perl -0pi -e 's/terminal-glass/terminal-glass-handoff/g' "$materials"
@@ -666,19 +686,29 @@ git -C "$dotfiles_repo" diff -- niri/materials.kdl
 ```
 
 Verify the displayed diff contains only the two intended name substitutions
-and manually confirm the accepted appearance remains. The preconditions make
-the rename refuse a rerun rather than producing
-`terminal-glass-handoff-handoff`.
+and manually confirm the accepted appearance remains. `set -euo pipefail` is
+required, not decorative: without it a failed `test` does not stop the block,
+and the preconditions would let a rerun produce
+`terminal-glass-handoff-handoff` instead of refusing. Every multi-command block
+whose leading checks guard a destructive or irreversible action carries the
+same prologue.
+
+`set -e` alone is not enough for a negative assertion: the shell exempts any
+command whose status is inverted with `!`, so `! rg -q …` never aborts a block.
+Negative checks in this plan are therefore written as
+`if <cmd>; then echo <reason>; exit 1; fi`.
 
 **Abort obligation for Steps 3–5:** if any check fails or work must stop after
 the rename and before the cleanup merge completes, restore and verify the
 tracked bytes before ending the action or agent turn:
 
 ```bash
+set -euo pipefail
 cp "$saved" "$materials"
 (cd "$rollout_root" && sha256sum --check materials.kdl.pre-prism-handoff.sha256)
 cmp -s "$saved" "$materials"
 git -C "$dotfiles_repo" diff --quiet -- niri/materials.kdl
+git -C "$dotfiles_repo" diff --cached --quiet -- niri/materials.kdl
 ```
 
 This explicit cross-step recovery replaces a shell trap, which cannot survive
@@ -687,6 +717,7 @@ the separate one-shot shells used by an agentic worker.
 - [ ] **Step 4: Fast-forward Prism and apply the distinct generated material**
 
 ```bash
+set -euo pipefail
 prism_repo="$HOME/d/prism"
 test "$(git -C "$prism_repo" branch --show-current)" = main
 test -z "$(git -C "$prism_repo" status --short)"
@@ -702,6 +733,7 @@ Expected: generated `terminal-glass` coexists with later
 - [ ] **Step 5: Restore exact bytes and fast-forward ownership cleanup**
 
 ```bash
+set -euo pipefail
 cp "$saved" "$materials"
 (cd "$rollout_root" && sha256sum --check materials.kdl.pre-prism-handoff.sha256)
 git -C "$dotfiles_repo" diff --quiet -- niri/materials.kdl
@@ -722,7 +754,9 @@ niri validate -c "$dotfiles_repo/niri/config.kdl"
 prism doctor
 zsh "$dotfiles_repo/tests/setup_and_health.zsh"
 test ! -e "$dotfiles_repo/niri/materials.kdl"
-! rg -n -F 'include "./materials.kdl"' "$dotfiles_repo/niri/config.kdl"
+if rg -n -F 'include "./materials.kdl"' "$dotfiles_repo/niri/config.kdl"; then
+    echo 'static material include survived the cleanup merge'; exit 1
+fi
 rg -n -F 'material "terminal-glass"' "$HOME/.local/state/prism/generated/prism.kdl"
 ```
 
@@ -733,6 +767,7 @@ Expected: all checks pass and the live material is generated by Prism.
 Before deletion show and verify:
 
 ```bash
+set -euo pipefail
 legacy_json_link="$HOME/.config/niri/niri-glass.json"
 legacy_qs_link="$HOME/.config/quickshell/niri-glass"
 legacy_generated="$HOME/.local/state/prism/generated/niri-glass.json"
@@ -746,16 +781,18 @@ test -f "$legacy_generated"
 After explicit approval:
 
 ```bash
+set -euo pipefail
 rm -- "$legacy_json_link" "$legacy_qs_link" "$legacy_generated"
 old_noctalia=$(pgrep -xo noctalia)
 test "$old_noctalia" -gt 0
 kill -TERM "$old_noctalia"
 for _ in {1..50}; do pgrep -x noctalia >/dev/null || break; sleep 0.1; done
-! pgrep -x noctalia >/dev/null
+if pgrep -x noctalia >/dev/null; then echo 'noctalia did not exit'; exit 1; fi
 noctalia -d
+new_noctalia=""
 for _ in {1..50}; do
   new_noctalia=$(pgrep -xo noctalia || true)
-  test -n "$new_noctalia" && test "$new_noctalia" != "$old_noctalia" && break
+  if [[ -n "$new_noctalia" && "$new_noctalia" != "$old_noctalia" ]]; then break; fi
   sleep 0.1
 done
 test -n "$new_noctalia"
