@@ -1,0 +1,305 @@
+# Native niri material sink
+
+**Date:** 2026-08-28
+**Status:** Proposed; in-chat design approved, written review pending
+
+## Context
+
+The accepted native material compositor is installed as
+`niri-material 26.04.r95.g138697be-1` from source commit
+`138697be4cbb779c80425fe2a366ceca3610f38e`. Dotfiles commit
+`cd002eae5dfe4514b5e780ab4149927c96043e83` assigns a static native material
+to Kitty and Ghostty and no longer starts the legacy `niri-glass` Quickshell
+layer.
+
+That rollout preserved only Prism's opacity path. Prism's glass parameters
+still fan out to the legacy `niri-glass` sink, which writes
+`generated/niri-glass.json`. No running process consumes that file. The
+Noctalia plugin's preview commands likewise still call the retired
+`qs -c niri-glass` IPC target. The panel therefore accepts glass edits while
+the native material remains unchanged in dotfiles `niri/materials.kdl`.
+
+This is visible in the live values: Prism reports `glass.ior = 1.82`, while
+the deployed native material uses `ior 1.38`. The daily-driver rollout is
+paused before its normal-session and cold-start completion until this control
+path is corrected.
+
+## Decision
+
+The existing Prism `niri` sink becomes the sole compositor integration. Its
+single atomic `prism.kdl` output owns layout gaps, terminal opacity, the
+native material definition, and terminal material assignment. The legacy
+`niri-glass` sink and isolated-preview transport are deleted rather than
+retained behind a compatibility layer.
+
+Noctalia controls update matching live terminal windows directly:
+
+```text
+Noctalia
+  -> prism set
+  -> niri sink
+  -> atomic prism.kdl replacement
+  -> niri config reload
+  -> open Kitty and Ghostty windows
+```
+
+There is no replacement standalone preview surface. Live terminals are the
+preview surface.
+
+## Goals
+
+- Make every visible Prism glass control affect native niri material state.
+- Preserve the accepted daily-driver appearance during the ownership handoff.
+- Keep one generated compositor file, one sink status, and one reload path.
+- Match Kitty and Ghostty by exact literal app IDs.
+- Remove controls and transports that native niri cannot consume.
+- Preserve niri's last-valid-config behavior while making Prism failures loud.
+- Resume the paused normal-session and cold-start rollout only after live
+  Noctalia control acceptance.
+
+## Non-goals
+
+- A new compositor preview surface or preview IPC API.
+- A compatibility sink for the retired Quickshell implementation.
+- Porting legacy diagnostic overlays, environment reflections, sample count,
+  or spring solver controls into native niri.
+- Changing native niri shader, parser, or renderer code.
+- Supporting compositors other than the accepted material-capable niri fork.
+- Preserving obsolete `glass.*` keys as hidden aliases.
+
+## Generated KDL ownership
+
+`integrations/niri` continues to generate
+`$XDG_STATE_HOME/prism/generated/prism.kdl`. The output contains, in order:
+
+1. the generated-file warning and layout gaps;
+2. focused and unfocused terminal opacity rules;
+3. one `material "terminal-glass"` definition; and
+4. one terminal assignment rule.
+
+The assignment rule carries an inert background effect:
+
+```kdl
+background-effect {
+    blur false
+    noise 0
+    saturation 1
+}
+```
+
+This prevents the superseded blur/noise pass from becoming visible through
+an earlier matching rule. It needs no `xray` override because an inert
+background effect cannot reach the automatic xray path.
+
+`terminal.apps` is a list of literal app IDs, not regular expressions. The
+renderer escapes regex metacharacters, joins the literals, and anchors the
+result. The shipped default becomes exactly `kitty` and
+`com.mitchellh.ghostty`. The same literal-to-anchored-regex conversion is used
+for the per-app opacity rules.
+
+When `glass.enabled` is false, the generated terminal rule omits its
+`material` field but retains the inert background-effect override and opacity
+rules. The definition may remain present and unused. Re-enabling glass
+restores the assignment on the next reload without another state channel.
+
+## Native parameter contract
+
+The `niri` manifest binds the native material parameters with `reload`
+liveness. The renderer maps them as follows:
+
+| Prism parameter | Native KDL | Contract |
+| --- | --- | --- |
+| `glass.enabled` | assignment present/absent | default `true` |
+| `glass.paneLip` | part of `bevel` | range `0..64` logical px |
+| `glass.paneShiftX` | `offset-x` | range `-64..64` logical px |
+| `glass.paneShiftY` | `offset-y` | range `-64..64` logical px |
+| `glass.ior` | `ior` | range `1..3` |
+| `glass.thickness` | `thickness` | range `0..200` logical px |
+| `glass.attenuationColor` | `attenuation-color` | color |
+| `glass.attenuationDistance` | `attenuation-distance` | range `(0, 65535]` |
+| `glass.chromaticAberration` | `chromatic-aberration` | range `0..1` |
+| `glass.distortion` | `distortion` | range `0..1` |
+| `glass.distortionScale` | `distortion scale=` | range `0..2` |
+| `glass.anisotropicBlur` | `anisotropic-blur` | range `0..1` |
+| `glass.jellyFlex` | `jelly-flex` | range `0..0.02` |
+| `glass.jellyRipple` | `jelly-ripple` | range `0..0.5` |
+
+Native bevel is derived rather than exposed as a second shape model:
+
+```text
+bevel = paneLip + max(abs(paneShiftX), abs(paneShiftY))
+```
+
+The tightened ranges keep the derived bevel at or below native niri's
+128-pixel maximum and guarantee that each offset is no wider than the bevel.
+The accepted Titan geometry remains `5 + max(4, 4) = 9`.
+
+The canonical definitions delete parameters with no native consumer:
+
+- `glass.gridOverlay`
+- `glass.calibrate`
+- `glass.probeExposure`
+- `glass.roughness`
+- `glass.samples`
+- `glass.springDampingRatio`
+- `glass.springStiffness`
+- `glass.springEpsilon`
+
+The old terminal background-effect parameters are also deleted because their
+pass is superseded by the native material:
+
+- `terminal.blur`
+- `terminal.saturation.active`
+- `terminal.saturation.inactive`
+- `terminal.noise.active`
+- `terminal.noise.inactive`
+
+Whole-window opacity remains compositor-owned. Kitty background opacity
+remains owned by the existing Kitty sink. No hidden definitions or orphan-key
+exceptions preserve the removed surface.
+
+## Titan value migration
+
+Dotfiles `prism/titan/values.yaml` is migrated before the native sink becomes
+authoritative. It removes every deleted key, records the exact live app IDs,
+and pins the accepted material appearance:
+
+| Parameter | Accepted value |
+| --- | --- |
+| `terminal.apps` | `[kitty, com.mitchellh.ghostty]` |
+| `glass.ior` | `1.38` |
+| `glass.thickness` | `32` |
+| `glass.attenuationColor` | `#bbc7db` |
+| `glass.attenuationDistance` | `178` |
+| `glass.chromaticAberration` | `0.68` |
+| `glass.distortion` | `0.32` |
+| `glass.distortionScale` | `0.05` |
+| `glass.anisotropicBlur` | `0` through its default |
+| `glass.jellyFlex` | `0.0038` |
+| `glass.jellyRipple` | `0.15` |
+| `glass.paneLip` | `5` |
+| `glass.paneShiftX` | `4` |
+| `glass.paneShiftY` | `4` |
+
+Existing compositor gaps, window opacity, and Kitty background-opacity
+values remain unchanged. The first accepted native generation must therefore
+be visually equivalent to the static daily-driver material instead of
+silently adopting the legacy values currently stored for an inactive sink.
+
+## Noctalia plugin
+
+The panel retains its existing optimistic values, write queue, refresh
+contract, group layout, and reset behavior. It does not gain a second native
+transport. Definition removal automatically removes unsupported rows.
+
+The preview toggle, diagnostic-background toggle, preview state, explanatory
+preview labels, `preview-show`/`preview-hide` queue verbs, and all
+`qs -c niri-glass` commands are deleted. Slider sampling and release behavior
+continue to use `prism set`; the niri manifest's `reload` liveness makes open
+terminals the direct feedback surface.
+
+The plugin description no longer promises a separate glass preview. Closing
+the panel has no preview cleanup action because no preview state exists.
+
+## Failure behavior
+
+The niri sink writes `prism.kdl` to a sibling temporary file and renames it
+atomically, then requests a config reload as it does today. Canonical range
+checks and the derived bevel rule prevent invalid material combinations from
+reaching the renderer.
+
+If the composed configuration is nevertheless rejected, native niri retains
+its last valid config. The apply command fails, Prism records the niri sink as
+failed, and `prism doctor` reports the failure. Correcting the value or running
+`prism apply niri` retries the same authoritative sink. The generated file is
+not silently replaced with defaults and no compatibility consumer is tried.
+
+## Dotfiles ownership and cleanup
+
+Dotfiles removes `niri/materials.kdl` and its include because generated
+`prism.kdl` now owns the definition and assignment. Graphical setup and health
+tests stop installing or requiring these obsolete live consumers:
+
+- `$XDG_CONFIG_HOME/niri/niri-glass.json`
+- `$XDG_CONFIG_HOME/quickshell/niri-glass`
+
+After the new sink is accepted, the deployment removes those exact live
+symlinks and `$XDG_STATE_HOME/prism/generated/niri-glass.json`. The
+`niri-glass` repository, frozen parity worktrees, and recorded evidence remain
+unchanged. Cleanup does not delete source or evidence.
+
+## Ordered handoff
+
+The transition keeps the accepted material visible throughout:
+
+1. Land and test Prism without applying its new niri output.
+2. Prepare and test the dotfiles migration in an isolated worktree.
+3. Merge Prism, then generate native `prism.kdl` while static
+   `materials.kdl` is still included. The expected duplicate definition is
+   rejected, and niri retains the current valid static material.
+4. Merge the dotfiles commit that removes the static include/file and carries
+   the migrated values. The already-generated native definition becomes the
+   sole valid material.
+5. Run `prism apply niri` again to record a successful current sink snapshot.
+6. Restart Noctalia so its panel loads the reduced control surface.
+7. Verify and remove only the obsolete live symlinks and generated JSON.
+
+The expected duplicate-definition rejection is bounded to the handoff and is
+recorded explicitly. An untreated intermediate config is not accepted.
+
+## Verification
+
+Prism tests prove:
+
+- exact stable native KDL and literal app-ID matching;
+- every supported material value and derived bevel reaches the renderer;
+- enable/disable changes only material assignment;
+- removed definitions, sink, generated JSON, preview UI, and IPC commands are
+  absent;
+- the existing queue, optimistic update, store, fan-out, and doctor contracts
+  remain green.
+
+Dotfiles tests prove:
+
+- `config.kdl` includes generated `prism.kdl` exactly once and no longer
+  includes static `materials.kdl`;
+- setup and health no longer install or require live legacy consumers;
+- Titan values contain no orphan keys and reproduce the accepted native
+  material;
+- the complete setup and health suite passes without touching unrelated dirty
+  paths.
+
+Live acceptance requires:
+
+1. `prism doctor` passes and the composed config validates with the installed
+   material-capable niri.
+2. A CLI set/restore changes generated KDL, produces successful config reloads,
+   changes open Kitty and Ghostty material, and restores tracked values.
+3. The Noctalia panel exposes only supported controls, contains no preview
+   controls, and changes both live terminal materials.
+4. No legacy process, layer, live consumer link, or generated JSON remains.
+5. The paused normal-session and cold-start daily-driver gates are rerun from
+   a new clean journal boundary.
+
+## Alternatives rejected
+
+### Separate `niri-material` sink
+
+A second sink would separate material text from opacity text, but it would add
+a generated file, sink status, reload, include, health check, and ordering
+edge. Both outputs target the same compositor and change together in the
+panel, so the split creates mechanics without an independent lifecycle.
+
+### Static material plus translation script
+
+A script that rewrites dotfiles `materials.kdl` would give Prism and dotfiles
+competing ownership of a generated file and introduce a transport outside the
+existing sink/fan-out model. It is a compatibility layer rather than a durable
+interface.
+
+### Retain legacy controls or sink as hidden compatibility
+
+Hidden aliases would keep orphan values and dead paths alive while masking
+whether a control has a consumer. The migration is deliberately explicit:
+unsupported keys fail as unknown, and historical behavior remains available
+through Git and frozen evidence rather than production code.
