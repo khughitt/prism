@@ -294,7 +294,8 @@ Run in each repository: `git diff --check` and `git status --short --branch`
 
 - [x] **Step 4: Record implementation commits without claiming deployment**
 
-Change the design status to `Implemented on feature branches; ordered handoff pending`, naming both commits. Keep the live manual checks and final merged-status update unchecked in prose rather than claiming they happened.
+Record both implementation commits and state that the ordered handoff remains
+pending. Do not claim the live manual checks or final deployment happened.
 
 - [x] **Step 5: Commit Prism documentation**
 
