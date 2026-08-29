@@ -2,8 +2,10 @@
 
 **Date:** 2026-08-29
 **Status:** Prism feature commits through `83a3b17` are on local `main`; the
-sink was initialized and `prism doctor` passed on 2026-08-29. The ordered
-dotfiles handoff remains pending, prepared as `f79de82`. Depends on the native niri material sink
+sink was initialized and `prism doctor` passed on 2026-08-29. The dotfiles
+implementation landed as `9562732` and `dotfiles-health` passed. Final suite
+verification is blocked by dotfiles `60c61b3` removing `REPORTTIME=5` while
+`tests/dotfiles_check.zsh` still requires it. Depends on the native niri material sink
 (`docs/superpowers/specs/2026-08-28-niri-native-material-sink-design.md`),
 whose Prism and dotfiles changes are implemented but not yet burned in.
 
