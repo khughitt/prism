@@ -7,7 +7,7 @@ green: the earlier blocker, dotfiles `60c61b3` removing `REPORTTIME=5` while
 `tests/dotfiles_check.zsh` still required it, was fixed by `2feb546`. Depends on
 the native niri material sink
 (`docs/superpowers/specs/2026-08-28-niri-native-material-sink-design.md`),
-which is deployed and live but not yet through burn-in.
+whose Material daily-driver burn-in passed 2026-08-30.
 
 ## Context
 
@@ -376,8 +376,8 @@ makes `prism doctor` and therefore `dotfiles-health` red until it is applied.
    value only after every active output has its wallpaper surface. Verify the
    false path applies immediately.
 5. After both repositories have landed and the live checks pass, update this
-   document's status with the landed Prism and dotfiles commits. Until then the
-   ordered handoff remains pending.
+   document's status with the landed Prism and dotfiles commits. This completed
+   in Prism `cacf232` and dotfiles `9562732`.
 
 ## Alternatives rejected
 

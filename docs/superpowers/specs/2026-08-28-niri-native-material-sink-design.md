@@ -5,9 +5,9 @@
 through `5888970`, dotfiles `main` through `7b0efad`. Prism now generates the
 sole compositor fragment and the manual Noctalia acceptance PASSed. The handoff
 was revised 2026-08-29 after a compositor panic on material removal, fixed in
-niri-material `7f6e69c3` and installed as `26.04.r106.g7f6e69c3-1`. Burn-in
-resumed 2026-08-29; the normal-session scan, cold start, and operator PASS are
-outstanding, so this is deployed but not yet burned in.
+niri-material `7f6e69c3`. Material daily-driver burn-in passed 2026-08-30 on
+the later backdrop-blur package `26.04.r133.g52f74f10-1`; Prism `d20111c` adds
+the matching `glass.backdropBlur` control.
 
 ## Context
 
@@ -136,6 +136,7 @@ liveness. The renderer maps them as follows:
 | `glass.distortion` | `distortion` | range `0..1` |
 | `glass.distortionScale` | `distortion scale=` | Prism range `0.01..2` |
 | `glass.anisotropicBlur` | `anisotropic-blur` | range `0..1` |
+| `glass.backdropBlur` | `backdrop-blur` | boolean, default `false` |
 | `glass.jellyFlex` | `jelly-flex` | range `0..0.02` |
 | `glass.jellyRipple` | `jelly-ripple` | range `0..0.5` |
 

@@ -12,9 +12,9 @@
 
 **Status:** Tasks 1-5 implemented and merged — Prism `main` through `5888970`,
 dotfiles `main` through `7b0efad`. The live ownership handoff ran 2026-08-29
-and its manual Noctalia acceptance PASSed. Task 6 burn-in is in progress: the
-journal boundary was reset 2026-08-29, and the normal-session scan, cold start,
-and operator PASS remain.
+and its manual Noctalia acceptance PASSed. Material daily-driver burn-in passed
+2026-08-30 on `26.04.r133.g52f74f10-1`. The unchecked Task 6 steps below are
+retained historical procedure, not open Prism work.
 
 ## Global Constraints
 
