@@ -1,8 +1,8 @@
 # Prism Tasks migration ledger
 
-**Status:** migration phase A review-fix round 1 complete 2026-09-01.
-`prism-82198e` represents the corrected Ghostty outcome, all review-fix gates
-pass, and further independent review and integration remain for the controller.
+**Status:** migration phase A review-fix round 2 complete 2026-09-01.
+`prism-82198e` is narrowed to Ghostty's authoritative single active-value
+mapping, all requested gates pass, and further review remains for the controller.
 
 ## Scope and evidence
 
@@ -74,7 +74,7 @@ tracked documents, `README.md`, this ledger, and root `AGENTS.md`.
 | Expose Material backdrop blur through Prism | `d20111c` adds the definition, binding, renderer node, presentation, and exact-contract tests; Material implements the same default-false boolean interface. | `defs/glass.yaml`; `integrations/niri/**`; Material backdrop-blur design/config | Complete on `main` | — | — | — | `no task` | — |
 | Native material ownership and daily-driver burn-in | Prism `5888970`, dotfiles `7b0efad`, and Material `7020776e` are ancestors; generated ownership, manual controls, two cold starts, journal review, and operator PASS are recorded. | Native-sink spec/plan; Material rollout design | Complete across owners | — | — | — | `no task` | — |
 | Debug backdrop sink and ordered startup handoff | Prism through `cacf232` and dotfiles through `9562732` are ancestors; current tests cover the definition, convergence matrix, QML surface, and presentation. | Debug-backdrop spec/plan; `integrations/debug-backdrop/**`; tests | Complete across owners | — | — | — | `no task` | — |
-| Add a Ghostty background-opacity sink | The accepted v1 design says Ghostty is deliberately half-owned: Prism generates its niri rules while `background-opacity` remains hand-edited; current manifests bind `terminal.background.opacity.*` only to Kitty. | `docs/superpowers/specs/2026-08-15-prism-visual-bus-design.md`; `integrations/kitty/manifest.yaml`; `integrations/niri/manifest.yaml` | Unstarted | `m` | `todo` | None | `create` | `prism-82198e` |
+| Add a Ghostty background-opacity sink | The accepted v1 design says Ghostty's single hand-edited `background-opacity` drifts specifically from `terminal.background.opacity.active`. Kitty alone consumes the focus-aware background active/inactive pair; niri separately consumes the whole-window active/inactive pair. | `docs/superpowers/specs/2026-08-15-prism-visual-bus-design.md`; `integrations/kitty/manifest.yaml`; `integrations/niri/manifest.yaml` | Unstarted | `m` | `todo` | None | `create` | `prism-82198e` |
 | Historical v1 Task 18 Step 4 and Task 19 Step 2 manual demonstrations | These are the actual unchecked steps; later recorded acceptance covers slider, restoration, preview, lifecycle, and failure recovery, and current tests cover the surviving behavior. Task 20 is fully checked. | v1 and panel plans/specs | Superseded history | — | — | — | `no task` | — |
 | Source priority layers and arbitration | The design defers the model until a second source exists; current production still has only the values-file/user-control source and no active delivery branch. | v1 design lines 700–702; current `src/**` | Speculative v2 design | — | — | — | `no task` | — |
 | Per-window or conditional manifest bindings | No shipped manifest uses or requires `when:`, and no current integration supplies an acceptance boundary. | v1 design line 703; `integrations/**/manifest.yaml` | Speculative | — | — | — | `no task` | — |
@@ -100,7 +100,7 @@ completed, superseded, externally owned, or lacks current delivery evidence.
 - Size: `m`
 - Tags: `migration`, `integration`, `terminal`
 - Blockers: none
-- Body: `Outcome: Prism owns Ghostty background opacity so terminal.background.opacity.active and terminal.background.opacity.inactive update Ghostty alongside Kitty and the niri window rules, removing the hand-edited background-opacity drift. Acceptance evidence: add a validated Ghostty sink bound to both parameters with reload liveness; prove deterministic config or apply behavior and exact failure handling with runnable tests; migrate the dotfiles Ghostty background-opacity owner without unrelated changes; and verify systemd reload updates a live Linux Ghostty instance while restoration and prism doctor remain healthy. Sources: docs/superpowers/specs/2026-08-15-prism-visual-bus-design.md, integrations/kitty/manifest.yaml, and integrations/niri/manifest.yaml. Uncertainty: the authority verified Ghostty 1.3.1 reload_config and systemctl reload behavior, but the current checkout has no captured Ghostty config/apply contract and the live handoff must confirm the service-unit behavior still matches.`
+- Body: `Outcome: Prism owns Ghostty's single static background-opacity from terminal.background.opacity.active, removing the hand-edited drift without implying focus-aware Ghostty behavior. Acceptance evidence: add a validated Ghostty sink bound only to terminal.background.opacity.active with reload liveness; prove deterministic config or apply behavior and exact failure handling with runnable tests; migrate the dotfiles Ghostty background-opacity owner without unrelated changes; and verify systemd reload updates a live Linux Ghostty instance while restoration and prism doctor remain healthy. Kitty remains the focus-aware consumer of terminal.background.opacity.active and terminal.background.opacity.inactive; niri separately owns terminal.window.opacity.active and terminal.window.opacity.inactive. Sources: docs/superpowers/specs/2026-08-15-prism-visual-bus-design.md, integrations/kitty/manifest.yaml, and integrations/niri/manifest.yaml. Uncertainty: the authority verified Ghostty 1.3.1 reload_config and systemctl reload behavior, but the current checkout has no captured Ghostty config/apply contract and the live handoff must confirm the service-unit behavior still matches.`
 
 ## Deferred foreign dependencies
 
@@ -123,6 +123,12 @@ commits:
    unresolved `qs.*` warnings. That docs-only correction is `7796b831`; the
    installed CLI and recorded Tasks source remain `b943419c`.
 
+Round 2 corrected the Ghostty acceptance contract. The v1 authority maps its
+single static `background-opacity` only to `terminal.background.opacity.active`;
+there is no evidence for focus-aware Ghostty behavior. The task body and
+candidate evidence now keep Kitty's background active/inactive pair and niri's
+separate whole-window active/inactive pair out of the Ghostty sink contract.
+
 ## Verification
 
 | Command | Result | Commit containing the recorded result |
@@ -138,8 +144,11 @@ commits:
 | Initial final `npm ci && npm test` | PASS: 140 Node tests and direct Lua checks; zero failures. | `2e288241723d2301123bbe870491c373cf383bc7` |
 | Initial final `/usr/lib/qt6/bin/qmllint integrations/debug-backdrop/shell.qml` | Exit 0 with exactly `Type PanelWindow is not creatable. [uncreatable-type]` at line 9:9. | `2e288241723d2301123bbe870491c373cf383bc7` |
 | Review-fix NUL-safe exact document coverage | PASS: 14 actual paths equal 14 classified paths. | Review fix commit (this commit) |
-| `tasks show prism-82198e` | PASS: exact reviewed title, body, todo status, priority 2, size `m`, tags, null owner/document links, no blockers, and zero warnings. | Review fix commit (this commit) |
+| Round-1 `tasks show prism-82198e` | PASS at round 1; its two-value body was superseded by the authoritative active-only round-2 correction. | Review fix commit (this commit) |
 | Review-fix `tasks check`, `tasks prime`, and `tasks ready` | PASS: zero errors/warnings; counts are one todo and zero otherwise; `prism-82198e` is the sole ready task. | Review fix commit (this commit) |
 | Review-fix `npm ci && npm test` | PASS: 140 Node tests and direct Lua checks; zero failures. | Review fix commit (this commit) |
 | Review-fix `/usr/lib/qt6/bin/qmllint integrations/debug-backdrop/shell.qml` | Exit 0 with exactly one warning: `Type PanelWindow is not creatable. [uncreatable-type]` at line 9:9; no `qs.*` warning. | Review fix commit (this commit) |
 | Review-fix no-relative-registry and diff checks | PASS: no `tasks/projects.toml`; working and cached diffs contain no whitespace errors. | Review fix commit (this commit) |
+| Round-2 `tasks show prism-82198e` | PASS: body binds Ghostty only to `terminal.background.opacity.active`; title, todo status, priority 2, size `m`, tags, null owner/document links, and no blockers are preserved; zero warnings. | Round-2 review fix (this commit) |
+| Round-2 `tasks check`, `tasks prime`, and `tasks ready` | PASS: zero errors/warnings; counts remain one todo and zero otherwise; `prism-82198e` is the sole ready task. | Round-2 review fix (this commit) |
+| Round-2 coverage, focused drift/future-work, registry, and diff checks | PASS: 14 actual paths equal 14 classified paths; no two-value Ghostty acceptance survives; every future-work disposition remains; no relative registry or whitespace error. | Round-2 review fix (this commit) |
