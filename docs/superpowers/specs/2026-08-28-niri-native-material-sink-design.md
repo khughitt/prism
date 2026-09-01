@@ -11,19 +11,21 @@ the matching `glass.backdropBlur` control.
 
 ## Context
 
-The accepted native material compositor is installed as
+This section records the design-time deployment state that motivated the
+handoff; it is not a description of the current installation. At design
+acceptance, the native material compositor was installed as
 `niri-material 26.04.r95.g138697be-1` from source commit
 `138697be4cbb779c80425fe2a366ceca3610f38e`. Dotfiles commit
-`cd002eae5dfe4514b5e780ab4149927c96043e83` assigns a static native material
-to Kitty and Ghostty and no longer starts the legacy `niri-glass` Quickshell
+`cd002eae5dfe4514b5e780ab4149927c96043e83` assigned a static native material
+to Kitty and Ghostty and no longer started the legacy `niri-glass` Quickshell
 layer.
 
-That rollout preserved only Prism's opacity path. Prism's glass parameters
-still fan out to the legacy `niri-glass` sink, which writes
-`generated/niri-glass.json`. No running process consumes that file. The
-Noctalia plugin's preview commands likewise still call the retired
-`qs -c niri-glass` IPC target. The panel therefore accepts glass edits while
-the native material remains unchanged in dotfiles `niri/materials.kdl`.
+That rollout initially preserved only Prism's opacity path. Prism's glass
+parameters still fanned out to the legacy `niri-glass` sink, which wrote
+`generated/niri-glass.json`; no running process consumed that file. The
+Noctalia plugin's preview commands likewise still called the retired
+`qs -c niri-glass` IPC target. The panel therefore accepted glass edits while
+the native material remained unchanged in dotfiles `niri/materials.kdl`.
 
 At design time this was visible in the live values: Prism reported
 `glass.ior = 1.82`, while the deployed native material used `ior 1.38`. The

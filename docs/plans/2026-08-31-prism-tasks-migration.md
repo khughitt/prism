@@ -1,10 +1,11 @@
 # Prism Tasks migration ledger
 
-**Status:** Prism Tasks migration complete 2026-09-01. Stable `main` was first
-fast-forwarded through `0af1d0f9c170875d94105b17876ad1334758204f`, its full
-automated gate passed, and canonical registration was warning-free and
-idempotent. This historical ledger-finalization change remains in the migration
-worktree for the controller's independent review and second fast-forward.
+**Status:** Prism repository Tasks migration integrated and cleaned up
+2026-09-01. Stable `main` contains the integrated migration record
+`6eafb98c9a64bf1fed2b8d5b40fdc86c3a7f85e9`; the migration branch, worktree,
+and temporary registry were removed. Canonical registration is warning-free,
+and `prism-82198e` is the sole ready todo. Portfolio reconciliation and final
+completion recording belong to the extension plan and remain pending.
 
 ## Scope and evidence
 
@@ -24,16 +25,18 @@ current sink and plugin code, and ran the complete automated Prism gates. No
 live shell, compositor, GPU, deployment, DRM, burn-in, or subjective visual
 action was repeated.
 
-## Git state inspected
+## Post-migration Git state
 
 | Checkout or branch | Inspected state | Decision |
 | --- | --- | --- |
-| `~/d/prism`, `main` | Clean at first-integrated head `0af1d0f9c170875d94105b17876ad1334758204f` | Stable Tasks store and reviewed fixes integrated; ledger finalization intentionally awaits the controller's second fast-forward. |
-| `chore/tasks-migration-prism` | Linked worktree at `0af1d0f9c170875d94105b17876ad1334758204f` before this ledger-only finalization | Sole location for the remaining ledger write and independent review. |
+| `~/d/prism`, `main` | Clean at `6eafb98c9a64bf1fed2b8d5b40fdc86c3a7f85e9` after final integration and cleanup | Contains the reviewed Prism Tasks store, fixes, and historical ledger. |
+| `chore/tasks-migration-prism` | Removed after its ledger commit fast-forwarded to stable | Historical migration branch and linked worktree no longer exist. |
 
-These are the only local branches and linked worktrees. There were no dirty,
-staged, or untracked Prism paths before the audit; ignored `node_modules/` was
-reproduced by `npm ci` in the migration worktree.
+After the approved second fast-forward, the historical
+`chore/tasks-migration-prism` branch and its linked worktree were removed. Its
+guarded temporary registry and pointer were also removed. There were no dirty,
+staged, or untracked Prism paths before the original audit; ignored
+`node_modules/` was reproduced by `npm ci` in the migration worktree.
 
 ## Document classification
 
@@ -65,7 +68,7 @@ tracked documents, `README.md`, this ledger, and root `AGENTS.md`.
 | The native-sink plan header called Task 6 burn-in in progress. | The same Material ancestry proves the outcome completed; unchecked plan steps are not completion evidence. | Header now records completion and labels its unchecked Task 6 steps historical. | No current Prism status surface calls daily-driver burn-in incomplete. |
 | The authoritative native parameter table omitted `glass.backdropBlur`. | Prism `d20111c` defines a default-false boolean, binds it reload-live, renders `backdrop-blur`, and tests exact native coverage; Material config and tests expose the same default and grammar. | Added the exact Prism-to-KDL mapping and default. | README and plugin note contain no conflicting parameter inventory; debug docs still preserve the exact-native-surface invariant. |
 | The debug-backdrop spec called its dependency not burned in and its ordered handoff pending. | Material burn-in passed; Prism `cacf232` and dotfiles `9562732` are ancestors and the documented suites are green. | Status and ordered handoff now record the completed evidence. | The debug implementation plan's pending wording is an executed historical instruction, not current status. |
-| Native-sink design context still called the rollout paused in present tense. | The same design's status and Material `7020776e` prove the control path and burn-in completed. | Historicalized the paragraph as the design-time state. | No current Prism status surface calls the rollout paused. |
+| The native-sink design Context described the old r95 package, static dotfiles ownership, legacy sink, preview, and paused rollout as current. | The design's current status and Material `7020776e` prove the generated control path and burn-in completed on the later package. | Historicalized the entire Context as design-time state. | No current Prism status surface presents the r95 rollout or retired ownership path as current. |
 | The v1 plan and initial ledger named Task 20 as an unchecked demo. | Task 18 Step 4 and Task 19 Step 2 are unchecked; all three Task 20 steps are checked. | Corrected both records and the candidate disposition. | The remaining unchecked-step references now name their actual task and step. |
 | Initial synthesis treated every v1 future-work item as speculative. | The v1 authority calls Ghostty deliberately half-owned, documents current configuration drift, and specifies a Linux reload boundary; current manifests bind background opacity only to Kitty. | Added one reviewed Ghostty `todo`; dispositioned every sibling future-work entry separately. | No other current document or manifest supplies a missing Prism-owned delivery outcome. |
 
@@ -163,6 +166,23 @@ errors or warnings; `tasks prime` returned prefix `prism`, one todo, and
 that same sole task with no warnings. Stable remained clean at the
 first-integrated head after every gate.
 
+## Final integration and cleanup
+
+After independent approval of the ledger-only commit, a second `--ff-only`
+merge advanced stable `main` from
+`0af1d0f9c170875d94105b17876ad1334758204f` to final integrated head
+`6eafb98c9a64bf1fed2b8d5b40fdc86c3a7f85e9`. The migration worktree and
+merged `chore/tasks-migration-prism` branch were then removed, followed only
+by the guarded Prism temporary registry and its pointer. Final stable status
+was clean on `main`.
+
+Normal-registry verification at the final head returned no errors or warnings
+from `tasks check`; `tasks prime` reported prefix `prism`, one todo, and
+`prism-82198e` as the sole ready task with no warnings; `tasks ready` returned
+that same sole task with no warnings. No relative `tasks/projects.toml` exists.
+This repository migration is integrated; portfolio reconciliation and final
+completion recording are separate remaining plan work.
+
 ## Verification
 
 | Command | Result | Commit containing the recorded result |
@@ -192,3 +212,5 @@ first-integrated head after every gate.
 | Canonical Prism registration twice | PASS: both calls returned prefix `prism` and zero warnings; the mapping resolves to stable. | Ledger finalization (this commit) |
 | Stable `tasks check`, `tasks prime`, and `tasks ready` | PASS: no errors or warnings; one todo; `prism-82198e` is the sole ready task. | Ledger finalization (this commit) |
 | Stable post-gate Git status | PASS: clean at first-integrated head `0af1d0f9c170875d94105b17876ad1334758204f`. | Ledger finalization (this commit) |
+| Second stable fast-forward and cleanup | PASS: stable advanced to `6eafb98c9a64bf1fed2b8d5b40fdc86c3a7f85e9`; the migration worktree, merged branch, guarded temporary registry, and pointer were removed; stable remained clean. | Post-cleanup review evidence |
+| Final normal-registry `tasks check`, `tasks prime`, and `tasks ready` | PASS: prefix `prism`; no errors or warnings; one todo; `prism-82198e` is the sole ready task. | Post-cleanup review evidence |
