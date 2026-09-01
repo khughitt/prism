@@ -25,10 +25,10 @@ Noctalia plugin's preview commands likewise still call the retired
 `qs -c niri-glass` IPC target. The panel therefore accepts glass edits while
 the native material remains unchanged in dotfiles `niri/materials.kdl`.
 
-This is visible in the live values: Prism reports `glass.ior = 1.82`, while
-the deployed native material uses `ior 1.38`. The daily-driver rollout is
-paused before its normal-session and cold-start completion until this control
-path is corrected.
+At design time this was visible in the live values: Prism reported
+`glass.ior = 1.82`, while the deployed native material used `ior 1.38`. The
+daily-driver rollout was then paused before its normal-session and cold-start
+completion until this control path was corrected.
 
 ## Decision
 
