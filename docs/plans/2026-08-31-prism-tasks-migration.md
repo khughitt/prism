@@ -1,8 +1,10 @@
 # Prism Tasks migration ledger
 
-**Status:** migration phase A review-fix round 2 complete 2026-09-01.
-`prism-82198e` is narrowed to Ghostty's authoritative single active-value
-mapping, all requested gates pass, and further review remains for the controller.
+**Status:** Prism Tasks migration complete 2026-09-01. Stable `main` was first
+fast-forwarded through `0af1d0f9c170875d94105b17876ad1334758204f`, its full
+automated gate passed, and canonical registration was warning-free and
+idempotent. This historical ledger-finalization change remains in the migration
+worktree for the controller's independent review and second fast-forward.
 
 ## Scope and evidence
 
@@ -26,8 +28,8 @@ action was repeated.
 
 | Checkout or branch | Inspected state | Decision |
 | --- | --- | --- |
-| `~/d/prism`, `main` | Clean at `d20111c2182adcbbb2bd3b76356d6e1557cb1e12` | Approved stable source; read-only during this phase. |
-| `chore/tasks-migration-prism` | Fresh linked worktree from the same commit; clean before audit | Sole location for migration writes. |
+| `~/d/prism`, `main` | Clean at first-integrated head `0af1d0f9c170875d94105b17876ad1334758204f` | Stable Tasks store and reviewed fixes integrated; ledger finalization intentionally awaits the controller's second fast-forward. |
+| `chore/tasks-migration-prism` | Linked worktree at `0af1d0f9c170875d94105b17876ad1334758204f` before this ledger-only finalization | Sole location for the remaining ledger write and independent review. |
 
 These are the only local branches and linked worktrees. There were no dirty,
 staged, or untracked Prism paths before the audit; ignored `node_modules/` was
@@ -50,7 +52,7 @@ reproduced by `npm ci` in the migration worktree.
 | `docs/superpowers/specs/2026-08-16-prism-panel-repair-glass-preview-design.md` | `historical/superseded` | Accepted historical repair and preview design; native material later removed the preview path. |
 | `docs/superpowers/specs/2026-08-28-niri-native-material-sink-design.md` | `authority/current` | Current generated-material and niri sink contract; reconciled with Material burn-in and `glass.backdropBlur`. |
 | `docs/superpowers/specs/2026-08-29-prism-debug-backdrop-design.md` | `authority/current` | Current debug sink contract; implementation, startup owner, and handoff are present and tested. |
-| `docs/plans/2026-08-31-prism-tasks-migration.md` | `active delivery` | Current audit and migration ledger. |
+| `docs/plans/2026-08-31-prism-tasks-migration.md` | `historical/superseded` | Completed audit and migration ledger; stable integration and canonical registration are recorded below. |
 
 The final NUL-safe comparison covers exactly these 14 paths: 11 original
 tracked documents, `README.md`, this ledger, and root `AGENTS.md`.
@@ -129,6 +131,38 @@ there is no evidence for focus-aware Ghostty behavior. The task body and
 candidate evidence now keep Kitty's background active/inactive pair and niri's
 separate whole-window active/inactive pair out of the Ghostty sink contract.
 
+## Stable integration
+
+Stable `main` fast-forwarded from
+`d20111c2182adcbbb2bd3b76356d6e1557cb1e12` to first-integrated head
+`0af1d0f9c170875d94105b17876ad1334758204f` on 2026-09-01. That head contains
+the complete reviewed migration sequence:
+
+1. `aa526843d43a33bf3ea6fee91adc2fd01b87ed0e` — documentation
+   reconciliation;
+2. `2e288241723d2301123bbe870491c373cf383bc7` — initial Tasks store and
+   repository guidance;
+3. `52cf99a11cbc2ddc8ce88610ce7099f0e87ea56a` — round-1 review corrections
+   and the Ghostty task; and
+4. `0af1d0f9c170875d94105b17876ad1334758204f` — active-only Ghostty
+   acceptance correction.
+
+The stable checkout had Node `v26.5.0`, npm `11.17.0`, and Lua `5.5.1`; the
+Node major-version check passed. Its tracked status was clean before and after
+`npm ci`; the ignored `node_modules/` directory was reproduced without a
+tracked change. `npm test` passed all 140 Node tests and the direct Lua plugin
+test. Qt 6 `qmllint` exited zero with exactly one diagnostic,
+`Type PanelWindow is not creatable. [uncreatable-type]`, at
+`integrations/debug-backdrop/shell.qml:9:9`, and no `qs.*` warning.
+
+Two consecutive canonical `tasks init --prefix prism` calls from stable each
+returned prefix `prism` and an empty warning list. The canonical mapping
+resolves `prism` to the stable checkout. Stable `tasks check` returned no
+errors or warnings; `tasks prime` returned prefix `prism`, one todo, and
+`prism-82198e` as the sole ready task with no warnings; `tasks ready` returned
+that same sole task with no warnings. Stable remained clean at the
+first-integrated head after every gate.
+
 ## Verification
 
 | Command | Result | Commit containing the recorded result |
@@ -152,3 +186,9 @@ separate whole-window active/inactive pair out of the Ghostty sink contract.
 | Round-2 `tasks show prism-82198e` | PASS: body binds Ghostty only to `terminal.background.opacity.active`; title, todo status, priority 2, size `m`, tags, null owner/document links, and no blockers are preserved; zero warnings. | Round-2 review fix (this commit) |
 | Round-2 `tasks check`, `tasks prime`, and `tasks ready` | PASS: zero errors/warnings; counts remain one todo and zero otherwise; `prism-82198e` is the sole ready task. | Round-2 review fix (this commit) |
 | Round-2 coverage, focused drift/future-work, registry, and diff checks | PASS: 14 actual paths equal 14 classified paths; no two-value Ghostty acceptance survives; every future-work disposition remains; no relative registry or whitespace error. | Round-2 review fix (this commit) |
+| First stable fast-forward | PASS: `main` advanced from `d20111c2182adcbbb2bd3b76356d6e1557cb1e12` through all four reviewed migration commits to `0af1d0f9c170875d94105b17876ad1334758204f`. | Ledger finalization (this commit) |
+| Stable versions, `npm ci`, and `npm test` | PASS: Node `v26.5.0`, npm `11.17.0`, Lua `5.5.1`; clean tracked status around the ignored dependency replacement; 140 Node tests and direct Lua checks passed. | Ledger finalization (this commit) |
+| Stable Qt 6 `qmllint` | Exit 0 with exactly one `Type PanelWindow is not creatable. [uncreatable-type]` diagnostic at line 9:9 and no `qs.*` warning. | Ledger finalization (this commit) |
+| Canonical Prism registration twice | PASS: both calls returned prefix `prism` and zero warnings; the mapping resolves to stable. | Ledger finalization (this commit) |
+| Stable `tasks check`, `tasks prime`, and `tasks ready` | PASS: no errors or warnings; one todo; `prism-82198e` is the sole ready task. | Ledger finalization (this commit) |
+| Stable post-gate Git status | PASS: clean at first-integrated head `0af1d0f9c170875d94105b17876ad1334758204f`. | Ledger finalization (this commit) |
