@@ -4,8 +4,10 @@
 2026-09-01. Stable `main` contains the integrated migration record
 `6eafb98c9a64bf1fed2b8d5b40fdc86c3a7f85e9`; the migration branch, worktree,
 and temporary registry were removed. Canonical registration is warning-free,
-and `prism-82198e` is the sole ready todo. Portfolio reconciliation and final
-completion recording belong to the extension plan and remain pending.
+and `prism-82198e` is the sole ready todo. At ledger finalization, portfolio
+reconciliation and final completion recording had not yet occurred. Reconciliation was
+subsequently reviewed as a no-op, and portfolio completion and cleanup landed in Tasks
+through `92587b97a4c17f28ede8175efc806b5ed361f15e`.
 
 ## Scope and evidence
 
@@ -180,8 +182,10 @@ Normal-registry verification at the final head returned no errors or warnings
 from `tasks check`; `tasks prime` reported prefix `prism`, one todo, and
 `prism-82198e` as the sole ready task with no warnings; `tasks ready` returned
 that same sole task with no warnings. No relative `tasks/projects.toml` exists.
-This repository migration is integrated; portfolio reconciliation and final
-completion recording are separate remaining plan work.
+This repository migration was integrated at ledger finalization; portfolio
+reconciliation and final completion recording were then separate plan work. They
+subsequently completed through the reviewed no-op reconciliation, exact-eight gate,
+portfolio fast-forward, and guarded cleanup recorded by Tasks.
 
 ## Verification
 
@@ -214,3 +218,4 @@ completion recording are separate remaining plan work.
 | Stable post-gate Git status | PASS: clean at first-integrated head `0af1d0f9c170875d94105b17876ad1334758204f`. | Ledger finalization (this commit) |
 | Second stable fast-forward and cleanup | PASS: stable advanced to `6eafb98c9a64bf1fed2b8d5b40fdc86c3a7f85e9`; the migration worktree, merged branch, guarded temporary registry, and pointer were removed; stable remained clean. | Post-cleanup review evidence |
 | Final normal-registry `tasks check`, `tasks prime`, and `tasks ready` | PASS: prefix `prism`; no errors or warnings; one todo; `prism-82198e` is the sole ready task. | Post-cleanup review evidence |
+| Subsequent portfolio reconciliation, completion, and cleanup | PASS: reconciliation was a reviewed no-op; the exact-eight gate completed warning-free; completion commit `ced9c4559b188c9f2af7e03d12d4fb44a18985bb` was fast-forwarded; and Tasks recorded guarded cleanup in `92587b97a4c17f28ede8175efc806b5ed361f15e`. | Central Tasks portfolio record |
