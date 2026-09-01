@@ -1,7 +1,9 @@
 # Prism Tasks migration ledger
 
-**Status:** migration in progress 2026-09-01; documentation audit complete and
-the Prism task store is not yet initialized.
+**Status:** migration phase A complete 2026-09-01; documentation is reconciled,
+the Prism task store is initialized with zero evidence-backed Prism tasks, and
+all pre-integration gates pass. Independent review and integration remain for
+the controller.
 
 ## Scope and evidence
 
@@ -35,6 +37,7 @@ reproduced by `npm ci` in the migration worktree.
 
 | Path | Classification | Reason |
 | --- | --- | --- |
+| `AGENTS.md` | `authority/current` | Current repository Tasks workflow guidance. |
 | `README.md` | `authority/current` | Current project and test entry point; matches the sole niri sink and native Noctalia v5 plugin. |
 | `docs/notes/noctalia-plugin-contract.md` | `authority/current` | Current v5 plugin contract; Node and Lua tests cover its identity, queue, presentation, and lifecycle claims. |
 | `docs/superpowers/plans/2026-08-15-prism-v1.md` | `historical/superseded` | Executed v1 procedure; two unchecked demo/system steps are explicitly historical and later acceptance supersedes them. |
@@ -49,9 +52,8 @@ reproduced by `npm ci` in the migration worktree.
 | `docs/superpowers/specs/2026-08-29-prism-debug-backdrop-design.md` | `authority/current` | Current debug sink contract; implementation, startup owner, and handoff are present and tested. |
 | `docs/plans/2026-08-31-prism-tasks-migration.md` | `active delivery` | Current audit and migration ledger. |
 
-The initial NUL-safe comparison covers exactly these 13 paths: 11 tracked
-documents, `README.md`, and this ledger. Root `AGENTS.md` is added and
-classified with the task store.
+The final NUL-safe comparison covers exactly these 14 paths: 11 original
+tracked documents, `README.md`, this ledger, and root `AGENTS.md`.
 
 ## Drift corrections
 
@@ -86,7 +88,13 @@ delivery blocker for completed Prism behavior. No dependency edge is deferred.
 
 | Command | Result | Commit containing the recorded result |
 | --- | --- | --- |
-| Baseline `npm ci && npm test` | PASS: 140 Node tests and the direct Lua plugin checks; zero failures. | Documentation commit (this commit) |
-| Baseline `/usr/lib/qt6/bin/qmllint integrations/debug-backdrop/shell.qml` | Exit 0 with only the documented non-creatable `PanelWindow` warning. | Documentation commit (this commit) |
-| Commit-ancestry checks for every status boundary named above | PASS; all named Prism, Material, niri-glass, and dotfiles commits are ancestors of their inspected heads. | Documentation commit (this commit) |
-| NUL-safe exact document coverage comparison | PASS before task initialization: 13 actual paths equal 13 classified paths. | Documentation commit (this commit) |
+| Baseline `npm ci && npm test` | PASS: 140 Node tests and the direct Lua plugin checks; zero failures. | `aa526843d43a33bf3ea6fee91adc2fd01b87ed0e` |
+| Baseline `/usr/lib/qt6/bin/qmllint integrations/debug-backdrop/shell.qml` | Exit 0 with only the documented non-creatable `PanelWindow` warning. | `aa526843d43a33bf3ea6fee91adc2fd01b87ed0e` |
+| Commit-ancestry checks for every status boundary named above | PASS; all named Prism, Material, niri-glass, and dotfiles commits are ancestors of their inspected heads. | `aa526843d43a33bf3ea6fee91adc2fd01b87ed0e` |
+| NUL-safe exact document coverage comparison | PASS before task initialization at 13 paths and after root guidance at 14 paths. | Tasks-store commit (this commit) |
+| Pre-initialization `tasks prime` | Expected failure with `no_project`; no project config existed. | Tasks-store commit (this commit) |
+| Exact-eight temporary registry initialization | PASS: `fam`, `atoms`, `beliefs`, `nodes`, `mind3`, `mind6`, `material`, and `prism`; every init returned zero warnings. | Tasks-store commit (this commit) |
+| Reviewed zero-task synthesis | PASS: candidate table has no `create` row and `tasks/` contains only CLI-created `.config.toml`; no `prism-*.md` exists. | Tasks-store commit (this commit) |
+| `tasks check`, `tasks prime`, and `tasks ready` under the exact-eight registry | PASS: zero errors and warnings; all status counts are zero and ready is empty. | Tasks-store commit (this commit) |
+| Final `npm ci && npm test` | PASS: 140 Node tests and direct Lua checks; zero failures. | Tasks-store commit (this commit) |
+| Final `/usr/lib/qt6/bin/qmllint integrations/debug-backdrop/shell.qml` | Exit 0 with only the documented non-creatable `PanelWindow` warning. | Tasks-store commit (this commit) |
