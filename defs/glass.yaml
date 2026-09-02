@@ -78,7 +78,7 @@
   type: bool
   default: false
   ui: {group: Glass Optics, control: toggle, label: Frosted backdrop, order: 370}
-  description: Refract the blurred backdrop for a frosted look; strength comes from niri's global blur block
+  description: Refract the blurred backdrop for a frosted look; niri's global blur block supplies blur strength, saturation, and noise
 - key: glass.jellyFlex
   type: float
   range: [0, 0.02]

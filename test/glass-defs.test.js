@@ -122,6 +122,14 @@ test('roughness restores its historical quick control', () => {
   assert.equal(def.ui.display, 'percent');
 });
 
+test('backdrop blur documents inherited global effects', () => {
+  const description = loadDefs(defsDir()).get('glass.backdropBlur').description;
+
+  assert.match(description, /global blur block/);
+  assert.match(description, /saturation/);
+  assert.match(description, /noise/);
+});
+
 test('terminals are matched by the exact live app ids', () => {
   const defs = loadDefs(defsDir());
   const apps = defs.get('terminal.apps');
