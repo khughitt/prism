@@ -17,6 +17,7 @@ binds:
   - {param: glass.distortion, liveness: reload}
   - {param: glass.distortionScale, liveness: reload}
   - {param: glass.anisotropicBlur, liveness: reload}
+  - {param: glass.roughness, liveness: reload}
   - {param: glass.backdropBlur, liveness: reload}
   - {param: glass.jellyFlex, liveness: reload}
   - {param: glass.jellyRipple, liveness: reload}

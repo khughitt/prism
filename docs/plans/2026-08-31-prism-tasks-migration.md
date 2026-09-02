@@ -69,6 +69,7 @@ tracked documents, `README.md`, this ledger, and root `AGENTS.md`.
 | The native-sink spec said Material burn-in was outstanding on `7f6e69c3`. | Material `7020776e` records about 13 hours, two cold starts, scoped journal review, and operator PASS; deployed source is `52f74f10`. | Status now records the 2026-08-30 PASS and package `26.04.r133.g52f74f10-1`. | Remaining future-tense burn-in text is historical procedure or a separately tracked Material acceptance outcome. |
 | The native-sink plan header called Task 6 burn-in in progress. | The same Material ancestry proves the outcome completed; unchecked plan steps are not completion evidence. | Header now records completion and labels its unchecked Task 6 steps historical. | No current Prism status surface calls daily-driver burn-in incomplete. |
 | The authoritative native parameter table omitted `glass.backdropBlur`. | Prism `d20111c` defines a default-false boolean, binds it reload-live, renders `backdrop-blur`, and tests exact native coverage; Material config and tests expose the same default and grammar. | Added the exact Prism-to-KDL mapping and default. | README and plugin note contain no conflicting parameter inventory; debug docs still preserve the exact-native-surface invariant. |
+| The migration grouped roughness with Material-only follow-ups and said it required no Prism delivery. | Material `material-c854bd` adds native prefiltered roughness, while Prism must restore the public value and emit its KDL node. | `prism-a1bf36` restores the definition, reload binding, exact KDL, and current native-sink contract. | Current definitions, sink docs, and tests now agree; historical native-v1 omissions remain historical. |
 | The debug-backdrop spec called its dependency not burned in and its ordered handoff pending. | Material burn-in passed; Prism `cacf232` and dotfiles `9562732` are ancestors and the documented suites are green. | Status and ordered handoff now record the completed evidence. | The debug implementation plan's pending wording is an executed historical instruction, not current status. |
 | The native-sink design Context described the old r95 package, static dotfiles ownership, legacy sink, preview, and paused rollout as current. | The design's current status and Material `7020776e` prove the generated control path and burn-in completed on the later package. | Historicalized the entire Context as design-time state. | No current Prism status surface presents the r95 rollout or retired ownership path as current. |
 | The v1 plan and initial ledger named Task 20 as an unchecked demo. | Task 18 Step 4 and Task 19 Step 2 are unchecked; all three Task 20 steps are checked. | Corrected both records and the candidate disposition. | The remaining unchecked-step references now name their actual task and step. |
@@ -92,10 +93,12 @@ tracked documents, `README.md`, this ledger, and root `AGENTS.md`.
 | Fold the glass role table and `noctalia-glass-sync` into Prism | The native material migration removed the legacy niri-glass sink and preview rather than extending their external role pipeline. | v1 design line 716; native-sink design and current integrations | Superseded by native material | — | — | — | `no task` | — |
 | Fix frost loss during interactive material-window drag | Material owns the renderer and preserved active investigation as `material-e88df7`; Prism already emits the accepted interface and does not block that work. | Material migration ledger and task store | Active in Material | — | — | — | `no Prism task`; no dependency | `material-e88df7` |
 | Verify default-off backdrop blur on physical DRM | Material owns the physical acceptance outcome as `material-ce3315`; Prism's default-false emitted contract is already implemented and tested. | Material migration ledger and task store | Todo in Material | — | — | — | `no Prism task`; no dependency | `material-ce3315` |
-| Material roughness and noise/saturation follow-ups | Material owns these as `material-c854bd` and `material-cad932`; neither requires unfinished Prism delivery. | Material migration ledger and task store | Todo/idea in Material | — | — | — | `no Prism task`; no dependency | `material-c854bd`, `material-cad932` |
+| Material roughness and noise/saturation follow-ups | Material owns renderer roughness as `material-c854bd`, but the accepted public control requires the matching Prism definition and native KDL. Noise/saturation remains a Material idea with no Prism contract. | Material roughness design and task store; `defs/glass.yaml`; `integrations/niri/**` | Roughness implemented by `prism-a1bf36`; noise/saturation remains external | `s` | `done` | Native roughness grammar | `created after this migration audit`; no Prism task for noise/saturation | `prism-a1bf36`, `material-c854bd`, `material-cad932` |
 
-Exactly one row is marked `create`. Every other v1 future-work entry is
-completed, superseded, externally owned, or lacks current delivery evidence.
+At the 2026-08-31 migration, exactly one row was marked `create`. The
+2026-09-02 roughness correction above records the later `prism-a1bf36`; every
+other v1 future-work entry remains completed, superseded, externally owned, or
+lacks current delivery evidence.
 
 ### Reviewed Ghostty task fields
 
@@ -111,8 +114,9 @@ completed, superseded, externally owned, or lacks current delivery evidence.
 
 ## Deferred foreign dependencies
 
-None. The Ghostty task has no Material blocker, and none of Material's four
-open outcomes blocks it. No dependency edge is deferred.
+The Ghostty task has no Material blocker. Prism roughness depends on the native
+grammar owned by `material-c854bd`; `prism-a1bf36` implements and tests the
+Prism side without broadening that renderer task.
 
 ## Independent review
 

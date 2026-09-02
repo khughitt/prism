@@ -23,6 +23,7 @@ test('shipped presentation has the exact Quick and advanced structure', () => {
     'terminal.background.opacity.active',
     'terminal.background.opacity.inactive',
     'compositor.gaps',
+    'glass.roughness',
     'glass.attenuationColor',
   ]);
   assert.deepEqual(groups.at(-1).params.map((param) => param.key), ['debug.backdrop']);
@@ -30,11 +31,11 @@ test('shipped presentation has the exact Quick and advanced structure', () => {
   const title = defs.find((def) => def.ui.group === 'Title');
   assert.equal(title.key, 'glass.enabled');
   assert.equal(title.ui.control, 'toggle');
-  assert.equal(renderedKeys.length, 20);
-  assert.equal(new Set(renderedKeys).size, 20);
+  assert.equal(renderedKeys.length, 21);
+  assert.equal(new Set(renderedKeys).size, 21);
   const allRenderedKeys = [title.key].concat(renderedKeys);
-  assert.equal(allRenderedKeys.length, 21);
-  assert.equal(new Set(allRenderedKeys).size, 21);
+  assert.equal(allRenderedKeys.length, 22);
+  assert.equal(new Set(allRenderedKeys).size, 22);
   assert.deepEqual(allRenderedKeys.slice().sort(), visible.map((def) => def.key).sort());
 });
 

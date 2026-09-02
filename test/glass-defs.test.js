@@ -15,6 +15,7 @@ const NATIVE = {
   'glass.distortion': { range: [0, 1], default: 0 },
   'glass.distortionScale': { range: [0.01, 2], default: 0.5 },
   'glass.anisotropicBlur': { range: [0, 1], default: 0 },
+  'glass.roughness': { range: [0, 1], default: 0.08 },
   'glass.backdropBlur': { default: false },
   'glass.jellyFlex': { range: [0, 0.02], default: 0.004 },
   'glass.jellyRipple': { range: [0, 0.5], default: 0.06 },
@@ -26,7 +27,7 @@ const NATIVE = {
 
 const REMOVED = [
   'glass.gridOverlay', 'glass.calibrate', 'glass.probeExposure',
-  'glass.roughness', 'glass.samples', 'glass.springDampingRatio',
+  'glass.samples', 'glass.springDampingRatio',
   'glass.springStiffness', 'glass.springEpsilon',
   'terminal.blur', 'terminal.saturation.active', 'terminal.saturation.inactive',
   'terminal.noise.active', 'terminal.noise.inactive',
@@ -111,6 +112,14 @@ test('the motion controls keep their normalized presentation', () => {
 
   assert.equal(defs.get('glass.jellyFlex').ui.display, 'normalized');
   assert.equal(defs.get('glass.jellyRipple').ui.display, 'normalized');
+});
+
+test('roughness restores its historical quick control', () => {
+  const def = loadDefs(defsDir()).get('glass.roughness');
+
+  assert.equal(def.ui.group, 'Quick');
+  assert.equal(def.ui.label, 'Glass blur');
+  assert.equal(def.ui.display, 'percent');
 });
 
 test('terminals are matched by the exact live app ids', () => {

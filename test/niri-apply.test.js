@@ -31,6 +31,8 @@ const PARAMS = {
   'glass.distortion': 0.32,
   'glass.distortionScale': 0.05,
   'glass.anisotropicBlur': 0,
+  'glass.roughness': 0.08,
+  'glass.backdropBlur': true,
   'glass.jellyFlex': 0.0038,
   'glass.jellyRipple': 0.15,
 };
@@ -128,6 +130,7 @@ test('a valid config survives a failed reload request so cold start can load it'
   assert.notEqual(inode(), before, 'the generated file must have been replaced');
 
   assert.match(fs.readFileSync(target, 'utf8'), /material "terminal-glass" \{/);
+  assert.match(fs.readFileSync(target, 'utf8'), /roughness 0\.08/);
   assert.deepEqual(calls(), ['validate', 'msg action load-config-file']);
 });
 

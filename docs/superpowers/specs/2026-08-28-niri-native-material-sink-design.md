@@ -7,7 +7,9 @@ sole compositor fragment and the manual Noctalia acceptance PASSed. The handoff
 was revised 2026-08-29 after a compositor panic on material removal, fixed in
 niri-material `7f6e69c3`. Material daily-driver burn-in passed 2026-08-30 on
 the later backdrop-blur package `26.04.r133.g52f74f10-1`; Prism `d20111c` adds
-the matching `glass.backdropBlur` control.
+the matching `glass.backdropBlur` control. On 2026-09-02, `prism-a1bf36`
+restored `glass.roughness` for the native prefilter contract implemented by
+Material `material-c854bd`.
 
 ## Context
 
@@ -138,6 +140,7 @@ liveness. The renderer maps them as follows:
 | `glass.distortion` | `distortion` | range `0..1` |
 | `glass.distortionScale` | `distortion scale=` | Prism range `0.01..2` |
 | `glass.anisotropicBlur` | `anisotropic-blur` | range `0..1` |
+| `glass.roughness` | `roughness` | range `0..1`, Prism default `0.08` |
 | `glass.backdropBlur` | `backdrop-blur` | boolean, default `false` |
 | `glass.jellyFlex` | `jelly-flex` | range `0..0.02` |
 | `glass.jellyRipple` | `jelly-ripple` | range `0..0.5` |
@@ -163,7 +166,6 @@ The canonical definitions delete parameters with no native consumer:
 - `glass.gridOverlay`
 - `glass.calibrate`
 - `glass.probeExposure`
-- `glass.roughness`
 - `glass.samples`
 - `glass.springDampingRatio`
 - `glass.springStiffness`
@@ -181,6 +183,11 @@ pass is superseded by the native material:
 Whole-window opacity remains compositor-owned. Kitty background opacity
 remains owned by the existing Kitty sink. No hidden definitions or orphan-key
 exceptions preserve the removed surface.
+
+Native niri defaults `roughness` to `0` so unmanaged configurations preserve
+the v1 appearance. Prism restores its historical `0.08` default and `Glass
+blur` percent control, and emits the value unconditionally beside the other
+glass optics.
 
 The remaining definitions use native units and descriptions. Thickness and
 attenuation distance are labeled in logical pixels; chromatic aberration,
@@ -205,6 +212,7 @@ and pins the accepted material appearance:
 | `glass.distortion` | `0.32` |
 | `glass.distortionScale` | `0.05` |
 | `glass.anisotropicBlur` | left at its default `0` |
+| `glass.roughness` | left at its Prism default `0.08` |
 | `glass.jellyFlex` | `0.0038` |
 | `glass.jellyRipple` | `0.15` |
 | `glass.paneLip` | `5` |
@@ -215,8 +223,9 @@ Existing compositor gaps, window opacity, and Kitty background-opacity
 values remain unchanged. The first accepted native generation must therefore
 be visually equivalent to the static daily-driver material instead of
 silently adopting the legacy values currently stored for an inactive sink.
-The renderer always emits `anisotropic-blur`, so the unoverridden default is
-still present as `anisotropic-blur 0` in generated KDL.
+The renderer always emits `anisotropic-blur` and `roughness`, so the
+unoverridden defaults remain present as `anisotropic-blur 0` and `roughness
+0.08` in generated KDL.
 
 ## Noctalia plugin
 

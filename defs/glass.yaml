@@ -68,6 +68,12 @@
   default: 0
   ui: {group: Glass Optics, control: slider, step: 0.01, label: Directional blur, order: 360, display: percent}
   description: Directional blur applied through the glass
+- key: glass.roughness
+  type: float
+  range: [0, 1]
+  default: 0.08
+  ui: {group: Quick, control: slider, step: 0.01, label: Glass blur, order: 40, display: percent}
+  description: Glass surface roughness
 - key: glass.backdropBlur
   type: bool
   default: false

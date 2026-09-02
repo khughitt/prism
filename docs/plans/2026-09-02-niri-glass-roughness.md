@@ -16,7 +16,8 @@ atomic commit.
 
 ## Global Constraints
 
-- Key `glass.roughness`, range `0..1`, Prism default `0.08`, percent display.
+- Key `glass.roughness`, range `0..1`, Prism default `0.08`, historical
+  Quick-group `Glass blur` presentation with percent display.
 - Emit native KDL `roughness`; no alias or compatibility layer.
 - Liveness is `reload`.
 - Correct the current native-sink design and task-migration claims in the same
@@ -35,6 +36,7 @@ atomic commit.
 - Modify: `test/glass-defs.test.js`
 - Modify: `test/niri-render.test.js`
 - Modify: `test/niri-apply.test.js`
+- Modify: `test/plugin-presentation.test.js`
 - Modify: `docs/superpowers/specs/2026-08-28-niri-native-material-sink-design.md`
 - Modify: `docs/plans/2026-08-31-prism-tasks-migration.md`
 
@@ -48,7 +50,8 @@ atomic commit.
 - [ ] **Step 1: Make the definition and exact-KDL tests fail**
 
 Add `glass.roughness` to `NATIVE`, remove it from `REMOVED`, add value `0.08`
-to the niri renderer/apply fixtures, and require exact line `roughness 0.08`.
+to the niri renderer/apply fixtures, require exact line `roughness 0.08`, and
+add the restored row to the exact Quick-group presentation contract.
 
 Run:
 
@@ -67,12 +70,11 @@ Append beside the other optics in `defs/glass.yaml`:
   type: float
   range: [0, 1]
   default: 0.08
-  ui: {group: Glass Optics, control: slider, step: 0.01, label: Glass blur, order: 370, display: percent}
-  description: Softness of detail refracted through the glass
+  ui: {group: Quick, control: slider, step: 0.01, label: Glass blur, order: 40, display: percent}
+  description: Glass surface roughness
 ```
 
-Shift `backdropBlur` to order `380`, add the reload binding after
-`glass.anisotropicBlur`, and emit:
+Add the reload binding after `glass.anisotropicBlur`, and emit:
 
 ```js
     `        roughness ${params['glass.roughness']}`,
@@ -103,6 +105,6 @@ Only current claims change; historical material-v1 statements remain.
 npm test
 tasks check
 git diff --check
-git add defs/glass.yaml integrations/niri/manifest.yaml integrations/niri/render.js test/glass-defs.test.js test/niri-render.test.js test/niri-apply.test.js docs/superpowers/specs/2026-08-28-niri-native-material-sink-design.md docs/plans/2026-08-31-prism-tasks-migration.md tasks/prism-*.md
+git add defs/glass.yaml integrations/niri/manifest.yaml integrations/niri/render.js test/glass-defs.test.js test/niri-render.test.js test/niri-apply.test.js test/plugin-presentation.test.js docs/superpowers/specs/2026-08-28-niri-native-material-sink-design.md docs/plans/2026-08-31-prism-tasks-migration.md tasks/prism-*.md
 git commit -m "feat(niri): restore glass roughness"
 ```
