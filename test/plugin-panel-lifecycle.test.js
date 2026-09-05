@@ -35,7 +35,7 @@ local function newHost()
     return {kind = kind, props = props or {}, children = children or {}}
   end
   local ui = {}
-  for _, kind in ipairs({"button", "column", "label", "row", "scroll", "select", "slider", "toggle"}) do
+  for _, kind in ipairs({"button", "column", "label", "row", "scroll", "select", "separator", "slider", "spacer", "toggle"}) do
     ui[kind] = function(props, children) return node(kind, props, children) end
   end
 

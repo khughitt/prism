@@ -23,7 +23,7 @@ test('v5 manifest declares the Prism widget and panel only', async () => {
   assert.deepEqual(manifest.panel, [{
     id: 'panel',
     entry: 'panel.luau',
-    width: 588,
+    width: 756,
     height: 798,
     placement: 'attached',
     position: 'auto',

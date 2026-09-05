@@ -28,6 +28,7 @@ const NATIVE = {
   'glass.inactive.attenuationDistance': { range: [1, 65535], default: 70 },
   'glass.inactive.chromaticAberration': { range: [0, 1], default: 0.08 },
   'glass.inactive.distortion': { range: [0, 1], default: 0.1 },
+  'glass.inactive.anisotropicBlur': { range: [0, 1], default: 0 },
 };
 
 const REMOVED = [
@@ -35,6 +36,7 @@ const REMOVED = [
   'glass.samples', 'glass.springDampingRatio',
   'glass.springStiffness', 'glass.springEpsilon',
   'terminal.blur', 'terminal.saturation.active', 'terminal.saturation.inactive',
+  'terminal.window.opacity.active', 'terminal.window.opacity.inactive',
   'terminal.noise.active', 'terminal.noise.inactive',
 ];
 
@@ -122,11 +124,12 @@ test('the motion controls keep their normalized presentation', () => {
   assert.equal(defs.get('glass.jellyRipple').ui.display, 'normalized');
 });
 
-test('roughness restores its historical quick control', () => {
+test('roughness is the focused blur of the focus matrix', () => {
   const def = loadDefs(defsDir()).get('glass.roughness');
 
-  assert.equal(def.ui.group, 'Quick');
-  assert.equal(def.ui.label, 'Glass blur');
+  assert.equal(def.ui.group, 'Focus');
+  assert.equal(def.ui.state, 'focused');
+  assert.equal(def.ui.row, 'Blur');
   assert.equal(def.ui.display, 'percent');
 });
 
@@ -156,15 +159,54 @@ test('visible numeric defaults lie on their slider grids', () => {
   }
 });
 
-test('the focus split and its inactive overrides live under Opacity & Focus', () => {
-  const defs = loadDefs(defsDir());
-  const keys = [
-    'glass.focusSplit', 'glass.inactive.roughness', 'glass.inactive.attenuationDistance',
-    'glass.inactive.chromaticAberration', 'glass.inactive.distortion',
-  ];
+const MATRIX = [
+  ['Terminal opacity', 'terminal.background.opacity.active', 'terminal.background.opacity.inactive'],
+  ['Blur', 'glass.roughness', 'glass.inactive.roughness'],
+  ['Tint distance', 'glass.attenuationDistance', 'glass.inactive.attenuationDistance'],
+  ['Fringing', 'glass.chromaticAberration', 'glass.inactive.chromaticAberration'],
+  ['Distortion', 'glass.distortion', 'glass.inactive.distortion'],
+  ['Directional blur', 'glass.anisotropicBlur', 'glass.inactive.anisotropicBlur'],
+];
 
-  for (const key of keys) assert.equal(defs.get(key).ui.group, 'Opacity & Focus', key);
-  assert.equal(defs.get('glass.focusSplit').ui.control, 'toggle');
-  assert.equal(defs.get('glass.inactive.roughness').ui.display, 'percent');
-  assert.equal(defs.get('glass.inactive.attenuationDistance').ui.scale, 'logarithmic');
+test('the focus matrix pairs every focused optic with an unfocused twin', () => {
+  const defs = loadDefs(defsDir());
+
+  for (const [row, focusedKey, unfocusedKey] of MATRIX) {
+    const focused = defs.get(focusedKey);
+    const unfocused = defs.get(unfocusedKey);
+    assert.equal(focused.ui.group, 'Focus', focusedKey);
+    assert.equal(unfocused.ui.group, 'Focus', unfocusedKey);
+    assert.equal(focused.ui.state, 'focused', focusedKey);
+    assert.equal(unfocused.ui.state, 'unfocused', unfocusedKey);
+    assert.equal(focused.ui.row, row);
+    assert.equal(unfocused.ui.row, row);
+    assert.equal(unfocused.ui.order, focused.ui.order + 1, row);
+    assert.deepEqual(unfocused.range, focused.range, row);
+    assert.equal(unfocused.ui.step, focused.ui.step, row);
+    assert.equal(unfocused.ui.display, focused.ui.display, row);
+    assert.equal(unfocused.ui.scale, focused.ui.scale, row);
+    assert.equal(unfocused.ui.unit, focused.ui.unit, row);
+  }
+  const split = defs.get('glass.focusSplit');
+  assert.equal(split.ui.group, 'Focus');
+  assert.equal(split.ui.control, 'toggle');
+  assert.equal(split.ui.header, true);
+  assert.equal(split.ui.state, undefined);
+  assert.equal(defs.get('glass.backdropBlur').ui.header, undefined);
+  const stateful = [...defs.values()].filter((def) => def.ui.state !== undefined).map((def) => def.key);
+  assert.deepEqual(stateful.sort(), MATRIX.flatMap(([, a, b]) => [a, b]).sort());
+});
+
+test('everything outside the matrix is shared glass', () => {
+  const defs = loadDefs(defsDir());
+  const shared = [...defs.values()]
+    .filter((def) => def.ui.control !== 'none' && def.ui.group !== 'Focus' && def.ui.group !== 'Title')
+    .map((def) => def.key);
+
+  assert.deepEqual(shared.sort(), [
+    'compositor.gaps', 'glass.attenuationColor', 'glass.ior', 'glass.thickness',
+    'glass.distortionScale', 'glass.backdropBlur', 'glass.paneLip', 'glass.paneShiftX',
+    'glass.paneShiftY', 'glass.jellyFlex', 'glass.jellyRipple',
+  ].sort());
+  for (const key of shared) assert.equal(defs.get(key).ui.group, 'Glass', key);
 });

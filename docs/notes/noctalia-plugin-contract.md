@@ -69,12 +69,22 @@ metadata.
 
 ## Declarative presentation
 
-The presentation module defines the panel's stable grouping contract:
+The presentation module defines the panel's stable layout contract:
 
 - `Title` contains exactly one visible toggle and supplies the title control.
-- `Quick` is the first, always-open body group.
-- Other groups retain expansion state, show modified counts, and expose group
-  resets.
+- Every other `ui.group` is a section, ordered by first appearance in
+  `ui.order`. Sections are always open; there is no Quick group and no
+  expansion state. Each section shows a reset that clears every modified
+  parameter it contains.
+- A toggle flagged `ui.header` is its section's header control (the Focus
+  section's focus-state toggle). A group may carry at most one.
+- Sliders flagged `ui.state` (`focused` or `unfocused`) and `ui.row` pair into
+  a matrix row: one label, the focused control on the left, the unfocused on
+  the right, under `Focused` / `Unfocused` column labels. A row with a missing
+  or duplicated state, or one that spans sections, is a model error.
+- Every other visible parameter is a single row: label, an info button whose
+  tooltip carries the description, the formatted value, the native control,
+  and a per-parameter reset.
 - Toggle, select, slider, color, and reset actions update the local displayed
   value before their required write boundary.
 - Rows whose parameter writes on release are marked `On release`; a parameter
@@ -82,6 +92,11 @@ The presentation module defines the panel's stable grouping contract:
 - Numeric controls preserve canonical values while supporting raw, percent,
   normalized, linear, and logarithmic display metadata, and render their
   formatted value beside the native slider.
+
+The shipped panel is two sections: `Glass`, the parameters both focus states
+share, and `Focus`, the matrix of terminal opacity, blur, tint distance,
+fringing, distortion, and directional blur. `debug.backdrop` is CLI-only and
+does not appear.
 
 The widget and panel use Noctalia's native v5 entries and controls. No
 additional runtime dependency or compatibility layer is part of this

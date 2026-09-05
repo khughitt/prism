@@ -5,47 +5,46 @@ import test from 'node:test';
 import { loadDefs } from '../src/defs.js';
 import { defsDir } from '../src/paths.js';
 
-test('shipped presentation has the exact Quick and advanced structure', () => {
+test('shipped presentation is a Glass section and a Focus matrix', () => {
   const defs = [...loadDefs(defsDir()).values()];
   const visible = defs.filter((def) => def.ui.control !== 'none');
   const ordered = visible.slice().sort((a, b) => a.ui.order - b.ui.order);
-  const groups = [
-    { name: 'Quick', params: ordered.filter((def) => def.ui.group === 'Quick') },
-    ...['Opacity & Focus', 'Glass Shape', 'Glass Optics', 'Motion', 'Debug']
-      .map((name) => ({ name, params: ordered.filter((def) => def.ui.group === name) })),
-  ];
-  assert.deepEqual(groups.map((group) => group.name), [
-    'Quick', 'Opacity & Focus', 'Glass Shape', 'Glass Optics', 'Motion', 'Debug',
-  ]);
-  // The Diagnostics group had no native consumer and is gone with its members.
-  assert.equal(visible.some((def) => def.ui.group === 'Diagnostics'), false);
-  assert.deepEqual(groups[0].params.map((param) => param.key), [
-    'terminal.background.opacity.active',
-    'terminal.background.opacity.inactive',
-    'compositor.gaps',
-    'glass.roughness',
-    'glass.attenuationColor',
-  ]);
-  assert.deepEqual(groups[1].params.map((param) => param.key), [
-    'terminal.window.opacity.active',
-    'terminal.window.opacity.inactive',
-    'glass.focusSplit',
-    'glass.inactive.roughness',
-    'glass.inactive.attenuationDistance',
-    'glass.inactive.chromaticAberration',
-    'glass.inactive.distortion',
-  ]);
-  assert.deepEqual(groups.at(-1).params.map((param) => param.key), ['debug.backdrop']);
-  const renderedKeys = groups.flatMap((group) => group.params.map((param) => param.key));
   const title = defs.find((def) => def.ui.group === 'Title');
   assert.equal(title.key, 'glass.enabled');
   assert.equal(title.ui.control, 'toggle');
-  assert.equal(renderedKeys.length, 26);
-  assert.equal(new Set(renderedKeys).size, 26);
-  const allRenderedKeys = [title.key].concat(renderedKeys);
-  assert.equal(allRenderedKeys.length, 27);
-  assert.equal(new Set(allRenderedKeys).size, 27);
-  assert.deepEqual(allRenderedKeys.slice().sort(), visible.map((def) => def.key).sort());
+
+  const glass = ordered.filter((def) => def.ui.group === 'Glass').map((def) => def.key);
+  assert.deepEqual(glass, [
+    'compositor.gaps',
+    'glass.attenuationColor',
+    'glass.ior',
+    'glass.thickness',
+    'glass.distortionScale',
+    'glass.backdropBlur',
+    'glass.paneLip',
+    'glass.paneShiftX',
+    'glass.paneShiftY',
+    'glass.jellyFlex',
+    'glass.jellyRipple',
+  ]);
+
+  const focus = ordered.filter((def) => def.ui.group === 'Focus');
+  assert.equal(focus[0].key, 'glass.focusSplit');
+  const rows = [];
+  for (const def of focus.slice(1)) {
+    if (def.ui.state === 'focused') rows.push({ row: def.ui.row, focused: def.key });
+    else assert.equal(rows.at(-1).row, def.ui.row, `${def.key} follows its focused twin`), rows.at(-1).unfocused = def.key;
+  }
+  assert.deepEqual(rows.map((row) => row.row), [
+    'Terminal opacity', 'Blur', 'Tint distance', 'Fringing', 'Distortion', 'Directional blur',
+  ]);
+  assert.ok(rows.every((row) => row.focused && row.unfocused));
+
+  const groups = new Set(visible.map((def) => def.ui.group));
+  assert.deepEqual([...groups].sort(), ['Focus', 'Glass', 'Title']);
+  assert.equal(visible.length, 1 + glass.length + 1 + rows.length * 2);
+  assert.ok(ordered.filter((def) => def.ui.group === 'Glass').every((def) => def.ui.order < focus[0].ui.order),
+    'the Glass section precedes the Focus section');
 });
 
 test('shipped defs declare exact value presentation', () => {

@@ -12,7 +12,6 @@ local state = {
   refreshAfterDrag = false,
   drag = nil,
   sampleElapsedMs = 0,
-  expandedGroups = {},
   renderedSliderCorrection = nil,
 }
 
@@ -85,8 +84,8 @@ local function validateModel(model)
   end
   local titleOk, titleError = pcall(Presentation.titleParam, model.params)
   if not titleOk then return tostring(titleError) end
-  local groupsOk, groupsError = pcall(Presentation.groupParams, model.params)
-  if not groupsOk then return tostring(groupsError) end
+  local sectionsOk, sectionsError = pcall(Presentation.sections, model.params)
+  if not sectionsOk then return tostring(sectionsError) end
   return nil
 end
 
@@ -326,56 +325,99 @@ local function nativeControl(param, available)
   })
 end
 
-local function parameterRow(param)
-  local available = param.effectiveDrag ~= nil
-  local releaseHint = param.effectiveDrag == "release"
-  local formattedValue = param.ui.control == "slider" and Presentation.formatValue(param.value, param) or nil
-
-  return ui.column({key = param.key, gap = 4, paddingV = 4}, {
-    ui.row({gap = 8, align = "center"}, {
-      ui.column({gap = 2, flexGrow = 1}, {
-        ui.label({text = param.ui.label or param.key, fontWeight = "medium"}),
-        ui.label({text = param.description or "", fontSize = 12, color = "on_surface_variant", maxLines = 2}),
-      }),
-      ui.label({text = formattedValue or "", fontSize = 12, color = "on_surface_variant", visible = formattedValue ~= nil}),
-      nativeControl(param, available),
-      resetButton(param, available),
-    }),
-    ui.row({gap = 8, align = "center", justify = "end"}, {
-      ui.label({text = "On release", fontSize = 11, color = "on_surface_variant", visible = releaseHint}),
-      ui.label({text = "Unavailable", fontSize = 11, color = "error", visible = param.effectiveDrag == nil}),
-    }),
+local function infoButton(param)
+  return ui.button({
+    glyph = "info-circle",
+    variant = "ghost",
+    controlSize = "sm",
+    tooltip = param.description or param.key,
   })
 end
 
-local function appendGroup(children, group)
-  local expanded = group.name == "Quick" or state.expandedGroups[group.name] == true
-  local modifiedCount = Presentation.modifiedCount(group.params)
-  if group.name ~= "Quick" then
-    children[#children + 1] = ui.row({gap = 8, align = "center"}, {
-      ui.button({
-        text = group.name .. (modifiedCount > 0 and " (" .. modifiedCount .. ")" or ""),
-        glyph = expanded and "chevron-down" or "chevron-right",
-        variant = "ghost",
-        contentAlign = "start",
-        flexGrow = 1,
-        onClick = function()
-          state.expandedGroups[group.name] = not expanded
-          render()
-        end,
-      }),
-      ui.button({
-        glyph = "restore",
-        variant = "ghost",
-        controlSize = "sm",
-        tooltip = "Reset group",
-        visible = modifiedCount > 0,
-        onClick = function() resetGroup(group.params) end,
-      }),
-    })
+local function stateHints(param)
+  local releaseHint = param.effectiveDrag == "release"
+  return ui.row({gap = 8, align = "center", justify = "end"}, {
+    ui.label({text = "On release", fontSize = 11, color = "on_surface_variant", visible = releaseHint}),
+    ui.label({text = "Unavailable", fontSize = 11, color = "error", visible = param.effectiveDrag == nil}),
+  })
+end
+
+-- A control cell: formatted value, native control, and reset. Shared by the
+-- single rows and both halves of a matrix row.
+local function controlCell(param, grow)
+  local available = param.effectiveDrag ~= nil
+  local formattedValue = param.ui.control == "slider" and Presentation.formatValue(param.value, param) or nil
+  return ui.row({key = param.key, gap = 6, align = "center", flexGrow = grow}, {
+    ui.label({text = formattedValue or "", fontSize = 12, color = "on_surface_variant", minWidth = 44, textAlign = "end", visible = formattedValue ~= nil}),
+    nativeControl(param, available),
+    resetButton(param, available),
+  })
+end
+
+local function singleRow(param)
+  return ui.column({key = param.key .. ":row", gap = 2, paddingV = 2}, {
+    ui.row({gap = 8, align = "center"}, {
+      ui.label({text = param.ui.label or param.key, fontWeight = "medium", minWidth = 150}),
+      infoButton(param),
+      ui.spacer({flexGrow = 1}),
+      controlCell(param, 0),
+    }),
+    stateHints(param),
+  })
+end
+
+local function matrixRow(row)
+  return ui.column({key = row.row .. ":row", gap = 2, paddingV = 2}, {
+    ui.row({gap = 8, align = "center"}, {
+      ui.label({text = row.row, fontWeight = "medium", minWidth = 130}),
+      infoButton(row.focused),
+      controlCell(row.focused, 1),
+      ui.separator({orientation = "vertical", spacing = 4}),
+      controlCell(row.unfocused, 1),
+    }),
+    stateHints(row.focused),
+  })
+end
+
+local function matrixHeader()
+  return ui.row({gap = 8, align = "center"}, {
+    ui.label({text = "", minWidth = 130}),
+    ui.label({text = "", minWidth = 32}),
+    ui.label({text = "Focused", fontSize = 12, color = "on_surface_variant", textAlign = "center", flexGrow = 1}),
+    ui.label({text = "Unfocused", fontSize = 12, color = "on_surface_variant", textAlign = "center", flexGrow = 1}),
+  })
+end
+
+local function appendSection(children, section)
+  local sectionParams = Presentation.sectionParams(section)
+  local modifiedCount = Presentation.modifiedCount(sectionParams)
+  local toggle = section.toggle
+  children[#children + 1] = ui.separator({spacing = 6})
+  children[#children + 1] = ui.row({gap = 8, align = "center"}, {
+    ui.label({text = section.name, fontSize = 15, fontWeight = "bold", flexGrow = 1}),
+    ui.label({text = toggle and (toggle.ui.label or toggle.key) or "", fontSize = 12, color = "on_surface_variant", visible = toggle ~= nil}),
+    toggle and ui.toggle({
+      checked = toggle.value == true,
+      enabled = toggle.effectiveDrag ~= nil,
+      onChange = function(value) writeParam(toggle, value == true or value == "true") end,
+    }) or ui.spacer({}),
+    ui.button({
+      glyph = "restore",
+      variant = "ghost",
+      controlSize = "sm",
+      tooltip = "Reset section" .. (modifiedCount > 0 and " (" .. modifiedCount .. ")" or ""),
+      visible = modifiedCount > 0,
+      onClick = function() resetGroup(sectionParams) end,
+    }),
+  })
+  local hasMatrix = false
+  for _, row in ipairs(section.rows) do
+    if row.param == nil then hasMatrix = true end
   end
-  if not expanded then return end
-  for _, param in ipairs(group.params) do children[#children + 1] = parameterRow(param) end
+  if hasMatrix then children[#children + 1] = matrixHeader() end
+  for _, row in ipairs(section.rows) do
+    children[#children + 1] = row.param and singleRow(row.param) or matrixRow(row)
+  end
 end
 
 render = function()
@@ -399,9 +441,9 @@ render = function()
         onChange = function(value) writeParam(title, value == true or value == "true") end,
       }),
     })
-    for _, group in ipairs(Presentation.groupParams(state.model.params)) do appendGroup(children, group) end
+    for _, section in ipairs(Presentation.sections(state.model.params)) do appendSection(children, section) end
   end
-  panel.render(ui.scroll({flexGrow = 1, gap = 8, padding = 16}, children))
+  panel.render(ui.scroll({flexGrow = 1, gap = 6, padding = 16}, children))
 end
 
 function onOpen(context) refresh() end

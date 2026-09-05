@@ -146,32 +146,66 @@ function M.titleParam(params)
   return matches[1]
 end
 
-function M.groupParams(params)
+-- Sections are the panel's body: one per ui.group in order of first
+-- appearance by ui.order. A toggle flagged ui.header is the section's header
+-- control. Sliders with ui.state pair into matrix rows keyed by ui.row
+-- (focused left, unfocused right); everything else is a single-parameter row.
+function M.sections(params)
   local visible = {}
   for _, param in ipairs(params) do
     if param.ui.control ~= "none" and param.ui.group ~= "Title" then visible[#visible + 1] = param end
   end
   table.sort(visible, function(a, b) return a.ui.order < b.ui.order end)
 
-  local groups, byName = {}, {}
+  local sections, byName, rowsByName = {}, {}, {}
   for _, param in ipairs(visible) do
-    local group = byName[param.ui.group]
-    if not group then
-      group = { name = param.ui.group, params = {} }
-      byName[param.ui.group] = group
-      groups[#groups + 1] = group
+    local section = byName[param.ui.group]
+    if not section then
+      section = { name = param.ui.group, toggle = nil, rows = {} }
+      byName[param.ui.group] = section
+      sections[#sections + 1] = section
     end
-    group.params[#group.params + 1] = param
+    if param.ui.state ~= nil then
+      local row = rowsByName[param.ui.row]
+      if not row then
+        row = { row = param.ui.row, section = section.name }
+        rowsByName[param.ui.row] = row
+        section.rows[#section.rows + 1] = row
+      elseif row.section ~= section.name then
+        error("row " .. param.ui.row .. " spans sections " .. row.section .. " and " .. section.name)
+      end
+      if row[param.ui.state] ~= nil then
+        error("row " .. param.ui.row .. " has two " .. param.ui.state .. " parameters")
+      end
+      row[param.ui.state] = param
+    elseif param.ui.header == true then
+      if section.toggle ~= nil then error("section " .. section.name .. " has two header toggles") end
+      section.toggle = param
+    else
+      section.rows[#section.rows + 1] = { param = param }
+    end
   end
+  for _, row in pairs(rowsByName) do
+    for _, state in ipairs({ "focused", "unfocused" }) do
+      if row[state] == nil then error("row " .. row.row .. " has no " .. state .. " parameter") end
+    end
+    row.section = nil
+  end
+  return sections
+end
 
-  for index, group in ipairs(groups) do
-    if group.name == "Quick" and index ~= 1 then
-      table.remove(groups, index)
-      table.insert(groups, 1, group)
-      break
+function M.sectionParams(section)
+  local list = {}
+  if section.toggle then list[#list + 1] = section.toggle end
+  for _, row in ipairs(section.rows) do
+    if row.param then
+      list[#list + 1] = row.param
+    else
+      list[#list + 1] = row.focused
+      list[#list + 1] = row.unfocused
     end
   end
-  return groups
+  return list
 end
 
 function M.modifiedCount(params)

@@ -4,7 +4,7 @@ import { loadDefs } from '../src/defs.js';
 import { loadManifests } from '../src/manifest.js';
 import { defsDir, integrationsDir } from '../src/paths.js';
 
-test('debug.backdrop is one live toggle outside the native glass grammar', () => {
+test('debug.backdrop is one live CLI-only switch outside the native glass grammar', () => {
   const defs = loadDefs(defsDir());
   const manifests = loadManifests(integrationsDir(), defs);
   const def = defs.get('debug.backdrop');
@@ -14,8 +14,8 @@ test('debug.backdrop is one live toggle outside the native glass grammar', () =>
     {
       type: 'bool',
       default: false,
-      ui: { group: 'Debug', control: 'toggle', label: 'Debug backdrop', order: 500 },
-      description: 'Cover the wallpaper with a checkerboard so refraction is visible',
+      ui: { group: 'Debug', control: 'none' },
+      description: 'Cover the wallpaper with a checkerboard so refraction is visible (CLI only)',
     },
   );
 

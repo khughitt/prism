@@ -1,122 +1,133 @@
+# Title
 - key: glass.enabled
   type: bool
   default: true
   ui: {group: Title, control: toggle, label: Glass, order: 0}
   description: Assign the native niri glass material to terminal windows
-- key: glass.paneLip
-  type: int
-  range: [0, 64]
-  default: 6
-  ui: {group: Glass Shape, control: slider, step: 1, label: Edge bevel, order: 200, unit: px}
-  description: Width the glass slab is inflated beyond the window on each edge
-- key: glass.paneShiftX
-  type: int
-  range: [-64, 64]
-  default: 6
-  ui: {group: Glass Shape, control: slider, step: 1, label: Horizontal pane offset, order: 210, unit: px}
-  description: Horizontal shift of the glass slab
-- key: glass.paneShiftY
-  type: int
-  range: [-64, 64]
-  default: 6
-  ui: {group: Glass Shape, control: slider, step: 1, label: Vertical pane offset, order: 220, unit: px}
-  description: Vertical shift of the glass slab
+
+# Glass: shared by focused and unfocused terminals
+- key: glass.attenuationColor
+  type: color
+  default: '#dfe8ff'
+  ui: {group: Glass, control: color, label: Tint, order: 20}
+  description: Color absorbed by the glass volume
 - key: glass.ior
   type: float
   range: [1, 3]
   default: 1.5
-  ui: {group: Glass Optics, control: slider, step: 0.02, label: Refraction, order: 300}
+  ui: {group: Glass, control: slider, step: 0.02, label: Refraction, order: 30}
   description: Glass index of refraction
 - key: glass.thickness
   type: float
   range: [0, 200]
   default: 20
-  ui: {group: Glass Optics, control: slider, step: 0.1, label: Glass depth, order: 310, unit: px}
+  ui: {group: Glass, control: slider, step: 0.1, label: Depth, order: 40, unit: px}
   description: Depth of the glass slab; higher values bend and tint farther
-- key: glass.attenuationColor
-  type: color
-  default: '#dfe8ff'
-  ui: {group: Quick, control: color, label: Glass tint, order: 60}
-  description: Color absorbed by the glass volume
-- key: glass.attenuationDistance
-  type: float
-  range: [1, 65535]
-  default: 60
-  ui: {group: Glass Optics, control: slider, step: 1, label: Tint distance, order: 320, scale: logarithmic, unit: px}
-  description: Absorption distance; higher values preserve the wallpaper color farther through the glass
-- key: glass.chromaticAberration
-  type: float
-  range: [0, 1]
-  default: 0
-  ui: {group: Glass Optics, control: slider, step: 0.02, label: Color fringing, order: 330}
-  description: Color-channel separation at refracted edges
-- key: glass.distortion
-  type: float
-  range: [0, 1]
-  default: 0
-  ui: {group: Glass Optics, control: slider, step: 0.02, label: Distortion, order: 340}
-  description: Strength of the glass distortion effect
 - key: glass.distortionScale
   type: float
   range: [0.01, 2]
   default: 0.5
-  ui: {group: Glass Optics, control: slider, step: 0.01, label: Distortion detail, order: 350, scale: logarithmic}
+  ui: {group: Glass, control: slider, step: 0.01, label: Distortion detail, order: 50, scale: logarithmic}
   description: Distortion frequency; higher values create finer variation
-- key: glass.anisotropicBlur
-  type: float
-  range: [0, 1]
-  default: 0
-  ui: {group: Glass Optics, control: slider, step: 0.01, label: Directional blur, order: 360, display: percent}
-  description: Directional blur applied through the glass
-- key: glass.roughness
-  type: float
-  range: [0, 1]
-  default: 0.08
-  ui: {group: Quick, control: slider, step: 0.01, label: Glass blur, order: 40, display: percent}
-  description: Glass surface roughness
 - key: glass.backdropBlur
   type: bool
   default: false
-  ui: {group: Glass Optics, control: toggle, label: Frosted backdrop, order: 370}
+  ui: {group: Glass, control: toggle, label: Frosted backdrop, order: 60}
   description: Refract the blurred backdrop for a frosted look; niri's global blur block supplies blur strength, saturation, and noise
+- key: glass.paneLip
+  type: int
+  range: [0, 64]
+  default: 6
+  ui: {group: Glass, control: slider, step: 1, label: Edge bevel, order: 70, unit: px}
+  description: Width the glass slab is inflated beyond the window on each edge
+- key: glass.paneShiftX
+  type: int
+  range: [-64, 64]
+  default: 6
+  ui: {group: Glass, control: slider, step: 1, label: Pane offset X, order: 80, unit: px}
+  description: Horizontal shift of the glass slab
+- key: glass.paneShiftY
+  type: int
+  range: [-64, 64]
+  default: 6
+  ui: {group: Glass, control: slider, step: 1, label: Pane offset Y, order: 90, unit: px}
+  description: Vertical shift of the glass slab
 - key: glass.jellyFlex
   type: float
   range: [0, 0.02]
   default: 0.004
-  ui: {group: Motion, control: slider, step: 0.0002, label: Flex, order: 400, display: normalized}
+  ui: {group: Glass, control: slider, step: 0.0002, label: Flex, order: 100, display: normalized}
   description: Maximum flex of the jelly pane motion
 - key: glass.jellyRipple
   type: float
   range: [0, 0.5]
   default: 0.06
-  ui: {group: Motion, control: slider, step: 0.005, label: Ripple, order: 410, display: normalized}
+  ui: {group: Glass, control: slider, step: 0.005, label: Ripple, order: 110, display: normalized}
   description: Ripple strength of the jelly pane motion
+
+# Focus: one row per optic, a focused and an unfocused value each
 - key: glass.focusSplit
   type: bool
   default: true
-  ui: {group: Opacity & Focus, control: toggle, label: Focus-state glass, order: 120}
+  ui: {group: Focus, control: toggle, label: Focus-state glass, order: 200, header: true}
   description: Give unfocused terminals their own glass material; off keeps one material and never resets the pane motion on focus
+- key: glass.roughness
+  type: float
+  range: [0, 1]
+  default: 0.08
+  ui: {group: Focus, control: slider, step: 0.01, label: Blur, order: 220, display: percent, state: focused, row: Blur}
+  description: Glass surface roughness
 - key: glass.inactive.roughness
   type: float
   range: [0, 1]
   default: 0.5
-  ui: {group: Opacity & Focus, control: slider, step: 0.01, label: Unfocused glass blur, order: 130, display: percent}
+  ui: {group: Focus, control: slider, step: 0.01, label: Unfocused blur, order: 221, display: percent, state: unfocused, row: Blur}
   description: Glass surface roughness of unfocused terminals
+- key: glass.attenuationDistance
+  type: float
+  range: [1, 65535]
+  default: 60
+  ui: {group: Focus, control: slider, step: 1, label: Tint distance, order: 230, scale: logarithmic, unit: px, state: focused, row: Tint distance}
+  description: Absorption distance; higher values preserve the wallpaper color farther through the glass
 - key: glass.inactive.attenuationDistance
   type: float
   range: [1, 65535]
   default: 70
-  ui: {group: Opacity & Focus, control: slider, step: 1, label: Unfocused tint distance, order: 140, scale: logarithmic, unit: px}
+  ui: {group: Focus, control: slider, step: 1, label: Unfocused tint distance, order: 231, scale: logarithmic, unit: px, state: unfocused, row: Tint distance}
   description: Absorption distance of unfocused terminals; higher values preserve the wallpaper color farther through the glass
+- key: glass.chromaticAberration
+  type: float
+  range: [0, 1]
+  default: 0
+  ui: {group: Focus, control: slider, step: 0.02, label: Fringing, order: 240, state: focused, row: Fringing}
+  description: Color-channel separation at refracted edges
 - key: glass.inactive.chromaticAberration
   type: float
   range: [0, 1]
   default: 0.08
-  ui: {group: Opacity & Focus, control: slider, step: 0.02, label: Unfocused color fringing, order: 150}
+  ui: {group: Focus, control: slider, step: 0.02, label: Unfocused fringing, order: 241, state: unfocused, row: Fringing}
   description: Color-channel separation at refracted edges of unfocused terminals
+- key: glass.distortion
+  type: float
+  range: [0, 1]
+  default: 0
+  ui: {group: Focus, control: slider, step: 0.02, label: Distortion, order: 250, state: focused, row: Distortion}
+  description: Strength of the glass distortion effect
 - key: glass.inactive.distortion
   type: float
   range: [0, 1]
   default: 0.1
-  ui: {group: Opacity & Focus, control: slider, step: 0.02, label: Unfocused distortion, order: 160}
+  ui: {group: Focus, control: slider, step: 0.02, label: Unfocused distortion, order: 251, state: unfocused, row: Distortion}
   description: Strength of the glass distortion effect on unfocused terminals
+- key: glass.anisotropicBlur
+  type: float
+  range: [0, 1]
+  default: 0
+  ui: {group: Focus, control: slider, step: 0.01, label: Directional blur, order: 260, display: percent, state: focused, row: Directional blur}
+  description: Directional blur applied through the glass
+- key: glass.inactive.anisotropicBlur
+  type: float
+  range: [0, 1]
+  default: 0
+  ui: {group: Focus, control: slider, step: 0.01, label: Unfocused directional blur, order: 261, display: percent, state: unfocused, row: Directional blur}
+  description: Directional blur applied through the glass of unfocused terminals

@@ -22,7 +22,7 @@ fs.writeFileSync(path.join(integ, 'slowsink', 'manifest.yaml'),
 // param no other test touches, so it never perturbs the fan-out call counts.
 fs.mkdirSync(path.join(integ, 'gensink'));
 fs.writeFileSync(path.join(integ, 'gensink', 'manifest.yaml'),
-  'sink: gensink\nbinds:\n  - {param: terminal.window.opacity.active, liveness: reload}\ngenerates: [gen.out]\n');
+  'sink: gensink\nbinds:\n  - {param: glass.paneLip, liveness: reload}\ngenerates: [gen.out]\n');
 process.env.PRISM_INTEGRATIONS_DIR = integ;
 
 const cli = await import('../src/cli.js');
@@ -194,7 +194,7 @@ test('apply targets only validated sink names and passes every bound target key'
     ['terminal.background.opacity.inactive'],
   ]]);
 
-  fs.writeFileSync(valuesPath(), 'terminal.window.opacity.active: 0.5\n');
+  fs.writeFileSync(valuesPath(), 'glass.paneLip: 10\n');
   const before = fs.readFileSync(resolvedPath(), 'utf8');
   const missing = await runCaptured(['apply', 'missing-sink'], { runner: () => {} });
   assert.notEqual(missing.code, 0);
@@ -267,7 +267,7 @@ test('doctor: a sink whose snapshot drifted is stale', async () => {
   // A pulled values.yaml changes a canonical value with no fan-out behind it —
   // the only way to reach the stale branch, since a failed apply is reported as
   // failed and never gets as far as comparing snapshots.
-  fs.writeFileSync(valuesPath(), 'terminal.window.opacity.active: 0.5\n');   // default is 0.98
+  fs.writeFileSync(valuesPath(), 'glass.paneLip: 10\n');   // default is 6
   let out = '';
   const code = await cli.run(['doctor'], { runner: () => {}, print: (s) => { out += s; } });
   assert.equal(code, 1);
@@ -312,7 +312,7 @@ test('orphan keys: unset digs out, every other verb fails loudly', async () => {
     ['list'],
     ['describe', '--json'],
     ['apply'],
-    ['set', 'terminal.window.opacity.active', '0.5'],
+    ['set', 'glass.paneLip', '10'],
   ]) {
     const failure = await runCaptured(argv, { runner: () => {}, print: () => {} });
     assert.notEqual(failure.code, 0);
@@ -335,7 +335,7 @@ test('orphans block mutation; orphan unsets remove exactly one per invocation', 
   const resolvedBefore = fs.readFileSync(resolvedPath(), 'utf8');
   fs.writeFileSync(valuesPath(), 'first.orphan: 1\nsecond.orphan: 2\n');
 
-  const blocked = await runCaptured(['set', 'terminal.window.opacity.active', '0.5'], { runner: () => {} });
+  const blocked = await runCaptured(['set', 'glass.paneLip', '10'], { runner: () => {} });
   assert.notEqual(blocked.code, 0);
   assert.match(blocked.stderr, /unknown param first\.orphan in values/);
   assert.deepEqual(fs.readFileSync(valuesPath(), 'utf8'), 'first.orphan: 1\nsecond.orphan: 2\n');
@@ -353,8 +353,8 @@ test('orphans block mutation; orphan unsets remove exactly one per invocation', 
 
 test('every public verb enforces its required and stray arguments', async () => {
   const invalid = [
-    ['unset'], ['unset', 'terminal.window.opacity.active', 'extra'],
-    ['get'], ['get', 'terminal.window.opacity.active', 'extra'],
+    ['unset'], ['unset', 'compositor.gaps', 'extra'],
+    ['get'], ['get', 'compositor.gaps', 'extra'],
     ['list', 'extra'],
     ['describe'], ['describe', '--json', 'extra'], ['describe', '--yaml'],
     ['doctor', 'extra'],

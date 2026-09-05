@@ -3,8 +3,6 @@ generates: [prism.kdl]
 binds:
   - {param: compositor.gaps, liveness: reload}
   - {param: terminal.apps, liveness: reload}
-  - {param: terminal.window.opacity.active, liveness: reload}
-  - {param: terminal.window.opacity.inactive, liveness: reload}
   - {param: glass.enabled, liveness: reload}
   - {param: glass.paneLip, liveness: reload}
   - {param: glass.paneShiftX, liveness: reload}
@@ -26,3 +24,4 @@ binds:
   - {param: glass.inactive.attenuationDistance, liveness: reload}
   - {param: glass.inactive.chromaticAberration, liveness: reload}
   - {param: glass.inactive.distortion, liveness: reload}
+  - {param: glass.inactive.anisotropicBlur, liveness: reload}

@@ -17,8 +17,6 @@ const DIAGNOSTIC = `error: material "terminal-glass": ${OFFENDING}: value must b
 const PARAMS = {
   'compositor.gaps': 54,
   'terminal.apps': ['kitty'],
-  'terminal.window.opacity.active': 0.93,
-  'terminal.window.opacity.inactive': 0.76,
   'glass.enabled': true,
   'glass.paneLip': 5,
   'glass.paneShiftX': 4,

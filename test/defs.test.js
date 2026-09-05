@@ -20,6 +20,36 @@ test('shipped defs load and default the opacity pair to a fully transparent term
   assert.equal(defs.get('compositor.gaps').type, 'int');
 });
 
+test('whole-window opacity is gone and the debug backdrop is CLI-only', () => {
+  const defs = loadDefs(defsDir());
+  assert.equal(defs.has('terminal.window.opacity.active'), false);
+  assert.equal(defs.has('terminal.window.opacity.inactive'), false);
+  assert.equal(defs.get('debug.backdrop').ui.control, 'none');
+});
+
+test('ui.state and ui.row come together, on sliders only', () => {
+  const base = (ui) => `- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: g, control: slider, step: 0.1, label: B, order: 1, ${ui}}, description: d}\n`;
+  assert.throws(() => loadDefs(dirWith(base('state: focused'))), /ui.state requires ui.row/);
+  assert.throws(() => loadDefs(dirWith(base('row: Blur'))), /ui.row requires ui.state/);
+  assert.throws(() => loadDefs(dirWith(base('state: active, row: Blur'))), /ui.state must be one of focused\|unfocused/);
+  assert.throws(() => loadDefs(dirWith(
+    `- {key: a.b, type: bool, default: false, ui: {group: g, control: toggle, label: B, order: 1, state: focused, row: Blur}, description: d}\n`,
+  )), /ui.state and ui.row are slider-only/);
+  const defs = loadDefs(dirWith(base('state: unfocused, row: Blur')));
+  assert.equal(defs.get('a.b').ui.state, 'unfocused');
+  assert.equal(defs.get('a.b').ui.row, 'Blur');
+});
+
+test('ui.header marks at most one toggle per group', () => {
+  const toggle = (key, ui) => `- {key: ${key}, type: bool, default: false, ui: {group: g, control: toggle, label: B, order: ${key.length}, ${ui}}, description: d}\n`;
+  assert.throws(() => loadDefs(dirWith(toggle('a.b', 'header: false'))), /ui.header must be true/);
+  assert.throws(() => loadDefs(dirWith(
+    `- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: g, control: slider, step: 0.1, label: B, order: 1, header: true}, description: d}\n`,
+  )), /ui.header is toggle-only/);
+  assert.throws(() => loadDefs(dirWith(toggle('a.b', 'header: true') + toggle('a.cd', 'header: true'))), /two header toggles/);
+  assert.equal(loadDefs(dirWith(toggle('a.b', 'header: true'))).get('a.b').ui.header, true);
+});
+
 test('enum without values is rejected', () => {
   const dir = dirWith(`- {key: a.b, type: enum, default: x, ui: {group: g, control: select, label: B, order: 1}, description: d}\n`);
   assert.throws(() => loadDefs(dir), /enum requires values/);

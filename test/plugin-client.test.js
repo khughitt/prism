@@ -105,22 +105,26 @@ test('slider release recognizes canonical keyboard and wheel steps before final 
 
 test('slider rows render the formatted local value beside the native control', async () => {
   const source = await readEntry('panel.luau');
-  const parameterRow = source.slice(source.indexOf('local function parameterRow'), source.indexOf('local function appendGroup'));
+  const parameterRow = source.slice(source.indexOf('local function controlCell'), source.indexOf('local function singleRow'));
 
   assert.match(parameterRow, /local formattedValue = param\.ui\.control == "slider" and Presentation\.formatValue\(param\.value, param\) or nil/);
   assert.match(parameterRow, /ui\.label\(\{text = formattedValue or ""[\s\S]*visible = formattedValue ~= nil\}\)[\s\S]*nativeControl\(param, available\)/);
   assert.match(source, /local function beginDrag[\s\S]*updateParam\(param, canonical\)[\s\S]*render\(\)/);
 });
 
-test('presentation grouping keeps Quick open and exposes group and row resets', async () => {
+test('presentation renders every section open with a header toggle, matrix rows, and resets', async () => {
   const source = await readEntry('panel.luau');
 
   assert.match(source, /Presentation\.titleParam\(state\.model\.params\)/);
-  assert.match(source, /Presentation\.groupParams\(state\.model\.params\)/);
-  assert.match(source, /group\.name == "Quick" or state\.expandedGroups\[group\.name\] == true/);
-  assert.match(source, /Presentation\.modifiedCount\(group\.params\)/);
+  assert.match(source, /Presentation\.sections\(state\.model\.params\)/);
+  assert.doesNotMatch(source, /expandedGroups|groupParams|Quick/);
+  assert.match(source, /Presentation\.modifiedCount\(sectionParams\)/);
+  assert.match(source, /local function matrixRow\(row\)[\s\S]*controlCell\(row\.focused, 1\)[\s\S]*controlCell\(row\.unfocused, 1\)/);
+  assert.match(source, /text = "Focused"[\s\S]*text = "Unfocused"/);
   assert.match(source, /local function resetGroup[\s\S]*if param\.modified then[\s\S]*unsetParam\(param\)/);
   assert.match(source, /tooltip = "Reset to default"/);
+  assert.match(source, /tooltip = "Reset section"/);
+  assert.match(source, /tooltip = param\.description or param\.key/);
 });
 
 test('the isolated preview surface is gone, leaving live terminals as feedback', async () => {

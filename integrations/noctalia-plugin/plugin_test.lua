@@ -36,22 +36,54 @@ local function drain(state)
   end
 end
 
--- Presentation golden vectors.
+-- Presentation golden vectors: sections in order of first appearance, one
+-- optional header toggle per section, and paired matrix rows.
 local params = {
   { key = "title.enabled", ui = { control = "toggle", group = "Title", order = 0 } },
-  { key = "b.two", ui = { control = "toggle", group = "Beta", order = 20 } },
-  { key = "q.one", ui = { control = "slider", group = "Quick", order = 50 } },
-  { key = "a.one", ui = { control = "toggle", group = "Alpha", order = 10 } },
+  { key = "f.split", ui = { control = "toggle", group = "Focus", order = 200, header = true } },
+  { key = "g.one", ui = { control = "slider", group = "Glass", order = 10 } },
+  { key = "f.blur.unfocused", ui = { control = "slider", group = "Focus", order = 221, state = "unfocused", row = "Blur" } },
   { key = "hidden.one", ui = { control = "none", group = "CLI" } },
-  { key = "b.one", ui = { control = "toggle", group = "Beta", order = 15 } },
+  { key = "f.blur.focused", ui = { control = "slider", group = "Focus", order = 220, state = "focused", row = "Blur" } },
+  { key = "g.two", ui = { control = "toggle", group = "Glass", order = 5 } },
+  { key = "f.tint.focused", ui = { control = "slider", group = "Focus", order = 230, state = "focused", row = "Tint" } },
+  { key = "f.tint.unfocused", ui = { control = "slider", group = "Focus", order = 231, state = "unfocused", row = "Tint" } },
 }
 equal(Presentation.titleParam(params).key, "title.enabled")
-local groups = Presentation.groupParams(params)
-equal(#groups, 3)
-equal(groups[1], { name = "Quick", params = { params[3] } })
-equal(groups[2], { name = "Alpha", params = { params[4] } })
-equal(groups[3], { name = "Beta", params = { params[6], params[2] } })
+local sections = Presentation.sections(params)
+equal(#sections, 2)
+equal(sections[1].name, "Glass")
+equal(sections[1].toggle, nil)
+equal(sections[1].rows, { { param = params[7] }, { param = params[3] } })
+equal(sections[2].name, "Focus")
+equal(sections[2].toggle, params[2])
+equal(sections[2].rows, {
+  { row = "Blur", focused = params[6], unfocused = params[4] },
+  { row = "Tint", focused = params[8], unfocused = params[9] },
+})
+equal(Presentation.sectionParams(sections[2]), { params[2], params[6], params[4], params[8], params[9] })
 equal(Presentation.modifiedCount({ { modified = true }, { modified = false }, { modified = true } }), 2)
+
+local function fails(candidate, pattern)
+  local ok, err = pcall(Presentation.sections, candidate)
+  assert(not ok and tostring(err):find(pattern, 1, true), "expected failure containing " .. pattern .. ", got " .. tostring(err))
+end
+fails({
+  { key = "t", ui = { control = "toggle", group = "Title", order = 0 } },
+  { key = "a", ui = { control = "slider", group = "Focus", order = 1, state = "focused", row = "Blur" } },
+}, "Blur has no unfocused")
+fails({
+  { key = "a", ui = { control = "slider", group = "Focus", order = 1, state = "focused", row = "Blur" } },
+  { key = "b", ui = { control = "slider", group = "Focus", order = 2, state = "focused", row = "Blur" } },
+}, "Blur has two focused")
+fails({
+  { key = "a", ui = { control = "slider", group = "Focus", order = 1, state = "focused", row = "Blur" } },
+  { key = "b", ui = { control = "slider", group = "Glass", order = 2, state = "unfocused", row = "Blur" } },
+}, "Blur spans sections")
+fails({
+  { key = "a", ui = { control = "toggle", group = "Focus", order = 1, header = true } },
+  { key = "b", ui = { control = "toggle", group = "Focus", order = 2, header = true } },
+}, "Focus has two header toggles")
 
 -- The panel must give its scroll root the host-owned viewport height both
 -- before and after the asynchronous model arrives.
@@ -66,7 +98,22 @@ local model = { params = {
   {
     key = "compositor.gaps", value = 24, default = 24, modified = false,
     effectiveDrag = "release", range = { 0, 128 },
-    ui = { control = "slider", group = "Quick", order = 10, step = 1, label = "Gaps" },
+    ui = { control = "slider", group = "Glass", order = 10, step = 1, label = "Gaps" },
+  },
+  {
+    key = "glass.focusSplit", value = true, default = true, modified = false,
+    effectiveDrag = "release",
+    ui = { control = "toggle", group = "Focus", order = 200, label = "Focus-state glass", header = true },
+  },
+  {
+    key = "glass.roughness", value = 0.2, default = 0.08, modified = true,
+    effectiveDrag = "release", range = { 0, 1 },
+    ui = { control = "slider", group = "Focus", order = 220, step = 0.01, label = "Blur", display = "percent", state = "focused", row = "Blur" },
+  },
+  {
+    key = "glass.inactive.roughness", value = 0.5, default = 0.5, modified = false,
+    effectiveDrag = "release", range = { 0, 1 },
+    ui = { control = "slider", group = "Focus", order = 221, step = 0.01, label = "Unfocused blur", display = "percent", state = "unfocused", row = "Blur" },
   },
 } }
 
@@ -94,6 +141,25 @@ equal(rendered.kind, "scroll")
 equal(rendered.props.flexGrow, 1, "loading scroll must fill the panel viewport")
 described({ exitCode = 0, stdout = "{}" })
 equal(rendered.props.flexGrow, 1, "populated scroll must fill the panel viewport")
+
+-- The populated tree carries both sections, the Focus header toggle, the
+-- matrix column labels, and one slider per matrix cell.
+local function collect(tree, kind, found)
+  found = found or {}
+  if type(tree) ~= "table" then return found end
+  if tree.kind == kind then found[#found + 1] = tree end
+  for _, child in ipairs(tree.children or {}) do collect(child, kind, found) end
+  return found
+end
+local labels = {}
+for _, label in ipairs(collect(rendered, "label")) do labels[label.props.text or ""] = true end
+assert(labels["Glass"] and labels["Focus"], "section headers missing")
+assert(labels["Focused"] and labels["Unfocused"], "matrix column labels missing")
+assert(labels["Blur"] and labels["Gaps"], "row labels missing")
+local sliderKeys = {}
+for _, slider in ipairs(collect(rendered, "slider")) do sliderKeys[slider.props.key] = true end
+assert(sliderKeys["glass.roughness:slider"] and sliderKeys["glass.inactive.roughness:slider"], "matrix sliders missing")
+equal(#collect(rendered, "toggle"), 2, "title and Focus header toggles")
 
 equal(Presentation.stepPrecision(0.000001), 6)
 equal(Presentation.snapValue(100.04, { 0.1, 200 }, 0.1), 100)

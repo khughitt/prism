@@ -13,8 +13,9 @@ entry = "widget.luau"
 [[panel]]
 id = "panel"
 entry = "panel.luau"
-# Preserve the v4 560x760 preferred size at dotfiles' tracked 1.05 UI scale.
-width = 588
+# Wide enough for the Focus matrix's two sliders per row at dotfiles' tracked
+# 1.05 UI scale; the height keeps the v4 760 preferred size.
+width = 756
 height = 798
 placement = "attached"
 position = "auto"

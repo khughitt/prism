@@ -6,8 +6,10 @@ backends. The `niri` sink is the sole compositor integration: it generates one
 material and its terminal assignment. Terminal background opacity defaults to
 zero so the glass is the only surface behind the text; with the focus split on,
 unfocused terminals get a second material whose roughness, tint distance,
-fringing, and distortion are the `glass.inactive.*` overrides. The Noctalia
-integration is a native v5 plugin under `integrations/noctalia-plugin/`.
+fringing, distortion, and directional blur are the `glass.inactive.*`
+overrides. The Noctalia integration is a native v5 plugin under
+`integrations/noctalia-plugin/`; its panel is a shared `Glass` section and a
+`Focus` matrix with a focused and an unfocused slider per optic.
 
 ## Development prerequisites
 

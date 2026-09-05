@@ -6,10 +6,12 @@ export const TYPES = ['float', 'int', 'bool', 'color', 'enum', 'string', 'list']
 export const CONTROLS = ['slider', 'toggle', 'color', 'select', 'none'];
 export const DISPLAYS = ['raw', 'percent', 'normalized'];
 export const SCALES = ['linear', 'logarithmic'];
+export const STATES = ['focused', 'unfocused'];
 
 export function loadDefs(dir) {
   const defs = new Map();
   const orders = new Map();
+  const headers = new Map();
   const files = fs.readdirSync(dir).filter((f) => f.endsWith('.yaml')).sort();
   if (files.length === 0) throw new Error(`no def files in ${dir}`);
   for (const f of files) {
@@ -22,6 +24,12 @@ export function loadDefs(dir) {
         throw new Error(`duplicate ui.order ${def.ui.order}: ${orders.get(def.ui.order)} and ${def.key}`);
       }
       if (def.ui.control !== 'none') orders.set(def.ui.order, def.key);
+      if (def.ui.header === true) {
+        if (headers.has(def.ui.group)) {
+          throw new Error(`group ${def.ui.group} has two header toggles: ${headers.get(def.ui.group)} and ${def.key}`);
+        }
+        headers.set(def.ui.group, def.key);
+      }
       defs.set(def.key, def);
     }
   }
@@ -53,6 +61,18 @@ export function validateDef(def, src) {
   }
   if (!slider && ['display', 'scale', 'unit'].some(has)) {
     fail('ui.display, ui.scale, and ui.unit are slider-only');
+  }
+  if (has('state') !== has('row')) {
+    fail(has('state') ? 'ui.state requires ui.row' : 'ui.row requires ui.state');
+  }
+  if (has('header')) {
+    if (def.ui.control !== 'toggle') fail('ui.header is toggle-only');
+    if (def.ui.header !== true) fail('ui.header must be true when present');
+  }
+  if (has('state')) {
+    if (!slider) fail('ui.state and ui.row are slider-only');
+    if (!STATES.includes(def.ui.state)) fail(`ui.state must be one of ${STATES.join('|')}`);
+    if (typeof def.ui.row !== 'string' || def.ui.row.trim() === '') fail('ui.row must be a non-empty string');
   }
   if (slider) {
     if (!DISPLAYS.includes(display)) fail(`ui.display must be one of ${DISPLAYS.join('|')}`);
