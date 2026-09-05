@@ -75,7 +75,7 @@ The presentation module defines the panel's stable layout contract:
 - Every other `ui.group` is a section, ordered by first appearance in
   `ui.order`. Sections are always open; there is no Quick group and no
   expansion state. Each section shows a reset that clears every modified
-  parameter it contains.
+  parameter it contains, dim while the section already holds its defaults.
 - A toggle flagged `ui.header` is its section's header control (the Focus
   section's focus-state toggle). A group may carry at most one.
 - Sliders flagged `ui.state` (`focused` or `unfocused`) and `ui.row` pair into
@@ -85,10 +85,18 @@ The presentation module defines the panel's stable layout contract:
 - Every other visible parameter is a single row: label, an info button whose
   tooltip carries the description, the formatted value, the native control,
   and a per-parameter reset.
+- Row geometry is fixed and independent of parameter state. The label, info
+  button, and formatted value occupy reserved widths, the two matrix cells
+  divide the remaining span evenly, and the `Focused` / `Unfocused` titles
+  reserve the same leading span as the rows they head. Every reset stays in
+  the tree, dim when its parameter already holds its default and full strength
+  when it is modified; nothing appears or disappears as a value crosses its
+  default.
 - Toggle, select, slider, color, and reset actions update the local displayed
   value before their required write boundary.
-- Rows whose parameter writes on release are marked `On release`; a parameter
-  with no consumer at all is marked `Unavailable` and its control disabled.
+- Only exceptional rows carry a marker: `Live` for a parameter that writes
+  while dragging, `Unavailable` for one with no consumer at all, whose control
+  is also disabled. Writing on release is the norm and is left unmarked.
 - Numeric controls preserve canonical values while supporting raw, percent,
   normalized, linear, and logarithmic display metadata, and render their
   formatted value beside the native slider.
