@@ -29,6 +29,10 @@ const NATIVE = {
   'glass.inactive.chromaticAberration': { range: [0, 1], default: 0.08 },
   'glass.inactive.distortion': { range: [0, 1], default: 0.1 },
   'glass.inactive.anisotropicBlur': { range: [0, 1], default: 0 },
+  'glass.noise': { range: [0, 1], default: 0 },
+  'glass.inactive.noise': { range: [0, 1], default: 0.02 },
+  'glass.saturation': { range: [0, 3], default: 1 },
+  'glass.inactive.saturation': { range: [0, 3], default: 0.85 },
 };
 
 const REMOVED = [
@@ -133,12 +137,23 @@ test('roughness is the focused blur of the focus matrix', () => {
   assert.equal(def.ui.display, 'percent');
 });
 
-test('backdrop blur documents inherited global effects', () => {
+test('backdrop blur no longer claims to supply noise or saturation', () => {
   const description = loadDefs(defsDir()).get('glass.backdropBlur').description;
 
   assert.match(description, /global blur block/);
-  assert.match(description, /saturation/);
-  assert.match(description, /noise/);
+  assert.doesNotMatch(description, /saturation/);
+  assert.doesNotMatch(description, /noise/);
+});
+
+test('noise and saturation are focus-matrix optics, not blur inheritance', () => {
+  const defs = loadDefs(defsDir());
+  for (const key of ['glass.noise', 'glass.inactive.noise']) {
+    assert.equal(defs.get(key).ui.display, 'percent', key);
+  }
+  for (const key of ['glass.saturation', 'glass.inactive.saturation']) {
+    assert.notEqual(defs.get(key).ui.display, 'percent', key);
+    assert.doesNotMatch(defs.get(key).description, /blur block/, key);
+  }
 });
 
 test('terminals are matched by the exact live app ids', () => {
@@ -166,6 +181,8 @@ const MATRIX = [
   ['Fringing', 'glass.chromaticAberration', 'glass.inactive.chromaticAberration'],
   ['Distortion', 'glass.distortion', 'glass.inactive.distortion'],
   ['Directional blur', 'glass.anisotropicBlur', 'glass.inactive.anisotropicBlur'],
+  ['Noise', 'glass.noise', 'glass.inactive.noise'],
+  ['Saturation', 'glass.saturation', 'glass.inactive.saturation'],
 ];
 
 test('the focus matrix pairs every focused optic with an unfocused twin', () => {

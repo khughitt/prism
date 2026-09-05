@@ -37,6 +37,7 @@ test('shipped presentation is a Glass section and a Focus matrix', () => {
   }
   assert.deepEqual(rows.map((row) => row.row), [
     'Terminal opacity', 'Blur', 'Tint distance', 'Fringing', 'Distortion', 'Directional blur',
+    'Noise', 'Saturation',
   ]);
   assert.ok(rows.every((row) => row.focused && row.unfocused));
 

@@ -27,6 +27,10 @@ const resolved = { params: {
   'glass.inactive.chromaticAberration': 0.08,
   'glass.inactive.distortion': 0.1,
   'glass.inactive.anisotropicBlur': 0.02,
+  'glass.noise': 0,
+  'glass.saturation': 1,
+  'glass.inactive.noise': 0.02,
+  'glass.inactive.saturation': 0.85,
 } };
 
 const with_ = (overrides) => ({ params: { ...resolved.params, ...overrides } });
@@ -47,6 +51,8 @@ material "terminal-glass" {
         distortion 0.32 scale=0.05
         anisotropic-blur 0
         roughness 0.08
+        noise 0
+        saturation 1
         backdrop-blur true
         jelly-flex 0.0038
         jelly-ripple 0.15
@@ -65,6 +71,8 @@ material "terminal-glass-inactive" {
         distortion 0.1 scale=0.05
         anisotropic-blur 0.02
         roughness 0.5
+        noise 0.02
+        saturation 0.85
         backdrop-blur true
         jelly-flex 0.0038
         jelly-ripple 0.15
@@ -108,6 +116,8 @@ material "terminal-glass" {
         distortion 0.32 scale=0.05
         anisotropic-blur 0
         roughness 0.08
+        noise 0
+        saturation 1
         backdrop-blur true
         jelly-flex 0.0038
         jelly-ripple 0.15
@@ -138,7 +148,7 @@ test('the focus split renders an inactive material that inherits every other gla
   ]) assert.ok(inactive.includes(`        ${line}\n`), `inherited line missing: ${line}`);
   for (const line of [
     'attenuation-distance 70', 'chromatic-aberration 0.08', 'distortion 0.1 scale=0.05',
-    'anisotropic-blur 0.02', 'roughness 0.5',
+    'anisotropic-blur 0.02', 'roughness 0.5', 'noise 0.02', 'saturation 0.85',
   ]) assert.ok(inactive.includes(`        ${line}\n`), `override missing: ${line}`);
 });
 
@@ -172,7 +182,7 @@ test('the material definition carries every supported native parameter', () => {
   for (const line of [
     'ior 1.38', 'thickness 32', 'attenuation-color "#bbc7db"',
     'attenuation-distance 178', 'chromatic-aberration 0.68',
-    'distortion 0.32 scale=0.05', 'anisotropic-blur 0', 'roughness 0.08',
+    'distortion 0.32 scale=0.05', 'anisotropic-blur 0', 'roughness 0.08', 'noise 0', 'saturation 1',
     'backdrop-blur true',
     'jelly-flex 0.0038',
     'jelly-ripple 0.15', 'bevel 9', 'offset-x 4', 'offset-y 4',
@@ -250,6 +260,14 @@ test('a literal containing a raw-string terminator selects a longer delimiter', 
 
   const deeper = renderNiriFragment(with_({ 'terminal.apps': ['we"##ird'] }));
   assert.ok(deeper.includes('r###"^(we"##ird)$"###'), deeper);
+});
+
+test('noise and saturation are written even when they are neutral', () => {
+  const kdl = renderNiriFragment(with_({ 'glass.noise': 0, 'glass.saturation': 1, 'glass.focusSplit': false }));
+
+  // Prism owns both values; it never relies on niri's inheritance from the
+  // global blur block, so the neutral pair is written, not omitted.
+  assert.match(kdl, /        roughness 0.08\n        noise 0\n        saturation 1\n        backdrop-blur true\n/);
 });
 
 test('fragment is stable', () => {

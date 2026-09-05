@@ -33,6 +33,8 @@ const PARAMS = {
   'glass.backdropBlur': true,
   'glass.jellyFlex': 0.0038,
   'glass.jellyRipple': 0.15,
+  'glass.noise': 0,
+  'glass.saturation': 1,
 };
 
 // A fake niri whose two subcommands fail independently, and which records the

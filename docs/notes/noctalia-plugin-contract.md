@@ -95,8 +95,8 @@ The presentation module defines the panel's stable layout contract:
 
 The shipped panel is two sections: `Glass`, the parameters both focus states
 share, and `Focus`, the matrix of terminal opacity, blur, tint distance,
-fringing, distortion, and directional blur. `debug.backdrop` is CLI-only and
-does not appear.
+fringing, distortion, directional blur, noise, and saturation.
+`debug.backdrop` is CLI-only and does not appear.
 
 The widget and panel use Noctalia's native v5 entries and controls. No
 additional runtime dependency or compatibility layer is part of this
