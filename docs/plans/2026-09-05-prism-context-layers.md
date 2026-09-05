@@ -1323,8 +1323,10 @@ test('an unchanged slot is still validated: re-activating a broken context fails
   assert.notEqual(again.code, 0);
   assert.match(again.stderr, /glass\.ior: 99 outside range/);
 
-  writeContext('wallpaper', 'abc12345', { source: '/walls/a.jpg', values: { 'glass.ior': 99 } });
-  writeActive({ wallpaper: { id: 'abc12345', path: '/walls/a.jpg' } });
+  const { wallpaperId } = await import('../src/contexts.js');
+  const id = wallpaperId('/walls/a.jpg');
+  writeContext('wallpaper', id, { source: '/walls/a.jpg', values: { 'glass.ior': 99 } });
+  writeActive({ wallpaper: { id, path: '/walls/a.jpg' } });
   const repeat = await runCaptured(['context', 'wallpaper', '/walls/a.jpg']);
   assert.notEqual(repeat.code, 0);
   assert.match(repeat.stderr, /glass\.ior: 99 outside range/);
@@ -1342,12 +1344,30 @@ test('a refused delete keeps both the file and the slots', async () => {
   assert.notEqual(readContext('profile', 'dusk'), null, 'file preserved');
   assert.deepEqual(readActive(), { wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' }, 'slots preserved');
 });
+
+test('delete recovers from malformed active context files with a full fan-out', async () => {
+  const { contextPath } = await import('../src/contexts.js');
+  fs.writeFileSync(valuesPath(), 'terminal.background.opacity.inactive: 0.6\n');
+  for (const contents of ['- invalid\n- shape\n', 'glass.ior: [\n']) {
+    writeContext('profile', 'broken', { source: null, values: {} });
+    fs.writeFileSync(contextPath('profile', 'broken'), contents);
+    writeActive({ profile: 'broken' });
+    const calls = [];
+    assert.equal(await cli.run(['context', 'delete', 'profile', 'broken'],
+      { runner: (m, f, keys) => calls.push([m.sink, keys]) }), 0);
+    assert.equal(readContext('profile', 'broken'), null);
+    assert.deepEqual(readActive(), {});
+    assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['terminal.background.opacity.inactive'], 0.6);
+    assert.deepEqual(calls.map(([sink]) => sink).sort(), ['fastsink', 'slowsink']);
+    for (const [, keys] of calls) assert.deepEqual(keys, ['terminal.background.opacity.inactive']);
+  }
+});
 ```
 
 - [ ] **Step 3: Run the file to verify the new tests fail**
 
 Run: `node --test test/context-cli.test.js`
-Expected: the eight new tests FAIL with the `usage: prism context` error.
+Expected: the nine new tests FAIL with the `usage: prism context` error.
 
 - [ ] **Step 4: Add `changeSlots` and the four verbs**
 
@@ -1425,7 +1445,6 @@ Add the cases before `default:`:
 
     case 'delete': {
       const { kind, name } = kindAndName(rest, 'delete');
-      requireContext(kind, name);   // a missing file fails before any state is touched
       return changeSlots({ defs, manifests, runner }, (active) => {
         const next = { ...active };
         if (activeName(active, kind) === name) delete next[kind];
@@ -1441,7 +1460,7 @@ Add the cases before `default:`:
     }
 ```
 
-`readActive` inside `changeSlots` throws on a malformed `active.json`; that is a hand-edit failure and stays loud. The "previous cannot resolve" recovery covers a missing or invalid context file, which is what `loadStore` throws on. Deleting an inactive context while the active state is broken is refused too, because the resulting state is the same broken state; recover with `deactivate` first.
+`readActive` inside `changeSlots` throws on a malformed `active.json`; that is a hand-edit failure and stays loud. The "previous cannot resolve" recovery covers a missing or invalid context file, which is what `loadStore` throws on. Delete does not require the old file to parse: `deleteContext` checks existence when it unlinks under the lock, after validation and before any slots are written. Deleting an inactive context while the active state is broken is refused too, because the resulting state is the same broken state; recover with `deactivate` first.
 
 - [ ] **Step 5: Run the suite**
 
