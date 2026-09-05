@@ -11,6 +11,23 @@ fringing, distortion, directional blur, noise, and saturation are the
 `integrations/noctalia-plugin/`; its panel is a shared `Glass` section and a
 `Focus` matrix with a focused and an unfocused slider per optic.
 
+## Configuration layout
+
+```
+~/.config/prism/values.yaml                  # base values, dotfiles-tracked per host
+~/.config/prism/contexts/profile/<name>.yaml # named profiles, full snapshots
+~/.config/prism/contexts/wallpaper/<id>.yaml # per-wallpaper overrides, `_source` names the wallpaper
+~/.local/state/prism/active.json             # which contexts are active (runtime state)
+~/.local/state/prism/resolved.json           # the bus: every parameter's effective value
+```
+
+Values resolve as defaults, then base, then the active wallpaper context, then
+the active profile. `prism set` writes into the topmost active context;
+`prism set --base` writes the base file. `prism context` manages contexts:
+`list`, `show`, `save`, `activate`, `deactivate`, `delete`, and `wallpaper
+<path>`, the last being what a Noctalia `wallpaper_changed` hook calls. Design:
+`docs/specs/2026-09-05-prism-context-layers-design.md`.
+
 ## Development prerequisites
 
 - Node.js 20 or newer

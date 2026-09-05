@@ -1,7 +1,7 @@
 # Prism context layers: design
 
 **Date:** 2026-09-05
-**Status:** accepted 2026-09-05 after one review round, not yet implemented
+**Status:** implemented on `feat/prism-6fd864` at 4bd0ebb, suite passing
 **Task:** `prism-6fd864`, first piece of goal `prism-2f0b4b`
 
 ## Context

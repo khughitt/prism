@@ -313,6 +313,13 @@ repairs it. The panel avoids the race for its own writes by serializing to one
 in-flight subprocess (Section 4); nothing serializes a human racing the panel
 from a shell, and nothing needs to.
 
+### Context layers (2026-09-05)
+
+Resolution is no longer only default then override. Named profile and
+per-wallpaper contexts layer over `values.yaml`, one active per kind, and
+`set` writes into the topmost active one. `resolved.json` is unchanged.
+See `../../specs/2026-09-05-prism-context-layers-design.md`.
+
 ## Section 3: Sink adapters and fan-out
 
 **Execution model: apply-on-write, no watchers in v1.** The CLI is the only
