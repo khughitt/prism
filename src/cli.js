@@ -3,12 +3,12 @@ import { isDeepStrictEqual } from 'node:util';
 import { loadDefs } from './defs.js';
 import { loadManifests } from './manifest.js';
 import { readValues, writeValues, parseCliValue, validateValue } from './values.js';
-import { resolveParams, writeResolved } from './resolve.js';
+import { resolveLayered, writeResolved } from './resolve.js';
 import { fanOut, boundParams } from './fanout.js';
 import { readJson } from './store.js';
 import { withLock } from './lock.js';
-import { loadStore, activeJson } from './layers.js';
-import { listContexts, readContext, readActive, contextPath, VERB_KINDS } from './contexts.js';
+import { loadStore, loadLayers, writeTarget, activeJson } from './layers.js';
+import { listContexts, readContext, readActive, writeContext, contextPath, VERB_KINDS } from './contexts.js';
 import {
   defsDir,
   generatedPath,
@@ -22,6 +22,15 @@ const LIVENESS_ORDER = { live: 0, reload: 1, restart: 2 };
 function load() {
   const defs = loadDefs(defsDir());
   return { defs, manifests: loadManifests(integrationsDir(), defs) };
+}
+
+function splitBaseFlag(rest) {
+  const toBase = rest[0] === '--base';
+  return { toBase, args: toBase ? rest.slice(1) : rest };
+}
+
+function contextSource(active, target) {
+  return target.kind === 'wallpaper' ? active.wallpaper.path : null;
 }
 
 // Every read of the store happens under the store lock: a slot and the file it
@@ -43,8 +52,9 @@ export async function run(argv, opts = {}) {
   try {
     switch (verb) {
       case 'set': {
-        if (rest.length !== 2) throw new Error('usage: prism set <key> <value>');
-        const [key, text] = rest;
+        const { toBase, args } = splitBaseFlag(rest);
+        if (args.length !== 2) throw new Error('usage: prism set [--base] <key> <value>');
+        const [key, text] = args;
         const { defs, manifests } = load();
         const def = defs.get(key);
         if (!def) throw new Error(`unknown param ${key}`);
@@ -53,44 +63,52 @@ export async function run(argv, opts = {}) {
 
         let resolved;
         await withLock(lockPath(), async () => {
-          const values = readValues();
-          resolveParams(defs, values);
-          if (isDeepStrictEqual(value, def.default)) delete values[key];
-          else values[key] = value;
-          writeValues(values);
-          resolved = writeResolved(resolveParams(defs, values));
+          const store = loadStore(defs);
+          const target = toBase ? { kind: 'base', name: null } : store.target;
+          if (target.kind === 'base') {
+            const values = { ...store.base };
+            if (isDeepStrictEqual(value, def.default)) delete values[key];
+            else values[key] = value;
+            writeValues(values);
+          } else {
+            const layer = store.layers[store.layers.length - 1];
+            writeContext(target.kind, target.name, {
+              source: contextSource(store.active, target),
+              values: { ...layer.values, [key]: value },
+            });
+          }
+          resolved = writeResolved(loadStore(defs).params);
         });
 
-        return report(await fanOut({
-          manifests,
-          resolved,
-          changedKeys: [key],
-          runner: opts.runner,
-        }), eprint);
+        return report(await fanOut({ manifests, resolved, changedKeys: [key], runner: opts.runner }), eprint);
       }
 
       case 'unset': {
-        if (rest.length !== 1) throw new Error('usage: prism unset <key>');
-        const [key] = rest;
+        const { toBase, args } = splitBaseFlag(rest);
+        if (args.length !== 1) throw new Error('usage: prism unset [--base] <key>');
+        const [key] = args;
         const { defs, manifests } = load();
         let resolved;
 
         await withLock(lockPath(), async () => {
-          const values = readValues();
-          const orphan = !defs.has(key) && Object.hasOwn(values, key);
+          const active = readActive();
+          const layers = loadLayers(active);
+          const target = toBase ? { kind: 'base', name: null } : writeTarget(layers);
+          const base = readValues();
+          const held = target.kind === 'base' ? base : layers[layers.length - 1].values;
+          const where = target.kind === 'base' ? 'base' : `${target.kind} ${target.name}`;
+          const orphan = !defs.has(key) && Object.hasOwn(held, key);
           if (!defs.has(key) && !orphan) throw new Error(`unknown param ${key}`);
-          if (!orphan) resolveParams(defs, values);
+          if (!Object.hasOwn(held, key)) throw new Error(`${key}: not set in ${where}`);
+          if (!orphan) resolveLayered(defs, base, layers);
+          const values = { ...held };
           delete values[key];
-          writeValues(values);
-          resolved = writeResolved(resolveParams(defs, values));
+          if (target.kind === 'base') writeValues(values);
+          else writeContext(target.kind, target.name, { source: contextSource(active, target), values });
+          resolved = writeResolved(loadStore(defs).params);
         });
 
-        return report(await fanOut({
-          manifests,
-          resolved,
-          changedKeys: [key],
-          runner: opts.runner,
-        }), eprint);
+        return report(await fanOut({ manifests, resolved, changedKeys: [key], runner: opts.runner }), eprint);
       }
 
       case 'get': {

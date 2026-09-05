@@ -27,7 +27,7 @@ process.env.PRISM_INTEGRATIONS_DIR = integ;
 
 const cli = await import('../src/cli.js');
 const { lockPath, resolvedPath, valuesPath, generatedPath } = await import('../src/paths.js');
-const { writeActive, writeContext, contextPath } = await import('../src/contexts.js');
+const { writeActive, writeContext, contextPath, readContext } = await import('../src/contexts.js');
 const prismBin = fileURLToPath(new URL('../bin/prism', import.meta.url));
 
 // Every test starts from an identical clean store and arranges what it needs.
@@ -440,6 +440,7 @@ test('every public verb enforces its required and stray arguments', async () => 
     ['list', 'extra'],
     ['describe'], ['describe', '--json', 'extra'], ['describe', '--yaml'],
     ['doctor', 'extra'],
+    ['set', '--base'], ['set', '--base', 'glass.ior'], ['unset', '--base'],
   ];
   for (const argv of invalid) {
     const failure = await runCaptured(argv, { print: () => {} });
@@ -447,4 +448,58 @@ test('every public verb enforces its required and stray arguments', async () => 
       `${argv.join(' ')} unexpectedly succeeded`);
     assert.match(failure.stderr, /usage: prism/);
   }
+});
+
+test('set writes into the topmost active context and creates an untuned wallpaper file with _source', async () => {
+  fs.writeFileSync(valuesPath(), 'glass.ior: 1.24\n');
+  writeActive({ wallpaper: { id: 'abc12345', path: '/walls/a.jpg' } });
+  const calls = [];
+  assert.equal(await cli.run(['set', 'glass.ior', '1.3'], { runner: (m, f, keys) => calls.push(keys) }), 0);
+  assert.deepEqual(readContext('wallpaper', 'abc12345'), { source: '/walls/a.jpg', values: { 'glass.ior': 1.3 } });
+  assert.equal(fs.readFileSync(valuesPath(), 'utf8'), 'glass.ior: 1.24\n', 'base untouched');
+  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.3);
+
+  // a default-valued key is kept in a context, because the layer below differs
+  assert.equal(await cli.run(['set', 'glass.ior', '1.5'], { runner: () => {} }), 0);
+  assert.equal(readContext('wallpaper', 'abc12345').values['glass.ior'], 1.5);
+});
+
+test('set --base writes through to values.yaml under an active context', async () => {
+  writeContext('profile', 'dusk', { source: null, values: {} });
+  writeActive({ profile: 'dusk' });
+  assert.equal(await cli.run(['set', '--base', 'glass.ior', '1.1'], { runner: () => {} }), 0);
+  assert.match(fs.readFileSync(valuesPath(), 'utf8'), /glass\.ior: 1\.1/);
+  assert.deepEqual(readContext('profile', 'dusk').values, {});
+});
+
+test('unset removes the override from the write target and refuses a key it does not hold', async () => {
+  fs.writeFileSync(valuesPath(), 'glass.ior: 1.24\n');
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.5 } });
+  writeActive({ profile: 'dusk' });
+
+  const calls = [];
+  assert.equal(await cli.run(['unset', 'glass.ior'], { runner: (m, f, keys) => calls.push(keys) }), 0);
+  assert.deepEqual(readContext('profile', 'dusk').values, {});
+  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.24, 'base shows through');
+  assert.match(fs.readFileSync(valuesPath(), 'utf8'), /glass\.ior: 1\.24/, 'base untouched');
+
+  const absent = await runCaptured(['unset', 'glass.ior'], { runner: () => {} });
+  assert.notEqual(absent.code, 0);
+  assert.match(absent.stderr, /glass\.ior: not set in profile dusk/);
+
+  assert.equal(await cli.run(['unset', '--base', 'glass.ior'], { runner: () => {} }), 0);
+  assert.equal(fs.readFileSync(valuesPath(), 'utf8'), '{}\n');
+  const absentBase = await runCaptured(['unset', 'glass.ior'], { runner: () => {} });
+  assert.match(absentBase.stderr, /glass\.ior: not set in profile dusk/);
+  const absentBaseFlag = await runCaptured(['unset', '--base', 'glass.ior'], { runner: () => {} });
+  assert.match(absentBaseFlag.stderr, /glass\.ior: not set in base/);
+});
+
+test('unset digs an orphan out of the active context the way it does for base', async () => {
+  writeContext('profile', 'dusk', { source: null, values: { 'gone.away': 1 } });
+  writeActive({ profile: 'dusk' });
+  const blocked = await runCaptured(['set', 'glass.paneLip', '10'], { runner: () => {} });
+  assert.match(blocked.stderr, /unknown param gone\.away in profile dusk/);
+  assert.equal(await cli.run(['unset', 'gone.away'], { runner: () => {} }), 0);
+  assert.deepEqual(readContext('profile', 'dusk').values, {});
 });
