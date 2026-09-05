@@ -1,10 +1,11 @@
 # Glass noise and saturation per focus state
 
 **Date:** 2026-09-05
-**Status:** accepted 2026-09-05; not yet implemented. Hub goal `prism-63dd45`.
-Native piece in niri-material, spec
-`docs/specs/2026-09-05-material-glass-noise-saturation-params-design.md`.
-Prism piece `prism-d0d4cb`, which depends on the native piece being installed.
+**Status:** implemented and merged into `main` at `bdb52dd`; `npm test` passing
+(152 tests plus the Lua panel test); manual panel acceptance PASS on 2026-09-05
+against niri-material `26.04.r252.gd47f675a`. Hub goal `prism-63dd45`; Prism
+piece `prism-d0d4cb`; native piece `material-1293e8`, merged into
+niri-material `materials-26.04` at `e4e63b3b`.
 
 ## Context
 
