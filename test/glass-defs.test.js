@@ -23,6 +23,11 @@ const NATIVE = {
   'glass.paneShiftX': { range: [-64, 64], default: 6 },
   'glass.paneShiftY': { range: [-64, 64], default: 6 },
   'glass.enabled': { default: true },
+  'glass.focusSplit': { default: true },
+  'glass.inactive.roughness': { range: [0, 1], default: 0.5 },
+  'glass.inactive.attenuationDistance': { range: [1, 65535], default: 70 },
+  'glass.inactive.chromaticAberration': { range: [0, 1], default: 0.08 },
+  'glass.inactive.distortion': { range: [0, 1], default: 0.1 },
 };
 
 const REMOVED = [
@@ -37,6 +42,8 @@ const REMOVED = [
 const NATIVE_UNITS = [
   'glass.thickness', 'glass.attenuationDistance', 'glass.chromaticAberration',
   'glass.distortion', 'glass.distortionScale',
+  'glass.inactive.attenuationDistance', 'glass.inactive.chromaticAberration',
+  'glass.inactive.distortion',
 ];
 
 const NATIVE_BEVEL_MAX = 128;
@@ -104,6 +111,7 @@ test('native values are presented in native units', () => {
   }
   assert.equal(defs.get('glass.thickness').ui.unit, 'px');
   assert.equal(defs.get('glass.attenuationDistance').ui.unit, 'px');
+  assert.equal(defs.get('glass.inactive.attenuationDistance').ui.unit, 'px');
   assert.equal(defs.get('glass.paneLip').ui.unit, 'px');
 });
 
@@ -146,4 +154,17 @@ test('visible numeric defaults lie on their slider grids', () => {
     const n = (def.default - def.range[0]) / def.ui.step;
     assert.ok(Math.abs(n - Math.round(n)) <= 1e-9, `${def.key} default is off-grid`);
   }
+});
+
+test('the focus split and its inactive overrides live under Opacity & Focus', () => {
+  const defs = loadDefs(defsDir());
+  const keys = [
+    'glass.focusSplit', 'glass.inactive.roughness', 'glass.inactive.attenuationDistance',
+    'glass.inactive.chromaticAberration', 'glass.inactive.distortion',
+  ];
+
+  for (const key of keys) assert.equal(defs.get(key).ui.group, 'Opacity & Focus', key);
+  assert.equal(defs.get('glass.focusSplit').ui.control, 'toggle');
+  assert.equal(defs.get('glass.inactive.roughness').ui.display, 'percent');
+  assert.equal(defs.get('glass.inactive.attenuationDistance').ui.scale, 'logarithmic');
 });

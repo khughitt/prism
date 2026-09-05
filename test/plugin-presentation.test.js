@@ -26,16 +26,25 @@ test('shipped presentation has the exact Quick and advanced structure', () => {
     'glass.roughness',
     'glass.attenuationColor',
   ]);
+  assert.deepEqual(groups[1].params.map((param) => param.key), [
+    'terminal.window.opacity.active',
+    'terminal.window.opacity.inactive',
+    'glass.focusSplit',
+    'glass.inactive.roughness',
+    'glass.inactive.attenuationDistance',
+    'glass.inactive.chromaticAberration',
+    'glass.inactive.distortion',
+  ]);
   assert.deepEqual(groups.at(-1).params.map((param) => param.key), ['debug.backdrop']);
   const renderedKeys = groups.flatMap((group) => group.params.map((param) => param.key));
   const title = defs.find((def) => def.ui.group === 'Title');
   assert.equal(title.key, 'glass.enabled');
   assert.equal(title.ui.control, 'toggle');
-  assert.equal(renderedKeys.length, 21);
-  assert.equal(new Set(renderedKeys).size, 21);
+  assert.equal(renderedKeys.length, 26);
+  assert.equal(new Set(renderedKeys).size, 26);
   const allRenderedKeys = [title.key].concat(renderedKeys);
-  assert.equal(allRenderedKeys.length, 22);
-  assert.equal(new Set(allRenderedKeys).size, 22);
+  assert.equal(allRenderedKeys.length, 27);
+  assert.equal(new Set(allRenderedKeys).size, 27);
   assert.deepEqual(allRenderedKeys.slice().sort(), visible.map((def) => def.key).sort());
 });
 

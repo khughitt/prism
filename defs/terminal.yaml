@@ -1,13 +1,13 @@
 - key: terminal.background.opacity.active
   type: float
   range: [0.0, 1.0]
-  default: 0.95
+  default: 0
   ui: {group: Quick, control: slider, step: 0.01, label: Focused terminal opacity, order: 10, display: percent}
-  description: Background opacity of the focused terminal window
+  description: Background opacity of the focused terminal window; zero leaves only the glass material behind the text
 - key: terminal.background.opacity.inactive
   type: float
   range: [0.0, 1.0]
-  default: 0.65
+  default: 0
   ui: {group: Quick, control: slider, step: 0.01, label: Unfocused terminal opacity, order: 20, display: percent}
   description: Background opacity of unfocused terminal windows
 - key: terminal.window.opacity.active

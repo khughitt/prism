@@ -21,3 +21,8 @@ binds:
   - {param: glass.backdropBlur, liveness: reload}
   - {param: glass.jellyFlex, liveness: reload}
   - {param: glass.jellyRipple, liveness: reload}
+  - {param: glass.focusSplit, liveness: reload}
+  - {param: glass.inactive.roughness, liveness: reload}
+  - {param: glass.inactive.attenuationDistance, liveness: reload}
+  - {param: glass.inactive.chromaticAberration, liveness: reload}
+  - {param: glass.inactive.distortion, liveness: reload}

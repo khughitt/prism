@@ -12,10 +12,10 @@ function dirWith(yamlText) {
   return dir;
 }
 
-test('shipped defs load and include the opacity pair', () => {
+test('shipped defs load and default the opacity pair to a fully transparent terminal', () => {
   const defs = loadDefs(defsDir());
-  assert.equal(defs.get('terminal.background.opacity.active').default, 0.95);
-  assert.equal(defs.get('terminal.background.opacity.inactive').default, 0.65);
+  assert.equal(defs.get('terminal.background.opacity.active').default, 0);
+  assert.equal(defs.get('terminal.background.opacity.inactive').default, 0);
   assert.equal(defs.get('terminal.apps').ui.control, 'none');
   assert.equal(defs.get('compositor.gaps').type, 'int');
 });

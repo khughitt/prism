@@ -79,7 +79,7 @@ test('set with unchanged value still fans out (release contract)', async () => {
 
 test('set back to the default deletes the override but still fans out', async () => {
   const calls = [];
-  await cli.run(['set', 'terminal.background.opacity.inactive', '0.65'], // 0.65 IS the default
+  await cli.run(['set', 'terminal.background.opacity.inactive', '0'], // 0 IS the default
     { runner: (m) => calls.push(m.sink) });
   assert.equal(calls.length, 2);
   let out = '';

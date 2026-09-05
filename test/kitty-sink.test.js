@@ -14,6 +14,14 @@ test('persistent conf carries the active opacity', () => {
   assert.match(conf, /^background_opacity 0\.95$/m);
 });
 
+test('a fully transparent terminal renders a literal zero', () => {
+  const conf = renderKittyConf({ params: {
+    'terminal.background.opacity.active': 0,
+    'terminal.background.opacity.inactive': 0,
+  } });
+  assert.match(conf, /^background_opacity 0$/m);
+});
+
 test('live: all windows inactive, then focused os window active by window id', () => {
   const osWindows = [
     { id: 1, is_focused: false, tabs: [{ windows: [{ id: 11 }] }] },

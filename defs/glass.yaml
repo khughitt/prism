@@ -91,3 +91,32 @@
   default: 0.06
   ui: {group: Motion, control: slider, step: 0.005, label: Ripple, order: 410, display: normalized}
   description: Ripple strength of the jelly pane motion
+- key: glass.focusSplit
+  type: bool
+  default: true
+  ui: {group: Opacity & Focus, control: toggle, label: Focus-state glass, order: 120}
+  description: Give unfocused terminals their own glass material; off keeps one material and never resets the pane motion on focus
+- key: glass.inactive.roughness
+  type: float
+  range: [0, 1]
+  default: 0.5
+  ui: {group: Opacity & Focus, control: slider, step: 0.01, label: Unfocused glass blur, order: 130, display: percent}
+  description: Glass surface roughness of unfocused terminals
+- key: glass.inactive.attenuationDistance
+  type: float
+  range: [1, 65535]
+  default: 70
+  ui: {group: Opacity & Focus, control: slider, step: 1, label: Unfocused tint distance, order: 140, scale: logarithmic, unit: px}
+  description: Absorption distance of unfocused terminals; higher values preserve the wallpaper color farther through the glass
+- key: glass.inactive.chromaticAberration
+  type: float
+  range: [0, 1]
+  default: 0.08
+  ui: {group: Opacity & Focus, control: slider, step: 0.02, label: Unfocused color fringing, order: 150}
+  description: Color-channel separation at refracted edges of unfocused terminals
+- key: glass.inactive.distortion
+  type: float
+  range: [0, 1]
+  default: 0.1
+  ui: {group: Opacity & Focus, control: slider, step: 0.02, label: Unfocused distortion, order: 160}
+  description: Strength of the glass distortion effect on unfocused terminals
