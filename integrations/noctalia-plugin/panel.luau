@@ -18,6 +18,13 @@ local state = {
 local describeRunning = false
 -- Noctalia Slider::setValue suppresses changes smaller than this epsilon.
 local hostSliderEpsilon = 0.0001
+-- Fixed row geometry. Every row reserves the same widths whether or not its
+-- parameter has a value to show, so nothing moves when a value crosses its
+-- default or a control changes state.
+local labelColumnWidth = 150
+local headColumnWidth = 190
+local valueColumnWidth = 56
+local inertOpacity = 0.35
 local render
 local refresh
 local enqueue
@@ -270,14 +277,18 @@ local function selectOptions(param)
   return options
 end
 
+-- Always in the tree, dim while the parameter already holds its default. A
+-- reset that appears with `modified` re-solves the row every time a drag
+-- crosses the default, which resizes the slider under the pointer.
 local function resetButton(param, available)
   return ui.button({
     glyph = "restore",
+    variant = "ghost",
     controlSize = "sm",
-    tooltip = "Remove override",
-    visible = param.overridden,
+    opacity = param.overridden and 1.0 or inertOpacity,
+    tooltip = param.overridden and "Remove override" or "No override to remove",
     enabled = available,
-    onClick = function() unsetParam(param) end,
+    onClick = function() if param.overridden then unsetParam(param) end end,
   })
 end
 
@@ -314,6 +325,7 @@ local function nativeControl(param, available)
       step = Presentation.sliderStep(param),
       value = Presentation.toSliderValue(param.value, param),
       controlSize = "sm",
+      flexGrow = 1,
       enabled = available,
       onChange = function(value) beginDrag(param, value) end,
       onDragEnd = function() endDrag(param) end,
@@ -335,20 +347,40 @@ local function nativeControl(param, available)
   })
 end
 
+-- Noctalia enables a Button's hit area only when the button carries a handler,
+-- and a disabled hit area never opens the tooltip. The click itself does
+-- nothing; it is what makes the description reachable on hover.
 local function infoButton(param)
   return ui.button({
     glyph = "info-circle",
     variant = "ghost",
     controlSize = "sm",
     tooltip = param.description or param.key,
+    onClick = function() end,
   })
 end
 
-local function stateHints(param)
-  local releaseHint = param.effectiveDrag == "release"
-  return ui.row({gap = 8, align = "center", justify = "end"}, {
-    ui.label({text = "On release", fontSize = 11, color = "on_surface_variant", visible = releaseHint}),
-    ui.label({text = "Unavailable", fontSize = 11, color = "error", visible = param.effectiveDrag == nil}),
+-- Only exceptions are marked. Writing on release is the norm here, so saying it
+-- on every row costs a line per row and distinguishes nothing.
+local function exceptionHint(param)
+  if param.effectiveDrag == nil then
+    return ui.label({text = "Unavailable", fontSize = 11, color = "error"})
+  end
+  if param.effectiveDrag == "live" then
+    return ui.label({text = "Live", fontSize = 11, color = "on_surface_variant"})
+  end
+  return nil
+end
+
+-- The leading column: label and its info button, at one fixed width so every
+-- control column starts at the same x and the matrix header can reserve the
+-- same span without guessing the button's natural width.
+local function headCell(text, param)
+  return ui.row({width = headColumnWidth, gap = 6, align = "center"}, {
+    -- maxWidth, not width: a Label sizes to its text either way, so the cap is
+    -- what keeps a long label from pushing its info button out of the span.
+    ui.label({text = text, fontWeight = "medium", maxWidth = labelColumnWidth, maxLines = 1}),
+    infoButton(param),
   })
 end
 
@@ -357,43 +389,48 @@ end
 local function controlCell(param, grow)
   local available = param.effectiveDrag ~= nil
   local formattedValue = param.ui.control == "slider" and Presentation.formatValue(param.value, param) or nil
-  return ui.row({key = param.key, gap = 6, align = "center", flexGrow = grow}, {
-    ui.label({text = formattedValue or "", fontSize = 12, color = "on_surface_variant", minWidth = 44, textAlign = "end", visible = formattedValue ~= nil}),
+  local children = {
+    -- Rendered even when empty: a hidden child leaves the flex layout, which
+    -- would pull the control left on every row without a formatted value.
+    ui.label({text = formattedValue or "", fontSize = 12, color = "on_surface_variant", width = valueColumnWidth, textAlign = "end"}),
     nativeControl(param, available),
-    resetButton(param, available),
-  })
+  }
+  -- Sliders absorb the cell's slack themselves; the other controls keep their
+  -- natural width, so the slack goes here to hold the reset at the right edge.
+  if param.ui.control ~= "slider" then children[#children + 1] = ui.spacer({flexGrow = 1}) end
+  children[#children + 1] = resetButton(param, available)
+  return ui.row({key = param.key, gap = 6, align = "center", flexGrow = grow}, children)
+end
+
+local function paramRow(key, cells, hint)
+  local children = {ui.row({gap = 8, align = "center"}, cells)}
+  if hint then children[#children + 1] = ui.row({gap = 8, align = "center", justify = "end"}, {hint}) end
+  return ui.column({key = key, gap = 2, paddingV = 2}, children)
 end
 
 local function singleRow(param)
-  return ui.column({key = param.key .. ":row", gap = 2, paddingV = 2}, {
-    ui.row({gap = 8, align = "center"}, {
-      ui.label({text = param.ui.label or param.key, fontWeight = "medium", minWidth = 150}),
-      infoButton(param),
-      ui.spacer({flexGrow = 1}),
-      controlCell(param, 0),
-    }),
-    stateHints(param),
-  })
+  return paramRow(param.key .. ":row", {
+    headCell(param.ui.label or param.key, param),
+    controlCell(param, 1),
+  }, exceptionHint(param))
 end
 
 local function matrixRow(row)
-  return ui.column({key = row.row .. ":row", gap = 2, paddingV = 2}, {
-    ui.row({gap = 8, align = "center"}, {
-      ui.label({text = row.row, fontWeight = "medium", minWidth = 130}),
-      infoButton(row.focused),
-      controlCell(row.focused, 1),
-      ui.separator({orientation = "vertical", spacing = 4}),
-      controlCell(row.unfocused, 1),
-    }),
-    stateHints(row.focused),
-  })
+  return paramRow(row.row .. ":row", {
+    headCell(row.row, row.focused),
+    controlCell(row.focused, 1),
+    ui.separator({orientation = "vertical", spacing = 4}),
+    controlCell(row.unfocused, 1),
+  }, exceptionHint(row.focused) or exceptionHint(row.unfocused))
 end
 
+-- Mirrors matrixRow's children exactly - fixed head, grow, separator, grow - so
+-- each column title sits over the cell it names.
 local function matrixHeader()
   return ui.row({gap = 8, align = "center"}, {
-    ui.label({text = "", minWidth = 130}),
-    ui.label({text = "", minWidth = 32}),
+    ui.spacer({width = headColumnWidth}),
     ui.label({text = "Focused", fontSize = 12, color = "on_surface_variant", textAlign = "center", flexGrow = 1}),
+    ui.separator({orientation = "vertical", spacing = 4}),
     ui.label({text = "Unfocused", fontSize = 12, color = "on_surface_variant", textAlign = "center", flexGrow = 1}),
   })
 end
@@ -415,9 +452,9 @@ local function appendSection(children, section)
       glyph = "restore",
       variant = "ghost",
       controlSize = "sm",
-      tooltip = "Reset section" .. (overriddenCount > 0 and " (" .. overriddenCount .. ")" or ""),
-      visible = overriddenCount > 0,
-      onClick = function() resetGroup(sectionParams) end,
+      opacity = overriddenCount > 0 and 1.0 or inertOpacity,
+      tooltip = overriddenCount > 0 and ("Reset section (" .. overriddenCount .. ")") or "No overrides in this section",
+      onClick = function() if overriddenCount > 0 then resetGroup(sectionParams) end end,
     }),
   })
   local hasMatrix = false

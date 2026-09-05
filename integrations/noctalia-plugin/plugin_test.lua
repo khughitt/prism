@@ -175,21 +175,45 @@ assert(sliderKeys["glass.roughness:slider"] and sliderKeys["glass.inactive.rough
 assert(sliderKeys["glass.saturation:slider"] and sliderKeys["glass.inactive.saturation:slider"], "saturation matrix sliders missing")
 equal(#collect(rendered, "toggle"), 2, "title and Focus header toggles")
 
--- Reset means "remove the override in the write target": visible only where
--- layer == target, and it optimistically shows the fallback value.
-local visibleResets = {}
+-- Reset means "remove the override in the write target": present on every
+-- row, opacity and tooltip carry the state, and it optimistically shows the
+-- fallback value.
+local resetCandidates = {}
 for _, button in ipairs(collect(rendered, "button")) do
-  if button.props.tooltip == "Remove override" and button.props.visible then
-    visibleResets[#visibleResets + 1] = button
+  if button.props.tooltip == "Remove override" or button.props.tooltip == "No override to remove" then
+    resetCandidates[#resetCandidates + 1] = button
   end
 end
-equal(#visibleResets, 1, "exactly the base-overridden roughness row offers a reset")
+equal(#resetCandidates, 5, "a reset renders for every visible parameter row")
+local overriddenResets = {}
+for _, button in ipairs(resetCandidates) do
+  if button.props.tooltip == "Remove override" and button.props.opacity == 1.0 then
+    overriddenResets[#overriddenResets + 1] = button
+  end
+end
+equal(#overriddenResets, 1, "exactly the base-overridden roughness row offers a full-strength reset")
+for _, button in ipairs(resetCandidates) do
+  if button ~= overriddenResets[1] then
+    assert(button.props.opacity < 1.0, "resets without an override to remove stay dim")
+  end
+end
 local sectionResets = 0
 for _, button in ipairs(collect(rendered, "button")) do
-  if button.props.tooltip == "Reset section (1)" and button.props.visible then sectionResets = sectionResets + 1 end
+  if button.props.tooltip == "Reset section (1)" and button.props.opacity == 1.0 then sectionResets = sectionResets + 1 end
 end
 equal(sectionResets, 1, "the Focus section counts its one override")
-visibleResets[1].props.onClick()
+
+-- Clicking a reset with nothing to remove must do nothing: the onClick guard
+-- checks the live param, not just whether the button is drawn dim.
+local nonOverriddenReset
+for _, button in ipairs(resetCandidates) do
+  if button ~= overriddenResets[1] then nonOverriddenReset = button break end
+end
+local commandCountBeforeGuard = #commands
+nonOverriddenReset.props.onClick()
+equal(#commands, commandCountBeforeGuard, "clicking a non-overridden reset enqueues nothing")
+
+overriddenResets[1].props.onClick()
 equal(model.params[4].value, 0.1, "reset shows the fallback, not the default, before describe reconciles")
 equal(model.params[4].overridden, false)
 assert(commands[#commands]:find("unset", 1, true) and commands[#commands]:find("glass.roughness", 1, true),

@@ -108,7 +108,10 @@ test('slider rows render the formatted local value beside the native control', a
   const parameterRow = source.slice(source.indexOf('local function controlCell'), source.indexOf('local function singleRow'));
 
   assert.match(parameterRow, /local formattedValue = param\.ui\.control == "slider" and Presentation\.formatValue\(param\.value, param\) or nil/);
-  assert.match(parameterRow, /ui\.label\(\{text = formattedValue or ""[\s\S]*visible = formattedValue ~= nil\}\)[\s\S]*nativeControl\(param, available\)/);
+  // Reserved on every row, empty text included: a hidden child leaves the flex
+  // layout and pulls the control column left on rows without a value.
+  assert.match(parameterRow, /ui\.label\(\{text = formattedValue or ""[\s\S]*width = valueColumnWidth, textAlign = "end"\}\)[\s\S]*nativeControl\(param, available\)/);
+  assert.doesNotMatch(parameterRow, /visible = formattedValue ~= nil/);
   assert.match(source, /local function beginDrag[\s\S]*updateParam\(param, canonical\)[\s\S]*render\(\)/);
 });
 
@@ -122,8 +125,8 @@ test('presentation renders every section open with a header toggle, matrix rows,
   assert.match(source, /local function matrixRow\(row\)[\s\S]*controlCell\(row\.focused, 1\)[\s\S]*controlCell\(row\.unfocused, 1\)/);
   assert.match(source, /text = "Focused"[\s\S]*text = "Unfocused"/);
   assert.match(source, /local function resetGroup[\s\S]*if param\.overridden then[\s\S]*unsetParam\(param\)/);
-  assert.match(source, /tooltip = "Remove override"/);
-  assert.match(source, /tooltip = "Reset section"/);
+  assert.match(source, /tooltip = param\.overridden and "Remove override"/);
+  assert.match(source, /tooltip = overriddenCount > 0 and \("Reset section \("/);
   assert.match(source, /tooltip = param\.description or param\.key/);
 });
 
@@ -139,9 +142,37 @@ test('the isolated preview surface is gone, leaving live terminals as feedback',
     assert.doesNotMatch(source, gone, `panel still carries ${gone}`);
   }
 
-  // What replaced it: the release hint on reload-bound rows, and nothing else.
-  assert.match(source, /local releaseHint = param\.effectiveDrag == "release"/);
-  assert.match(source, /text = "On release"[\s\S]*visible = releaseHint/);
+  // What replaced it: live terminals. Rows mark only what is exceptional -
+  // writing on release is the norm here and goes unsaid.
+  assert.doesNotMatch(source, /On release/);
+  assert.match(source, /local function exceptionHint[\s\S]*text = "Unavailable"[\s\S]*text = "Live"/);
+});
+
+test('row geometry is fixed, so nothing moves when a value crosses its default', async () => {
+  const source = await readEntry('panel.luau');
+
+  // Every reset stays in the tree; its state is opacity, not presence.
+  assert.doesNotMatch(source, /visible = param\.overridden|visible = overriddenCount > 0/);
+  assert.match(source, /opacity = param\.overridden and 1\.0 or inertOpacity/);
+  assert.match(source, /opacity = overriddenCount > 0 and 1\.0 or inertOpacity/);
+  // One reserved leading span, shared by the rows and the matrix header, so the
+  // header never has to guess the info button's natural width.
+  assert.match(source, /local function headCell[\s\S]*ui\.row\(\{width = headColumnWidth/);
+  assert.match(source, /local function matrixHeader[\s\S]*ui\.spacer\(\{width = headColumnWidth\}\)/);
+  // The header mirrors matrixRow's children, so each title sits over its cell.
+  assert.match(source, /local function matrixHeader[\s\S]*text = "Focused"[\s\S]*ui\.separator\(\{orientation = "vertical", spacing = 4\}\)[\s\S]*text = "Unfocused"/);
+  // Sliders take the cell's slack, so both matrix halves end flush.
+  assert.match(source, /ui\.slider\(\{[\s\S]*flexGrow = 1/);
+});
+
+test('the info button carries a handler, without which its tooltip never opens', async () => {
+  const source = await readEntry('panel.luau');
+  const infoButton = source.slice(source.indexOf('local function infoButton'), source.indexOf('local function exceptionHint'));
+
+  assert.match(infoButton, /tooltip = param\.description or param\.key/);
+  // Noctalia enables a Button's hit area only when it carries a handler, and a
+  // disabled hit area never opens the tooltip.
+  assert.match(infoButton, /onClick = function\(\) end/);
 });
 
 test('the queue speaks only to prism', async () => {

@@ -75,7 +75,8 @@ The presentation module defines the panel's stable layout contract:
 - Every other `ui.group` is a section, ordered by first appearance in
   `ui.order`. Sections are always open; there is no Quick group and no
   expansion state. Each section shows a reset that removes every override its
-  parameters hold in the write target.
+  parameters hold in the write target, dim while the section holds no
+  overrides.
 - A toggle flagged `ui.header` is its section's header control (the Focus
   section's focus-state toggle). A group may carry at most one.
 - Sliders flagged `ui.state` (`focused` or `unfocused`) and `ui.row` pair into
@@ -86,10 +87,17 @@ The presentation module defines the panel's stable layout contract:
   tooltip carries the description, the formatted value, the native control,
   and a per-parameter reset that removes the override in the write target and
   shows the fallback value until describe reconciles.
+- Row geometry is fixed and independent of parameter state. The label, info
+  button, and formatted value occupy reserved widths, the two matrix cells
+  divide the remaining span evenly, and the `Focused` / `Unfocused` titles
+  reserve the same leading span as the rows they head. Every reset stays in
+  the tree, dim when its parameter holds no override and full strength when it
+  is overridden; nothing appears or disappears as a value crosses its default.
 - Toggle, select, slider, color, and reset actions update the local displayed
   value before their required write boundary.
-- Rows whose parameter writes on release are marked `On release`; a parameter
-  with no consumer at all is marked `Unavailable` and its control disabled.
+- Only exceptional rows carry a marker: `Live` for a parameter that writes
+  while dragging, `Unavailable` for one with no consumer at all, whose control
+  is also disabled. Writing on release is the norm and is left unmarked.
 - Numeric controls preserve canonical values while supporting raw, percent,
   normalized, linear, and logarithmic display metadata, and render their
   formatted value beside the native slider.
@@ -97,7 +105,8 @@ The presentation module defines the panel's stable layout contract:
 `prism describe --json` carries `active` (the active context per kind),
 `target` (the write-target layer), and per parameter `layer` (where the value
 comes from) and `fallback` (what `unset` would leave). A parameter is
-overridden when `layer == target`; the reset is visible exactly then.
+overridden when `layer == target`; the reset is always present and shows full
+strength exactly then.
 
 The panel is installed into Noctalia separately from the `prism` command, so
 the two must be upgraded together. An older panel reading the new CLI's
