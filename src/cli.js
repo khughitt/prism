@@ -52,7 +52,7 @@ export async function run(argv, opts = {}) {
           if (isDeepStrictEqual(value, def.default)) delete values[key];
           else values[key] = value;
           writeValues(values);
-          resolved = writeResolved(defs, values);
+          resolved = writeResolved(resolveParams(defs, values));
         });
 
         return report(await fanOut({
@@ -76,7 +76,7 @@ export async function run(argv, opts = {}) {
           if (!orphan) resolveParams(defs, values);
           delete values[key];
           writeValues(values);
-          resolved = writeResolved(defs, values);
+          resolved = writeResolved(resolveParams(defs, values));
         });
 
         return report(await fanOut({
@@ -160,7 +160,7 @@ export async function run(argv, opts = {}) {
 
         let resolved;
         await withLock(lockPath(), async () => {
-          resolved = writeResolved(defs, readValues());
+          resolved = writeResolved(resolveParams(defs, readValues()));
         });
         const changedKeys = [...new Set(targets.flatMap((manifest) =>
           manifest.binds.map((binding) => binding.param)))];
