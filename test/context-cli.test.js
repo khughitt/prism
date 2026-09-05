@@ -7,8 +7,8 @@ import path from 'node:path';
 process.env.PRISM_CONFIG_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-cfg-'));
 process.env.PRISM_STATE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-state-'));
 
-// Fixture sinks: real integrations/ is empty until Task 10, so fan-out
-// would otherwise select nothing and every calls-length assertion would fail.
+// Fixture sinks with known bindings, so the fan-out call counts these tests
+// assert on are deterministic.
 const integ = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-integ-'));
 fs.mkdirSync(path.join(integ, 'fastsink'));
 fs.writeFileSync(path.join(integ, 'fastsink', 'manifest.yaml'),
@@ -89,6 +89,32 @@ test('context save wallpaper requires the file and preserves its _source', async
   writeContext('wallpaper', 'abc12345', { source: '/walls/a.jpg', values: {} });
   assert.equal(await cli.run(['context', 'save', 'wallpaper', 'abc12345'], { runner: () => {} }), 0);
   assert.equal(readContext('wallpaper', 'abc12345').source, '/walls/a.jpg');
+});
+
+test('saving a profile into itself while it is active is inert: effective values and sinks are unchanged', async () => {
+  fs.writeFileSync(valuesPath(), 'glass.ior: 1.24\n');
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.5 } });
+  writeActive({ profile: 'dusk' });
+  await cli.run(['apply'], { runner: () => {} });
+
+  // Compare effective *values*, not the full describe shape: save writing the
+  // full snapshot into the profile legitimately moves every default-valued
+  // param's `layer` from `default` to `profile`, without changing any value.
+  const before = JSON.parse((await runCaptured(['describe', '--json'])).stdout)
+    .params.map(({ key, value }) => [key, value]);
+  const resolvedBefore = fs.readFileSync(resolvedPath(), 'utf8');
+
+  const calls = [];
+  assert.equal(
+    await cli.run(['context', 'save', 'profile', 'dusk'], { runner: (m) => calls.push(m.sink) }),
+    0,
+  );
+  assert.deepEqual(calls, [], 'save must not run any sink');
+  assert.equal(fs.readFileSync(resolvedPath(), 'utf8'), resolvedBefore, 'save must not touch resolved.json');
+
+  const after = JSON.parse((await runCaptured(['describe', '--json'])).stdout)
+    .params.map(({ key, value }) => [key, value]);
+  assert.deepEqual(after, before, 'saving the active, topmost context into itself changes no effective value');
 });
 
 test('context verbs reject the reserved kind, unknown kinds, bad names, and stray arguments', async () => {

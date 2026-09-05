@@ -39,7 +39,13 @@ export function readActive() {
   if (typeof active !== 'object' || active === null || Array.isArray(active)) {
     throw new Error('active.json must be an object');
   }
-  for (const kind of Object.keys(active)) assertKind(kind);
+  for (const kind of Object.keys(active)) {
+    try {
+      assertKind(kind);
+    } catch (err) {
+      throw new Error(`${activePath()}: ${err.message}`);
+    }
+  }
   if (active.wallpaper !== undefined) {
     const entry = active.wallpaper;
     if (typeof entry !== 'object' || entry === null

@@ -29,7 +29,8 @@ function kindAndName(rest, verb) {
   return { kind, name };
 }
 
-// Apply a slot change. `mutate(active)` is pure and returns the next slots;
+// Apply a slot change. `mutate(active)` computes the next slots and may throw
+// (e.g. activating a context that does not exist), but writes nothing itself;
 // `commit()` performs any file change (a delete) and runs only after the
 // resulting state has resolved, so a refused change leaves every file and
 // slot as it was. The resulting state is always validated, even when the

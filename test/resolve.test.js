@@ -59,3 +59,12 @@ test('resolveLayered validates every layer, not only the effective value', () =>
   assert.throws(() => resolveLayered(defs, {}, [{ kind: 'profile', name: 'p', values: { 'a.z': 1 } }]),
     /unknown param a\.z in profile p/);
 });
+
+test('resolveLayered names the offending layer in a range error, for both base and a context', () => {
+  assert.throws(() => resolveLayered(defs, { 'a.x': 7 }, []),
+    /values: a\.x: 7 outside range/);
+  assert.throws(
+    () => resolveLayered(defs, {}, [{ kind: 'profile', name: 'bad', values: { 'a.x': 7 } }]),
+    /profile bad: a\.x: 7 outside range/,
+  );
+});

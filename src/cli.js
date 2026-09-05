@@ -8,7 +8,7 @@ import { fanOut, boundParams } from './fanout.js';
 import { readJson } from './store.js';
 import { withLock } from './lock.js';
 import { loadStore, loadLayers, writeTarget, activeJson } from './layers.js';
-import { listContexts, readContext, readActive, writeContext, contextPath, VERB_KINDS } from './contexts.js';
+import { listContexts, readContext, readActive, writeContext, deleteContext, contextPath, VERB_KINDS } from './contexts.js';
 import { runContext } from './context-cli.js';
 import {
   defsDir,
@@ -105,7 +105,9 @@ export async function run(argv, opts = {}) {
           const values = { ...held };
           delete values[key];
           if (target.kind === 'base') writeValues(values);
-          else writeContext(target.kind, target.name, { source: contextSource(active, target), values });
+          else if (target.kind === 'wallpaper' && Object.keys(values).length === 0) {
+            deleteContext(target.kind, target.name);
+          } else writeContext(target.kind, target.name, { source: contextSource(active, target), values });
           resolved = writeResolved(loadStore(defs).params);
         });
 
@@ -220,6 +222,17 @@ export async function run(argv, opts = {}) {
           }
 
           let contextProblems = 0;
+          for (const [key, value] of Object.entries(values)) {
+            const def = defs.get(key);
+            if (!def) continue; // orphan, already reported above
+            try {
+              validateValue(def, value);
+            } catch (error) {
+              print(`doctor: base: ${error.message}\n`);
+              contextProblems++;
+            }
+          }
+
           const active = readActive();
           if (active.profile !== undefined && readContext('profile', active.profile) === null) {
             print(`doctor: profile ${active.profile}: active context is missing — run 'prism context deactivate profile'\n`);

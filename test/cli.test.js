@@ -228,6 +228,13 @@ test('doctor reports a missing active profile, a broken context file, and contex
   assert.match(out, /doctor: profile hot: glass\.ior: 99 outside range/);
 });
 
+test('doctor screens values.yaml for invalid values, naming the file the way it names a context', async () => {
+  fs.writeFileSync(valuesPath(), 'glass.ior: 99\n');
+  let out = '';
+  assert.equal(await cli.run(['doctor'], { runner: () => {}, print: (s) => { out += s; } }), 1);
+  assert.match(out, /doctor: base: glass\.ior: 99 outside range/);
+});
+
 test('reading verbs take the store lock, so they wait for an in-flight write', async () => {
   const { withLock } = await import('../src/lock.js');
   let release;
@@ -502,4 +509,22 @@ test('unset digs an orphan out of the active context the way it does for base', 
   assert.match(blocked.stderr, /unknown param gone\.away in profile dusk/);
   assert.equal(await cli.run(['unset', 'gone.away'], { runner: () => {} }), 0);
   assert.deepEqual(readContext('profile', 'dusk').values, {});
+});
+
+test('unset of the last key in a wallpaper context deletes the file instead of leaving it empty', async () => {
+  writeActive({ wallpaper: { id: 'abc12345', path: '/walls/a.jpg' } });
+  assert.equal(await cli.run(['set', 'glass.ior', '1.3'], { runner: () => {} }), 0);
+  assert.notEqual(readContext('wallpaper', 'abc12345'), null);
+  assert.equal(await cli.run(['unset', 'glass.ior'], { runner: () => {} }), 0);
+  assert.equal(readContext('wallpaper', 'abc12345'), null,
+    'an untuned wallpaper must leave no file behind');
+  assert.equal(fs.existsSync(contextPath('wallpaper', 'abc12345')), false);
+});
+
+test('unset of the last key in a profile context still leaves an empty file: a profile is a deliberate snapshot', async () => {
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.3 } });
+  writeActive({ profile: 'dusk' });
+  assert.equal(await cli.run(['unset', 'glass.ior'], { runner: () => {} }), 0);
+  assert.deepEqual(readContext('profile', 'dusk'), { source: null, values: {} });
+  assert.equal(fs.existsSync(contextPath('profile', 'dusk')), true);
 });

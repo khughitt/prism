@@ -89,7 +89,11 @@ test('active slots round-trip and reject the reserved kind and bad shapes', () =
   assert.deepEqual(contexts.readActive(), { wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' });
 
   fs.writeFileSync(activePath(), JSON.stringify({ state: 'dark' }));
-  assert.throws(() => contexts.readActive(), /kind state is reserved/);
+  assert.throws(() => contexts.readActive(), (err) => {
+    assert.match(err.message, /kind state is reserved/);
+    assert.ok(err.message.includes(activePath()), 'must name active.json');
+    return true;
+  });
   fs.writeFileSync(activePath(), JSON.stringify({ wallpaper: 'abc12345' }));
   assert.throws(() => contexts.readActive(), /active wallpaper must carry id and path/);
   fs.writeFileSync(activePath(), JSON.stringify({ profile: 7 }));

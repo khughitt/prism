@@ -6,7 +6,11 @@ function checkLayer(defs, values, where) {
   for (const key of Object.keys(values)) {
     const def = defs.get(key);
     if (!def) throw new Error(`unknown param ${key} in ${where}`);
-    validateValue(def, values[key]);
+    try {
+      validateValue(def, values[key]);
+    } catch (err) {
+      throw new Error(`${where}: ${err.message}`);
+    }
   }
 }
 
