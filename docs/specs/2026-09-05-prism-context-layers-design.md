@@ -1,7 +1,7 @@
 # Prism context layers: design
 
 **Date:** 2026-09-05
-**Status:** accepted 2026-09-05, not yet implemented
+**Status:** accepted 2026-09-05 after one review round, not yet implemented
 **Task:** `prism-6fd864`, first piece of goal `prism-2f0b4b`
 
 ## Context
@@ -12,15 +12,16 @@ per situation: named profiles a user saves and loads by hand, wallpaper
 profiles that persist whatever was tuned while a wallpaper was showing and
 come back with it, and profiles bound to other states Noctalia reports through
 hooks. All three are one mechanism, a context layer in the Prism store. This
-document designs that layer and its CLI. The Noctalia panel controls and the
-wallpaper hook wiring are separate pieces (`prism-ea6344`, `prism-648e0f`,
-`dot-88dc34`).
+document designs that layer, its CLI, and the one panel change it forces. The
+profile controls in the Noctalia panel and the wallpaper hook wiring are
+separate pieces (`prism-ea6344`, `prism-648e0f`, `dot-88dc34`).
 
 Today the store is one flat `values.yaml` per host, symlinked from dotfiles,
 resolved as defaults then base values
 ([`2026-08-15-prism-visual-bus-design.md`](../superpowers/specs/2026-08-15-prism-visual-bus-design.md)).
 `set` and `unset` write it under the store lock, resolve, write
-`resolved.json`, and fan out to the sinks bound to the changed keys. There is
+`resolved.json`, and fan out to the sinks bound to the changed keys. `get`,
+`list`, `describe`, `apply`, and `doctor` all resolve the same way. There is
 no layering.
 
 ## Decisions
@@ -37,14 +38,21 @@ no layering.
 - **Overlay files per context; runtime slots in state.** Contexts are flat
   YAML files under the config directory so dotfiles tracks them per host.
   Which contexts are active is runtime state in the state directory.
-- **A context stores only what was written into it.** `save` snapshots the
-  current effective overrides so a named profile captures what the user sees
-  rather than a delta that drifts when the base changes.
+- **A wallpaper context holds only what was tuned; a saved profile is a full
+  snapshot.** Edits accumulate sparsely in a wallpaper context. `save` copies
+  every effective parameter so a profile reproduces the saved appearance
+  regardless of what the layers below do later.
+- **The panel's reset means "remove the override in the write target".** It
+  no longer means "back to the default", so the panel gains the two facts it
+  needs to show and predict that.
 
 Rejected: a single `contexts.yaml` holding every context and the slots (one
 hot file rewritten by the hook, the panel, and hand edits, noisy in dotfiles
 on every wallpaper rotation); swapping `values.yaml` by symlink (cannot
-compose kinds, and a wallpaper profile would be a full copy of the base).
+compose kinds, and a wallpaper profile would be a full copy of the base);
+saving only non-default keys (a profile setting a key back to its default over
+a base that differs would not round-trip, and a default-valued key would drift
+when a lower layer changed).
 
 ## Section 1: storage and resolution
 
@@ -62,23 +70,29 @@ Every context file is the same flat key-value YAML as `values.yaml`.
 A wallpaper context's `<id>` is a short hash of the wallpaper path. The file
 carries the path under a reserved `_source` key so a human can tell which
 wallpaper it belongs to. `_source` is the only non-parameter key tolerated,
-and only in wallpaper contexts.
+and only in wallpaper contexts. A wallpaper file is created by the first write
+into it, not by activation, so untuned wallpapers leave no file behind as the
+rotation cycles through them.
 
 Profile names are restricted to letters, digits, dash, underscore, and dot,
 validated on every verb.
 
 ### Active slots
 
-One JSON file, `~/.local/state/prism/active.json`, holds at most one name per
-kind:
+One JSON file, `~/.local/state/prism/active.json`, holds at most one entry per
+kind. The wallpaper entry carries the path alongside the id, because the file
+that would otherwise hold `_source` may not exist yet:
 
 ```json
-{ "wallpaper": "3f9a1c2e", "profile": "dusk" }
+{
+  "wallpaper": { "id": "3f9a1c2e", "path": "/path/to/wall.jpg" },
+  "profile": "dusk"
+}
 ```
 
 A missing file or a missing kind means nothing is active for that kind. The
-wallpaper verb rewrites the wallpaper slot. Pinning a profile writes the
-profile slot and never touches the others.
+`context wallpaper` verb rewrites the wallpaper entry. Pinning a profile
+writes the profile entry and never touches the others.
 
 ### Resolution
 
@@ -88,9 +102,13 @@ profile. Every layer is validated against the definitions the same way base
 values are today, so an unknown or out-of-range key in any layer fails the
 whole resolve.
 
-A context named in `active.json` that does not exist on disk resolves as
-empty for the wallpaper kind, because the wallpaper piece activates a
-wallpaper before its first edit, and is an error for the profile kind.
+A wallpaper entry whose file does not exist resolves as an empty layer; that
+is the untuned wallpaper, the common case. A profile entry whose file does not
+exist is an error.
+
+Every reading verb (`get`, `list`, `describe`, `apply`, `doctor`) resolves
+through this one path, so a shell read, the panel, and the applied appearance
+always agree.
 
 `resolved.json` keeps its current shape, `params` only. No sink changes.
 
@@ -102,27 +120,35 @@ behaviour the degenerate case.
 
 `set` stores the value in the target even when it equals the default, because
 the layer below may differ. `unset` removes the key from the target and lets
-the layer below show through. The existing rule that drops a base value equal
-to the default stays for base only.
+the layer below show through; `unset` of a key the target does not hold is an
+error, since nothing would change and the panel never offers it. The existing
+rule that drops a base value equal to the default stays for base only.
+
+The first `set` into a wallpaper context creates its file with `_source` taken
+from the active entry's path.
 
 ## Section 2: CLI verbs
 
-All new verbs sit under one subcommand so the existing five verbs keep their
-shape:
+All new verbs sit under one subcommand so the existing verbs keep their shape:
 
 ```
 prism context list                       # every context by kind, active ones marked
-prism context show <kind> <name>         # the context's overrides
-prism context save <kind> <name>         # snapshot current effective overrides into a new or replaced context
-prism context activate <kind> <name>     # set the slot; profile must exist, wallpaper may not yet
+prism context show <kind> <name>         # the context's contents
+prism context save <kind> <name>         # snapshot every effective parameter into a new or replaced context
+prism context activate <kind> <name>     # set the slot; the file must exist
 prism context deactivate <kind>          # clear the slot
 prism context delete <kind> <name>       # remove the file; clears the slot if it was active
-prism context wallpaper <path>           # derive the id from the path and activate it; the hook's entry point
+prism context wallpaper <path>           # derive the id, record id and path in the slot; the hook's entry point
 ```
 
 `kind` is `profile` or `wallpaper`. The `state` kind is reserved and rejected
 by every verb until the state idea (`prism-9298b9`) is scoped, so nothing
 half-works.
+
+`activate wallpaper <id>` requires the file so it can copy `_source` into the
+slot's path; only `context wallpaper <path>` can activate a wallpaper that has
+no file yet. `save wallpaper <id>` likewise requires an existing file and
+preserves its `_source`.
 
 `set` and `unset` gain one flag, `--base`, that retargets the write at the base
 values file regardless of active slots. No other flag; `--context <kind>` can
@@ -131,50 +157,71 @@ come later if a real need appears.
 ### Effect on the bus
 
 `save`, `show`, `list`, and `delete` of an inactive context never touch
-`resolved.json` or sinks.
+`resolved.json` or sinks. `save` cannot change the effective values even when
+it replaces an active context: the snapshot equals the current effective set,
+and every layer above it is unchanged, so the composition is identical. This
+is stated so nobody has to reason about it later.
 
 `activate`, `deactivate`, `wallpaper`, and `delete` of an active context
-resolve before and after under the store lock, write `resolved.json`, and fan
-out the keys whose effective value differs. When no key changed, for instance
-a wallpaper with no context arriving while nothing was tuned, the verb exits
-without running any sink.
+resolve the resulting state under the store lock, write `resolved.json`, and
+fan out. The changed-key set is the diff against the previous effective
+values when the previous state resolves. When it does not, because the active
+profile vanished or a context file became invalid, the verb still succeeds if
+the resulting state resolves, and fans out every key bound by any sink, the
+way `apply` does. That is the recovery path: a broken active context never
+blocks switching to a valid one or clearing the slot. When the diff is empty,
+for instance a wallpaper with no context arriving while nothing was tuned,
+the verb exits without running any sink.
 
-`save` copies every key whose effective value differs from its default,
-which is exactly the set `describe` marks `modified`, so the snapshot matches
-what the panel shows. It writes the file only; saving the current look does
-not activate the profile. Loading is a separate `activate`. That matches the panel flow: save
+`save` writes the file only; saving the current look does not activate the
+profile. Loading is a separate `activate`. That matches the panel flow: save
 is a snapshot, the select loads.
 
-`apply` and `doctor` resolve through the same layered path so their view of
-the effective values agrees with `set`. `doctor` also reports a slot that
-names a missing profile context and an orphan key inside any context file,
-the way it reports orphans in base today.
+`doctor` also reports a slot that names a missing profile context, a context
+file that fails validation, and an orphan key inside any context file, the way
+it reports orphans in base today.
 
-## Section 3: describe contract
+## Section 3: describe contract and the panel reset
 
-`describe --json` gains a top-level `active` object mirroring the slots, and
-each param gains a `layer` field naming where its effective value comes from:
-`default`, `base`, `wallpaper`, `state`, or `profile`.
+`describe --json` gains a top-level `active` object mirroring the slots and a
+top-level `target` naming the write-target layer. Each param gains `layer`,
+where its effective value comes from (`default`, `base`, `wallpaper`, `state`,
+or `profile`), and `fallback`, the value `unset` would leave in effect. The
+`modified` field is removed: it answered "differs from the default", and
+nothing needs that question any more.
 
 ```json
 {
-  "active": { "wallpaper": "3f9a1c2e", "profile": null },
+  "active": { "wallpaper": { "id": "3f9a1c2e", "path": "/path/to/wall.jpg" }, "profile": null },
+  "target": "wallpaper",
   "params": [
-    { "key": "glass.ior", "value": 1.24, "layer": "base", "modified": true }
+    { "key": "glass.ior", "value": 1.3, "layer": "wallpaper", "fallback": 1.24 }
   ]
 }
 ```
 
-`modified` keeps its meaning, differs from the default, so the existing panel
-keeps working unchanged. The panel's per-row and per-section reset already
-call `unset`, which now removes the key from the write target, so under an
-active wallpaper context a reset reverts to the base value rather than the
-default. That is the intended wallpaper-tuning behaviour and needs no panel
-code in this piece.
+The panel's reset today is keyed on `modified`, resets the local value to the
+default, and section reset unsets every modified param. Under a context that
+is wrong in both directions: an override equal to the default shows no reset
+and cannot be removed, and an inherited non-default value shows a reset that
+would error. So this piece changes the panel's reset semantics, and only
+those:
 
-Panel changes that consume `active` and `layer` (active-profile indicator,
-save button, profile select) belong to `prism-ea6344`. This piece ships the
-contract and the CLI only, verifiable end to end from the shell.
+- a param is overridden when `layer == target`; the row reset is visible, and
+  counted in the section reset, exactly then;
+- a reset optimistically sets the local value to `fallback` and marks the
+  param not overridden until the next `describe` reconciles;
+- a section reset unsets only overridden params;
+- the reset tooltip reads `Reset` when the target is base and `Reset to base`
+  otherwise;
+- the model validator requires `layer`, `fallback`, and top-level `target`
+  instead of `modified`.
+
+Profile controls that consume `active` (indicator, save button, select) still
+belong to `prism-ea6344`.
+
+`resolved.json` and the sink apply protocol are untouched, which keeps the
+niri sink and its tests out of the change.
 
 ## Section 4: errors, concurrency, testing
 
@@ -184,14 +231,17 @@ All fail early with one line and no partial writes:
 
 - unknown kind, the reserved `state` kind, or a name outside the safe
   character set;
-- `activate profile`, `show`, or `delete` on a missing file;
+- `activate`, `show`, `save wallpaper`, or `delete` on a missing file;
 - a context file that is not a flat object, or that holds an unknown key or an
   invalid value;
+- `unset` of a key the write target does not hold;
 - `context wallpaper` with an empty path.
 
-`active.json` naming a missing profile is not an error for `describe`, which
-still has to render the panel, and is an error for `set`, `apply`, and
-`doctor`, which report it and refuse to guess.
+`active.json` naming a missing or invalid profile is not an error for
+`describe`, which still has to render the panel and reports the problem in
+its output, and is an error for `get`, `list`, `set`, `unset`, `apply`, and
+`doctor`, which report it and refuse to guess. The slot-changing verbs recover
+from it as Section 2 states.
 
 ### Concurrency
 
@@ -205,25 +255,29 @@ safely: whichever takes the lock second sees the other's result.
 With the existing `node --test` suite:
 
 - resolver unit tests for layer order, write-target selection, validation of
-  every layer, and the empty-wallpaper versus missing-profile distinction;
+  every layer, the empty-wallpaper versus missing-profile distinction, and
+  `layer` and `fallback` derivation;
 - a context-store unit test for the file layout, name validation, hash
-  derivation, and `_source`;
+  derivation, `_source` on first write, and its preservation by `save`;
 - CLI tests through the existing `run(argv, { runner })` harness covering each
-  verb, `--base`, the fan-out key diff on activate and deactivate, the
-  no-change early exit, and each error line;
-- `describe` shape tests for `active` and `layer`;
-- the plugin Lua contract check stays green untouched, proving the panel needs
-  no change here.
+  verb, `--base`, `get` and `list` under an active context, the fan-out diff
+  on activate and deactivate, the full fan-out when the previous state cannot
+  resolve, the no-change early exit, save leaving `resolved.json` and sinks
+  untouched, and each error line;
+- `describe` shape tests for `active`, `target`, `layer`, and `fallback`;
+- the plugin Lua checks updated for the reset semantics: visibility from
+  `layer == target`, optimistic reset to `fallback`, section reset over
+  overridden params, and the validator's new required fields.
 
 ### Documentation
 
 The visual-bus design gets a short context-layers section pointing here, the
 README states the config layout, and the plugin contract note records the
-`describe` additions.
+`describe` changes and the reset semantics.
 
 ## Out of scope
 
-- Panel controls for profiles (`prism-ea6344`).
+- Profile controls in the panel (`prism-ea6344`).
 - The Noctalia hook line (`dot-88dc34`) and the wallpaper UX question of
   whether the panel exposes a base-versus-wallpaper switch (`prism-648e0f`).
 - The `state` kind's activation sources and its composition rules
