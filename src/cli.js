@@ -9,6 +9,7 @@ import { readJson } from './store.js';
 import { withLock } from './lock.js';
 import { loadStore, loadLayers, writeTarget, activeJson } from './layers.js';
 import { listContexts, readContext, readActive, writeContext, contextPath, VERB_KINDS } from './contexts.js';
+import { runContext } from './context-cli.js';
 import {
   defsDir,
   generatedPath,
@@ -275,6 +276,12 @@ export async function run(argv, opts = {}) {
 
         if (problems === 0) print('doctor: ok\n');
         return problems === 0 ? 0 : 1;
+      }
+
+      case 'context': {
+        const { defs, manifests } = load();
+        const outcome = await runContext(rest, { defs, manifests, print, runner: opts.runner });
+        return outcome === null ? 0 : report(outcome, eprint);
       }
 
       default:
