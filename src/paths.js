@@ -17,6 +17,8 @@ export const resolvedPath = () => path.join(stateDir(), 'resolved.json');
 export const sinkStatusPath = () => path.join(stateDir(), 'sink-status.json');
 export const statusLockPath = () => path.join(stateDir(), 'status.lock');
 export const lockPath = () => path.join(stateDir(), 'store.lock');
+export const activePath = () => path.join(stateDir(), 'active.json');
+export const contextsDir = () => path.join(configDir(), 'contexts');
 export const generatedPath = (name) => path.join(stateDir(), 'generated', name);
 export const defsDir = () => fileURLToPath(new URL('../defs/', import.meta.url));
 export const integrationsDir = () =>
