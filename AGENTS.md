@@ -1,3 +1,11 @@
+## Gates
+
+- `just test` runs the suite (`npm test`); every recipe records its wall time through
+  `tools/tt` for the cross-project test and CI audit (ops
+  `docs/specs/2026-09-04-test-ci-audit-design.md`). `just check` is the pre-commit gate
+  and `just gate` the pre-push one; install the hooks in a fresh clone with
+  `git config core.hooksPath .githooks`.
+
 ## Tasks workflow
 
 - Run `tasks prime` at the start of a work session and `tasks ready` before choosing work.

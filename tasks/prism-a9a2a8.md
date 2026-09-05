@@ -5,7 +5,7 @@ status: todo
 priority: 2
 size: m
 created: 2026-09-04T21:44:54Z
-updated: 2026-09-05T02:38:40Z
+updated: 2026-09-05T11:41:44Z
 depends: [ops-31f038]
 tags: [testing]
 ---
@@ -15,3 +15,4 @@ Piece of ops-65837b (the cross-project audit in the ops hub). 1. Measure: full-s
 ## Notes
 
 - 2026-09-05T02:38:40Z (main): design: ops docs/specs/2026-09-04-test-ci-audit-design.md; follow §5: (1) justfile + vendored tools/tt, route existing hooks, CI, and documented test commands through it, verify a line lands under each agent; (2) after a week of runs, add a note reading 'baseline <date>: <tt-report --project numbers>'; (3) gates to §4.6, AGENTS.md line, hygiene; (4) close with before/after numbers
+- 2026-09-05T11:41:44Z (test-ci-audit): step 1 (instrument, no policy change): justfile front door, vendored tools/tt (version 2), .githooks + core.hooksPath, README and AGENTS.md test commands routed through it; no prior hooks and no CI here, so the template gates are the first ones. Measured full suite 150 tests, 1.3s median / 1.4s p90 wall over 3 runs of `just test`, 0 failures; `tasks check` is 0.0s. No affected-only selection for node --test, so test-fast = test. Verified one line each under claude (shared log), codex (worktree .tt fallback, harvested by tt-report), and by hand. Wall time is not the cost here: the spec reporter prints 150 lines per run, so the quiet reporter is the step 3 hygiene item.

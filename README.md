@@ -15,12 +15,16 @@ overrides. The Noctalia integration is a native v5 plugin under
 
 - Node.js 20 or newer
 - Lua (for the direct Noctalia plugin module checks)
+- `just` and Python 3 (the test front door and its timing wrapper)
 
 Install the existing Node dependency with `npm install`.
 
 ## Tests
 
-- `npm test` runs the full Prism suite.
+- `just test` runs the full Prism suite (`npm test`) through the timing wrapper
+  `tools/tt`; `just check` and `just gate` are the pre-commit and pre-push
+  gates, and a fresh clone installs the hooks with
+  `git config core.hooksPath .githooks`.
 - `npm run test:plugin-lua` is the direct Noctalia plugin contract check for
   the production Lua modules.
 
