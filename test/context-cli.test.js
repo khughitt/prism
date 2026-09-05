@@ -106,3 +106,151 @@ test('context verbs reject the reserved kind, unknown kinds, bad names, and stra
   assert.match((await runCaptured(['context', 'save', 'profile', 'a b'])).stderr, /invalid context name/);
   assert.match((await runCaptured(['context'])).stderr, /usage: prism context/);
 });
+
+test('activate profile fans out only the keys whose effective value changed', async () => {
+  fs.writeFileSync(valuesPath(), 'terminal.background.opacity.inactive: 0.6\n');
+  await cli.run(['apply'], { runner: () => {} });
+  writeContext('profile', 'dusk', { source: null,
+    values: { 'terminal.background.opacity.inactive': 0.4, 'glass.ior': 1.24 } });
+
+  const calls = [];
+  assert.equal(await cli.run(['context', 'activate', 'profile', 'dusk'],
+    { runner: (m, f, keys) => calls.push([m.sink, keys]) }), 0);
+  assert.deepEqual(readActive(), { profile: 'dusk' });
+  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['terminal.background.opacity.inactive'], 0.4);
+  // both fixture sinks bind the opacity key; glass.ior changed too but no fixture sink binds it
+  assert.deepEqual(calls.map(([s]) => s).sort(), ['fastsink', 'slowsink']);
+  for (const [, keys] of calls) {
+    assert.deepEqual(keys.sort(), ['glass.ior', 'terminal.background.opacity.inactive']);
+  }
+});
+
+test('activate profile requires the file; activate wallpaper copies _source into the slot', async () => {
+  const missing = await runCaptured(['context', 'activate', 'profile', 'nope']);
+  assert.match(missing.stderr, /profile nope: no such context/);
+  assert.deepEqual(readActive(), {});
+
+  writeContext('wallpaper', 'abc12345', { source: '/walls/a.jpg', values: {} });
+  assert.equal(await cli.run(['context', 'activate', 'wallpaper', 'abc12345'], { runner: () => {} }), 0);
+  assert.deepEqual(readActive(), { wallpaper: { id: 'abc12345', path: '/walls/a.jpg' } });
+});
+
+test('an empty diff runs no sink and a repeated wallpaper is a no-op', async () => {
+  await cli.run(['apply'], { runner: () => {} });
+  const before = fs.readFileSync(resolvedPath(), 'utf8');
+  const calls = [];
+  assert.equal(await cli.run(['context', 'wallpaper', '/walls/untuned.jpg'], { runner: (m) => calls.push(m.sink) }), 0);
+  assert.deepEqual(calls, []);
+  assert.equal(fs.readFileSync(resolvedPath(), 'utf8'), before);
+  const { wallpaperId } = await import('../src/contexts.js');
+  assert.deepEqual(readActive(), { wallpaper: { id: wallpaperId('/walls/untuned.jpg'), path: '/walls/untuned.jpg' } });
+
+  const again = await runCaptured(['context', 'wallpaper', '/walls/untuned.jpg']);
+  assert.equal(again.code, 0);
+  assert.equal(fs.readFileSync(resolvedPath(), 'utf8'), before);
+  assert.match((await runCaptured(['context', 'wallpaper', ''])).stderr, /wallpaper path must not be empty/);
+});
+
+test('deactivate and delete clear the slot and restore the layer below', async () => {
+  fs.writeFileSync(valuesPath(), 'terminal.background.opacity.inactive: 0.6\n');
+  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'terminal.background.opacity.inactive': 0.5 } });
+  writeContext('profile', 'dusk', { source: null, values: { 'terminal.background.opacity.inactive': 0.4 } });
+  writeActive({ wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' });
+  await cli.run(['apply'], { runner: () => {} });
+
+  let calls = [];
+  assert.equal(await cli.run(['context', 'deactivate', 'profile'], { runner: (m, f, keys) => calls.push(keys) }), 0);
+  assert.deepEqual(readActive(), { wallpaper: { id: 'abc12345', path: '/w' } });
+  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['terminal.background.opacity.inactive'], 0.5);
+  assert.deepEqual(calls, [['terminal.background.opacity.inactive'], ['terminal.background.opacity.inactive']]);
+
+  calls = [];
+  assert.equal(await cli.run(['context', 'delete', 'wallpaper', 'abc12345'], { runner: (m, f, keys) => calls.push(keys) }), 0);
+  assert.deepEqual(readActive(), {});
+  assert.equal(readContext('wallpaper', 'abc12345'), null);
+  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['terminal.background.opacity.inactive'], 0.6);
+  assert.equal(calls.length, 2);
+
+  // deleting an inactive context never touches the bus
+  const before = fs.readFileSync(resolvedPath(), 'utf8');
+  calls = [];
+  assert.equal(await cli.run(['context', 'delete', 'profile', 'dusk'], { runner: (m) => calls.push(m.sink) }), 0);
+  assert.deepEqual(calls, []);
+  assert.equal(fs.readFileSync(resolvedPath(), 'utf8'), before);
+  assert.match((await runCaptured(['context', 'delete', 'profile', 'dusk'])).stderr, /profile dusk: no such context/);
+});
+
+test('a broken previous state does not block recovery: the result is applied with a full fan-out', async () => {
+  fs.writeFileSync(valuesPath(), 'terminal.background.opacity.inactive: 0.6\n');
+  await cli.run(['apply'], { runner: () => {} });
+  writeActive({ profile: 'vanished' });
+  assert.notEqual((await runCaptured(['list'])).code, 0, 'precondition: the store is broken');
+
+  const calls = [];
+  assert.equal(await cli.run(['context', 'deactivate', 'profile'], { runner: (m, f, keys) => calls.push([m.sink, keys]) }), 0);
+  assert.deepEqual(readActive(), {});
+  assert.deepEqual(calls.map(([s]) => s).sort(), ['fastsink', 'slowsink']);
+  for (const [, keys] of calls) assert.deepEqual(keys, ['terminal.background.opacity.inactive']);
+  assert.equal((await runCaptured(['list'])).code, 0);
+
+  // switching straight to a valid profile works too
+  writeActive({ profile: 'vanished' });
+  writeContext('profile', 'dusk', { source: null, values: {} });
+  assert.equal(await cli.run(['context', 'activate', 'profile', 'dusk'], { runner: () => {} }), 0);
+  assert.deepEqual(readActive(), { profile: 'dusk' });
+});
+
+test('a result that cannot resolve is refused and leaves the slots unchanged', async () => {
+  writeContext('profile', 'bad', { source: null, values: { 'glass.ior': 99 } });
+  const failure = await runCaptured(['context', 'activate', 'profile', 'bad']);
+  assert.notEqual(failure.code, 0);
+  assert.match(failure.stderr, /glass\.ior: 99 outside range/);
+  assert.deepEqual(readActive(), {});
+});
+
+test('an unchanged slot is still validated: re-activating a broken context fails loudly', async () => {
+  writeContext('profile', 'bad', { source: null, values: { 'glass.ior': 99 } });
+  writeActive({ profile: 'bad' });
+  const again = await runCaptured(['context', 'activate', 'profile', 'bad']);
+  assert.notEqual(again.code, 0);
+  assert.match(again.stderr, /glass\.ior: 99 outside range/);
+
+  const { wallpaperId } = await import('../src/contexts.js');
+  const id = wallpaperId('/walls/a.jpg');
+  writeContext('wallpaper', id, { source: '/walls/a.jpg', values: { 'glass.ior': 99 } });
+  writeActive({ wallpaper: { id, path: '/walls/a.jpg' } });
+  const repeat = await runCaptured(['context', 'wallpaper', '/walls/a.jpg']);
+  assert.notEqual(repeat.code, 0);
+  assert.match(repeat.stderr, /glass\.ior: 99 outside range/);
+});
+
+test('a refused delete keeps both the file and the slots', async () => {
+  // the profile sits above a broken wallpaper; removing the profile exposes the
+  // broken layer, so the delete must be refused without touching anything
+  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'glass.ior': 99 } });
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.2 } });
+  writeActive({ wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' });
+  const failure = await runCaptured(['context', 'delete', 'profile', 'dusk']);
+  assert.notEqual(failure.code, 0);
+  assert.match(failure.stderr, /glass\.ior: 99 outside range/);
+  assert.notEqual(readContext('profile', 'dusk'), null, 'file preserved');
+  assert.deepEqual(readActive(), { wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' }, 'slots preserved');
+});
+
+test('delete recovers from malformed active context files with a full fan-out', async () => {
+  const { contextPath } = await import('../src/contexts.js');
+  fs.writeFileSync(valuesPath(), 'terminal.background.opacity.inactive: 0.6\n');
+  for (const contents of ['- invalid\n- shape\n', 'glass.ior: [\n']) {
+    writeContext('profile', 'broken', { source: null, values: {} });
+    fs.writeFileSync(contextPath('profile', 'broken'), contents);
+    writeActive({ profile: 'broken' });
+    const calls = [];
+    assert.equal(await cli.run(['context', 'delete', 'profile', 'broken'],
+      { runner: (m, f, keys) => calls.push([m.sink, keys]) }), 0);
+    assert.equal(readContext('profile', 'broken'), null);
+    assert.deepEqual(readActive(), {});
+    assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['terminal.background.opacity.inactive'], 0.6);
+    assert.deepEqual(calls.map(([sink]) => sink).sort(), ['fastsink', 'slowsink']);
+    for (const [, keys] of calls) assert.deepEqual(keys, ['terminal.background.opacity.inactive']);
+  }
+});
