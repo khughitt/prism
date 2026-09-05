@@ -4,7 +4,7 @@ title: Derive glass attenuation color and terminal palette from the Noctalia col
 status: idea
 priority: 2
 created: 2026-09-05T01:10:50Z
-updated: 2026-09-05T02:00:00Z
+updated: 2026-09-05T18:51:00Z
 depends: []
 tags: [integration, noctalia, colors]
 ---
@@ -16,3 +16,4 @@ Colors cohesion: glass.attenuationColor is hand-set (#00DBE4) while kitty, neovi
 - 2026-09-05T01:46:44Z (main): Focus-glass spike (material docs 2026-09-04) shows the active material must carry the terminal background color at a short attenuation distance once kitty is at 0; the wallpaper-derived attenuation color alone leaves text illegible. Direction: terminal background from the palette, wallpaper tint as a secondary mix.
 - 2026-09-05T01:57:44Z (main): Direction 2026-09-04: Noctalia colorscheme is the dominant color source; flow is noctalia -> prism -> glass color/hue. familiar owns only accent/ring per window (fam-b32b3d).
 - 2026-09-05T02:00:00Z (main): Correction: glass.attenuationColor is a manual value (values.yaml), not wallpaper-derived; Noctalia colors.json (mSurface #13140f, mPrimary #bad065 today) does not reach Prism yet. Noctalia's template post_hook path (as used by noctalia-glass-sync for nvim) is the candidate transport.
+- 2026-09-05T18:51:00Z (main): Related 2026-09-05: prism-2f0b4b (context-specific profiles); an auto-derived tint shrinks what a wallpaper profile must store.
