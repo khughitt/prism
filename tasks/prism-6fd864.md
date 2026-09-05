@@ -1,11 +1,12 @@
 ---
 id: prism-6fd864
 title: "Store: context layers resolved over base values"
-status: todo
+status: doing
 priority: 2
 size: m
+owner: feat/prism-6fd864
 created: 2026-09-05T18:50:31Z
-updated: 2026-09-05T18:50:31Z
+updated: 2026-09-05T19:07:17Z
 depends: []
 parent: prism-2f0b4b
 tags: [store, profiles]
