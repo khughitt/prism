@@ -34,6 +34,8 @@ function definition(name, params, glass) {
     `        distortion ${glass.distortion} scale=${params['glass.distortionScale']}`,
     `        anisotropic-blur ${glass.anisotropicBlur}`,
     `        roughness ${glass.roughness}`,
+    `        noise ${glass.noise}`,
+    `        saturation ${glass.saturation}`,
     `        backdrop-blur ${params['glass.backdropBlur']}`,
     `        jelly-flex ${params['glass.jellyFlex']}`,
     `        jelly-ripple ${params['glass.jellyRipple']}`,
@@ -54,6 +56,8 @@ function activeGlass(params) {
     distortion: params['glass.distortion'],
     anisotropicBlur: params['glass.anisotropicBlur'],
     roughness: params['glass.roughness'],
+    noise: params['glass.noise'],
+    saturation: params['glass.saturation'],
   };
 }
 
@@ -64,6 +68,8 @@ function inactiveGlass(params) {
     distortion: params['glass.inactive.distortion'],
     anisotropicBlur: params['glass.inactive.anisotropicBlur'],
     roughness: params['glass.inactive.roughness'],
+    noise: params['glass.inactive.noise'],
+    saturation: params['glass.inactive.saturation'],
   };
 }
 
