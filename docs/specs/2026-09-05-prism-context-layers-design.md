@@ -212,8 +212,8 @@ those:
 - a reset optimistically sets the local value to `fallback` and marks the
   param not overridden until the next `describe` reconciles;
 - a section reset unsets only overridden params;
-- the reset tooltip reads `Reset` when the target is base and `Reset to base`
-  otherwise;
+- the reset tooltip reads `Remove override` for every target, since a profile
+  reset may reveal a wallpaper value rather than the base one;
 - the model validator requires `layer`, `fallback`, and top-level `target`
   instead of `modified`.
 
@@ -237,11 +237,12 @@ All fail early with one line and no partial writes:
 - `unset` of a key the write target does not hold;
 - `context wallpaper` with an empty path.
 
-`active.json` naming a missing or invalid profile is not an error for
-`describe`, which still has to render the panel and reports the problem in
-its output, and is an error for `get`, `list`, `set`, `unset`, `apply`, and
-`doctor`, which report it and refuse to guess. The slot-changing verbs recover
-from it as Section 2 states.
+`active.json` naming a missing or invalid profile is an error for every
+reading and writing verb, `describe` included: they report it and refuse to
+guess. `describe` fails through the panel's existing visible-error path, which
+keeps the last valid model on screen and shows the error text, so the panel
+needs no special case. Recovery is the slot-changing verbs, which succeed from
+that state as Section 2 states.
 
 ### Concurrency
 
