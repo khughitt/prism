@@ -5,8 +5,8 @@ status: todo
 priority: 2
 size: m
 created: 2026-09-05T18:50:37Z
-updated: 2026-09-05T18:51:00Z
-depends: [prism-6fd864]
+updated: 2026-09-05T22:56:36Z
+depends: [prism-6fd864, prism-fcacfb]
 parent: prism-2f0b4b
 tags: [noctalia, ui, profiles]
 ---
