@@ -1,11 +1,12 @@
 ---
 id: prism-a9a2a8
 title: Test + CI iteration cost audit
-status: todo
+status: doing
 priority: 2
 size: m
+owner: main
 created: 2026-09-04T21:44:54Z
-updated: 2026-09-05T11:41:44Z
+updated: 2026-09-05T11:43:21Z
 depends: [ops-31f038]
 tags: [testing]
 ---
