@@ -115,6 +115,16 @@ local model = { params = {
     effectiveDrag = "release", range = { 0, 1 },
     ui = { control = "slider", group = "Focus", order = 221, step = 0.01, label = "Unfocused blur", display = "percent", state = "unfocused", row = "Blur" },
   },
+  {
+    key = "glass.saturation", value = 1, default = 1, modified = false,
+    effectiveDrag = "release", range = { 0, 3 },
+    ui = { control = "slider", group = "Focus", order = 280, step = 0.05, label = "Saturation", state = "focused", row = "Saturation" },
+  },
+  {
+    key = "glass.inactive.saturation", value = 0.85, default = 0.85, modified = false,
+    effectiveDrag = "release", range = { 0, 3 },
+    ui = { control = "slider", group = "Focus", order = 281, step = 0.05, label = "Unfocused saturation", state = "unfocused", row = "Saturation" },
+  },
 } }
 
 ui = setmetatable({}, { __index = function(_, kind)
@@ -156,9 +166,11 @@ for _, label in ipairs(collect(rendered, "label")) do labels[label.props.text or
 assert(labels["Glass"] and labels["Focus"], "section headers missing")
 assert(labels["Focused"] and labels["Unfocused"], "matrix column labels missing")
 assert(labels["Blur"] and labels["Gaps"], "row labels missing")
+assert(labels["Saturation"], "second matrix row label missing")
 local sliderKeys = {}
 for _, slider in ipairs(collect(rendered, "slider")) do sliderKeys[slider.props.key] = true end
 assert(sliderKeys["glass.roughness:slider"] and sliderKeys["glass.inactive.roughness:slider"], "matrix sliders missing")
+assert(sliderKeys["glass.saturation:slider"] and sliderKeys["glass.inactive.saturation:slider"], "saturation matrix sliders missing")
 equal(#collect(rendered, "toggle"), 2, "title and Focus header toggles")
 
 equal(Presentation.stepPrecision(0.000001), 6)
