@@ -277,8 +277,8 @@ renamed parameter look applied when nothing consumes it.
   `values`, `list` is a JSON array, `string` is taken verbatim. Anything
   else is a loud error.
 - `prism get <key>` / `prism list` — read effective values.
-- `prism describe --json` — dump merged defs × manifests plus
-  modified-from-default state; the UI bootstraps from this.
+- `prism describe --json` — dump merged defs × manifests plus each param's
+  source layer and write-target fallback; the UI bootstraps from this.
 - `prism apply [<sink>...]` — lock, load and validate defs and
   `values.yaml`, **re-resolve, rewrite `resolved.json`**, then fan out.
   The recovery/startup verb: it must produce correct sink state from
@@ -603,7 +603,8 @@ remains hidden.
   pass-through is tested by showing preview through direct IPC with settings
   closed.
 - **Reset affordances**: per-param revert (`prism unset`) and per-group
-  reset; modified-from-default state comes through `describe`.
+  reset, removing the override in the write target; each param's layer and
+  target come through `describe`.
 - **No caching**: the panel re-runs `describe` on open rather than watching
   files. Live external-change reactivity is a v1 non-goal — the panel is
   the only writer in practice.
