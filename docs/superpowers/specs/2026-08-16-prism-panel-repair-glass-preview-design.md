@@ -104,7 +104,8 @@ down from extra-large to large. Slider values step down from medium to small,
 margins/row gaps shrink by one theme step. Global Noctalia font or UI scale is
 never changed.
 
-The Reset icon remains visible only for modified parameters. It sits in the
+The Reset icon remains visible only for overridden parameters — those whose
+`layer` equals the write target. It sits in the
 same control row and vertical alignment as the slider value, toggle, select,
 or color value. An extra-small `on release` or `unavailable` hint sits at the
 trailing edge of that control row immediately before Reset, so the hint stays
@@ -112,7 +113,7 @@ attached to the interaction it qualifies. The icon remains smaller and
 lower-contrast than the primary control. Section Reset remains in the
 advanced-section header. Because Prism owns the row labels, native control
 labels and `defaultValue` indicators are disabled deliberately; the Reset icon
-is the sole per-parameter modified marker, while the header count remains the
+is the sole per-parameter override marker, while the header count remains the
 section-level marker.
 
 When the body overflows, the native `NScrollView` scrollbar reservation stays
@@ -152,7 +153,7 @@ merged, and loaded. The user accepted the post-restart immediate release then
 re-click/drag retest with no sticking.
 
 The post-write `describe` response remains authoritative. Delegate refresh
-reconciles the local value, `modified` state, and Reset visibility with the
+reconciles the local value, override state, and Reset visibility with the
 stored result. A failed write keeps the existing banner behavior and the
 following refresh rolls the optimistic value back. The CLI does not adopt
 optimistic or quantizing behavior. Reassigning `root.groups` after `describe`
@@ -331,7 +332,7 @@ click-through and focus behavior independently of SmartPanel dismissal.
 
 The Preview and Diagnostic-background toggles form the first compact row in
 the existing Diagnostics section. Diagnostic background is visible/enabled
-only while Preview is active. Preview state does not affect modified counts
+only while Preview is active. Preview state does not affect override counts
 or Reset actions. `Diagnostics` is the third and final presentation convention:
 the panel inserts these transient controls before that group's parameter
 repeater. Unlike `Title`, it remains a normal body group returned by

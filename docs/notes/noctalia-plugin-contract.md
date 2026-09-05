@@ -99,6 +99,16 @@ The presentation module defines the panel's stable layout contract:
 comes from) and `fallback` (what `unset` would leave). A parameter is
 overridden when `layer == target`; the reset is visible exactly then.
 
+The panel is installed into Noctalia separately from the `prism` command, so
+the two must be upgraded together. An older panel reading the new CLI's
+`describe --json` fails `validateModel` with `<key> has no layer`, because it
+expects a shape the CLI no longer sends without `layer`; a newer panel reading
+an older CLI's output fails with `prism describe returned no write target`,
+because `target` does not exist yet. Both degrade to the panel's visible-error
+banner, which is the correct failure mode, but a user who sees either message
+should read it as "the panel and the `prism` command are out of sync" and
+upgrade whichever side is behind.
+
 The shipped panel is two sections: `Glass`, the parameters both focus states
 share, and `Focus`, the matrix of terminal opacity, blur, tint distance,
 fringing, distortion, directional blur, noise, and saturation.

@@ -162,6 +162,18 @@ it replaces an active context: the snapshot equals the current effective set,
 and every layer above it is unchanged, so the composition is identical. This
 is stated so nobody has to reason about it later.
 
+**Caveat (2026-09-05):** that guarantee is about the moment of saving, not
+about what the saved file holds. `save <kind> <name>` targeting a context that
+is active but not topmost — saving into the active wallpaper while a profile
+is also active — writes every effective parameter, including values that only
+came from the profile above it. A wallpaper context meant to hold a couple of
+tuned keys can end up as a full snapshot carrying the profile's values, in
+tension with the "a wallpaper context holds only what was tuned" decision
+above. Deactivating the profile afterwards then surfaces the profile's value
+baked into the wallpaper file rather than whatever the wallpaper held before
+the save. A future revision may want `save` to refuse a target that is active
+but not topmost, rather than let it absorb layers above it.
+
 `activate`, `deactivate`, `wallpaper`, and `delete` of an active context
 resolve the resulting state under the store lock, write `resolved.json`, and
 fan out. The changed-key set is the diff against the previous effective
