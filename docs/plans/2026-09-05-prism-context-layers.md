@@ -310,7 +310,7 @@ git commit -m "feat(store): add context file storage and active slots"
 
 **Interfaces:**
 - Consumes: Task 1's `LAYER_ORDER`, `readActive`, `readContext`; `readValues` from `src/values.js`.
-- Produces: `resolveLayered(defs, base, layers)` returning `{ params, layerOf }` where `layers` is `[{ kind, name, values }]` in resolution order and `layerOf[key]` is `'default' | 'base' | kind`; `resolveParams(defs, values)` unchanged in meaning; `writeResolved(params)` now takes resolved params, not `(defs, values)`. From `src/layers.js`: `activeName(active, kind)`, `loadLayers(active)`, `writeTarget(layers)` returning `{ kind, name }` with `kind === 'base'` when nothing is active, `loadStore(defs)` returning `{ base, active, layers, target, params, layerOf, fallback }`, and `activeJson(active)` returning `{ wallpaper: {id,path}|null, profile: string|null }`.
+- Produces: `resolveLayered(defs, base, layers)` returning `{ params, layerOf }` where `layers` is `[{ kind, name, values }]` in resolution order and `layerOf[key]` is `'default' | 'base' | kind`, and which validates the selected value even when it is the default; `resolveParams(defs, values)` unchanged in meaning; `writeResolved(params)` now takes resolved params, not `(defs, values)`. From `src/layers.js`: `activeName(active, kind)`, `loadLayers(active)`, `writeTarget(layers)` returning `{ kind, name }` with `kind === 'base'` when nothing is active, `loadStore(defs)` returning `{ base, active, layers, target, params, layerOf, fallback }`, and `activeJson(active)` returning `{ wallpaper: {id,path}|null, profile: string|null }`.
 
 - [ ] **Step 1: `tasks start prism-bfecea`**
 
@@ -340,6 +340,12 @@ test('resolveLayered merges defaults, base, then each layer in order, and names 
   const base = resolveLayered(defs, { 'a.x': 0.2 }, []);
   assert.deepEqual(base.layerOf, { 'a.x': 'base', 'a.y': 'default' });
   assert.deepEqual(resolveLayered(defs, {}, []).params, resolveParams(defs, {}));
+});
+
+test('resolveLayered validates the selected default, so a bad def cannot reach the bus', () => {
+  const badDefs = new Map([['b.x', { key: 'b.x', type: 'float', range: [0, 1], default: 4,
+    ui: { group: 'g', control: 'slider' }, description: 'd' }]]);
+  assert.throws(() => resolveLayered(badDefs, {}, []), /b\.x: 4 outside range/);
 });
 
 test('resolveLayered validates every layer, not only the effective value', () => {
@@ -428,11 +434,12 @@ test('loadStore derives params, layerOf, target, and fallback from disk', () => 
     { wallpaper: { id: 'abc12345', path: '/w' }, profile: null });
 });
 
-test('loadStore with nothing active: target is base and fallback equals value', () => {
+test('loadStore with nothing active: target is base and fallback is the default for base overrides', () => {
   writeValues({ 'a.x': 0.2 });
   const store = layers.loadStore(defs);
   assert.deepEqual(store.target, { kind: 'base', name: null });
-  assert.deepEqual(store.fallback, store.params);
+  assert.deepEqual(store.params, { 'a.x': 0.2, 'a.y': true });
+  assert.deepEqual(store.fallback, { 'a.x': 0.5, 'a.y': true }, 'unset from base reveals the default');
   assert.deepEqual(layers.activeJson(store.active), { wallpaper: null, profile: null });
 });
 ```
@@ -471,6 +478,7 @@ export function resolveLayered(defs, base, layers) {
     for (const layer of layers) {
       if (key in layer.values) { value = layer.values[key]; source = layer.kind; }
     }
+    validateValue(def, value); // the default is the one value no layer check has seen
     params[key] = value;
     layerOf[key] = source;
   }
@@ -534,10 +542,13 @@ export function loadStore(defs) {
   const layers = loadLayers(active);
   const { params, layerOf } = resolveLayered(defs, base, layers);
   const target = writeTarget(layers);
-  const below = target.kind === 'base' ? null : resolveLayered(defs, base, layers.slice(0, -1)).params;
+  // What unset would leave: the layer below the target. Below base sit the defaults.
+  const below = target.kind === 'base'
+    ? resolveLayered(defs, {}, []).params
+    : resolveLayered(defs, base, layers.slice(0, -1)).params;
   const fallback = {};
   for (const key of Object.keys(params)) {
-    fallback[key] = below !== null && layerOf[key] === target.kind ? below[key] : params[key];
+    fallback[key] = layerOf[key] === target.kind ? below[key] : params[key];
   }
   return { base, active, layers, target, params, layerOf, fallback };
 }
@@ -569,7 +580,7 @@ git commit -m "feat(store): resolve context layers over the base values"
 
 **Interfaces:**
 - Consumes: `loadStore`, `activeJson` from `src/layers.js`; `listContexts`, `readContext`, `readActive`, `contextPath` from `src/contexts.js`.
-- Produces: the `describe` JSON shape from Global Constraints; `doctor` lines `doctor: <kind> <name>: <error>`, `doctor: orphan value <key> in <kind> <name>: no definition — edit <file>`, and `doctor: profile <name>: active context is missing — run 'prism context deactivate profile'`.
+- Produces: `snapshot(defs)`, which is `loadStore` under the store lock, so a reader never sees a slot and a file from two different writes; the `describe` JSON shape from Global Constraints; `doctor` lines `doctor: <kind> <name>: <error>` (file shape and invalid values alike), `doctor: orphan value <key> in <kind> <name>: no definition — edit <file>`, and `doctor: profile <name>: active context is missing — run 'prism context deactivate profile'`.
 
 - [ ] **Step 1: `tasks start prism-df8b75`**
 
@@ -655,10 +666,28 @@ test('doctor reports a missing active profile, a broken context file, and contex
   fs.mkdirSync(path.dirname(contextPath('profile', 'bad')), { recursive: true });
   fs.writeFileSync(contextPath('profile', 'bad'), '- not\n- flat\n');
   writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'gone.away': 1 } });
+  // an inactive context with a known key holding an invalid value must not pass diagnosis
+  writeContext('profile', 'hot', { source: null, values: { 'glass.ior': 99 } });
   out = '';
   assert.equal(await cli.run(['doctor'], { runner: () => {}, print: (s) => { out += s; } }), 1);
   assert.match(out, /doctor: profile bad: context must be a flat object/);
   assert.match(out, /doctor: orphan value gone\.away in wallpaper abc12345: no definition — edit /);
+  assert.match(out, /doctor: profile hot: glass\.ior: 99 outside range/);
+});
+
+test('reading verbs take the store lock, so they wait for an in-flight write', async () => {
+  const { withLock } = await import('../src/lock.js');
+  let release;
+  const held = withLock(lockPath(), () => new Promise((resolve) => { release = resolve; }));
+  await new Promise((r) => setTimeout(r, 20)); // let the holder acquire
+  let finished = false;
+  const reader = cli.run(['describe', '--json'], { print: () => {} }).then(() => { finished = true; });
+  await new Promise((r) => setTimeout(r, 100));
+  assert.equal(finished, false, 'describe must not read past the lock');
+  release();
+  await held;
+  await reader;
+  assert.equal(finished, true);
 });
 ```
 
@@ -675,6 +704,14 @@ In `src/cli.js`:
 
 Imports: add `import { loadStore, activeJson } from './layers.js';` and `import { listContexts, readContext, readActive, contextPath, VERB_KINDS } from './contexts.js';`. Drop `resolveParams` from the resolve import if nothing else uses it after Task 4 (keep it until then).
 
+Add near `load()`:
+
+```js
+// Every read of the store happens under the store lock: a slot and the file it
+// names must come from the same write.
+const snapshot = (defs) => withLock(lockPath(), async () => loadStore(defs));
+```
+
 `get`:
 
 ```js
@@ -683,7 +720,7 @@ Imports: add `import { loadStore, activeJson } from './layers.js';` and `import 
         const [key] = rest;
         const { defs } = load();
         if (!defs.has(key)) throw new Error(`unknown param ${key}`);
-        print(`${JSON.stringify(loadStore(defs).params[key])}\n`);
+        print(`${JSON.stringify((await snapshot(defs)).params[key])}\n`);
         return 0;
       }
 ```
@@ -694,7 +731,7 @@ Imports: add `import { loadStore, activeJson } from './layers.js';` and `import 
       case 'list': {
         if (rest.length !== 0) throw new Error('usage: prism list');
         const { defs } = load();
-        const { params } = loadStore(defs);
+        const { params } = await snapshot(defs);
         for (const key of Object.keys(params)) {
           print(`${key} = ${JSON.stringify(params[key])}\n`);
         }
@@ -702,11 +739,11 @@ Imports: add `import { loadStore, activeJson } from './layers.js';` and `import 
       }
 ```
 
-`describe`: replace `const values = readValues(); const params = resolveParams(defs, values);` with `const store = loadStore(defs);`, replace `value: params[key], modified: Object.hasOwn(values, key),` with `value: store.params[key], layer: store.layerOf[key], fallback: store.fallback[key],`, and print `JSON.stringify({ active: activeJson(store.active), target: store.target.kind, params: described }, null, 2)`.
+`describe`: replace `const values = readValues(); const params = resolveParams(defs, values);` with `const store = await snapshot(defs);`, replace `value: params[key], modified: Object.hasOwn(values, key),` with `value: store.params[key], layer: store.layerOf[key], fallback: store.fallback[key],`, and print `JSON.stringify({ active: activeJson(store.active), target: store.target.kind, params: described }, null, 2)`.
 
 `apply`: inside the lock, `resolved = writeResolved(loadStore(defs).params);`.
 
-`doctor`: after the base-orphan loop and before `if (orphans.length > 0) return 1;`, add:
+`doctor`: the whole diagnosis of files reads under one lock. Wrap everything from `const values = readValues();` through the resolve in `await withLock(lockPath(), async () => { ... })`, collecting the `print` lines and `problems` count inside it (the sink-status loop that follows reads only `sink-status.json` and stays outside). After the base-orphan loop and before `if (orphans.length > 0) return 1;`, add:
 
 ```js
         let contextProblems = 0;
@@ -726,9 +763,19 @@ Imports: add `import { loadStore, activeJson } from './layers.js';` and `import 
               contextProblems++;
               continue;
             }
-            for (const key of Object.keys(context.values).filter((k) => !defs.has(k))) {
-              print(`doctor: orphan value ${key} in ${kind} ${name}: no definition — edit ${contextPath(kind, name)}\n`);
-              contextProblems++;
+            for (const [key, value] of Object.entries(context.values)) {
+              const def = defs.get(key);
+              if (!def) {
+                print(`doctor: orphan value ${key} in ${kind} ${name}: no definition — edit ${contextPath(kind, name)}\n`);
+                contextProblems++;
+                continue;
+              }
+              try {
+                validateValue(def, value);   // inactive contexts are never resolved, so check them here
+              } catch (error) {
+                print(`doctor: ${kind} ${name}: ${error.message}\n`);
+                contextProblems++;
+              }
             }
           }
         }
@@ -736,7 +783,7 @@ Imports: add `import { loadStore, activeJson } from './layers.js';` and `import 
         const { params } = loadStore(defs);
 ```
 
-and delete the old `const params = resolveParams(defs, values);` line that followed. The remaining sink-status loop is unchanged. Note the `readContext` errors already read `profile bad: context must be a flat object`, so `doctor: ${error.message}` produces the asserted line.
+and delete the old `const params = resolveParams(defs, values);` line that followed. Note the `readContext` errors already read `profile bad: context must be a flat object`, and `validateValue` errors read `glass.ior: 99 outside range [1, 3]`, so the two `doctor: ...` prefixes produce the asserted lines. Shape the lock callback to return `{ params, blocked }` where `blocked` is true when orphans or context problems were printed; after the lock, `if (blocked) return 1;` and continue into the sink-status loop with `params`. `withLock` releases the lock in its `finally`, so a throw inside the callback (a malformed `active.json`) still surfaces through the verb's normal error path.
 
 Usage string in the `default:` branch: `usage: prism set|unset|get|list|describe|apply|doctor|context`.
 
@@ -1078,13 +1125,19 @@ export async function runContext(args, { defs, manifests, print, runner }) {
   switch (sub) {
     case 'list': {
       if (rest.length !== 0) throw usage('list');
-      const active = readActive();
-      const all = listContexts();
+      const { active, all, sources } = await withLock(lockPath(), async () => {
+        const listed = listContexts();
+        return {
+          active: readActive(),
+          all: listed,
+          sources: Object.fromEntries(listed.wallpaper.map((name) => [name, readContext('wallpaper', name).source])),
+        };
+      });
       for (const kind of VERB_KINDS) {
         const current = activeName(active, kind);
         for (const name of all[kind]) {
           const marker = name === current ? '*' : ' ';
-          const source = kind === 'wallpaper' ? `  ${readContext(kind, name).source}` : '';
+          const source = kind === 'wallpaper' ? `  ${sources[name]}` : '';
           print(`${marker} ${kind} ${name}${source}\n`);
         }
       }
@@ -1096,7 +1149,7 @@ export async function runContext(args, { defs, manifests, print, runner }) {
 
     case 'show': {
       const { kind, name } = kindAndName(rest, 'show');
-      const context = requireContext(kind, name);
+      const context = await withLock(lockPath(), async () => requireContext(kind, name));
       const doc = kind === 'wallpaper' ? { _source: context.source, ...context.values } : context.values;
       print(stringify(doc));
       return null;
@@ -1153,7 +1206,7 @@ git commit -m "feat(cli): add context list, show, and save"
 
 **Interfaces:**
 - Consumes: `resolveLayered`, `writeResolved` from `src/resolve.js`; `loadLayers`, `loadStore` from `src/layers.js`; `deleteContext`, `wallpaperId`, `writeActive`, `readValues`; `fanOut` from `src/fanout.js`.
-- Produces: `activate <kind> <name>`, `deactivate <kind>`, `delete <kind> <name>`, `wallpaper <path>`; the shared `changeSlots` that diffs, recovers, and fans out.
+- Produces: `activate <kind> <name>`, `deactivate <kind>`, `delete <kind> <name>`, `wallpaper <path>`; the shared `changeSlots(ctx, mutate, commit)` that validates the result first, commits file changes second, diffs, recovers, and fans out.
 
 - [ ] **Step 1: `tasks start prism-47e47d`**
 
@@ -1262,12 +1315,39 @@ test('a result that cannot resolve is refused and leaves the slots unchanged', a
   assert.match(failure.stderr, /glass\.ior: 99 outside range/);
   assert.deepEqual(readActive(), {});
 });
+
+test('an unchanged slot is still validated: re-activating a broken context fails loudly', async () => {
+  writeContext('profile', 'bad', { source: null, values: { 'glass.ior': 99 } });
+  writeActive({ profile: 'bad' });
+  const again = await runCaptured(['context', 'activate', 'profile', 'bad']);
+  assert.notEqual(again.code, 0);
+  assert.match(again.stderr, /glass\.ior: 99 outside range/);
+
+  writeContext('wallpaper', 'abc12345', { source: '/walls/a.jpg', values: { 'glass.ior': 99 } });
+  writeActive({ wallpaper: { id: 'abc12345', path: '/walls/a.jpg' } });
+  const repeat = await runCaptured(['context', 'wallpaper', '/walls/a.jpg']);
+  assert.notEqual(repeat.code, 0);
+  assert.match(repeat.stderr, /glass\.ior: 99 outside range/);
+});
+
+test('a refused delete keeps both the file and the slots', async () => {
+  // the profile sits above a broken wallpaper; removing the profile exposes the
+  // broken layer, so the delete must be refused without touching anything
+  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'glass.ior': 99 } });
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.2 } });
+  writeActive({ wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' });
+  const failure = await runCaptured(['context', 'delete', 'profile', 'dusk']);
+  assert.notEqual(failure.code, 0);
+  assert.match(failure.stderr, /glass\.ior: 99 outside range/);
+  assert.notEqual(readContext('profile', 'dusk'), null, 'file preserved');
+  assert.deepEqual(readActive(), { wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' }, 'slots preserved');
+});
 ```
 
 - [ ] **Step 3: Run the file to verify the new tests fail**
 
 Run: `node --test test/context-cli.test.js`
-Expected: the six new tests FAIL with the `usage: prism context` error.
+Expected: the eight new tests FAIL with the `usage: prism context` error.
 
 - [ ] **Step 4: Add `changeSlots` and the four verbs**
 
@@ -1285,11 +1365,15 @@ import { fanOut } from './fanout.js';
 Add the helper above `runContext`:
 
 ```js
-// Apply a slot change. `mutate(active)` returns the next slots (and may
-// delete files). The resulting state must resolve; the previous state is
-// allowed not to, in which case every bound key fans out (the apply
-// contract), which is how a broken active context is recovered from.
-async function changeSlots({ defs, manifests, runner }, mutate) {
+// Apply a slot change. `mutate(active)` is pure and returns the next slots;
+// `commit()` performs any file change (a delete) and runs only after the
+// resulting state has resolved, so a refused change leaves every file and
+// slot as it was. The resulting state is always validated, even when the
+// slots do not change, so re-activating a broken context fails loudly. The
+// previous state is allowed not to resolve, in which case every bound key
+// fans out (the apply contract): that is how a broken active context is
+// recovered from.
+async function changeSlots({ defs, manifests, runner }, mutate, commit = () => {}) {
   let outcome = null;
   await withLock(lockPath(), async () => {
     const active = readActive();
@@ -1300,8 +1384,9 @@ async function changeSlots({ defs, manifests, runner }, mutate) {
       previous = null;
     }
     const next = mutate(active);
-    if (isDeepStrictEqual(next, active)) return;
     const { params } = resolveLayered(defs, readValues(), loadLayers(next));
+    commit();
+    if (isDeepStrictEqual(next, active)) return;
     writeActive(next);
     const resolved = writeResolved(params);
     const changedKeys = previous === null
@@ -1340,12 +1425,12 @@ Add the cases before `default:`:
 
     case 'delete': {
       const { kind, name } = kindAndName(rest, 'delete');
+      requireContext(kind, name);   // a missing file fails before any state is touched
       return changeSlots({ defs, manifests, runner }, (active) => {
-        deleteContext(kind, name);
         const next = { ...active };
         if (activeName(active, kind) === name) delete next[kind];
         return next;
-      });
+      }, () => deleteContext(kind, name));
     }
 
     case 'wallpaper': {
@@ -1356,7 +1441,7 @@ Add the cases before `default:`:
     }
 ```
 
-`readActive` inside `changeSlots` throws on a malformed `active.json`; that is a hand-edit failure and stays loud. The "previous cannot resolve" recovery covers a missing or invalid context file, which is what `loadStore` throws on.
+`readActive` inside `changeSlots` throws on a malformed `active.json`; that is a hand-edit failure and stays loud. The "previous cannot resolve" recovery covers a missing or invalid context file, which is what `loadStore` throws on. Deleting an inactive context while the active state is broken is refused too, because the resulting state is the same broken state; recover with `deactivate` first.
 
 - [ ] **Step 5: Run the suite**
 

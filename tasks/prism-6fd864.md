@@ -6,7 +6,7 @@ priority: 2
 size: m
 owner: feat/prism-6fd864
 created: 2026-09-05T18:50:31Z
-updated: 2026-09-05T20:05:07Z
+updated: 2026-09-05T20:16:11Z
 depends: []
 parent: prism-2f0b4b
 tags: [store, profiles]
@@ -19,3 +19,4 @@ Outcome: the Prism store gains named contexts that layer over the base values fi
 ## Notes
 
 - 2026-09-05T19:47:42Z (feat/prism-6fd864): Review 2026-09-05: save is a full snapshot; describe replaces modified with target, layer, fallback and the panel reset semantics change in this piece; slot-changing verbs recover from a broken previous state by full fan-out; the wallpaper slot carries the path; get and list use the layered path.
+- 2026-09-05T20:16:11Z (feat/prism-6fd864): Plan review 2026-09-05: changeSlots validates the result before committing a delete and never skips validation on an unchanged slot; fallback below base is the default; reads take the store lock; doctor validates values in every context; the resolver validates the selected default.
