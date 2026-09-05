@@ -27,6 +27,7 @@ process.env.PRISM_INTEGRATIONS_DIR = integ;
 
 const cli = await import('../src/cli.js');
 const { lockPath, resolvedPath, valuesPath, generatedPath } = await import('../src/paths.js');
+const { writeActive, writeContext, contextPath } = await import('../src/contexts.js');
 const prismBin = fileURLToPath(new URL('../bin/prism', import.meta.url));
 
 // Every test starts from an identical clean store and arranges what it needs.
@@ -85,7 +86,7 @@ test('set back to the default deletes the override but still fans out', async ()
   let out = '';
   await cli.run(['describe', '--json'], { runner: () => {}, print: (s) => { out += s; } });
   const p = JSON.parse(out).params.find((x) => x.key === 'terminal.background.opacity.inactive');
-  assert.equal(p.modified, false, 'values.yaml must stay sparse');
+  assert.equal(p.layer, 'default', 'values.yaml must stay sparse');
 });
 
 test('set rejects out-of-range values, unknown keys, and stray flags without touching state', async () => {
@@ -133,7 +134,7 @@ test('describe emits bindings and slowest effectiveLiveness', async (t) => {
   await cli.run(['describe', '--json'], { runner: () => {}, print: (s) => { out += s; } });
   const d = JSON.parse(out);
   const p = d.params.find((x) => x.key === 'terminal.background.opacity.inactive');
-  assert.equal(p.modified, true);
+  assert.equal(p.layer, 'base');
   assert.equal(p.value, 0.6);
   assert.equal(p.effectiveLiveness, 'reload'); // slowest of live+reload
   assert.deepEqual(d.params.find((x) => x.key === 'glass.jellyRipple').effectiveDrag, 'live');
@@ -153,12 +154,93 @@ test('describe emits only the public counter-free JSON shape', async () => {
   let out = '';
   assert.equal(await cli.run(['describe', '--json'], { print: (s) => { out += s; } }), 0);
   const described = JSON.parse(out);
-  assert.deepEqual(Object.keys(described), ['params']);
+  assert.deepEqual(Object.keys(described), ['active', 'target', 'params']);
+  assert.deepEqual(described.active, { wallpaper: null, profile: null });
+  assert.equal(described.target, 'base');
   const p = described.params.find((item) => item.key === 'terminal.background.opacity.inactive');
   assert.deepEqual(Object.keys(p), [
-    'key', 'type', 'range', 'default', 'value', 'modified', 'ui', 'description',
+    'key', 'type', 'range', 'default', 'value', 'layer', 'fallback', 'ui', 'description',
     'bindings', 'effectiveLiveness', 'effectiveDrag',
   ]);
+  assert.equal(p.layer, 'default');
+  assert.equal(p.fallback, p.value);
+});
+
+test('get, list, and describe read through the active layers', async () => {
+  fs.writeFileSync(valuesPath(), 'glass.paneLip: 8\nglass.ior: 1.24\n');
+  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'glass.ior': 1.3 } });
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.paneLip': 6 } });
+  writeActive({ wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' });
+
+  let out = '';
+  assert.equal(await cli.run(['get', 'glass.ior'], { print: (s) => { out += s; } }), 0);
+  assert.equal(out, '1.3\n');
+  out = '';
+  assert.equal(await cli.run(['list'], { print: (s) => { out += s; } }), 0);
+  assert.match(out, /^glass\.paneLip = 6$/m);
+  assert.match(out, /^glass\.ior = 1\.3$/m);
+
+  out = '';
+  await cli.run(['describe', '--json'], { print: (s) => { out += s; } });
+  const d = JSON.parse(out);
+  assert.deepEqual(d.active, { wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' });
+  assert.equal(d.target, 'profile');
+  const lip = d.params.find((x) => x.key === 'glass.paneLip');
+  assert.deepEqual([lip.value, lip.layer, lip.fallback], [6, 'profile', 8]);
+  const ior = d.params.find((x) => x.key === 'glass.ior');
+  assert.deepEqual([ior.value, ior.layer, ior.fallback], [1.3, 'wallpaper', 1.3]);
+});
+
+test('a missing active profile fails every reading verb, describe included', async () => {
+  writeActive({ profile: 'gone' });
+  for (const argv of [['get', 'glass.ior'], ['list'], ['describe', '--json'], ['apply']]) {
+    const failure = await runCaptured(argv, { runner: () => {}, print: () => {} });
+    assert.notEqual(failure.code, 0, `${argv.join(' ')} unexpectedly succeeded`);
+    assert.match(failure.stderr, /profile gone: active context is missing/);
+  }
+});
+
+test('apply resolves through the layers', async () => {
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.paneLip': 11 } });
+  writeActive({ profile: 'dusk' });
+  assert.equal(await cli.run(['apply'], { runner: () => {} }), 0);
+  const resolved = JSON.parse(fs.readFileSync(resolvedPath(), 'utf8'));
+  assert.equal(resolved.params['glass.paneLip'], 11);
+});
+
+test('doctor reports a missing active profile, a broken context file, and context orphans', async () => {
+  await cli.run(['apply'], { runner: () => {} });
+  let out = '';
+  writeActive({ profile: 'gone' });
+  assert.equal(await cli.run(['doctor'], { runner: () => {}, print: (s) => { out += s; } }), 1);
+  assert.match(out, /doctor: profile gone: active context is missing — run 'prism context deactivate profile'/);
+
+  writeActive({});
+  fs.mkdirSync(path.dirname(contextPath('profile', 'bad')), { recursive: true });
+  fs.writeFileSync(contextPath('profile', 'bad'), '- not\n- flat\n');
+  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'gone.away': 1 } });
+  // an inactive context with a known key holding an invalid value must not pass diagnosis
+  writeContext('profile', 'hot', { source: null, values: { 'glass.ior': 99 } });
+  out = '';
+  assert.equal(await cli.run(['doctor'], { runner: () => {}, print: (s) => { out += s; } }), 1);
+  assert.match(out, /doctor: profile bad: context must be a flat object/);
+  assert.match(out, /doctor: orphan value gone\.away in wallpaper abc12345: no definition — edit /);
+  assert.match(out, /doctor: profile hot: glass\.ior: 99 outside range/);
+});
+
+test('reading verbs take the store lock, so they wait for an in-flight write', async () => {
+  const { withLock } = await import('../src/lock.js');
+  let release;
+  const held = withLock(lockPath(), () => new Promise((resolve) => { release = resolve; }));
+  await new Promise((r) => setTimeout(r, 20)); // let the holder acquire
+  let finished = false;
+  const reader = cli.run(['describe', '--json'], { print: () => {} }).then(() => { finished = true; });
+  await new Promise((r) => setTimeout(r, 100));
+  assert.equal(finished, false, 'describe must not read past the lock');
+  release();
+  await held;
+  await reader;
+  assert.equal(finished, true);
 });
 
 test('entrypoint flushes complete describe JSON to piped stdout', () => {

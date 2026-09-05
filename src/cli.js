@@ -7,6 +7,8 @@ import { resolveParams, writeResolved } from './resolve.js';
 import { fanOut, boundParams } from './fanout.js';
 import { readJson } from './store.js';
 import { withLock } from './lock.js';
+import { loadStore, activeJson } from './layers.js';
+import { listContexts, readContext, readActive, contextPath, VERB_KINDS } from './contexts.js';
 import {
   defsDir,
   generatedPath,
@@ -21,6 +23,10 @@ function load() {
   const defs = loadDefs(defsDir());
   return { defs, manifests: loadManifests(integrationsDir(), defs) };
 }
+
+// Every read of the store happens under the store lock: a slot and the file it
+// names must come from the same write.
+const snapshot = (defs) => withLock(lockPath(), async () => loadStore(defs));
 
 function report({ failed }, eprint) {
   for (const failure of failed) {
@@ -92,14 +98,14 @@ export async function run(argv, opts = {}) {
         const [key] = rest;
         const { defs } = load();
         if (!defs.has(key)) throw new Error(`unknown param ${key}`);
-        print(`${JSON.stringify(resolveParams(defs, readValues())[key])}\n`);
+        print(`${JSON.stringify((await snapshot(defs)).params[key])}\n`);
         return 0;
       }
 
       case 'list': {
         if (rest.length !== 0) throw new Error('usage: prism list');
         const { defs } = load();
-        const params = resolveParams(defs, readValues());
+        const { params } = await snapshot(defs);
         for (const key of Object.keys(params)) {
           print(`${key} = ${JSON.stringify(params[key])}\n`);
         }
@@ -111,8 +117,7 @@ export async function run(argv, opts = {}) {
           throw new Error('usage: prism describe --json');
         }
         const { defs, manifests } = load();
-        const values = readValues();
-        const params = resolveParams(defs, values);
+        const store = await snapshot(defs);
         const described = [];
 
         for (const [key, def] of defs) {
@@ -135,8 +140,9 @@ export async function run(argv, opts = {}) {
             range: def.range,
             values: def.values,
             default: def.default,
-            value: params[key],
-            modified: Object.hasOwn(values, key),
+            value: store.params[key],
+            layer: store.layerOf[key],
+            fallback: store.fallback[key],
             ui: def.ui,
             description: def.description,
             bindings,
@@ -145,7 +151,7 @@ export async function run(argv, opts = {}) {
           });
         }
 
-        print(`${JSON.stringify({ params: described }, null, 2)}\n`);
+        print(`${JSON.stringify({ active: activeJson(store.active), target: store.target.kind, params: described }, null, 2)}\n`);
         return 0;
       }
 
@@ -160,7 +166,7 @@ export async function run(argv, opts = {}) {
 
         let resolved;
         await withLock(lockPath(), async () => {
-          resolved = writeResolved(resolveParams(defs, readValues()));
+          resolved = writeResolved(loadStore(defs).params);
         });
         const changedKeys = [...new Set(targets.flatMap((manifest) =>
           manifest.binds.map((binding) => binding.param)))];
@@ -175,7 +181,6 @@ export async function run(argv, opts = {}) {
       case 'doctor': {
         if (rest.length !== 0) throw new Error('usage: prism doctor');
         const { defs, manifests } = load();
-        const values = readValues();
         let problems = 0;
 
         for (const manifest of manifests) {
@@ -187,14 +192,53 @@ export async function run(argv, opts = {}) {
           }
         }
 
-        const orphans = Object.keys(values).filter((key) => !defs.has(key));
-        for (const key of orphans) {
-          print(`doctor: orphan value ${key}: no definition — run 'prism unset ${key}'\n`);
-          problems++;
-        }
-        if (orphans.length > 0) return 1;
+        const { params, blocked } = await withLock(lockPath(), async () => {
+          const values = readValues();
+          const orphans = Object.keys(values).filter((key) => !defs.has(key));
+          for (const key of orphans) {
+            print(`doctor: orphan value ${key}: no definition — run 'prism unset ${key}'\n`);
+            problems++;
+          }
 
-        const params = resolveParams(defs, values);
+          let contextProblems = 0;
+          const active = readActive();
+          if (active.profile !== undefined && readContext('profile', active.profile) === null) {
+            print(`doctor: profile ${active.profile}: active context is missing — run 'prism context deactivate profile'\n`);
+            contextProblems++;
+          }
+          const all = listContexts();
+          for (const kind of VERB_KINDS) {
+            for (const name of all[kind]) {
+              let context;
+              try {
+                context = readContext(kind, name);
+              } catch (error) {
+                print(`doctor: ${error.message}\n`);
+                contextProblems++;
+                continue;
+              }
+              for (const [key, value] of Object.entries(context.values)) {
+                const def = defs.get(key);
+                if (!def) {
+                  print(`doctor: orphan value ${key} in ${kind} ${name}: no definition — edit ${contextPath(kind, name)}\n`);
+                  contextProblems++;
+                  continue;
+                }
+                try {
+                  validateValue(def, value);   // inactive contexts are never resolved, so check them here
+                } catch (error) {
+                  print(`doctor: ${kind} ${name}: ${error.message}\n`);
+                  contextProblems++;
+                }
+              }
+            }
+          }
+          if (orphans.length > 0 || contextProblems > 0) return { params: null, blocked: true };
+          const { params } = loadStore(defs);
+          return { params, blocked: false };
+        });
+
+        if (blocked) return 1;
         const status = readJson(sinkStatusPath(), {});
         for (const manifest of manifests) {
           const entry = status[manifest.sink];
@@ -216,7 +260,7 @@ export async function run(argv, opts = {}) {
       }
 
       default:
-        eprint('usage: prism set|unset|get|list|describe|apply|doctor\n');
+        eprint('usage: prism set|unset|get|list|describe|apply|doctor|context\n');
         return 2;
     }
   } catch (error) {
