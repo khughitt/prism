@@ -45,7 +45,8 @@ local function visibleParamError(param, index)
   if type(param.key) ~= "string" or param.key == "" then return "parameter " .. index .. " has no key" end
   if param.value == nil then return param.key .. " has no value" end
   if param.default == nil then return param.key .. " has no default" end
-  if type(param.modified) ~= "boolean" then return param.key .. " has invalid modified state" end
+  if type(param.layer) ~= "string" then return param.key .. " has no layer" end
+  if param.fallback == nil then return param.key .. " has no fallback" end
   if type(param.ui.group) ~= "string" or param.ui.group == "" then return param.key .. " has no UI group" end
   if type(param.ui.order) ~= "number" then return param.key .. " has no UI order" end
   if param.effectiveDrag ~= nil and param.effectiveDrag ~= "live" and param.effectiveDrag ~= "release" then
@@ -73,6 +74,7 @@ local function validateModel(model)
       return "prism describe returned an invalid parameter array"
     end
   end
+  if type(model.target) ~= "string" then return "prism describe returned no write target" end
   for index, param in ipairs(model.params) do
     if type(param) ~= "table" or type(param.ui) ~= "table" or type(param.ui.control) ~= "string" then
       return "parameter " .. index .. " has invalid UI metadata"
@@ -98,6 +100,12 @@ local function finishRefresh()
   end
 end
 
+local function markOverrides(model)
+  for _, param in ipairs(model.params) do
+    param.overridden = param.ui.control ~= "none" and param.layer == model.target
+  end
+end
+
 local function described(result)
   describeRunning = false
   local invalidated = state.describeInvalidated or state.drag ~= nil
@@ -115,6 +123,7 @@ local function described(result)
   if invalidated then
     state.refreshAfterDrag = true
   elseif not message then
+    markOverrides(model)
     state.model = model
     state.errorText = nil
   end
@@ -171,7 +180,7 @@ end
 
 local function updateParam(param, value)
   param.value = value
-  param.modified = value ~= param.default
+  param.overridden = true
 end
 
 local function writeParam(param, value)
@@ -181,14 +190,15 @@ local function writeParam(param, value)
 end
 
 local function unsetParam(param)
-  updateParam(param, param.default)
+  param.value = param.fallback
+  param.overridden = false
   enqueue({verb = "unset", key = param.key})
   render()
 end
 
 local function resetGroup(params)
   for _, param in ipairs(params) do
-    if param.modified then unsetParam(param) end
+    if param.overridden then unsetParam(param) end
   end
 end
 
@@ -264,8 +274,8 @@ local function resetButton(param, available)
   return ui.button({
     glyph = "restore",
     controlSize = "sm",
-    tooltip = "Reset to default",
-    visible = param.modified,
+    tooltip = "Remove override",
+    visible = param.overridden,
     enabled = available,
     onClick = function() unsetParam(param) end,
   })
@@ -390,7 +400,7 @@ end
 
 local function appendSection(children, section)
   local sectionParams = Presentation.sectionParams(section)
-  local modifiedCount = Presentation.modifiedCount(sectionParams)
+  local overriddenCount = Presentation.overriddenCount(sectionParams)
   local toggle = section.toggle
   children[#children + 1] = ui.separator({spacing = 6})
   children[#children + 1] = ui.row({gap = 8, align = "center"}, {
@@ -405,8 +415,8 @@ local function appendSection(children, section)
       glyph = "restore",
       variant = "ghost",
       controlSize = "sm",
-      tooltip = "Reset section" .. (modifiedCount > 0 and " (" .. modifiedCount .. ")" or ""),
-      visible = modifiedCount > 0,
+      tooltip = "Reset section" .. (overriddenCount > 0 and " (" .. overriddenCount .. ")" or ""),
+      visible = overriddenCount > 0,
       onClick = function() resetGroup(sectionParams) end,
     }),
   })

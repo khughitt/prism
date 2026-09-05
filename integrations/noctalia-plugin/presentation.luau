@@ -208,9 +208,9 @@ function M.sectionParams(section)
   return list
 end
 
-function M.modifiedCount(params)
+function M.overriddenCount(params)
   local count = 0
-  for _, param in ipairs(params) do if param.modified then count = count + 1 end end
+  for _, param in ipairs(params) do if param.overridden then count = count + 1 end end
   return count
 end
 

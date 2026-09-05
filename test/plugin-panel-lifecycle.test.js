@@ -18,14 +18,14 @@ local function newHost()
     sliders = {},
     suppressNextReconcileCallback = false,
   }
-  local model = {params = {
+  local model = {target = "base", params = {
     {
-      key = "glass.enabled", value = true, default = true, modified = false,
+      key = "glass.enabled", value = true, default = true, layer = "default", fallback = true,
       effectiveDrag = "release", description = "",
       ui = {control = "toggle", group = "Title", order = 0, label = "Enabled"},
     },
     {
-      key = "glass.depth", value = 100, default = 100, modified = false,
+      key = "glass.depth", value = 100, default = 100, layer = "default", fallback = 100,
       effectiveDrag = "live", description = "", range = {0.1, 200},
       ui = {control = "slider", group = "Quick", order = 1, label = "Depth", step = 0.1, display = "normalized"},
     },

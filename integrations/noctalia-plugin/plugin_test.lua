@@ -62,7 +62,7 @@ equal(sections[2].rows, {
   { row = "Tint", focused = params[8], unfocused = params[9] },
 })
 equal(Presentation.sectionParams(sections[2]), { params[2], params[6], params[4], params[8], params[9] })
-equal(Presentation.modifiedCount({ { modified = true }, { modified = false }, { modified = true } }), 2)
+equal(Presentation.overriddenCount({ { overridden = true }, { overridden = false }, { overridden = true } }), 2)
 
 local function fails(candidate, pattern)
   local ok, err = pcall(Presentation.sections, candidate)
@@ -89,39 +89,39 @@ fails({
 -- before and after the asynchronous model arrives.
 local rendered
 local described
-local model = { params = {
+local model = { target = "base", params = {
   {
-    key = "glass.enabled", value = true, default = true, modified = false,
+    key = "glass.enabled", value = true, default = true, layer = "default", fallback = true,
     effectiveDrag = "release",
     ui = { control = "toggle", group = "Title", order = 0, label = "Glass" },
   },
   {
-    key = "compositor.gaps", value = 24, default = 24, modified = false,
+    key = "compositor.gaps", value = 24, default = 24, layer = "default", fallback = 24,
     effectiveDrag = "release", range = { 0, 128 },
     ui = { control = "slider", group = "Glass", order = 10, step = 1, label = "Gaps" },
   },
   {
-    key = "glass.focusSplit", value = true, default = true, modified = false,
+    key = "glass.focusSplit", value = true, default = true, layer = "default", fallback = true,
     effectiveDrag = "release",
     ui = { control = "toggle", group = "Focus", order = 200, label = "Focus-state glass", header = true },
   },
   {
-    key = "glass.roughness", value = 0.2, default = 0.08, modified = true,
+    key = "glass.roughness", value = 0.2, default = 0.08, layer = "base", fallback = 0.1,
     effectiveDrag = "release", range = { 0, 1 },
     ui = { control = "slider", group = "Focus", order = 220, step = 0.01, label = "Blur", display = "percent", state = "focused", row = "Blur" },
   },
   {
-    key = "glass.inactive.roughness", value = 0.5, default = 0.5, modified = false,
+    key = "glass.inactive.roughness", value = 0.5, default = 0.5, layer = "default", fallback = 0.5,
     effectiveDrag = "release", range = { 0, 1 },
     ui = { control = "slider", group = "Focus", order = 221, step = 0.01, label = "Unfocused blur", display = "percent", state = "unfocused", row = "Blur" },
   },
   {
-    key = "glass.saturation", value = 1, default = 1, modified = false,
+    key = "glass.saturation", value = 1, default = 1, layer = "default", fallback = 1,
     effectiveDrag = "release", range = { 0, 3 },
     ui = { control = "slider", group = "Focus", order = 280, step = 0.05, label = "Saturation", state = "focused", row = "Saturation" },
   },
   {
-    key = "glass.inactive.saturation", value = 0.85, default = 0.85, modified = false,
+    key = "glass.inactive.saturation", value = 0.85, default = 0.85, layer = "default", fallback = 0.85,
     effectiveDrag = "release", range = { 0, 3 },
     ui = { control = "slider", group = "Focus", order = 281, step = 0.05, label = "Unfocused saturation", state = "unfocused", row = "Saturation" },
   },
@@ -134,9 +134,11 @@ panel = {
   render = function(tree) rendered = tree end,
   setNeedsFrameTick = function() end,
 }
+local commands = {}
 noctalia = {
-  runAsync = function(_, callback)
-    described = callback
+  runAsync = function(cmd, callback)
+    commands[#commands + 1] = cmd
+    if cmd:find("describe", 1, true) then described = callback end
     return true
   end,
   json = { decode = function() return model end },
@@ -172,6 +174,26 @@ for _, slider in ipairs(collect(rendered, "slider")) do sliderKeys[slider.props.
 assert(sliderKeys["glass.roughness:slider"] and sliderKeys["glass.inactive.roughness:slider"], "matrix sliders missing")
 assert(sliderKeys["glass.saturation:slider"] and sliderKeys["glass.inactive.saturation:slider"], "saturation matrix sliders missing")
 equal(#collect(rendered, "toggle"), 2, "title and Focus header toggles")
+
+-- Reset means "remove the override in the write target": visible only where
+-- layer == target, and it optimistically shows the fallback value.
+local visibleResets = {}
+for _, button in ipairs(collect(rendered, "button")) do
+  if button.props.tooltip == "Remove override" and button.props.visible then
+    visibleResets[#visibleResets + 1] = button
+  end
+end
+equal(#visibleResets, 1, "exactly the base-overridden roughness row offers a reset")
+local sectionResets = 0
+for _, button in ipairs(collect(rendered, "button")) do
+  if button.props.tooltip == "Reset section (1)" and button.props.visible then sectionResets = sectionResets + 1 end
+end
+equal(sectionResets, 1, "the Focus section counts its one override")
+visibleResets[1].props.onClick()
+equal(model.params[4].value, 0.1, "reset shows the fallback, not the default, before describe reconciles")
+equal(model.params[4].overridden, false)
+assert(commands[#commands]:find("unset", 1, true) and commands[#commands]:find("glass.roughness", 1, true),
+  "reset enqueues prism unset for the row")
 
 equal(Presentation.stepPrecision(0.000001), 6)
 equal(Presentation.snapValue(100.04, { 0.1, 200 }, 0.1), 100)

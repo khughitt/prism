@@ -45,7 +45,7 @@ test('panel lifecycle owns refresh, drag cleanup, and live-drag frame ticks', as
 test('describe refresh validates visible parameters and discards stale results', async () => {
   const source = await readEntry('panel.luau');
 
-  for (const field of ['key', 'value', 'default', 'modified', 'control', 'group']) {
+  for (const field of ['key', 'value', 'default', 'layer', 'fallback', 'control', 'group']) {
     assert.match(source, new RegExp(`param(?:\\.ui)?\\.${field}`));
   }
   assert.match(source, /type\(model\.params\) ~= "table"/);
@@ -118,11 +118,11 @@ test('presentation renders every section open with a header toggle, matrix rows,
   assert.match(source, /Presentation\.titleParam\(state\.model\.params\)/);
   assert.match(source, /Presentation\.sections\(state\.model\.params\)/);
   assert.doesNotMatch(source, /expandedGroups|groupParams|Quick/);
-  assert.match(source, /Presentation\.modifiedCount\(sectionParams\)/);
+  assert.match(source, /Presentation\.overriddenCount\(sectionParams\)/);
   assert.match(source, /local function matrixRow\(row\)[\s\S]*controlCell\(row\.focused, 1\)[\s\S]*controlCell\(row\.unfocused, 1\)/);
   assert.match(source, /text = "Focused"[\s\S]*text = "Unfocused"/);
-  assert.match(source, /local function resetGroup[\s\S]*if param\.modified then[\s\S]*unsetParam\(param\)/);
-  assert.match(source, /tooltip = "Reset to default"/);
+  assert.match(source, /local function resetGroup[\s\S]*if param\.overridden then[\s\S]*unsetParam\(param\)/);
+  assert.match(source, /tooltip = "Remove override"/);
   assert.match(source, /tooltip = "Reset section"/);
   assert.match(source, /tooltip = param\.description or param\.key/);
 });
