@@ -100,29 +100,33 @@ test('one failing sink neither blocks others nor throws; status snapshots bound 
   assert.deepEqual(status.slow.params, { 'a.x': 1 });
 });
 
-test('a timed-out apply is recorded and does not block the next sink', { timeout: 2_000 }, async () => {
+test('a timed-out apply is recorded and does not block the next sink', { timeout: 5_000 }, async () => {
   freshState();
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-sinks-'));
   const marker = path.join(root, 'later-ran');
+  // Fixture sinks are shell scripts, not node scripts: the timeout below must measure the
+  // kill path, and node's interpreter startup alone can exceed 100ms under load.
   const makeSink = (name, body) => {
     const dir = path.join(root, name);
     fs.mkdirSync(dir);
-    fs.writeFileSync(path.join(dir, 'apply'), `#!/usr/bin/env node\n${body}\n`, { mode: 0o755 });
+    fs.writeFileSync(path.join(dir, 'apply'), `#!/bin/sh\n${body}\n`, { mode: 0o755 });
     return { sink: name, dir, binds: [{ param: 'a.x', liveness: 'live' }] };
   };
-  const timedOut = makeSink('timed-out',
-    "process.on('SIGTERM', () => {}); setTimeout(() => process.exit(0), 750);");
-  const later = makeSink('later', `require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'yes');`);
+  // Ignore SIGTERM (SIG_IGN survives exec) and sleep an order of magnitude past the timeout,
+  // so only the SIGKILL from the timeout can end it.
+  const timeout = 300;
+  const timedOut = makeSink('timed-out', "trap '' TERM; exec sleep 10");
+  const later = makeSink('later', `printf yes > '${marker}'`);
 
   const started = Date.now();
   const out = await fanOut({
     manifests: [timedOut, later],
     resolved,
     changedKeys: ['a.x'],
-    runner: (manifest, resolvedFile, keys) => runApply(manifest, resolvedFile, keys, 100),
+    runner: (manifest, resolvedFile, keys) => runApply(manifest, resolvedFile, keys, timeout),
   });
 
-  assert.ok(Date.now() - started < 500, 'SIGTERM handling must not defeat the timeout');
+  assert.ok(Date.now() - started < 2_000, 'SIGTERM handling must not defeat the timeout');
   assert.deepEqual(out.applied, ['later']);
   assert.equal(out.failed[0].sink, 'timed-out');
   assert.match(out.failed[0].error, /ETIMEDOUT/);
