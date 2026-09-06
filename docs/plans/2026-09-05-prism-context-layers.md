@@ -1693,4 +1693,4 @@ git add README.md docs tasks/
 git commit -m "docs: record the context layers in the README, bus design, and plugin contract"
 ```
 
-Then merge `feat/prism-6fd864` into `main` per the finishing-a-development-branch skill; the live hook wiring is `dot-88dc34` and the panel profile controls are `prism-ea6344`, both unblocked by this merge.
+Then merge `feat/prism-6fd864` into `main` per the finishing-a-development-branch skill; the live hook wiring is `dots-88dc34` and the panel profile controls are `prism-ea6344`, both unblocked by this merge.

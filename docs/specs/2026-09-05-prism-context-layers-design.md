@@ -14,7 +14,7 @@ come back with it, and profiles bound to other states Noctalia reports through
 hooks. All three are one mechanism, a context layer in the Prism store. This
 document designs that layer, its CLI, and the one panel change it forces. The
 profile controls in the Noctalia panel and the wallpaper hook wiring are
-separate pieces (`prism-ea6344`, `prism-648e0f`, `dot-88dc34`).
+separate pieces (`prism-ea6344`, `prism-648e0f`, `dots-88dc34`).
 
 Today the store is one flat `values.yaml` per host, symlinked from dotfiles,
 resolved as defaults then base values
@@ -297,7 +297,7 @@ README states the config layout, and the plugin contract note records the
 ## Out of scope
 
 - Profile controls in the panel (`prism-ea6344`).
-- The Noctalia hook line (`dot-88dc34`) and the wallpaper UX question of
+- The Noctalia hook line (`dots-88dc34`) and the wallpaper UX question of
   whether the panel exposes a base-versus-wallpaper switch (`prism-648e0f`).
 - The `state` kind's activation sources and its composition rules
   (`prism-9298b9`).

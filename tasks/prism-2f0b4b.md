@@ -6,7 +6,7 @@ priority: 2
 size: l
 created: 2026-09-05T18:50:21Z
 updated: 2026-09-05T18:51:00Z
-depends: [dot-88dc34]
+depends: [dots-88dc34]
 tags: [profiles, noctalia, store]
 ---
 
