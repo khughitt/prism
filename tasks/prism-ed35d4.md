@@ -4,7 +4,7 @@ title: Accent-colored icon buttons need a Noctalia contribution
 status: idea
 priority: 2
 created: 2026-09-05T22:29:35Z
-updated: 2026-09-06T10:55:42Z
+updated: 2026-09-06T12:05:47Z
 depends: []
 tags: [noctalia, ui]
 ---
@@ -17,3 +17,4 @@ The panel's reset icons carry their state in opacity (dim at default, full stren
 - 2026-09-06T09:40:45Z (main): Spec revised after review (API registration advances kCurrentPluginApiVersion per feature; unconditional palette rule via Button::defaultPalette(variant()) + withLabelColor; disabled keeps the custom color with alpha multiplied by 0.55; tooltip routed through wantsInputAreaWrapper with a non-empty predicate; acceptance criteria added). Now lives in the noctalia checkout's worktree .worktrees/plugin-ui-color-tooltip (branch feat/plugin-ui-color-tooltip off main 224da6dd4), untracked there because that checkout's .git/info/exclude ignores docs/superpowers/.
 - 2026-09-06T09:49:57Z (main): Implementation plan written (8 tasks, TDD, two API levels 31 button-color and 32 container-tooltip): noctalia worktree .worktrees/plugin-ui-color-tooltip docs/superpowers/plans/2026-09-06-plugin-ui-button-color-and-container-tooltip.md, untracked there like the spec.
 - 2026-09-06T10:55:42Z (main): Restructured: two worktrees off noctalia main 224da6dd4, .worktrees/plugin-ui-button-color (feat/plugin-ui-button-color) and .worktrees/plugin-ui-container-tooltip (feat/plugin-ui-container-tooltip), each claiming plugin API 31 (second to merge renumbers to 32). Spec and the two plans (2026-09-06-plugin-ui-button-color.md, 2026-09-06-plugin-ui-container-tooltip.md) live untracked in the primary checkout's docs/superpowers/; no docs commits on either branch.
+- 2026-09-06T12:05:47Z (main): Button color implemented in the noctalia worktree .worktrees/plugin-ui-button-color: branch feat/plugin-ui-button-color = main (224da6dd4) + 3 commits (38a1e4052 palette helpers, 30ffde631 color prop + reconciler tests, 019f16079 API 31 registration + docs). Full suite 112/113, the one failure (template_undo_signal, ghostty undo.sh template) is pre-existing at main. Format and narrowed clang-tidy clean. Not pushed; live check with the prism panel still to do by hand before filing.
