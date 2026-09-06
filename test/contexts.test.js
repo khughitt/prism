@@ -66,6 +66,29 @@ test('malformed context files fail loudly', () => {
   assert.throws(() => contexts.readContext('wallpaper', 'nosrc'), /wallpaper nosrc: missing _source/);
 });
 
+test('inspectContext reports a parse failure instead of throwing, with the raw text attached', () => {
+  fs.mkdirSync(path.join(contextsDir(), 'profile'), { recursive: true });
+  fs.mkdirSync(path.join(contextsDir(), 'wallpaper'), { recursive: true });
+  contexts.writeContext('wallpaper', 'good', { source: '/x', values: { 'glass.ior': 1 } });
+  assert.deepEqual(contexts.inspectContext('wallpaper', 'good'),
+    { context: { source: '/x', values: { 'glass.ior': 1 } }, text: '_source: /x\nglass.ior: 1\n', error: null });
+
+  fs.writeFileSync(contexts.contextPath('wallpaper', 'nosrc'), 'glass.ior: 1\n');
+  assert.deepEqual(contexts.inspectContext('wallpaper', 'nosrc'),
+    { context: null, text: 'glass.ior: 1\n', error: 'missing _source' });
+
+  fs.writeFileSync(contexts.contextPath('profile', 'syntax'), 'glass.ior: [\n');
+  const syntax = contexts.inspectContext('profile', 'syntax');
+  assert.equal(syntax.context, null);
+  assert.equal(syntax.text, 'glass.ior: [\n');
+  assert.match(syntax.error, /^invalid YAML: /);
+  assert.doesNotMatch(syntax.error, /\n/);
+  // readContext throws the same reason, prefixed with the context it names.
+  assert.throws(() => contexts.readContext('profile', 'syntax'), /^Error: profile syntax: invalid YAML: /);
+
+  assert.equal(contexts.inspectContext('profile', 'absent'), null);
+});
+
 test('deleteContext removes the file and refuses a missing one', () => {
   contexts.writeContext('profile', 'dusk', { source: null, values: {} });
   contexts.deleteContext('profile', 'dusk');

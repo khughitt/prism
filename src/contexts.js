@@ -62,27 +62,63 @@ export function writeActive(active) {
   writeJsonAtomic(activePath(), active);
 }
 
-// null when the file is missing; a malformed file is an error.
-export function readContext(kind, name) {
-  let text;
+// A context file that does not parse. `reason` is the message without the
+// "<kind> <name>: " prefix, for verbs that print it beside the name.
+class ContextError extends Error {
+  constructor(kind, name, reason) {
+    super(`${kind} ${name}: ${reason}`);
+    this.reason = reason;
+  }
+}
+
+function parseContext(kind, name, text) {
+  let doc;
   try {
-    text = fs.readFileSync(contextPath(kind, name), 'utf8');
+    doc = parse(text) ?? {};
+  } catch (err) {
+    throw new ContextError(kind, name, `invalid YAML: ${err.message.split('\n')[0]}`);
+  }
+  if (typeof doc !== 'object' || doc === null || Array.isArray(doc)) {
+    throw new ContextError(kind, name, 'context must be a flat object');
+  }
+  const { _source: source, ...values } = doc;
+  if (kind !== 'wallpaper' && source !== undefined) {
+    throw new ContextError(kind, name, '_source is only allowed in wallpaper contexts');
+  }
+  if (kind === 'wallpaper' && typeof source !== 'string') {
+    throw new ContextError(kind, name, 'missing _source');
+  }
+  return { source: source ?? null, values };
+}
+
+// The raw file, or null when it is missing. Never parses.
+export function readContextText(kind, name) {
+  try {
+    return fs.readFileSync(contextPath(kind, name), 'utf8');
   } catch (err) {
     if (err.code === 'ENOENT') return null;
     throw err;
   }
-  const doc = parse(text) ?? {};
-  if (typeof doc !== 'object' || doc === null || Array.isArray(doc)) {
-    throw new Error(`${kind} ${name}: context must be a flat object`);
+}
+
+// null when the file is missing; a malformed file is an error.
+export function readContext(kind, name) {
+  const text = readContextText(kind, name);
+  return text === null ? null : parseContext(kind, name, text);
+}
+
+// For discovery verbs, which degrade where diagnosis verbs fail: a file that
+// does not parse comes back with its raw text and the reason instead of a
+// throw, so one broken context cannot hide the others. null when missing.
+export function inspectContext(kind, name) {
+  const text = readContextText(kind, name);
+  if (text === null) return null;
+  try {
+    return { context: parseContext(kind, name, text), text, error: null };
+  } catch (err) {
+    if (!(err instanceof ContextError)) throw err;
+    return { context: null, text, error: err.reason };
   }
-  const { _source: source, ...values } = doc;
-  if (kind !== 'wallpaper' && source !== undefined) {
-    throw new Error(`${kind} ${name}: _source is only allowed in wallpaper contexts`);
-  }
-  if (kind === 'wallpaper' && typeof source !== 'string') {
-    throw new Error(`wallpaper ${name}: missing _source`);
-  }
-  return { source: source ?? null, values };
 }
 
 export function writeContext(kind, name, { source, values }) {

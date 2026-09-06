@@ -293,7 +293,7 @@ export async function run(argv, opts = {}) {
 
       case 'context': {
         const { defs, manifests } = load();
-        const outcome = await runContext(rest, { defs, manifests, print, runner: opts.runner });
+        const outcome = await runContext(rest, { defs, manifests, print, eprint, runner: opts.runner });
         return outcome === null ? 0 : report(outcome, eprint);
       }
 

@@ -145,6 +145,12 @@ prism context wallpaper <path>           # derive the id, record id and path in 
 by every verb until the state idea (`prism-9298b9`) is scoped, so nothing
 half-works.
 
+`list` and `show` are discovery verbs, and discovery degrades where diagnosis
+fails: enumerating what exists never requires every file to parse. `list`
+prints a context that does not parse with `!` in the active column and the
+reason beside the name, pointing at `doctor`; `show` prints such a file as it
+is, with the reason on stderr. `doctor` remains the verb that fails on it.
+
 `activate wallpaper <id>` requires the file so it can copy `_source` into the
 slot's path; only `context wallpaper <path>` can activate a wallpaper that has
 no file yet. `save wallpaper <id>` likewise requires an existing file and

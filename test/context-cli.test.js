@@ -20,7 +20,7 @@ process.env.PRISM_INTEGRATIONS_DIR = integ;
 
 const cli = await import('../src/cli.js');
 const { resolvedPath, valuesPath } = await import('../src/paths.js');
-const { readActive, readContext, writeActive, writeContext } = await import('../src/contexts.js');
+const { contextPath, readActive, readContext, writeActive, writeContext } = await import('../src/contexts.js');
 
 beforeEach(() => {
   for (const dir of [process.env.PRISM_CONFIG_DIR, process.env.PRISM_STATE_DIR]) {
@@ -63,6 +63,32 @@ test('context show prints the file contents, _source first for a wallpaper', asy
   const missing = await runCaptured(['context', 'show', 'profile', 'nope']);
   assert.notEqual(missing.code, 0);
   assert.match(missing.stderr, /profile nope: no such context/);
+});
+
+test('context list degrades on a broken context: the rest still lists and the broken one points at doctor', async () => {
+  writeContext('profile', 'dawn', { source: null, values: {} });
+  writeContext('wallpaper', 'abc12345', { source: '/walls/a.jpg', values: {} });
+  fs.writeFileSync(contextPath('wallpaper', 'nosrc'), 'glass.ior: 1\n');
+  fs.writeFileSync(contextPath('profile', 'dusk'), 'glass.ior: [\n');
+  writeActive({ profile: 'dawn' });
+  const { code, stdout, stderr } = await runCaptured(['context', 'list']);
+  assert.equal(code, 0);
+  assert.equal(stderr, '');
+  const lines = stdout.split('\n');
+  assert.equal(lines[0], '* profile dawn');
+  assert.match(lines[1], /^! profile dusk  invalid YAML: .* — run 'prism doctor'$/);
+  assert.equal(lines[2], '  wallpaper abc12345  /walls/a.jpg');
+  assert.equal(lines[3], "! wallpaper nosrc  missing _source — run 'prism doctor'");
+  assert.deepEqual(lines.slice(4), ['']);
+});
+
+test('context show prints a broken file as-is and says why on stderr', async () => {
+  fs.mkdirSync(path.dirname(contextPath('wallpaper', 'nosrc')), { recursive: true });
+  fs.writeFileSync(contextPath('wallpaper', 'nosrc'), 'glass.ior:   1   # untidy\n');
+  const { code, stdout, stderr } = await runCaptured(['context', 'show', 'wallpaper', 'nosrc']);
+  assert.equal(code, 0);
+  assert.equal(stdout, 'glass.ior:   1   # untidy\n');
+  assert.match(stderr, /wallpaper nosrc: missing _source — run 'prism doctor'/);
 });
 
 test('context save snapshots every effective parameter and touches neither resolved.json nor sinks', async () => {

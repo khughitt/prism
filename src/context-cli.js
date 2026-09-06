@@ -3,7 +3,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { withLock } from './lock.js';
 import { lockPath } from './paths.js';
 import {
-  VERB_KINDS, assertKind, assertName, deleteContext, listContexts, readActive, readContext,
+  VERB_KINDS, assertKind, assertName, deleteContext, inspectContext, listContexts, readActive, readContext,
   wallpaperId, writeActive, writeContext,
 } from './contexts.js';
 import { activeName, loadLayers, loadStore } from './layers.js';
@@ -64,24 +64,31 @@ async function changeSlots({ defs, manifests, runner }, mutate, commit = () => {
 }
 
 // Returns a fan-out result, or null when nothing reached the bus.
-export async function runContext(args, { defs, manifests, print, runner }) {
+export async function runContext(args, { defs, manifests, print, eprint, runner }) {
   const [sub, ...rest] = args;
   switch (sub) {
     case 'list': {
       if (rest.length !== 0) throw usage('list');
-      const { active, all, sources } = await withLock(lockPath(), async () => {
+      const { active, all, inspected } = await withLock(lockPath(), async () => {
         const listed = listContexts();
         return {
           active: readActive(),
           all: listed,
-          sources: Object.fromEntries(listed.wallpaper.map((name) => [name, readContext('wallpaper', name).source])),
+          inspected: Object.fromEntries(VERB_KINDS.map((kind) => [kind,
+            Object.fromEntries(listed[kind].map((name) => [name, inspectContext(kind, name)]))])),
         };
       });
       for (const kind of VERB_KINDS) {
         const current = activeName(active, kind);
         for (const name of all[kind]) {
+          const entry = inspected[kind][name];
+          if (entry === null) continue; // removed between the listing and the read
+          if (entry.error !== null) {
+            print(`! ${kind} ${name}  ${entry.error} — run 'prism doctor'\n`);
+            continue;
+          }
           const marker = name === current ? '*' : ' ';
-          const source = kind === 'wallpaper' ? `  ${sources[name]}` : '';
+          const source = kind === 'wallpaper' ? `  ${entry.context.source}` : '';
           print(`${marker} ${kind} ${name}${source}\n`);
         }
       }
@@ -91,9 +98,18 @@ export async function runContext(args, { defs, manifests, print, runner }) {
       return null;
     }
 
+    // Showing the file is what was asked for, so a file that does not parse is
+    // printed as it is, with the reason on stderr.
     case 'show': {
       const { kind, name } = kindAndName(rest, 'show');
-      const context = await withLock(lockPath(), async () => requireContext(kind, name));
+      const entry = await withLock(lockPath(), async () => inspectContext(kind, name));
+      if (entry === null) throw new Error(`${kind} ${name}: no such context`);
+      if (entry.error !== null) {
+        print(entry.text);
+        eprint(`prism: ${kind} ${name}: ${entry.error} — run 'prism doctor'\n`);
+        return null;
+      }
+      const { context } = entry;
       const doc = kind === 'wallpaper' ? { _source: context.source, ...context.values } : context.values;
       print(stringify(doc));
       return null;
