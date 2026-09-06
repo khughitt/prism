@@ -2,7 +2,7 @@
 
 Prism resolves appearance definitions and applies them to the configured
 backends. The `niri` sink is the sole compositor integration: it generates one
-`prism.kdl` carrying layout, terminal opacity, and the native niri glass
+prism.kdl carrying layout, terminal opacity, and the native niri glass
 material and its terminal assignment. With glass enabled the layout block also
 turns niri's gradient focus ring off, since the material's own ring of light
 marks the focused window. Terminal background opacity defaults to
