@@ -4,7 +4,7 @@ title: Accent-colored icon buttons need a Noctalia contribution
 status: idea
 priority: 2
 created: 2026-09-05T22:29:35Z
-updated: 2026-09-06T21:14:00Z
+updated: 2026-09-06T21:30:43Z
 depends: []
 tags: [noctalia, ui]
 ---
@@ -20,3 +20,4 @@ The panel's reset icons carry their state in opacity (dim at default, full stren
 - 2026-09-06T12:05:47Z (main): Button color implemented in the noctalia worktree .worktrees/plugin-ui-button-color: branch feat/plugin-ui-button-color = main (224da6dd4) + 3 commits (38a1e4052 palette helpers, 30ffde631 color prop + reconciler tests, 019f16079 API 31 registration + docs). Full suite 112/113, the one failure (template_undo_signal, ghostty undo.sh template) is pre-existing at main. Format and narrowed clang-tidy clean. Not pushed; live check with the prism panel still to do by hand before filing.
 - 2026-09-06T15:21:08Z (main): Button color merged locally: noctalia main is now 019f16079 = upstream/main 224da6dd4 + 3 commits (fast-forward); worktree and branch removed. Not pushed and no PR yet; to file, push a branch from those three commits. Consequence for the sibling: .worktrees/plugin-ui-container-tooltip still sits at 224da6dd4 and its plan claims API 31; when it runs, rebase it onto local main first and register as 32, or file button-color upstream before starting it.
 - 2026-09-06T21:14:00Z (main): Screenshot for the button-color PR captured in a nested niri session with the built shell and a throwaway plugin (harness in the session scratchpad): noctalia docs/superpowers/pr/2026-09-06-button-color.png; PR draft updated with the manual-test paragraph. Live desktop untouched.
+- 2026-09-06T21:30:43Z (main): Draft PR opened upstream: https://github.com/noctalia-dev/noctalia/pull/4320 (head khughitt:feat/plugin-ui-button-color = 019f16079, three commits; screenshot served from the fork's pr-assets branch). Still a draft pending maintainer feedback.
