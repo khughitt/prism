@@ -70,8 +70,10 @@ the value validator rejects a string outside `values` on read and on write.
 
 `integrations/niri/render.js`:
 
-- `definition` writes `noise <amount> type=<type>` in place of
+- `definition` writes `noise <amount> type="<type>"` in place of
   `noise <amount>`, in both materials and on the single-material path;
+  serialize the type with `JSON.stringify`, as for the other KDL strings.
+  For example, `noise 0.02 type="fine"` parses; `type=fine` does not;
 - the type comes from `params['glass.noiseType']`, once, and is not part of
   `activeGlass` or `inactiveGlass`, which stay per-state.
 
@@ -80,10 +82,17 @@ the value validator rejects a string outside `values` on read and on write.
 
 ## Panel
 
-No Lua change is expected. `panel.luau` already renders a `select` control
-from a definition's `values`, shows the current value, and writes the chosen
-string back. It has never run against Noctalia API 22, because no definition
-used it. The piece therefore includes a live check: point the shell's plugin
+`panel.luau` needs a validator fix before it can render the new definition.
+In `visibleParamError`, a select with valid `values` currently falls through
+to the unsupported-control branch and rejects the entire model with
+`glass.noiseType has unsupported control select`. Give `select` its own
+branch, checking for missing values inside that branch. A regression check
+must load a model containing the select, assert its options and current
+selection, and exercise selection through the queued `prism set` command.
+
+The rendering and write handlers already exist, but have never run against
+Noctalia API 22 because no definition used them. The piece therefore also
+includes a live check: point the shell's plugin
 symlink at the worktree, reload the plugin, open the panel, and confirm the
 select renders under the Noise row, shows `fine`, switches to each other
 value, and that the unfocused pane's grain changes with it. Any Lua fix this
@@ -95,14 +104,16 @@ surfaces is part of the piece.
   values and default; a new assertion that the Focus group order places it
   between the Noise and Saturation rows.
 - `test/niri-render.test.js`: both material definitions contain
-  `noise <amount> type=<type>` with the shared type and their own amounts;
+  `noise <amount> type="<type>"` with the shared type and their own amounts;
   the single-material path writes the focused amount with the type; the
   neutral-values test keeps its `noise 0` expectation with the type
   appended.
 - `test/plugin-presentation.test.js`: the Focus section gains a single row
   `Noise type` after the `Noise` matrix row.
-- `integrations/noctalia-plugin/plugin_test.lua`: the row count for the new
-  single row in a section that also holds matrix rows.
+- `integrations/noctalia-plugin/plugin_test.lua`: load a model with the new
+  single row in a section that also holds matrix rows; assert the row count,
+  select options, current selection, and queued string value when changed.
+  A select without `values` must still be rejected.
 - The full `npm test` suite passes.
 
 ## Rollout
