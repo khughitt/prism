@@ -1,7 +1,9 @@
 # Glass noise Dulling spike
 
 **Date:** 2026-09-07
-**Status:** proposed experiment; no prototype or measurements have been produced.
+**Status:** isolated prototype and software-rendered distribution/capture checks executed;
+hardware GPU comparison and user visual preference remain pending. See the
+[execution results](../notes/2026-09-07-glass-noise-dulling-spike-results.md).
 **Task:** `prism-ba5f59`.
 **Prior research:** [GIMP comparison](../notes/2026-09-07-glass-noise-gimp-comparison.md).
 
