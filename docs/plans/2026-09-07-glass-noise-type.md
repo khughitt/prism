@@ -1,6 +1,6 @@
 # Glass noise type implementation plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development for the implementation tasks; the controller coordinates live desktop checks with the user. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Status:** planned; implementation has not started. Design review corrections committed in `e2f07ed`.
 
@@ -29,7 +29,7 @@
 
 Continue in `.worktrees/glass-noise-types` on branch `glass-noise-types`. This is already an isolated worktree; this plan continues the approved design session. Read the spec and `AGENTS.md`, run `tasks prime` and `tasks ready`, and inspect `git status --short` before editing.
 
-Native code is available in the project returned by `tasks root material-6e7352`. Verify implementation commit `098bcdca` is an ancestor of that project's current branch; read its noise-type spec and evidence. The review on 2026-09-07 verified installed `niri validate` accepts `type="fine"` and rejects `type=fine`; repeat the acceptance checks at execution time.
+Native code is available in the project returned by `tasks root material-6e7352`. Verify implementation commit `098bcdca` is an ancestor of that project's current branch; read its noise-type spec and evidence. Repository ancestry proves source availability, not installation: Task 3 Step 2 checks the installed and running hashes. The review on 2026-09-07 verified installed `niri validate` accepts `type="fine"` and rejects `type=fine`; repeat the acceptance checks at execution time.
 
 ## Files and responsibilities
 
@@ -270,11 +270,48 @@ JS
 
 Require all six configs to parse. If the native build is missing, leave rollout open and report the blocker; do not remove type output to hide the mismatch.
 
-- [ ] **Step 2: Check the running compositor and existing native acceptance evidence.** Record `niri --version` and `niri msg version`; the running process must support the installed parser's noise property. Read the native spec's desktop acceptance result, not just task status. If still pending, compare the three grains on the desktop as described below before deciding the shipped enum. If lightness is indistinguishable, record that result and remove it consistently from both specs, Prism's enum, tests, and copy before landing; the native project owner handles its spec update.
+- [ ] **Step 2: Check the running compositor and existing native acceptance evidence.** Record `niri --version` and `niri msg version`. The installed hash must equal or descend from implementation commit `098bcdca`; verify with `git merge-base --is-ancestor 098bcdca "$installed_hash"` in the native repository, using the hash actually printed by the installed binary. Check the running compositor hash the same way. Read the native spec's desktop acceptance result, not just task status. If still pending, compare the three grains with the user as described below before deciding the shipped enum. If lightness is indistinguishable, record that result and remove it consistently from both specs, Prism's enum, tests, and copy before landing; the native project owner handles its spec update.
 
-- [ ] **Step 3: Connect the worktree CLI and panel for the live check.** Resolve `command -v prism` and its target, inspect the active plugin entry, and record their prior targets. The shell plugin symlink must point at this worktree's `integrations/noctalia-plugin`, and the `prism` command used by the shell must resolve to this worktree's `bin/prism`. A plugin-only symlink change does not select the new CLI definitions. Use the host's existing plugin reload operation and inspect its errors; do not invent an IPC command. Preserve the user's current value, target layer, and whether an override existed, using `prism describe --json`, before changing controls.
+- [ ] **Step 3: Connect the worktree CLI and panel for the live check.** The active shell plugin is `~/.local/share/noctalia/plugins/prism`, plugin id `khughitt/prism`, panel id `khughitt/prism:panel`. The similarly named entry under `~/.config/noctalia/plugins/prism` is a decoy: changing it does not change the loaded plugin. On 2026-09-07 both entries and the `prism` on PATH pointed at the main checkout. Record the symlink targets before changing the active plugin and PATH executable, then point them at this worktree:
 
-- [ ] **Step 4: Exercise the installed panel and composed config.** With an unfocused terminal at noise amount 0.02, open the panel and verify Noise type appears between Noise and Saturation. With no override it shows `fine`; select white, fine, and lightness, verify the selected label and grain change, and inspect the generated fragment for the quoted property in both materials. Swap focus between terminals. Turn focus split off and verify the single material still carries the selected type. After each meaningful change, `prism apply` and `niri validate` must succeed. Capture the native lightness decision and any API 22 fixes in task notes. Restore prior values using `unset` when no override originally existed, and restore the original CLI/plugin targets after the worktree check.
+```bash
+prism_worktree=$(pwd -P)
+prism_plugin="$HOME/.local/share/noctalia/plugins/prism"
+prism_cli=$(command -v prism)
+readlink "$prism_plugin"
+readlink "$prism_cli"
+ln -sfn "$prism_worktree/integrations/noctalia-plugin" "$prism_plugin"
+ln -sfn "$prism_worktree/bin/prism" "$prism_cli"
+noctalia msg plugins disable khughitt/prism
+noctalia msg plugins enable khughitt/prism
+```
+
+`enable` completes asynchronously. Do not open the panel immediately: retry the open command with a short delay until the entry is registered, with a bounded timeout and the final error retained:
+
+```bash
+prism_reload_log=$(mktemp)
+prism_panel_ready=false
+for attempt in $(seq 1 20); do
+  sleep 0.5
+  if noctalia msg panel-open khughitt/prism:panel >"$prism_reload_log" 2>&1; then
+    prism_panel_ready=true
+    break
+  fi
+done
+if [ "$prism_panel_ready" != true ]; then
+  cat "$prism_reload_log"
+  exit 1
+fi
+```
+
+A plugin-only symlink change does not select the new CLI definitions. Leave the decoy entry alone. If filesystem restrictions prevent changing the real links, provide the user these exact commands after the worktree implementation is ready. Preserve the user's current values, target layer, and whether overrides existed, using `prism describe --json`, before changing controls.
+
+- [ ] **Step 4: Exercise the installed panel and composed config with the user.** This machine has no scripted pointer control; the executor cannot click the select. Split the evidence:
+
+  - Executor: verify the panel renders Noise type between Noise and Saturation, showing `fine` when there is no override. Drive values with `prism set glass.noiseType white`, `prism set glass.noiseType fine`, and `prism set glass.noiseType lightness`; inspect the generated fragment for quoted properties in both materials. Use `prism set glass.focusSplit false` to verify the single material carries the same type, then restore the previous split setting. `prism set` applies the changed sink; confirm successful command results and run `niri validate`. Reopen the panel to refresh after external CLI writes.
+  - User: at unfocused noise amount 0.02, click through the three select options and confirm selection interaction, displayed labels, and visible grain changes. Swap focus between terminals and compare fine with lightness; record whether lightness is worth retaining. CLI writes and a rendered screenshot do not prove select interaction or visual acceptance. If the user is unavailable, finish all automated checks and leave desktop acceptance open.
+
+Record the native lightness decision and any API 22 fixes in task notes. Restore prior values using `unset` when no override originally existed, apply the restored values, and restore the original CLI/plugin targets after the worktree check. Reload the original plugin with the same disable/enable/readiness sequence.
 
 - [ ] **Step 5: Record evidence and close the piece.** Run `just gate` and `tasks check`; record test results, niri versions, the retained types, and desktop observations in the design status. Until merged, say “implemented on `glass-noise-types`; acceptance passed” with the actual date, never “merged.” Close this task, then `prism-51f23b` with a one-line result. Close hub `prism-d6b600` only after verifying both native and Prism deliverables satisfy its goal. Stage the status docs and task records and commit with `chore(glass): record noise type acceptance`.
 
