@@ -5,8 +5,8 @@ status: todo
 priority: 2
 size: m
 created: 2026-09-07T01:05:12Z
-updated: 2026-09-07T01:07:17Z
-depends: []
+updated: 2026-09-07T01:24:21Z
+depends: [material-6e7352]
 parent: prism-d6b600
 tags: [glass, noctalia, niri]
 spec: docs/specs/2026-09-06-glass-noise-type-design.md

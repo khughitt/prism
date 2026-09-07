@@ -17,8 +17,8 @@ pixel added equally to R, G and B in sRGB-encoded space. Observed on
 2026-09-05, it reads as grainy and coarse even at the default unfocused
 amplitude of 0.02. The coarseness has two sources: white noise carries as
 much energy at low spatial frequencies as high, which the eye reads as
-clumps, and a uniform distribution spends a quarter of its samples at the
-extremes.
+clumps, and a uniform distribution keeps its density flat right up to its
+hard bound, so the strongest speckles are exactly as common as the faintest.
 
 The native design adds an optional `type` property to the glass `noise`
 node with three values:
@@ -27,7 +27,7 @@ node with three values:
 | --- | --- |
 | `white` | today's grain, character for character; the native default when omitted |
 | `fine` | a high-pass of the hash noise, bell-shaped, achromatic, scaled so its standard deviation matches `white` at the same amount |
-| `lightness` | the `fine` pattern applied to Oklab lightness, so chroma and hue hold exactly |
+| `lightness` | the `fine` pattern applied to Oklab lightness, so chroma and hue hold except where the result leaves the sRGB gamut and clamps |
 
 Prism chooses which of them its glass uses. The native spec owns what each
 type does; this document owns how Prism exposes the choice.
@@ -110,7 +110,7 @@ surfaces is part of the piece.
 The generated `prism.kdl` fails `niri validate` on a build without the
 `type` property, and the niri sink rolls back the fragment on validation
 failure. The Prism piece therefore depends on the native piece landing and
-being installed first; the task dependency records this.
+being installed first; the goal and the piece both record the dependency.
 
 Manual acceptance after install: with the unfocused pane at its default
 amplitude, switch the select through `white`, `fine` and `lightness` and
