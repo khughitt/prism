@@ -72,6 +72,7 @@ test('every shipped slider maps one host step to one canonical grid step', () =>
         step: param.ui.step,
         display: param.ui.display,
         scale: param.ui.scale,
+        exponent: param.ui.exponent,
       },
     }));
   const toLua = (value) => {

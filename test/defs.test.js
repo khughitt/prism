@@ -20,6 +20,24 @@ test('shipped defs load and default the opacity pair to a fully transparent term
   assert.equal(defs.get('compositor.gaps').type, 'int');
 });
 
+test('glass slider ranges and curves follow the sweep evidence', () => {
+  // niri-material docs/materials/2026-09-06-glass-parameter-sweep-evidence.md, Part 2.
+  const defs = loadDefs(defsDir());
+  for (const key of ['glass.roughness', 'glass.inactive.roughness']) {
+    assert.deepEqual(defs.get(key).range, [0, 1]);
+    assert.equal(defs.get(key).ui.scale, 'power');
+    assert.equal(defs.get(key).ui.exponent, 2);
+    assert.equal(defs.get(key).ui.display, 'percent');
+  }
+  assert.deepEqual(defs.get('glass.thickness').range, [0, 100]);
+  assert.equal(defs.get('glass.thickness').ui.scale, 'power');
+  assert.equal(defs.get('glass.thickness').ui.exponent, 2);
+  assert.deepEqual(defs.get('glass.ior').range, [1, 2]);
+  assert.equal(defs.get('glass.ior').ui.scale, undefined);
+  assert.deepEqual(defs.get('glass.noise').range, [0, 1]);
+  assert.deepEqual(defs.get('glass.saturation').range, [0, 3]);
+});
+
 test('whole-window opacity is gone and the debug backdrop is CLI-only', () => {
   const defs = loadDefs(defsDir());
   assert.equal(defs.has('terminal.window.opacity.active'), false);
