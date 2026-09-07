@@ -64,8 +64,8 @@ local function visibleParamError(param, index)
       or type(param.ui.step) ~= "number" or param.ui.step <= 0 then
       return param.key .. " has invalid slider metadata"
     end
-  elseif param.ui.control == "select" and type(param.values) ~= "table" then
-    return param.key .. " has no select values"
+  elseif param.ui.control == "select" then
+    if type(param.values) ~= "table" then return param.key .. " has no select values" end
   elseif param.ui.control ~= "toggle" and param.ui.control ~= "color" then
     return param.key .. " has unsupported control " .. tostring(param.ui.control)
   end
