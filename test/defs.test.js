@@ -139,5 +139,24 @@ test('numeric slider grids fail early', () => {
   assert.throws(() => loadDefs(zeroLog), /logarithmic.*positive/);
 
   const percentLog = dirWith('- {key: a.b, type: float, range: [1, 2], default: 1, ui: {group: A, control: slider, label: B, order: 1, step: 0.1, display: percent, scale: logarithmic}, description: d}\n');
-  assert.throws(() => loadDefs(percentLog), /percent.*linear/);
+  assert.doesNotThrow(() => loadDefs(percentLog), 'a curved slider only changes the track; the label may still read percent');
+});
+
+test('power scale needs an exponent above one and may start at zero', () => {
+  const power = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1, step: 0.01, display: percent, scale: power, exponent: 2}, description: d}\n');
+  const defs = loadDefs(power);
+  assert.equal(defs.get('a.b').ui.scale, 'power');
+  assert.equal(defs.get('a.b').ui.exponent, 2);
+
+  const noExponent = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1, step: 0.1, scale: power}, description: d}\n');
+  assert.throws(() => loadDefs(noExponent), /power.*exponent/);
+
+  const flatExponent = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1, step: 0.1, scale: power, exponent: 1}, description: d}\n');
+  assert.throws(() => loadDefs(flatExponent), /exponent.*greater than 1/);
+
+  const strayExponent = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1, step: 0.1, exponent: 2}, description: d}\n');
+  assert.throws(() => loadDefs(strayExponent), /exponent.*power/);
+
+  const nonSlider = dirWith('- {key: a.b, type: bool, default: true, ui: {group: A, control: toggle, label: B, order: 1, exponent: 2}, description: d}\n');
+  assert.throws(() => loadDefs(nonSlider), /slider-only/);
 });

@@ -55,8 +55,8 @@ write once on release and rewrite the compositor config once per gesture. A desc
 result is stale and replayed only after the drag and write queue are idle.
 
 Noctalia API 22 exposes slider `step`, `onChange`, and `onDragEnd`, but no
-interaction-source callback. Normalized and logarithmic sliders retain a zero
-presentation step for pointer mapping. On release, the panel recognizes the
+interaction-source callback. Normalized-display sliders and curved (logarithmic
+or power) sliders retain a zero presentation step for pointer mapping. On release, the panel recognizes the
 host's exact 5%-of-range keyboard/wheel delta and applies one canonical Prism
 step; all other values keep the pointer mapping. A pointer release after
 exactly that same 5% movement is indistinguishable until Noctalia exposes the
@@ -99,8 +99,9 @@ The presentation module defines the panel's stable layout contract:
   while dragging, `Unavailable` for one with no consumer at all, whose control
   is also disabled. Writing on release is the norm and is left unmarked.
 - Numeric controls preserve canonical values while supporting raw, percent,
-  normalized, linear, and logarithmic display metadata, and render their
-  formatted value beside the native slider.
+  and normalized display metadata on linear, logarithmic, and power (`exponent`)
+  scales; a curved scale shapes the track and the display only the label. The
+  formatted value renders beside the native slider.
 
 `prism describe --json` carries `active` (the active context per kind),
 `target` (the write-target layer), and per parameter `layer` (where the value

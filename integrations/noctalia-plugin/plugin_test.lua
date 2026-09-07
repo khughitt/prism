@@ -258,6 +258,28 @@ assert(math.abs(Presentation.toSliderValue(midpoint, depth) - 0.5) <= depth.ui.s
 
 equal(Presentation.stepCanonicalValue(1, 1, tint), 2)
 equal(Presentation.stepCanonicalValue(2, -1, tint), 1)
+
+-- A power scale runs the track in normalized space like logarithmic does, but it
+-- may start at zero: position p is low + (high - low) * p^exponent.
+local rough = slider({ 0, 1 }, 0.01, { display = "percent", scale = "power", exponent = 2 })
+equal({ Presentation.sliderFrom(rough), Presentation.sliderTo(rough), Presentation.sliderStep(rough) }, { 0, 1, 0 })
+equal(Presentation.toSliderValue(0, rough), 0)
+equal(Presentation.toSliderValue(1, rough), 1)
+equal(Presentation.toSliderValue(0.25, rough), 0.5)
+equal(Presentation.canonicalFromSlider(0.5, rough), 0.25)
+equal(Presentation.canonicalFromSlider(0, rough), 0)
+equal(Presentation.formatValue(0.25, rough), "25%")
+local depthPower = slider({ 0, 100 }, 0.1, { scale = "power", exponent = 2, unit = "px" })
+equal(Presentation.canonicalFromSlider(0.5, depthPower), 25)
+equal(Presentation.toSliderValue(25, depthPower), 0.5)
+equal(Presentation.formatValue(25, depthPower), "25px")
+equal(Presentation.stepCanonicalValue(25, 1, depthPower), 25.1)
+-- The percent label on a curved track is a label, not a track: the logarithmic
+-- slider keeps its normalized endpoints when its display is percent.
+local percentLog = slider({ 0.01, 1 }, 0.01, { display = "percent", scale = "logarithmic" })
+equal({ Presentation.sliderFrom(percentLog), Presentation.sliderTo(percentLog), Presentation.sliderStep(percentLog) }, { 0, 1, 0 })
+equal(Presentation.toSliderValue(0.1, percentLog), 0.5)
+equal(Presentation.formatValue(0.1, percentLog), "10%")
 equal(Presentation.stepCanonicalValue(1, -1, tint), 1)
 equal(Presentation.stepCanonicalValue(10000, 1, tint), 10000)
 equal(Presentation.formatValue(0.08, slider({ 0, 1 }, 0.01, { display = "percent" })), "8%")
