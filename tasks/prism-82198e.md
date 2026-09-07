@@ -5,7 +5,7 @@ status: todo
 priority: 2
 size: m
 created: 2026-09-01T15:48:11Z
-updated: 2026-09-05T08:20:23Z
+updated: 2026-09-07T08:21:16Z
 depends: []
 tags: [migration, integration, terminal]
 ---
@@ -15,3 +15,4 @@ Outcome: Prism owns Ghostty's single static background-opacity from terminal.bac
 ## Notes
 
 - 2026-09-05T08:20:23Z (main): 2026-09-05: terminal.window.opacity.* were removed with the panel matrix (prism-aa9212); niri no longer emits whole-window opacity rules. The Ghostty sink binds only terminal.background.opacity.active as planned.
+- 2026-09-07T08:21:16Z (main): 2026-09-07: the body predates the zero-opacity decision. Kitty is no longer a focus-aware opacity consumer: Prism emits background_opacity 0 for it and niri's is-active material pair carries focus state (prism-5bc782, dots-a00088). The Ghostty sink should emit 0 from terminal.background.opacity.active so Ghostty joins the glass, and the dotfiles ghostty/config.ghostty line at 0.85 is the drift to remove. Re-read the acceptance with that in mind before starting.
