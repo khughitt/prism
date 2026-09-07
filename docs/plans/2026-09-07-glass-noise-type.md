@@ -2,7 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development for the implementation tasks; the controller coordinates live desktop checks with the user. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** planned; implementation has not started. Design review corrections committed in `e2f07ed`.
+**Status:** implemented on `glass-noise-types` 2026-09-07 in `2166d35` and
+`aa80290`; automated acceptance passes. Installed and running niri
+`26.04 (f0370f52)` descends from `098bcdca`, all six generated parser cases
+pass, and `just gate` passes 206 tests. Desktop panel interaction, visible
+grain comparison, and the `lightness` retention decision remain pending.
 
 **Goal:** Expose one shared white/fine/lightness selector below the Focus Noise row and emit its quoted value into every glass material.
 
@@ -50,7 +54,7 @@ Native code is available in the project returned by `tasks root material-6e7352`
 
 **Interfaces:** Consumes the existing describe parameter fields `values`, `value`, `default`, `layer`, `fallback`, `effectiveDrag`, and `ui`. Produces a rendered select with zero-based `selectedIndex`; changes enqueue the existing `prism set <key> <string>` command. No API change.
 
-- [ ] **Step 1: Add the regression to the existing Lua harness.** Append this entry to the panel `model.params`, preserving the existing roughness index used by reset assertions:
+- [x] **Step 1: Add the regression to the existing Lua harness.** Append this entry to the panel `model.params`, preserving the existing roughness index used by reset assertions:
 
 ```lua
   {
@@ -97,9 +101,9 @@ assert(missingValuesError, "select without values was accepted")
 noise.values = { "white", "fine", "lightness" }
 ```
 
-- [ ] **Step 2: Run `npm run test:plugin-lua`.** Expect failure because the valid select rejects the model and section labels do not render. The review reproduced the visible error `glass.noiseType has unsupported control select`.
+- [x] **Step 2: Run `npm run test:plugin-lua`.** Expect failure because the valid select rejects the model and section labels do not render. The review reproduced the visible error `glass.noiseType has unsupported control select`.
 
-- [ ] **Step 3: Fix only the select branch of `visibleParamError`.** Replace the combined select/missing-values condition with:
+- [x] **Step 3: Fix only the select branch of `visibleParamError`.** Replace the combined select/missing-values condition with:
 
 ```lua
   elseif param.ui.control == "select" then
@@ -108,9 +112,9 @@ noise.values = { "white", "fine", "lightness" }
 
 Keep the following unsupported-control branch. Reuse `nativeControl`, `selectOptions`, `selectIndex`, and the existing queue unchanged unless the live check later proves a host API mismatch.
 
-- [ ] **Step 4: Run `npm run test:plugin-lua`, then `just test`.** Require the valid model, all three string writes, missing-values error, and existing reset/slider checks to pass.
+- [x] **Step 4: Run `npm run test:plugin-lua`, then `just test`.** Require the valid model, all three string writes, missing-values error, and existing reset/slider checks to pass.
 
-- [ ] **Step 5: Close this task with the test result, run `just check`, and commit the two Lua files and its task record.** Commit message: `fix(panel): accept valid select controls`.
+- [x] **Step 5: Close this task with the test result, run `just check`, and commit the two Lua files and its task record.** Commit message: `fix(panel): accept valid select controls`.
 
 ### Task 2: Add the shared enum and quoted material output
 
@@ -120,7 +124,7 @@ Keep the following unsupported-control branch. Reuse `nativeControl`, `selectOpt
 
 **Interfaces:** Consumes Task 1's working select and existing `renderNiriFragment({params})`. Produces `params['glass.noiseType']` with values `white`, `fine`, `lightness`, default `fine`; each glass block writes the same JSON-quoted type beside its own noise amount.
 
-- [ ] **Step 1: Pin the definition and ordering.** In `test/glass-defs.test.js`, extend the exact glass-key expectation with `glass.noiseType` separately from `NATIVE`. Keep the native default table truthful: niri defaults to white; Prism intentionally defaults to fine. Add:
+- [x] **Step 1: Pin the definition and ordering.** In `test/glass-defs.test.js`, extend the exact glass-key expectation with `glass.noiseType` separately from `NATIVE`. Keep the native default table truthful: niri defaults to white; Prism intentionally defaults to fine. Add:
 
 ```javascript
 test('noise type is a shared Focus select with an explicit Prism default', () => {
@@ -163,7 +167,7 @@ assert.equal(visible.length, 1 + glass.length + 1 + rows.reduce((n, row) => n + 
 
 Replace the old row-order, all-paired, and visible-count assertions with these, rather than leaving the old matrix-only assertions in place.
 
-- [ ] **Step 2: Pin quoted output for every type and both material paths.** Add `'glass.noiseType': 'fine'` to the explicit fixtures in `test/niri-render.test.js` and `test/niri-apply.test.js`. In renderer `EXPECTED` and `UNSPLIT`, append `type="fine"` to the material noise lines only. Update the material-line lists and neutral-values regex with the same literal quotes. The background-effect assertions keep `noise 0` without a property. Add:
+- [x] **Step 2: Pin quoted output for every type and both material paths.** Add `'glass.noiseType': 'fine'` to the explicit fixtures in `test/niri-render.test.js` and `test/niri-apply.test.js`. In renderer `EXPECTED` and `UNSPLIT`, append `type="fine"` to the material noise lines only. Update the material-line lists and neutral-values regex with the same literal quotes. The background-effect assertions keep `noise 0` without a property. Add:
 
 ```javascript
 test('every noise type is quoted and shared across glass materials', () => {
@@ -182,9 +186,9 @@ test('every noise type is quoted and shared across glass materials', () => {
 });
 ```
 
-- [ ] **Step 3: Run the targeted tests before implementation.** Run `node --test test/glass-defs.test.js test/plugin-presentation.test.js test/niri-render.test.js test/niri-apply.test.js`. Expect failures for the missing enum and missing quoted properties.
+- [x] **Step 3: Run the targeted tests before implementation.** Run `node --test test/glass-defs.test.js test/plugin-presentation.test.js test/niri-render.test.js test/niri-apply.test.js`. Expect failures for the missing enum and missing quoted properties.
 
-- [ ] **Step 4: Add the definition, binding, and renderer expression.** Insert between the Noise and Saturation definitions:
+- [x] **Step 4: Add the definition, binding, and renderer expression.** Insert between the Noise and Saturation definitions:
 
 ```yaml
 - key: glass.noiseType
@@ -209,9 +213,9 @@ Replace the one noise line in `definition` in `integrations/niri/render.js`:
 
 Do not add a fallback or put the type into `activeGlass`/`inactiveGlass`. Resolution already supplies and validates the enum. Search other explicit renderer/sink fixtures with `rg -n 'glass\.noise|renderNiriFragment' test` and add the new value anywhere a fixture bypasses default resolution.
 
-- [ ] **Step 5: Update user-facing copy.** In `README.md`, after the sentence about `glass.inactive.*` overrides, add: “Both materials share `glass.noiseType`: `white`, `fine` (the Prism default), or `lightness`.” Change the panel description to “a `Focus` matrix with a focused and an unfocused slider per optic and one shared Noise type select.” In `docs/notes/noctalia-plugin-contract.md`, append to the shipped section description: “A single Noise type select sits between the Noise and Saturation matrix rows and applies to both states.”
+- [x] **Step 5: Update user-facing copy.** In `README.md`, after the sentence about `glass.inactive.*` overrides, add: “Both materials share `glass.noiseType`: `white`, `fine` (the Prism default), or `lightness`.” Change the panel description to “a `Focus` matrix with a focused and an unfocused slider per optic and one shared Noise type select.” In `docs/notes/noctalia-plugin-contract.md`, append to the shipped section description: “A single Noise type select sits between the Noise and Saturation matrix rows and applies to both states.”
 
-- [ ] **Step 6: Run `just test` and verify the describe binding using an isolated store.** This command must leave existing user values untouched:
+- [x] **Step 6: Run `just test` and verify the describe binding using an isolated store.** This command must leave existing user values untouched:
 
 ```bash
 prism_check_dir=$(mktemp -d)
@@ -227,7 +231,7 @@ assert.equal(noise.effectiveDrag, 'release');
 JS
 ```
 
-- [ ] **Step 7: Close this task with the verified result, run `just check`, and commit its files and task record.** Commit message: `feat(glass): add shared noise type selector`. Keep the branch unmerged until Task 3 passes.
+- [x] **Step 7: Close this task with the verified result, run `just check`, and commit its files and task record.** Commit message: `feat(glass): add shared noise type selector`. Keep the branch unmerged until Task 3 passes.
 
 ### Task 3: Verify the native and desktop contract before landing
 
@@ -237,7 +241,7 @@ JS
 
 **Interfaces:** Consumes Task 2's enum and generated KDL plus an installed niri-material with native noise types. Produces evidence that the deployed CLI and panel agree, all retained types render, and the native lightness gate has a recorded decision.
 
-- [ ] **Step 1: Validate all generated types with the installed parser.** Use the existing resolver and renderer, without applying or changing the user's store:
+- [x] **Step 1: Validate all generated types with the installed parser.** Use the existing resolver and renderer, without applying or changing the user's store:
 
 ```bash
 node --input-type=module <<'JS'
@@ -270,7 +274,7 @@ JS
 
 Require all six configs to parse. If the native build is missing, leave rollout open and report the blocker; do not remove type output to hide the mismatch.
 
-- [ ] **Step 2: Check the running compositor and existing native acceptance evidence.** Record `niri --version` and `niri msg version`. The installed hash must equal or descend from implementation commit `098bcdca`; verify with `git merge-base --is-ancestor 098bcdca "$installed_hash"` in the native repository, using the hash actually printed by the installed binary. Check the running compositor hash the same way. Read the native spec's desktop acceptance result, not just task status. If still pending, compare the three grains with the user as described below before deciding the shipped enum. If lightness is indistinguishable, record that result and remove it consistently from both specs, Prism's enum, tests, and copy before landing; the native project owner handles its spec update.
+- [x] **Step 2: Check the running compositor and existing native acceptance evidence.** Record `niri --version` and `niri msg version`. The installed hash must equal or descend from implementation commit `098bcdca`; verify with `git merge-base --is-ancestor 098bcdca "$installed_hash"` in the native repository, using the hash actually printed by the installed binary. Check the running compositor hash the same way. Read the native spec's desktop acceptance result, not just task status. If still pending, compare the three grains with the user as described below before deciding the shipped enum. If lightness is indistinguishable, record that result and remove it consistently from both specs, Prism's enum, tests, and copy before landing; the native project owner handles its spec update.
 
 - [ ] **Step 3: Connect the worktree CLI and panel for the live check.** The active shell plugin is `~/.local/share/noctalia/plugins/prism`, plugin id `khughitt/prism`, panel id `khughitt/prism:panel`. The similarly named entry under `~/.config/noctalia/plugins/prism` is a decoy: changing it does not change the loaded plugin. On 2026-09-07 both entries and the `prism` on PATH pointed at the main checkout. Record the symlink targets before changing the active plugin and PATH executable, then point them at this worktree:
 

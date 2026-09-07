@@ -1,11 +1,14 @@
 # Glass noise type
 
 **Date:** 2026-09-06
-**Status:** design approved 2026-09-06; not implemented. Hub goal
-`prism-d6b600`; native piece `material-6e7352`, designed in niri-material
-`docs/specs/2026-09-06-material-glass-noise-type-design.md`; Prism piece
-`prism-51f23b`. The Prism piece lands only after the native build is
-installed on the machine that runs `prism apply`.
+**Status:** implemented on `glass-noise-types` 2026-09-07 in `2166d35` and
+`aa80290`; automated acceptance passes. The installed and running niri are
+both `26.04 (f0370f52)`, which descends from native implementation `098bcdca`,
+and all six generated type/focus-split configurations pass `niri validate`.
+`just gate` passes 206 tests. Desktop acceptance is pending: the panel select
+interaction, visible grain changes, and whether `lightness` is worth retaining
+still require the user's live check. Hub goal `prism-d6b600`; native piece
+`material-6e7352`; Prism piece `prism-51f23b`.
 
 ## Context
 
