@@ -125,6 +125,11 @@ local model = { target = "base", params = {
     effectiveDrag = "release", range = { 0, 3 },
     ui = { control = "slider", group = "Focus", order = 281, step = 0.05, label = "Unfocused saturation", state = "unfocused", row = "Saturation" },
   },
+  {
+    key = "glass.noiseType", value = "fine", default = "fine", layer = "default", fallback = "fine",
+    effectiveDrag = "release", values = { "white", "fine", "lightness" },
+    ui = { control = "select", group = "Focus", order = 275, label = "Noise type" },
+  },
 } }
 
 ui = setmetatable({}, { __index = function(_, kind)
@@ -169,6 +174,11 @@ assert(labels["Glass"] and labels["Focus"], "section headers missing")
 assert(labels["Focused"] and labels["Unfocused"], "matrix column labels missing")
 assert(labels["Blur"] and labels["Gaps"], "row labels missing")
 assert(labels["Saturation"], "second matrix row label missing")
+assert(labels["Noise type"], "shared select row missing")
+local selects = collect(rendered, "select")
+equal(#selects, 1)
+equal(selects[1].props.options, { "white", "fine", "lightness" })
+equal(selects[1].props.selectedIndex, 1)
 local sliderKeys = {}
 for _, slider in ipairs(collect(rendered, "slider")) do sliderKeys[slider.props.key] = true end
 assert(sliderKeys["glass.roughness:slider"] and sliderKeys["glass.inactive.roughness:slider"], "matrix sliders missing")
@@ -184,7 +194,7 @@ for _, button in ipairs(collect(rendered, "button")) do
     resetCandidates[#resetCandidates + 1] = button
   end
 end
-equal(#resetCandidates, 5, "a reset renders for every visible parameter row")
+equal(#resetCandidates, 6, "a reset renders for every visible parameter row")
 local overriddenResets = {}
 for _, button in ipairs(resetCandidates) do
   if button.props.tooltip == "Remove override" and button.props.opacity == 1.0 then
@@ -218,6 +228,29 @@ equal(model.params[4].value, 0.1, "reset shows the fallback, not the default, be
 equal(model.params[4].overridden, false)
 assert(commands[#commands]:find("unset", 1, true) and commands[#commands]:find("glass.roughness", 1, true),
   "reset enqueues prism unset for the row")
+
+local noise = model.params[#model.params]
+for index, value in ipairs(noise.values) do
+  noise.value, noise.layer = "fine", "default"
+  dofile(here .. "panel.luau")
+  onOpen({})
+  described({ exitCode = 0, stdout = "{}" })
+  collect(rendered, "select")[1].props.onChange(index - 1)
+  equal(noise.value, value)
+  equal(collect(rendered, "select")[1].props.selectedIndex, index - 1)
+  equal(commands[#commands], Shell.command({ "prism", "set", "glass.noiseType", value }))
+end
+
+noise.values = nil
+dofile(here .. "panel.luau")
+onOpen({})
+described({ exitCode = 0, stdout = "{}" })
+local missingValuesError = false
+for _, label in ipairs(collect(rendered, "label")) do
+  if label.props.text == "glass.noiseType has no select values" then missingValuesError = true end
+end
+assert(missingValuesError, "select without values was accepted")
+noise.values = { "white", "fine", "lightness" }
 
 equal(Presentation.stepPrecision(0.000001), 6)
 equal(Presentation.snapValue(100.04, { 0.1, 200 }, 0.1), 100)

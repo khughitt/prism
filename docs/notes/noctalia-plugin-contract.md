@@ -122,6 +122,8 @@ upgrade whichever side is behind.
 The shipped panel is two sections: `Glass`, the parameters both focus states
 share, and `Focus`, the matrix of terminal opacity, blur, tint distance,
 fringing, distortion, directional blur, noise, and saturation.
+A single Noise type select sits between the Noise and Saturation matrix rows
+and applies to both states.
 `debug.backdrop` is CLI-only and does not appear.
 
 The widget and panel use Noctalia's native v5 entries and controls. No

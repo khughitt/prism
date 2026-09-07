@@ -32,18 +32,23 @@ test('shipped presentation is a Glass section and a Focus matrix', () => {
   assert.equal(focus[0].key, 'glass.focusSplit');
   const rows = [];
   for (const def of focus.slice(1)) {
-    if (def.ui.state === 'focused') rows.push({ row: def.ui.row, focused: def.key });
-    else assert.equal(rows.at(-1).row, def.ui.row, `${def.key} follows its focused twin`), rows.at(-1).unfocused = def.key;
+    if (!def.ui.state) rows.push({ row: def.ui.label, single: def.key });
+    else if (def.ui.state === 'focused') rows.push({ row: def.ui.row, focused: def.key });
+    else {
+      assert.equal(rows.at(-1).row, def.ui.row, `${def.key} follows its focused twin`);
+      rows.at(-1).unfocused = def.key;
+    }
   }
   assert.deepEqual(rows.map((row) => row.row), [
     'Terminal opacity', 'Blur', 'Tint distance', 'Fringing', 'Distortion', 'Directional blur',
-    'Noise', 'Saturation',
+    'Noise', 'Noise type', 'Saturation',
   ]);
-  assert.ok(rows.every((row) => row.focused && row.unfocused));
+  assert.deepEqual(rows.filter((row) => row.single), [{ row: 'Noise type', single: 'glass.noiseType' }]);
+  assert.ok(rows.filter((row) => !row.single).every((row) => row.focused && row.unfocused));
 
   const groups = new Set(visible.map((def) => def.ui.group));
   assert.deepEqual([...groups].sort(), ['Focus', 'Glass', 'Title']);
-  assert.equal(visible.length, 1 + glass.length + 1 + rows.length * 2);
+  assert.equal(visible.length, 1 + glass.length + 1 + rows.reduce((n, row) => n + (row.single ? 1 : 2), 0));
   assert.ok(ordered.filter((def) => def.ui.group === 'Glass').every((def) => def.ui.order < focus[0].ui.order),
     'the Glass section precedes the Focus section');
 });

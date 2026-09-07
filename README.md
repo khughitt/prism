@@ -9,9 +9,11 @@ marks the focused window. Terminal background opacity defaults to
 zero so the glass is the only surface behind the text; with the focus split on,
 unfocused terminals get a second material whose roughness, tint distance,
 fringing, distortion, directional blur, noise, and saturation are the
-`glass.inactive.*` overrides. The Noctalia integration is a native v5 plugin under
-`integrations/noctalia-plugin/`; its panel is a shared `Glass` section and a
-`Focus` matrix with a focused and an unfocused slider per optic.
+`glass.inactive.*` overrides. Both materials share `glass.noiseType`: `white`,
+`fine` (the Prism default), or `lightness`. The Noctalia integration is a native
+v5 plugin under `integrations/noctalia-plugin/`; its panel is a shared `Glass`
+section and a `Focus` matrix with a focused and an unfocused slider per optic
+and one shared Noise type select.
 
 ## Configuration layout
 

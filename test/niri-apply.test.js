@@ -34,6 +34,7 @@ const PARAMS = {
   'glass.jellyFlex': 0.0038,
   'glass.jellyRipple': 0.15,
   'glass.noise': 0,
+  'glass.noiseType': 'fine',
   'glass.saturation': 1,
 };
 
