@@ -26,6 +26,7 @@ binds:
   - {param: glass.inactive.distortion, liveness: reload}
   - {param: glass.inactive.anisotropicBlur, liveness: reload}
   - {param: glass.noise, liveness: reload}
+  - {param: glass.noiseType, liveness: reload}
   - {param: glass.saturation, liveness: reload}
   - {param: glass.inactive.noise, liveness: reload}
   - {param: glass.inactive.saturation, liveness: reload}

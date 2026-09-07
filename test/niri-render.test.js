@@ -28,6 +28,7 @@ const resolved = { params: {
   'glass.inactive.distortion': 0.1,
   'glass.inactive.anisotropicBlur': 0.02,
   'glass.noise': 0,
+  'glass.noiseType': 'fine',
   'glass.saturation': 1,
   'glass.inactive.noise': 0.02,
   'glass.inactive.saturation': 0.85,
@@ -52,7 +53,7 @@ material "terminal-glass" {
         distortion 0.32 scale=0.05
         anisotropic-blur 0
         roughness 0.08
-        noise 0
+        noise 0 type="fine"
         saturation 1
         backdrop-blur true
         jelly-flex 0.0038
@@ -72,7 +73,7 @@ material "terminal-glass-inactive" {
         distortion 0.1 scale=0.05
         anisotropic-blur 0.02
         roughness 0.5
-        noise 0.02
+        noise 0.02 type="fine"
         saturation 0.85
         backdrop-blur true
         jelly-flex 0.0038
@@ -118,7 +119,7 @@ material "terminal-glass" {
         distortion 0.32 scale=0.05
         anisotropic-blur 0
         roughness 0.08
-        noise 0
+        noise 0 type="fine"
         saturation 1
         backdrop-blur true
         jelly-flex 0.0038
@@ -150,7 +151,7 @@ test('the focus split renders an inactive material that inherits every other gla
   ]) assert.ok(inactive.includes(`        ${line}\n`), `inherited line missing: ${line}`);
   for (const line of [
     'attenuation-distance 70', 'chromatic-aberration 0.08', 'distortion 0.1 scale=0.05',
-    'anisotropic-blur 0.02', 'roughness 0.5', 'noise 0.02', 'saturation 0.85',
+    'anisotropic-blur 0.02', 'roughness 0.5', 'noise 0.02 type="fine"', 'saturation 0.85',
   ]) assert.ok(inactive.includes(`        ${line}\n`), `override missing: ${line}`);
 });
 
@@ -184,7 +185,7 @@ test('the material definition carries every supported native parameter', () => {
   for (const line of [
     'ior 1.38', 'thickness 32', 'attenuation-color "#bbc7db"',
     'attenuation-distance 178', 'chromatic-aberration 0.68',
-    'distortion 0.32 scale=0.05', 'anisotropic-blur 0', 'roughness 0.08', 'noise 0', 'saturation 1',
+    'distortion 0.32 scale=0.05', 'anisotropic-blur 0', 'roughness 0.08', 'noise 0 type="fine"', 'saturation 1',
     'backdrop-blur true',
     'jelly-flex 0.0038',
     'jelly-ripple 0.15', 'bevel 9', 'offset-x 4', 'offset-y 4',
@@ -282,7 +283,22 @@ test('noise and saturation are written even when they are neutral', () => {
 
   // Prism owns both values; it never relies on niri's inheritance from the
   // global blur block, so the neutral pair is written, not omitted.
-  assert.match(kdl, /        roughness 0.08\n        noise 0\n        saturation 1\n        backdrop-blur true\n/);
+  assert.match(kdl, /        roughness 0.08\n        noise 0 type="fine"\n        saturation 1\n        backdrop-blur true\n/);
+});
+
+test('every noise type is quoted and shared across glass materials', () => {
+  for (const type of ['white', 'fine', 'lightness']) {
+    for (const split of [true, false]) {
+      const kdl = renderNiriFragment(with_({
+        'glass.noiseType': type, 'glass.focusSplit': split,
+        'glass.noise': 0.1, 'glass.inactive.noise': 0.02,
+      }));
+      const materials = kdl.match(/^material [^]*?^\}/gm);
+      assert.equal(materials.length, split ? 2 : 1);
+      assert.ok(materials[0].includes(`        noise 0.1 type="${type}"\n`));
+      if (split) assert.ok(materials[1].includes(`        noise 0.02 type="${type}"\n`));
+    }
+  }
 });
 
 test('fragment is stable', () => {

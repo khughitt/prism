@@ -58,7 +58,18 @@ test('the glass surface is exactly the parameters native niri consumes', () => {
   const defs = loadDefs(defsDir());
   const glass = [...defs.keys()].filter((key) => key.startsWith('glass.'));
 
-  assert.deepEqual(glass.slice().sort(), Object.keys(NATIVE).sort());
+  assert.deepEqual(glass.slice().sort(), [...Object.keys(NATIVE), 'glass.noiseType'].sort());
+});
+
+test('noise type is a shared Focus select with an explicit Prism default', () => {
+  const defs = loadDefs(defsDir());
+  const def = defs.get('glass.noiseType');
+  assert.equal(def.type, 'enum');
+  assert.deepEqual(def.values, ['white', 'fine', 'lightness']);
+  assert.equal(def.default, 'fine');
+  assert.deepEqual(def.ui, { group: 'Focus', control: 'select', label: 'Noise type', order: 275 });
+  assert.ok(defs.get('glass.inactive.noise').ui.order < def.ui.order);
+  assert.ok(def.ui.order < defs.get('glass.saturation').ui.order);
 });
 
 test('every glass definition matches the native range and default', () => {

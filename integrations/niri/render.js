@@ -34,7 +34,7 @@ function definition(name, params, glass) {
     `        distortion ${glass.distortion} scale=${params['glass.distortionScale']}`,
     `        anisotropic-blur ${glass.anisotropicBlur}`,
     `        roughness ${glass.roughness}`,
-    `        noise ${glass.noise}`,
+    `        noise ${glass.noise} type=${JSON.stringify(params['glass.noiseType'])}`,
     `        saturation ${glass.saturation}`,
     `        backdrop-blur ${params['glass.backdropBlur']}`,
     `        jelly-flex ${params['glass.jellyFlex']}`,
