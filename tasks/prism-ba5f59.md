@@ -5,7 +5,7 @@ status: todo
 priority: 2
 size: m
 created: 2026-09-07T21:34:19Z
-updated: 2026-09-07T21:44:29Z
+updated: 2026-09-07T22:11:14Z
 depends: []
 tags: [noise, spike, performance]
 source: docs/notes/2026-09-07-glass-noise-gimp-comparison.md
@@ -29,3 +29,4 @@ Done when a short evidence-backed report recommends a candidate and parameter se
 
 - 2026-09-07T21:39:39Z (glass-noise-spike-plan): Planning in .worktrees/glass-noise-spike-plan. Reuse MaterialRenderElement::draw GPU span and existing nested capture helpers; require renderer identity and protocol-matched Tracy tools. No spike execution yet.
 - 2026-09-07T21:44:29Z (glass-noise-spike-plan): Proposed spike design written: runtime-uniform Dulling 1/2/4/8, GIMP-style versus matched RMS, existing material GPU span with repeated measurements and explicit hardware/visual limits. Single design includes staged execution; no implementation plan or experiment execution yet.
+- 2026-09-07T22:11:14Z (glass-noise-spike-plan): Design review addressed: diagnostics use GIMP-style a=0.5 and matched-RMS a=0.25 within KDL limits; quantization-aware CDF/share shape gates, real float32 hash/salt reference, low-amplitude visibility and hash-cost predictions, output format/dithering evidence, native env naming and staged divergence-report gate. Spike remains unexecuted.

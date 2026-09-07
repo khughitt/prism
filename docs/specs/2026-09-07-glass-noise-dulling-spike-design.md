@@ -67,7 +67,10 @@ not an assumed improvement.
 
 Use a runtime uniform for `h`, with a fixed maximum-eight loop. Do not benchmark
 only compile-time-specialized variants and infer the cost of an adjustable
-control. A temporary process setting `PRISM_SPIKE_DULLING` may feed the uniform,
+control. The same shader already uses this pattern for uniform `mat_samples`
+(`material.frag:459–463` at native `691a1320`); the loop form itself is not an
+unanswered GLES feasibility question. A temporary process setting
+`NIRI_MATERIAL_SPIKE_DULLING` may feed the uniform,
 read once and rejected unless it is an integer in 1–8. Its default is 2. Restart
 only the nested process to change it. The environment setting is experiment
 plumbing, not a proposed product API.
@@ -85,7 +88,44 @@ hashes. Register a float `mat_noise_dulling` beside
 Implement the matched-RMS policy by scaling the fixture's written noise amount
 by `sqrt((h+1)*(h+2)/6)`; the shader still uses half the written amount as `A`.
 Record both logical and written amounts. This avoids a second experimental
-uniform while keeping the two policies unambiguous.
+uniform while keeping the two policies unambiguous. Native `Noise::amount` is
+`FloatOrInt<0, 1>` (`niri-config/src/material.rs:424`), so require
+`a <= sqrt(6/((h+1)*(h+2)))`: the logical ceiling is 0.447214 at h=4 and
+0.258199 at h=8. Validate every generated KDL with the tested binary and fail
+on an excessive written amount; never silently clamp it. The matched-RMS
+diagnostic uses logical `a=0.25`, reaching written 0.968246 at h=8.
+
+### Predictions registered before measurement
+
+The candidate uses `h+1` hashes: h=1/2/4/8 costs 2/3/5/9 hash evaluations,
+versus one for white and nine for fine. Predict increasing candidate cost with
+h, with h=2 a plausible cheaper alternative to fine and h=8 in the same broad
+work class as fine. Min reductions, sign selection, uniform-loop overhead,
+compiler scheduling, and GPU bottlenecks can change this ordering. Hash counts
+are a cost hypothesis, not timing evidence or an assertion of equal GPU cost.
+
+At Prism's actual inactive default `a=0.02`, the continuous GIMP-style RMS,
+expressed in 8-bit encoded levels before quantization and compositing, is:
+
+| h | 1 | 2 | 4 | 8 |
+| --- | ---: | ---: | ---: | ---: |
+| RMS in LSB | 1.47 | 1.04 | 0.66 | 0.38 |
+
+Hypothesis: h≥4 may look much closer to noise-off on an 8-bit output, limiting
+the useful GIMP-style range to around 1–2 at that amount. Matched RMS maintains
+1.47 LSB before quantization and may keep more of the range useful. Sub-LSB RMS
+does not prove invisibility: sparse changed pixels can remain visible, and
+baseline code phase, compositing, dithering, and higher output precision matter.
+For example, nearest rounding about an exact code center predicts about 83%
+unchanged pixels at h=8, a=0.02, versus about 28% at a=0.1. These are conditional
+predictions, not measured shares or a universal output model.
+
+Record nested render-target/framebuffer formats, output format and bit depth,
+screenshot bit depth, and whether spatial or temporal dithering is enabled at
+each conversion. XRGB8888 is a hypothesis to verify, not an assumed fact. An
+8-bit PNG cannot prove an 8-bit rendering pipeline. Report unknown stages and
+test visibility against the actual output; do not interpret vanished grain as
+evidence that the continuous distributions are identical.
 
 Dulling is not spatial grain size. Do not add a high-pass stage to the required
 candidate: that would mix two independent changes. Current fine is the spatial
@@ -104,15 +144,21 @@ identify a running binary: record each executable's version and SHA-256 too.
 Create a native worktree for the throwaway experiment. If permissions prevent
 writing to the native repository, a local clone into a writable scratch root is
 sufficient; keep its commits and patch outside the native main checkout. Do not
-change project registration or install the experimental binary. In the current
-sandbox the native repository is read-only; Prism and temporary directories are
-writable.
+change project registration or install the experimental binary. The native
+repository is outside this session's declared working/writable directories;
+that is not a claim about its filesystem permissions in another session. Check
+execution permissions at run time and use a writable isolated checkout.
 
 Reuse these native sources instead of building a benchmark framework:
 
 - `docs/materials/scripts/glass-noise-type-smoke.sh`: material fixture, bounded
   startup, screenshots, ROI comparisons, and cleanup. It is a standalone script,
   not a library to source; adapt the needed functions into the spike script.
+  Its lightness chroma assertions (`lightness_ab_rmse`, including the one-code
+  bound) are invalid once that dispatch slot carries Dulling. Do not run the
+  unmodified script against the prototype and count its result as acceptance.
+  Replace those assertions with the Dulling distribution gates below; preserve
+  noise-off/white/fine controls and the original smoke for the unmodified build.
 - `docs/materials/scripts/material-signals-smoke.sh`: unique Tracy port and
   lock, capture connection checks, matching tools, and GPU CSV export.
 - `src/render_helpers/material.rs`: existing GPU span
@@ -132,7 +178,21 @@ features and separate target directories. The build command is
 `cargo build --release --features profile-with-tracy`; resolve the binary location
 using `cargo metadata --format-version 1 --no-deps` and copy each executable into
 its run directory before capturing. This avoids a concurrent build replacing a
-binary mid-run. Run repository tests through its `just` recipes.
+binary mid-run. Run repository tests through its `just` recipes. `just test`
+runs the Rust suite; it does not compile/exercise the material GLSL on a GPU.
+The adapted GLES capture and distribution checks are a separate required gate.
+Budget for the native commit gate on the throwaway branch: after staging the
+prototype changes, regenerate and stage the divergence report, then run checks:
+
+```bash
+just upstream-report
+git add docs/materials/upstream-divergence.md
+just check
+```
+
+`just check` includes both `tasks check` and `upstream-report --check`; the latter
+compares the report with the staged tree. Restage and regenerate if source
+changes again before committing. Do not bypass that hook for a prototype.
 
 The inspected lockfile uses `tracy-client-sys 0.28.0`, embedding Tracy 0.13.1;
 recheck this at execution. The signals script's `tools_ready` documents matching
@@ -162,20 +222,89 @@ shader helper. Keep the `mat_noise > 0` guard. Reject Dulling inputs `0`, `9`,
 invalid GLSL edit makes the driver fail rather than silently accepting a
 fallback renderer; restore the valid shader before the experiment.
 
-Check the distribution in a deterministic CPU reference using fixed-seed
-independent uniforms: zero mean, support within `±A`, and variance
-`2*A*A/((h+1)*(h+2))`. Use at least 65,536 samples, mean tolerance `0.02*A`,
-and relative variance tolerance 10%. This checks the formula and normalization;
-it does not substitute for executing the GLSL hash and material path.
+Before modifying the shader, check both the ideal distribution and the actual
+hash sampling in a CPU reference. Keep the fixed-seed independent-uniform
+reference for the algebra; add a float32 port of the native `hash12` using the
+actual magnitude/sign salts proposed for GLSL. `hash12` uses fract, multiply,
+add, and dot; it has no sine. Match the component order (`p.xyx`, `p3.yzx`) and
+round intermediate operations to float32 rather than silently using Python's
+double precision. GPU contraction/rounding may differ, so this is a correlation
+screen, not a promise of CPU/GPU bit parity.
 
-For rendered evidence, use the existing signed ROI difference against a matching
-noise-off capture. Record mean, RMS, clipping share, and the distribution of
-absolute deviations. On a neutral diagnostic fixture, measured RMS should
-follow the predicted policy within 15%; investigate failures rather than widening
-the tolerance. Separate clipping and 8-bit quantization from implementation errors.
+Freeze this initial salt schedule in the reference and shader:
+
+```text
+p = (pixel_x + 0.5, pixel_y + 0.5) + (47, 113)
+magnitude salts = (0,0), (19,73), (101,29), (43,151),
+                  (173,97), (227,41), (61,239), (251,181)
+sign salt = (137,307), independent of h
+```
+
+Take the first h magnitude draws. Sample a 512×128 pixel grid at origins
+(0,0) and (2048,1024), separately, to expose position-dependent artifacts.
+The schedule is a proposal to test, not an assertion of independence. Before
+GPU work, require both reference sources at each h to meet:
+
+- Support within `±A`, mean within `0.02*A` of zero, and positive-sign share
+  within 0.01 of 0.5.
+- Mean absolute deviation within 5% of `A/(h+1)` and variance within 10% of
+  `2*A*A/((h+1)*(h+2))`.
+- Absolute-deviation CDF within 0.01 of `F(t)=1-(1-t/A)^h` at
+  `t/A = 0.1, 0.25, 0.5, 0.8`.
+
+These checks screen for harmful dependence in the min/sign draws; independent
+uniforms alone cannot detect it, and finite tests cannot prove independence.
+If the real hash fails, retain the failing evidence and revise the salt schedule
+or generator explicitly before GPU implementation; do not loosen tolerances.
+
+For rendered evidence, use a flat, fully transparent interior ROI with coverage
+one and no text/edges. Compare encoded RGB code values against a matching
+deterministic noise-off capture. Adapt the smoke's ROI and signed-difference
+helpers, but extract channels without a grayscale/linear-light conversion that
+would change the units. Check each channel independently on the warm fixture.
+Retain at least 65,536 pixels, before clipping exclusions, per diagnostic case.
+
+**Shape is a required gate for both policies.** Reuse the smoke's `top_band`,
+`below_median`, and `beyond_white` concepts with explicit logical-amount units:
+
+```text
+below_median = P(|delta| < a/4)      predicted F(a/4)
+top_band     = P(0.4a <= |delta| <= 0.5a)
+                                      predicted F(0.5a) - F(0.4a)
+beyond_white = P(|delta| > a/2)      predicted 1 - F(a/2)
+```
+
+Extend F with zero below 0 and one above A. For GIMP-style, these predictions
+are `1-0.5^h`, `0.2^h`, and zero. For matched RMS use its actual A; beyond-white
+mass is allowed and predicted. Also gate the CDF at `t/A = 0.1, 0.25, 0.5, 0.8`
+so matching RMS cannot hide an incorrect shape. Sparse tail bins alone cannot
+identify high h; the interior CDF checks provide that discrimination.
+
+Account for output quantization **before** evaluating gates. For a verified
+8-bit encoded path with nearest rounding and no dithering, a difference of two
+quantized captures has at most `epsilon=1/255` error relative to the continuous
+delta. At each threshold require the observed CDF to lie between
+`F(max(0,t-epsilon))` and `F(min(A,t+epsilon))`, with 0.01 absolute sampling
+allowance. Derive band intervals from the endpoint bounds. Use matching strict
+or inclusive code-bin endpoints, and require no sample outside `±(A+epsilon)`.
+For other verified output conversions, precompute corresponding bounds before
+reading candidate results. Unknown dithering/precision leaves this gate
+unresolved; do not silently assume the convenient model.
+
+Record clipping share separately and include the predicted clamp in the forward
+model. If a share c is excluded, normalize on the retained pixels and transform
+CDF bounds conservatively as `max(0,(lower-c)/(1-c))` and
+`min(1,upper/(1-c))`; do not compare a clipped subset directly with the original
+unconditional CDF. Confirm with the unclipped diagnostic ROI where available.
+For negligible clipping, retain RMS as a normalization check with tolerance
+`max(0.15*predicted_RMS, epsilon)`, not as the shape criterion. Material clipping
+and screenshot quantization must not be confused with a hash/min implementation
+failure. Do not assume a universal clipping fraction from another fixture.
+
 Record high-pass versus point-noise spatial differences without requiring Dulling
 to reproduce fine's clump suppression. Repeat a static capture in the same
-session; unchanged content must not develop temporal noise.
+session; unchanged content must not develop temporal noise. If output dithering
+is temporal, distinguish that behavior from a frame-dependent grain seed.
 
 Use this staged matrix rather than a full Cartesian product:
 
@@ -183,9 +312,15 @@ Use this staged matrix rather than a full Cartesian product:
 | --- | --- | --- |
 | Primary visual comparison | off, white, fine; Dulling 1/2/4/8 under both policies | Four flat backdrops: neutral mid-gray, warm mid-tone, near-black, near-white; logical `a=0.02` |
 | Practical preference check | white, fine, preferred Dulling settings | One representative wallpaper with saturated/detail regions; `a=0.02` and the user's normal amount if different |
-| Diagnostic statistics | off, white, fine; Dulling 1/2/4/8 under both policies | Neutral mid-gray at logical `a=0.1`; inspect clipping before interpreting moments |
+| GIMP-style diagnostic | off, white, fine; Dulling 1/2/4/8 | Existing warm mid-tone fixture at logical/written `a=0.5`; retain clipping and per-channel statistics |
+| Matched-RMS diagnostic | off, white, fine; Dulling 1/2/4/8 | Neutral mid-gray at logical `a=0.25`; maximum written amount 0.968246; measure actual clipping |
 | GPU comparison | off, white, fine; Dulling 1/2/4/8 | Same detailed backdrop, logical `a=0.02`, GIMP-style policy; one pane, then three visible panes with fixed geometry |
 | Normalization timing control | preferred Dulling with both policies | Same GPU fixture; retain the second timing matrix only if this control reveals a material difference |
+
+The stronger diagnostics test shape, not desktop preference. GIMP-style a=0.5
+matches the existing smoke's diagnostic strength and gives h=8 about 9.5 LSB
+RMS before quantization. Do not raise matched-RMS a to 0.5: it exceeds the KDL
+amount ceiling for h≥4. Visual and performance cases stay at practical amounts.
 
 Use 1280×720 at scale 1 for the repeatable fixture. Add a hardware run at the
 user's output resolution/scale for the shortlisted setting. Record actual pane
@@ -260,9 +395,12 @@ finish after Dulling. No cellular/Worley experiment is required.
 Write `docs/notes/2026-09-07-glass-noise-dulling-spike-results.md` in Prism with:
 
 - Native source and patch/binary hashes; driver/config/input/capture locations;
-  hardware, driver, renderer/backend, build flags, resolution/scale/refresh, and
+  hardware, driver, renderer/backend, framebuffer/output/capture formats and
+  dithering, build flags, resolution/scale/refresh, and
   exact run commands. No raw profiling dumps in the product repository.
-- Distribution checks and same-scale comparisons; actual user observations.
+- Ideal and real-hash reference checks, quantization-aware shape gates, and
+  same-scale comparisons; actual user observations versus the preregistered
+  low-amplitude visibility prediction.
 - Per-run timing results, baseline variation, deltas, and interpretation limits.
 - Recommended amplitude semantics, useful Dulling range, and whether the
   improvement justifies a production control. A negative or inconclusive result
