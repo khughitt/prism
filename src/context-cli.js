@@ -4,7 +4,7 @@ import { withLock } from './lock.js';
 import { lockPath } from './paths.js';
 import {
   VERB_KINDS, assertKind, assertName, deleteContext, inspectContext, listContexts, readActive, readContext,
-  wallpaperId, writeActive, writeContext,
+  wallpaperId, canonicalWallpaperPath, writeActive, writeContext,
 } from './contexts.js';
 import { activeName, loadLayers, loadStore } from './layers.js';
 import { readValues } from './values.js';
@@ -19,6 +19,14 @@ function requireContext(kind, name) {
   const context = readContext(kind, name);
   if (context === null) throw new Error(`${kind} ${name}: no such context`);
   return context;
+}
+
+// The pin is a gesture about the wallpaper on screen. Loading a profile puts
+// an explicit layer above it, so the gesture ends there.
+function unpinned(active) {
+  if (active.wallpaper === undefined) return active;
+  const { pinned, ...wallpaper } = active.wallpaper;
+  return { ...active, wallpaper: pinned === undefined ? wallpaper : { ...wallpaper, pinned: false } };
 }
 
 function kindAndName(rest, verb) {
@@ -89,7 +97,8 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
           }
           const marker = name === current ? '*' : ' ';
           const source = kind === 'wallpaper' ? `  ${entry.context.source}` : '';
-          print(`${marker} ${kind} ${name}${source}\n`);
+          const pinned = kind === 'wallpaper' && name === current && active.wallpaper.pinned === true ? ' (pinned)' : '';
+          print(`${marker} ${kind} ${name}${source}${pinned}\n`);
         }
       }
       if (active.wallpaper && !all.wallpaper.includes(active.wallpaper.id)) {
@@ -115,12 +124,15 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
       return null;
     }
 
+    // A profile is a full snapshot; a wallpaper context holds only what was
+    // tuned while pinned. The target is always topmost, so a save can never
+    // absorb a layer above it.
     case 'save': {
       const { kind, name } = kindAndName(rest, 'save');
+      if (kind !== 'profile') throw new Error('save is for profiles; a wallpaper context holds only pinned edits');
       await withLock(lockPath(), async () => {
-        const source = kind === 'wallpaper' ? requireContext(kind, name).source : null;
         const { params } = loadStore(defs);
-        writeContext(kind, name, { source, values: params });
+        writeContext(kind, name, { source: null, values: params });
       });
       return null;
     }
@@ -131,8 +143,30 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
         const context = requireContext(kind, name);
         return kind === 'wallpaper'
           ? { ...active, wallpaper: { id: name, path: context.source } }
-          : { ...active, profile: name };
+          : { ...unpinned(active), profile: name };
       });
+    }
+
+    case 'pin':
+    case 'unpin': {
+      if (rest.length !== 1) throw usage(`${sub} <kind>`);
+      const [kind] = rest;
+      assertKind(kind);
+      if (kind !== 'wallpaper') throw new Error(`pin applies to automatic kinds (wallpaper), not ${kind}`);
+      await withLock(lockPath(), async () => {
+        const active = readActive();
+        if (active.wallpaper === undefined) throw new Error('no active wallpaper');
+        if (sub === 'pin') {
+          if (active.profile !== undefined) {
+            throw new Error(`profile ${active.profile} is active; deactivate it to tune the wallpaper`);
+          }
+          writeActive({ ...active, wallpaper: { ...active.wallpaper, pinned: true } });
+        } else {
+          if (active.wallpaper.pinned !== true) throw new Error('wallpaper is not pinned');
+          writeActive(unpinned(active));
+        }
+      });
+      return null;
     }
 
     case 'deactivate': {
@@ -155,14 +189,18 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
       }, () => deleteContext(kind, name));
     }
 
+    // The hook's entry point. The same wallpaper again (a second connector, a
+    // re-set) changes nothing, pin included; a different one is a new
+    // activation and arrives unpinned.
     case 'wallpaper': {
       if (rest.length !== 1) throw usage('wallpaper <path>');
-      const [wallpaper] = rest;
+      const wallpaper = canonicalWallpaperPath(rest[0]);
       const id = wallpaperId(wallpaper);
-      return changeSlots({ defs, manifests, runner }, (active) => ({ ...active, wallpaper: { id, path: wallpaper } }));
+      return changeSlots({ defs, manifests, runner }, (active) => (
+        active.wallpaper?.id === id ? active : { ...active, wallpaper: { id, path: wallpaper } }));
     }
 
     default:
-      throw usage('list|show|save|activate|deactivate|delete|wallpaper');
+      throw usage('list|show|save|activate|deactivate|delete|pin|unpin|wallpaper');
   }
 }

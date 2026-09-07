@@ -30,6 +30,21 @@ export function wallpaperId(wallpaper) {
   return createHash('sha256').update(wallpaper).digest('hex').slice(0, 8);
 }
 
+// The id hashes the canonical path, so the same image reached through a
+// symlinked directory (a home-relative and a mount-absolute spelling, say)
+// is one wallpaper. A path that does not exist is an error, not a context.
+export function canonicalWallpaperPath(wallpaper) {
+  if (typeof wallpaper !== 'string' || wallpaper.trim() === '') {
+    throw new Error('wallpaper path must not be empty');
+  }
+  try {
+    return fs.realpathSync(wallpaper);
+  } catch (err) {
+    if (err.code === 'ENOENT') throw new Error(`wallpaper path does not exist: ${wallpaper}`);
+    throw err;
+  }
+}
+
 export function contextPath(kind, name) {
   return path.join(contextsDir(), kind, `${name}.yaml`);
 }
@@ -53,6 +68,9 @@ export function readActive() {
       throw new Error('active wallpaper must carry id and path');
     }
     assertName(entry.id);
+    if (entry.pinned !== undefined && typeof entry.pinned !== 'boolean') {
+      throw new Error('active wallpaper pinned must be a boolean');
+    }
   }
   if (active.profile !== undefined) assertName(active.profile);
   return active;

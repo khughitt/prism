@@ -30,6 +30,16 @@ beforeEach(() => {
   fs.writeFileSync(valuesPath(), '{}\n');
 });
 
+// The wallpaper verb canonicalises its path with realpath, so it needs a real
+// file. Each call makes a fresh one under the config dir, wiped per test.
+function wallpaperFile(name) {
+  const dir = path.join(process.env.PRISM_CONFIG_DIR, 'walls');
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, name);
+  fs.writeFileSync(file, '');
+  return file;
+}
+
 async function runCaptured(argv, opts = {}) {
   let stdout = '';
   let stderr = '';
@@ -54,6 +64,10 @@ test('context list shows every context by kind, marks the active ones, and shows
     '* wallpaper ffff0000  /walls/z.jpg (untuned)',
     '',
   ].join('\n'));
+
+  writeActive({ wallpaper: { id: 'abc12345', path: '/walls/a.jpg', pinned: true } });
+  const pinned = await runCaptured(['context', 'list']);
+  assert.equal(pinned.stdout.split('\n')[2], '* wallpaper abc12345  /walls/a.jpg (pinned)');
 });
 
 test('context show prints the file contents, _source first for a wallpaper', async () => {
@@ -109,12 +123,13 @@ test('context save snapshots every effective parameter and touches neither resol
   assert.deepEqual(readActive(), { wallpaper: { id: 'abc12345', path: '/w' } }, 'save does not activate');
 });
 
-test('context save wallpaper requires the file and preserves its _source', async () => {
-  const missing = await runCaptured(['context', 'save', 'wallpaper', 'abc12345']);
-  assert.match(missing.stderr, /wallpaper abc12345: no such context/);
+test('context save is for profiles: a wallpaper context holds only pinned edits', async () => {
   writeContext('wallpaper', 'abc12345', { source: '/walls/a.jpg', values: {} });
-  assert.equal(await cli.run(['context', 'save', 'wallpaper', 'abc12345'], { runner: () => {} }), 0);
-  assert.equal(readContext('wallpaper', 'abc12345').source, '/walls/a.jpg');
+  writeActive({ wallpaper: { id: 'abc12345', path: '/walls/a.jpg', pinned: true } });
+  const refused = await runCaptured(['context', 'save', 'wallpaper', 'abc12345']);
+  assert.notEqual(refused.code, 0);
+  assert.match(refused.stderr, /save is for profiles/);
+  assert.deepEqual(readContext('wallpaper', 'abc12345').values, {}, 'nothing written');
 });
 
 test('saving a profile into itself while it is active is inert: effective values and sinks are unchanged', async () => {
@@ -190,17 +205,86 @@ test('activate profile requires the file; activate wallpaper copies _source into
 test('an empty diff runs no sink and a repeated wallpaper is a no-op', async () => {
   await cli.run(['apply'], { runner: () => {} });
   const before = fs.readFileSync(resolvedPath(), 'utf8');
+  const untuned = wallpaperFile('untuned.jpg');
   const calls = [];
-  assert.equal(await cli.run(['context', 'wallpaper', '/walls/untuned.jpg'], { runner: (m) => calls.push(m.sink) }), 0);
+  assert.equal(await cli.run(['context', 'wallpaper', untuned], { runner: (m) => calls.push(m.sink) }), 0);
   assert.deepEqual(calls, []);
   assert.equal(fs.readFileSync(resolvedPath(), 'utf8'), before);
   const { wallpaperId } = await import('../src/contexts.js');
-  assert.deepEqual(readActive(), { wallpaper: { id: wallpaperId('/walls/untuned.jpg'), path: '/walls/untuned.jpg' } });
+  assert.deepEqual(readActive(), { wallpaper: { id: wallpaperId(untuned), path: untuned } });
 
-  const again = await runCaptured(['context', 'wallpaper', '/walls/untuned.jpg']);
+  const again = await runCaptured(['context', 'wallpaper', untuned]);
   assert.equal(again.code, 0);
   assert.equal(fs.readFileSync(resolvedPath(), 'utf8'), before);
   assert.match((await runCaptured(['context', 'wallpaper', ''])).stderr, /wallpaper path must not be empty/);
+  const missing = await runCaptured(['context', 'wallpaper', path.join(process.env.PRISM_CONFIG_DIR, 'walls', 'nope.jpg')]);
+  assert.notEqual(missing.code, 0);
+  assert.match(missing.stderr, /wallpaper path does not exist/);
+});
+
+test('the wallpaper verb canonicalises the path: a symlink and its target are one wallpaper', async () => {
+  const real = wallpaperFile('real.jpg');
+  const link = path.join(process.env.PRISM_CONFIG_DIR, 'walls', 'link.jpg');
+  fs.symlinkSync(real, link);
+  assert.equal(await cli.run(['context', 'wallpaper', link], { runner: () => {} }), 0);
+  const { wallpaperId } = await import('../src/contexts.js');
+  assert.deepEqual(readActive(), { wallpaper: { id: wallpaperId(real), path: real } });
+});
+
+test('pin makes the active wallpaper the write target; a different wallpaper clears it, the same one keeps it', async () => {
+  const a = wallpaperFile('a.jpg');
+  const b = wallpaperFile('b.jpg');
+  const { wallpaperId } = await import('../src/contexts.js');
+
+  assert.match((await runCaptured(['context', 'pin', 'wallpaper'])).stderr, /no active wallpaper/);
+  assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
+  assert.match((await runCaptured(['context', 'unpin', 'wallpaper'])).stderr, /wallpaper is not pinned/);
+
+  assert.equal(await cli.run(['context', 'pin', 'wallpaper'], { runner: () => {} }), 0);
+  assert.deepEqual(readActive(), { wallpaper: { id: wallpaperId(a), path: a, pinned: true } });
+  let out = '';
+  await cli.run(['describe', '--json'], { print: (s) => { out += s; } });
+  assert.equal(JSON.parse(out).target, 'wallpaper');
+
+  // the same wallpaper arriving again (a second connector) keeps the pin
+  assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
+  assert.deepEqual(readActive(), { wallpaper: { id: wallpaperId(a), path: a, pinned: true } });
+
+  // a different wallpaper is a new activation: the pin was about the old one
+  assert.equal(await cli.run(['context', 'wallpaper', b], { runner: () => {} }), 0);
+  assert.deepEqual(readActive(), { wallpaper: { id: wallpaperId(b), path: b } });
+  out = '';
+  await cli.run(['describe', '--json'], { print: (s) => { out += s; } });
+  assert.equal(JSON.parse(out).target, 'base');
+
+  assert.equal(await cli.run(['context', 'pin', 'wallpaper'], { runner: () => {} }), 0);
+  assert.equal(await cli.run(['context', 'unpin', 'wallpaper'], { runner: () => {} }), 0);
+  assert.deepEqual(readActive(), { wallpaper: { id: wallpaperId(b), path: b, pinned: false } });
+
+  for (const argv of [['context', 'pin'], ['context', 'pin', 'profile'], ['context', 'pin', 'state'],
+    ['context', 'unpin', 'wallpaper', 'extra']]) {
+    const failure = await runCaptured(argv);
+    assert.notEqual(failure.code, 0, `${argv.join(' ')} unexpectedly succeeded`);
+  }
+  assert.match((await runCaptured(['context', 'pin', 'profile'])).stderr, /pin applies to automatic kinds/);
+});
+
+test('pinning under a loaded profile is refused, and loading a profile drops the pin', async () => {
+  const a = wallpaperFile('a.jpg');
+  const { wallpaperId } = await import('../src/contexts.js');
+  writeContext('profile', 'dusk', { source: null, values: {} });
+  assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
+  assert.equal(await cli.run(['context', 'activate', 'profile', 'dusk'], { runner: () => {} }), 0);
+  const refused = await runCaptured(['context', 'pin', 'wallpaper']);
+  assert.notEqual(refused.code, 0);
+  assert.match(refused.stderr, /profile dusk is active/);
+  assert.deepEqual(readActive(), { wallpaper: { id: wallpaperId(a), path: a }, profile: 'dusk' });
+
+  assert.equal(await cli.run(['context', 'deactivate', 'profile'], { runner: () => {} }), 0);
+  assert.equal(await cli.run(['context', 'pin', 'wallpaper'], { runner: () => {} }), 0);
+  assert.equal(await cli.run(['context', 'activate', 'profile', 'dusk'], { runner: () => {} }), 0);
+  assert.deepEqual(readActive(), { wallpaper: { id: wallpaperId(a), path: a, pinned: false }, profile: 'dusk' },
+    'the profile is now the target; the pin is a gesture about tuning the wallpaper and does not outlive it');
 });
 
 test('deactivate and delete clear the slot and restore the layer below', async () => {
@@ -268,10 +352,11 @@ test('an unchanged slot is still validated: re-activating a broken context fails
   assert.match(again.stderr, /glass\.ior: 99 outside range/);
 
   const { wallpaperId } = await import('../src/contexts.js');
-  const id = wallpaperId('/walls/a.jpg');
-  writeContext('wallpaper', id, { source: '/walls/a.jpg', values: { 'glass.ior': 99 } });
-  writeActive({ wallpaper: { id, path: '/walls/a.jpg' } });
-  const repeat = await runCaptured(['context', 'wallpaper', '/walls/a.jpg']);
+  const a = wallpaperFile('a.jpg');
+  const id = wallpaperId(a);
+  writeContext('wallpaper', id, { source: a, values: { 'glass.ior': 99 } });
+  writeActive({ wallpaper: { id, path: a } });
+  const repeat = await runCaptured(['context', 'wallpaper', a]);
   assert.notEqual(repeat.code, 0);
   assert.match(repeat.stderr, /glass\.ior: 99 outside range/);
 });

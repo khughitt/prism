@@ -183,7 +183,7 @@ test('get, list, and describe read through the active layers', async () => {
   out = '';
   await cli.run(['describe', '--json'], { print: (s) => { out += s; } });
   const d = JSON.parse(out);
-  assert.deepEqual(d.active, { wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' });
+  assert.deepEqual(d.active, { wallpaper: { id: 'abc12345', path: '/w', pinned: false }, profile: 'dusk' });
   assert.equal(d.target, 'profile');
   const lip = d.params.find((x) => x.key === 'glass.paneLip');
   assert.deepEqual([lip.value, lip.layer, lip.fallback], [6, 'profile', 8]);
@@ -457,9 +457,17 @@ test('every public verb enforces its required and stray arguments', async () => 
   }
 });
 
-test('set writes into the topmost active context and creates an untuned wallpaper file with _source', async () => {
+test('set under an unpinned wallpaper writes base: an automatic layer never captures edits', async () => {
   fs.writeFileSync(valuesPath(), 'glass.ior: 1.24\n');
   writeActive({ wallpaper: { id: 'abc12345', path: '/walls/a.jpg' } });
+  assert.equal(await cli.run(['set', 'glass.ior', '1.3'], { runner: () => {} }), 0);
+  assert.equal(readContext('wallpaper', 'abc12345'), null, 'no wallpaper file appears');
+  assert.match(fs.readFileSync(valuesPath(), 'utf8'), /glass\.ior: 1\.3/);
+});
+
+test('set writes into the pinned wallpaper and creates an untuned wallpaper file with _source', async () => {
+  fs.writeFileSync(valuesPath(), 'glass.ior: 1.24\n');
+  writeActive({ wallpaper: { id: 'abc12345', path: '/walls/a.jpg', pinned: true } });
   const calls = [];
   assert.equal(await cli.run(['set', 'glass.ior', '1.3'], { runner: (m, f, keys) => calls.push(keys) }), 0);
   assert.deepEqual(readContext('wallpaper', 'abc12345'), { source: '/walls/a.jpg', values: { 'glass.ior': 1.3 } });
@@ -512,7 +520,7 @@ test('unset digs an orphan out of the active context the way it does for base', 
 });
 
 test('unset of the last key in a wallpaper context deletes the file instead of leaving it empty', async () => {
-  writeActive({ wallpaper: { id: 'abc12345', path: '/walls/a.jpg' } });
+  writeActive({ wallpaper: { id: 'abc12345', path: '/walls/a.jpg', pinned: true } });
   assert.equal(await cli.run(['set', 'glass.ior', '1.3'], { runner: () => {} }), 0);
   assert.notEqual(readContext('wallpaper', 'abc12345'), null);
   assert.equal(await cli.run(['unset', 'glass.ior'], { runner: () => {} }), 0);

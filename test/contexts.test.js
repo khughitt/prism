@@ -121,4 +121,8 @@ test('active slots round-trip and reject the reserved kind and bad shapes', () =
   assert.throws(() => contexts.readActive(), /active wallpaper must carry id and path/);
   fs.writeFileSync(activePath(), JSON.stringify({ profile: 7 }));
   assert.throws(() => contexts.readActive(), /invalid context name/);
+  fs.writeFileSync(activePath(), JSON.stringify({ wallpaper: { id: 'abc12345', path: '/w', pinned: 'yes' } }));
+  assert.throws(() => contexts.readActive(), /active wallpaper pinned must be a boolean/);
+  fs.writeFileSync(activePath(), JSON.stringify({ wallpaper: { id: 'abc12345', path: '/w', pinned: true } }));
+  assert.deepEqual(contexts.readActive(), { wallpaper: { id: 'abc12345', path: '/w', pinned: true } });
 });

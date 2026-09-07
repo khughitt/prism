@@ -9,7 +9,10 @@ export function activeName(active, kind) {
 }
 
 export function activeJson(active) {
-  return { wallpaper: active.wallpaper ?? null, profile: active.profile ?? null };
+  const wallpaper = active.wallpaper === undefined
+    ? null
+    : { id: active.wallpaper.id, path: active.wallpaper.path, pinned: active.wallpaper.pinned === true };
+  return { wallpaper, profile: active.profile ?? null };
 }
 
 // The active slots as layers in resolution order. A wallpaper without a file
@@ -28,9 +31,24 @@ export function loadLayers(active) {
   return layers;
 }
 
-export function writeTarget(layers) {
-  const top = layers[layers.length - 1];
-  return top ? { kind: top.kind, name: top.name } : { kind: 'base', name: null };
+// The write target is the topmost *explicit* layer. A profile is loaded by
+// hand, so it is always a target while active. A wallpaper is activated by the
+// shell's wallpaper hook without the user asking; it is an overlay that never
+// captures edits unless pinned. State (reserved) is automatic too and never a
+// target.
+export function writeTarget(active) {
+  if (active.profile !== undefined) return { kind: 'profile', name: active.profile };
+  if (active.wallpaper !== undefined && active.wallpaper.pinned === true) {
+    return { kind: 'wallpaper', name: active.wallpaper.id };
+  }
+  return { kind: 'base', name: null };
+}
+
+// The layers strictly below `target`, in resolution order.
+export function layersBelow(layers, target) {
+  if (target.kind === 'base') return [];
+  const rank = LAYER_ORDER.indexOf(target.kind);
+  return layers.filter((layer) => LAYER_ORDER.indexOf(layer.kind) < rank);
 }
 
 export function loadStore(defs) {
@@ -38,11 +56,11 @@ export function loadStore(defs) {
   const active = readActive();
   const layers = loadLayers(active);
   const { params, layerOf } = resolveLayered(defs, base, layers);
-  const target = writeTarget(layers);
-  // What unset would leave: the layer below the target. Below base sit the defaults.
+  const target = writeTarget(active);
+  // What unset would leave: the layers below the target. Below base sit the defaults.
   const below = target.kind === 'base'
     ? resolveLayered(defs, {}, []).params
-    : resolveLayered(defs, base, layers.slice(0, -1)).params;
+    : resolveLayered(defs, base, layersBelow(layers, target)).params;
   const fallback = {};
   for (const key of Object.keys(params)) {
     fallback[key] = layerOf[key] === target.kind ? below[key] : params[key];

@@ -45,18 +45,20 @@ test('loadLayers: an untuned wallpaper is an empty layer, a missing profile is a
   ]);
 });
 
-test('writeTarget is the topmost layer, or base', () => {
-  assert.deepEqual(layers.writeTarget([]), { kind: 'base', name: null });
-  assert.deepEqual(layers.writeTarget([
-    { kind: 'wallpaper', name: 'w', values: {} },
-    { kind: 'profile', name: 'p', values: {} },
-  ]), { kind: 'profile', name: 'p' });
+test('writeTarget is the topmost explicit layer: a loaded profile, a pinned wallpaper, else base', () => {
+  assert.deepEqual(layers.writeTarget({}), { kind: 'base', name: null });
+  // an automatic layer is an overlay: unpinned, it never captures edits
+  assert.deepEqual(layers.writeTarget({ wallpaper: { id: 'w', path: '/w' } }), { kind: 'base', name: null });
+  assert.deepEqual(layers.writeTarget({ wallpaper: { id: 'w', path: '/w', pinned: false } }), { kind: 'base', name: null });
+  assert.deepEqual(layers.writeTarget({ wallpaper: { id: 'w', path: '/w', pinned: true } }), { kind: 'wallpaper', name: 'w' });
+  assert.deepEqual(layers.writeTarget({ wallpaper: { id: 'w', path: '/w', pinned: true }, profile: 'p' }), { kind: 'profile', name: 'p' });
+  assert.deepEqual(layers.writeTarget({ profile: 'p' }), { kind: 'profile', name: 'p' });
 });
 
 test('loadStore derives params, layerOf, target, and fallback from disk', () => {
   writeValues({ 'a.x': 0.2 });
   writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'a.x': 0.7, 'a.y': true } });
-  writeActive({ wallpaper: { id: 'abc12345', path: '/w' } });
+  writeActive({ wallpaper: { id: 'abc12345', path: '/w', pinned: true } });
 
   const store = layers.loadStore(defs);
   assert.deepEqual(store.params, { 'a.x': 0.7, 'a.y': true });
@@ -65,7 +67,32 @@ test('loadStore derives params, layerOf, target, and fallback from disk', () => 
   // fallback is what unset would leave: the layer below, even when the override equals the default
   assert.deepEqual(store.fallback, { 'a.x': 0.2, 'a.y': true });
   assert.deepEqual(layers.activeJson(store.active),
-    { wallpaper: { id: 'abc12345', path: '/w' }, profile: null });
+    { wallpaper: { id: 'abc12345', path: '/w', pinned: true }, profile: null });
+});
+
+test('loadStore under an unpinned wallpaper: the overlay shows, the target is base, and fallback follows base', () => {
+  writeValues({ 'a.x': 0.2 });
+  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'a.x': 0.7 } });
+  writeActive({ wallpaper: { id: 'abc12345', path: '/w' } });
+
+  const store = layers.loadStore(defs);
+  assert.deepEqual(store.params, { 'a.x': 0.7, 'a.y': true });
+  assert.deepEqual(store.layerOf, { 'a.x': 'wallpaper', 'a.y': 'default' });
+  assert.deepEqual(store.target, { kind: 'base', name: null });
+  // a.x is shadowed by the wallpaper: unset from base would not change what shows
+  assert.deepEqual(store.fallback, { 'a.x': 0.7, 'a.y': true });
+  assert.deepEqual(layers.activeJson(store.active),
+    { wallpaper: { id: 'abc12345', path: '/w', pinned: false }, profile: null });
+});
+
+test('loadStore with a profile over a pinned wallpaper targets the profile; fallback is the wallpaper value', () => {
+  writeValues({ 'a.x': 0.2 });
+  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'a.x': 0.7 } });
+  writeContext('profile', 'dusk', { source: null, values: { 'a.x': 0.9 } });
+  writeActive({ wallpaper: { id: 'abc12345', path: '/w', pinned: true }, profile: 'dusk' });
+  const store = layers.loadStore(defs);
+  assert.deepEqual(store.target, { kind: 'profile', name: 'dusk' });
+  assert.deepEqual(store.fallback, { 'a.x': 0.7, 'a.y': true });
 });
 
 test('loadStore with nothing active: target is base and fallback is the default for base overrides', () => {

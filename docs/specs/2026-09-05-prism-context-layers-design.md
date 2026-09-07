@@ -1,8 +1,11 @@
 # Prism context layers: design
 
 **Date:** 2026-09-05
-**Status:** implemented on `feat/prism-6fd864` at 4bd0ebb, suite passing
-**Task:** `prism-6fd864`, first piece of goal `prism-2f0b4b`
+**Status:** implemented on `feat/prism-6fd864` at 4bd0ebb, suite passing.
+Revised 2026-09-06 for `prism-fc8491`: the write target is the topmost
+*explicit* layer and a wallpaper is a target only while pinned; `save` is
+for profiles; the wallpaper path is canonicalised.
+**Task:** `prism-6fd864`, first piece of goal `prism-2f0b4b`; `prism-fc8491`
 
 ## Context
 
@@ -26,10 +29,22 @@ no layering.
 
 ## Decisions
 
-- **Writes go to the active context by default.** With a context active, a
-  plain `prism set`, and therefore every panel slider, writes into it. A
-  `--base` flag writes through to the base values file. This is what makes
-  wallpaper tuning free of a save step.
+- **Layers are explicit or automatic, and only explicit layers take
+  writes.** A profile is loaded by hand, so while it is active a plain
+  `prism set`, and therefore every panel slider, writes into it. A wallpaper
+  is activated by the shell's wallpaper hook without the user asking, and so
+  is the reserved state kind; an automatic layer is an overlay that reapplies
+  its delta and never captures edits on its own. With no profile loaded the
+  target is base, which keeps global tuning the default even while wallpapers
+  rotate. A `--base` flag writes through to the base values file regardless.
+- **A pin makes the wallpaper on screen the target.** Pinning is a gesture
+  about the current wallpaper: it lives in the runtime slot, the next
+  different wallpaper clears it, and loading a profile drops it. Pinning
+  while a profile is loaded is refused, so the target is always the topmost
+  layer. This is what keeps wallpaper tuning free of a save step without
+  making every edit per-wallpaper by accident. (Revised 2026-09-06; the first
+  version made any active context the target, which under a hook that
+  activates a wallpaper every rotation left base unreachable from the panel.)
 - **One slot per kind, layered.** Kinds are `wallpaper`, `state`, and
   `profile`. Each kind has at most one active context. Resolution order is
   defaults, base, wallpaper, state, profile. A wallpaper change never
@@ -85,14 +100,22 @@ that would otherwise hold `_source` may not exist yet:
 
 ```json
 {
-  "wallpaper": { "id": "3f9a1c2e", "path": "/path/to/wall.jpg" },
+  "wallpaper": { "id": "3f9a1c2e", "path": "/path/to/wall.jpg", "pinned": true },
   "profile": "dusk"
 }
 ```
 
 A missing file or a missing kind means nothing is active for that kind. The
-`context wallpaper` verb rewrites the wallpaper entry. Pinning a profile
-writes the profile entry and never touches the others.
+`context wallpaper` verb rewrites the wallpaper entry when the id differs and
+leaves it alone otherwise, so a second connector reporting the same wallpaper
+changes nothing. `pinned` is optional and false when absent; `pin` and `unpin
+wallpaper` toggle it, a different wallpaper arrives without it, and `activate
+profile` clears it. Activating a profile writes the profile entry and never
+touches the wallpaper entry beyond that.
+
+The wallpaper `path` is the canonical path (`realpath`), and the id hashes
+that. The same image reached through a symlinked directory is one wallpaper;
+a path that does not exist is an error.
 
 ### Resolution
 
@@ -114,9 +137,17 @@ always agree.
 
 ### Write target
 
-The topmost active layer in the same order is the write target for `set` and
-`unset`. With nothing active the target is base, which makes today's
-behaviour the degenerate case.
+The write target for `set` and `unset` is the topmost *explicit* layer: the
+active profile if there is one, else the wallpaper if it is pinned, else
+base. An unpinned wallpaper and the reserved state kind are overlays and never
+targets. With nothing active the target is base, which makes today's
+behaviour the degenerate case. Because a pin is refused while a profile is
+loaded, the target is always the topmost layer when it is a context.
+
+Under an unpinned wallpaper a key the wallpaper overrides is shadowed: a
+`set` to base changes the stored value and nothing on screen. `describe`
+reports `layer` and `target`, so the panel can dim such rows and point at the
+pin (`prism-3b7c07`).
 
 `set` stores the value in the target even when it equals the default, because
 the layer below may differ. `unset` removes the key from the target and lets
@@ -138,8 +169,14 @@ prism context save <kind> <name>         # snapshot every effective parameter in
 prism context activate <kind> <name>     # set the slot; the file must exist
 prism context deactivate <kind>          # clear the slot
 prism context delete <kind> <name>       # remove the file; clears the slot if it was active
-prism context wallpaper <path>           # derive the id, record id and path in the slot; the hook's entry point
+prism context pin wallpaper              # make the active wallpaper the write target
+prism context unpin wallpaper            # back to base (or the profile)
+prism context wallpaper <path>           # canonicalise, derive the id, record id and path in the slot; the hook's entry point
 ```
+
+`pin` and `unpin` change no effective value, so they never touch
+`resolved.json` or a sink; only `describe` sees them. `pin` requires an active
+wallpaper and no active profile.
 
 `kind` is `profile` or `wallpaper`. The `state` kind is reserved and rejected
 by every verb until the state idea (`prism-9298b9`) is scoped, so nothing
@@ -153,8 +190,8 @@ is, with the reason on stderr. `doctor` remains the verb that fails on it.
 
 `activate wallpaper <id>` requires the file so it can copy `_source` into the
 slot's path; only `context wallpaper <path>` can activate a wallpaper that has
-no file yet. `save wallpaper <id>` likewise requires an existing file and
-preserves its `_source`.
+no file yet. `save` takes the profile kind only: a wallpaper context holds
+what was tuned while pinned, and a full snapshot has no place there.
 
 `set` and `unset` gain one flag, `--base`, that retargets the write at the base
 values file regardless of active slots. No other flag; `--context <kind>` can
@@ -168,17 +205,10 @@ it replaces an active context: the snapshot equals the current effective set,
 and every layer above it is unchanged, so the composition is identical. This
 is stated so nobody has to reason about it later.
 
-**Caveat (2026-09-05):** that guarantee is about the moment of saving, not
-about what the saved file holds. `save <kind> <name>` targeting a context that
-is active but not topmost — saving into the active wallpaper while a profile
-is also active — writes every effective parameter, including values that only
-came from the profile above it. A wallpaper context meant to hold a couple of
-tuned keys can end up as a full snapshot carrying the profile's values, in
-tension with the "a wallpaper context holds only what was tuned" decision
-above. Deactivating the profile afterwards then surfaces the profile's value
-baked into the wallpaper file rather than whatever the wallpaper held before
-the save. A future revision may want `save` to refuse a target that is active
-but not topmost, rather than let it absorb layers above it.
+A caveat recorded on 2026-09-05 (`prism-fcacfb`) noted that a save into an
+active but non-topmost context absorbed the layers above it. The 2026-09-06
+revision closes it by construction: `save` takes only the profile kind, and a
+profile is always the topmost layer while active.
 
 `activate`, `deactivate`, `wallpaper`, and `delete` of an active context
 resolve the resulting state under the store lock, write `resolved.json`, and
@@ -249,11 +279,14 @@ All fail early with one line and no partial writes:
 
 - unknown kind, the reserved `state` kind, or a name outside the safe
   character set;
-- `activate`, `show`, `save wallpaper`, or `delete` on a missing file;
+- `activate`, `show`, or `delete` on a missing file;
+- `save` of any kind but profile;
+- `pin` or `unpin` of any kind but wallpaper, `pin` with no active wallpaper
+  or with a profile active, `unpin` of a wallpaper that is not pinned;
 - a context file that is not a flat object, or that holds an unknown key or an
   invalid value;
 - `unset` of a key the write target does not hold;
-- `context wallpaper` with an empty path.
+- `context wallpaper` with an empty path or a path that does not exist.
 
 `active.json` naming a missing or invalid profile is an error for every
 reading and writing verb, `describe` included: they report it and refuse to
@@ -297,8 +330,10 @@ README states the config layout, and the plugin contract note records the
 ## Out of scope
 
 - Profile controls in the panel (`prism-ea6344`).
-- The Noctalia hook line (`dots-88dc34`) and the wallpaper UX question of
-  whether the panel exposes a base-versus-wallpaper switch (`prism-648e0f`).
+- The Noctalia hook line (`dots-88dc34`).
+- The panel's wallpaper header row, pin toggle, and shadowed rows
+  (`prism-3b7c07`); the base-versus-wallpaper question from `prism-648e0f` is
+  settled above.
 - The `state` kind's activation sources and its composition rules
   (`prism-9298b9`).
 - Per-connector wallpaper contexts; wallpapers here are set on all monitors at

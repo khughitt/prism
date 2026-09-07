@@ -5,7 +5,7 @@ status: todo
 priority: 2
 size: m
 created: 2026-09-05T18:50:44Z
-updated: 2026-09-05T22:56:36Z
+updated: 2026-09-07T01:23:13Z
 depends: [prism-6fd864]
 parent: prism-2f0b4b
 tags: [noctalia, integration, profiles]
@@ -16,3 +16,4 @@ Outcome: while a wallpaper is showing, slider edits are persisted against that w
 ## Notes
 
 - 2026-09-05T22:56:36Z (main): Panel/CLI split landed in prism-6fd864: a wallpaper context is keyed on the first 8 hex of SHA-256(path), carries _source, and 'prism context wallpaper <path>' is the hook verb; profile sits above wallpaper in the resolution order, so a hand-loaded profile already wins as this task wanted. The open UX question here (does every edit under a wallpaper go to the wallpaper context) now also has to answer prism-fcacfb: saving into the wallpaper while a profile is active makes the wallpaper absorb the profile's values.
+- 2026-09-07T01:23:13Z (main): 2026-09-06 decision: the open UX question is settled in prism-fc8491. Wallpaper is an automatic layer and never the write target unless pinned; default target is the topmost explicit layer (profile, else base). Edits under a wallpaper go to the wallpaper context only while its pin is on.

@@ -72,7 +72,7 @@ export async function run(argv, opts = {}) {
             else values[key] = value;
             writeValues(values);
           } else {
-            const layer = store.layers[store.layers.length - 1];
+            const layer = store.layers.find((l) => l.kind === target.kind && l.name === target.name);
             writeContext(target.kind, target.name, {
               source: contextSource(store.active, target),
               values: { ...layer.values, [key]: value },
@@ -94,9 +94,11 @@ export async function run(argv, opts = {}) {
         await withLock(lockPath(), async () => {
           const active = readActive();
           const layers = loadLayers(active);
-          const target = toBase ? { kind: 'base', name: null } : writeTarget(layers);
+          const target = toBase ? { kind: 'base', name: null } : writeTarget(active);
           const base = readValues();
-          const held = target.kind === 'base' ? base : layers[layers.length - 1].values;
+          const held = target.kind === 'base'
+            ? base
+            : layers.find((l) => l.kind === target.kind && l.name === target.name).values;
           const where = target.kind === 'base' ? 'base' : `${target.kind} ${target.name}`;
           const orphan = !defs.has(key) && Object.hasOwn(held, key);
           if (!defs.has(key) && !orphan) throw new Error(`unknown param ${key}`);
