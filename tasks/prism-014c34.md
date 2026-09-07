@@ -6,7 +6,7 @@ priority: 2
 size: s
 owner: main
 created: 2026-09-07T19:43:19Z
-updated: 2026-09-07T21:01:43Z
+updated: 2026-09-07T21:03:52Z
 depends: [prism-049c8c]
 parent: prism-51f23b
 tags: [niri]
@@ -23,3 +23,4 @@ Validate all generated types on the installed native parser, test matching workt
 - 2026-09-07T20:44:12Z (glass-noise-types): Automated acceptance: six generated parser cases pass; installed and running niri f0370f52 both descend from 098bcdca; just gate passes 206 tests with only the environmental unreachable prism-fc8491 cycle warning. Live Noctalia select clicks, grain comparison, and lightness retention decision remain pending; no user store or desktop links were changed.
 - 2026-09-07T21:01:19Z (main): User requested merge into main before desktop acceptance, then plugin reload for testing. Native checks already pass; actual clicks, grain comparison, and lightness retention remain pending. Existing active CLI/plugin links point at main.
 - 2026-09-07T21:01:43Z (main): took over a live claim held by session glass-noise-native (owner glass-noise-types, host titan, worktree /mnt/ssd/Dropbox/prism/.worktrees/glass-noise-types, since 2026-09-07T20:41:01Z, age 1242s, live)
+- 2026-09-07T21:03:52Z (main): Merged into main as 3d9f568 at user request. Merged just gate passes 212 tests and Lua; tasks check has zero errors/warnings. Shell IPC disable/enable succeeded and panel-open returned ok after asynchronous registration. CLI/plugin links already resolve to main. prism apply and actual panel/grain acceptance still require the user terminal/live check.
