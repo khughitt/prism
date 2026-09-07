@@ -2,7 +2,9 @@
 
 **Date:** 2026-09-07
 **Status:** isolated prototype and software-rendered distribution/capture checks executed;
-hardware GPU comparison and user visual preference remain pending. See the
+hardware GPU preflight verified; repeated GPU comparison and useful visual
+preference remain pending. The user could not judge differences at 0.02 and
+requested a comparison at 0.06. See the
 [execution results](../notes/2026-09-07-glass-noise-dulling-spike-results.md).
 **Task:** `prism-ba5f59`.
 **Prior research:** [GIMP comparison](../notes/2026-09-07-glass-noise-gimp-comparison.md).
