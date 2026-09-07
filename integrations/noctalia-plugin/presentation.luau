@@ -15,6 +15,8 @@ end
 
 local function display(param) return param.ui.display or "raw" end
 local function scale(param) return param.ui.scale or "linear" end
+-- A curved track runs in normalized space whatever its label reads.
+local function curved(param) return scale(param) ~= "linear" end
 
 local function percentPrecision(param)
   return math.max(0, math.max(M.stepPrecision(param.ui.step), M.stepPrecision(param.range[1]),
@@ -54,12 +56,14 @@ end
 local function normalized(value, param)
   local low, high = param.range[1], param.range[2]
   if scale(param) == "logarithmic" then return math.log(value / low) / math.log(high / low) end
+  if scale(param) == "power" then return ((value - low) / (high - low)) ^ (1 / param.ui.exponent) end
   return (value - low) / (high - low)
 end
 
 local function denormalized(value, param)
   local low, high = param.range[1], param.range[2]
   if scale(param) == "logarithmic" then return low * (high / low) ^ value end
+  if scale(param) == "power" then return low + value ^ param.ui.exponent * (high - low) end
   return low + value * (high - low)
 end
 
@@ -70,36 +74,40 @@ function M.snapValue(value, range, step)
   return rounded(snapped, math.max(M.stepPrecision(step), M.stepPrecision(range[1]), M.stepPrecision(range[2])))
 end
 
+local function normalizedTrack(param)
+  return curved(param) or display(param) == "normalized"
+end
+
 function M.sliderFrom(param)
+  if normalizedTrack(param) then return 0 end
   if display(param) == "percent" then return asPercent(param.range[1], param) end
-  if display(param) == "normalized" or scale(param) == "logarithmic" then return 0 end
   return param.range[1]
 end
 
 function M.sliderTo(param)
+  if normalizedTrack(param) then return 1 end
   if display(param) == "percent" then return asPercent(param.range[2], param) end
-  if display(param) == "normalized" or scale(param) == "logarithmic" then return 1 end
   return param.range[2]
 end
 
 function M.sliderStep(param)
+  if normalizedTrack(param) then return 0 end
   if display(param) == "percent" then return asPercent(param.ui.step, param) end
-  if display(param) == "normalized" or scale(param) == "logarithmic" then return 0 end
   return param.ui.step
 end
 
 function M.toSliderValue(value, param)
+  if normalizedTrack(param) then return normalized(value, param) end
   if display(param) == "percent" then return asPercent(value, param) end
-  if display(param) == "normalized" or scale(param) == "logarithmic" then return normalized(value, param) end
   return value
 end
 
 function M.canonicalFromSlider(value, param)
   local canonical = value
-  if display(param) == "percent" then
-    canonical = value / 100
-  elseif display(param) == "normalized" or scale(param) == "logarithmic" then
+  if normalizedTrack(param) then
     canonical = denormalized(value, param)
+  elseif display(param) == "percent" then
+    canonical = value / 100
   end
   return M.snapValue(canonical, param.range, param.ui.step)
 end

@@ -13,16 +13,16 @@
   description: Color absorbed by the glass volume
 - key: glass.ior
   type: float
-  range: [1, 3]
+  range: [1, 2]
   default: 1.5
   ui: {group: Glass, control: slider, step: 0.02, label: Refraction, order: 30}
-  description: Glass index of refraction
+  description: Glass index of refraction; real glass sits at 1.4 to 1.7, and edge change fades above that
 - key: glass.thickness
   type: float
-  range: [0, 200]
+  range: [0, 100]
   default: 20
-  ui: {group: Glass, control: slider, step: 0.1, label: Depth, order: 40, unit: px}
-  description: Depth of the glass slab; higher values bend and tint farther
+  ui: {group: Glass, control: slider, step: 0.1, label: Depth, order: 40, unit: px, scale: power, exponent: 2}
+  description: Depth of the glass slab; higher values bend and tint farther, with most of the visible change below 40
 - key: glass.distortionScale
   type: float
   range: [0.01, 2]
@@ -75,13 +75,13 @@
   type: float
   range: [0, 1]
   default: 0.08
-  ui: {group: Focus, control: slider, step: 0.01, label: Blur, order: 220, display: percent, state: focused, row: Blur}
+  ui: {group: Focus, control: slider, step: 0.01, label: Blur, order: 220, display: percent, scale: power, exponent: 2, state: focused, row: Blur}
   description: Glass surface roughness
 - key: glass.inactive.roughness
   type: float
   range: [0, 1]
   default: 0.5
-  ui: {group: Focus, control: slider, step: 0.01, label: Unfocused blur, order: 221, display: percent, state: unfocused, row: Blur}
+  ui: {group: Focus, control: slider, step: 0.01, label: Unfocused blur, order: 221, display: percent, scale: power, exponent: 2, state: unfocused, row: Blur}
   description: Glass surface roughness of unfocused terminals
 - key: glass.attenuationDistance
   type: float

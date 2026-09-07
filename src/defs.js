@@ -5,7 +5,7 @@ import { parse } from 'yaml';
 export const TYPES = ['float', 'int', 'bool', 'color', 'enum', 'string', 'list'];
 export const CONTROLS = ['slider', 'toggle', 'color', 'select', 'none'];
 export const DISPLAYS = ['raw', 'percent', 'normalized'];
-export const SCALES = ['linear', 'logarithmic'];
+export const SCALES = ['linear', 'logarithmic', 'power'];
 export const STATES = ['focused', 'unfocused'];
 
 export function loadDefs(dir) {
@@ -59,8 +59,8 @@ export function validateDef(def, src) {
       || !def.range.every(Number.isFinite) || def.range[0] >= def.range[1])) {
     fail('numeric def requires range with two finite increasing endpoints');
   }
-  if (!slider && ['display', 'scale', 'unit'].some(has)) {
-    fail('ui.display, ui.scale, and ui.unit are slider-only');
+  if (!slider && ['display', 'scale', 'unit', 'exponent'].some(has)) {
+    fail('ui.display, ui.scale, ui.unit, and ui.exponent are slider-only');
   }
   if (has('state') !== has('row')) {
     fail(has('state') ? 'ui.state requires ui.row' : 'ui.row requires ui.state');
@@ -86,7 +86,13 @@ export function validateDef(def, src) {
     if (has('unit') && (typeof def.ui.unit !== 'string' || def.ui.unit === '')) fail('ui.unit must be a non-empty string');
     if (has('unit') && display !== 'raw') fail('ui.unit requires raw display');
     if (scale === 'logarithmic' && def.range[0] <= 0) fail('logarithmic scale requires a positive range');
-    if (display === 'percent' && scale !== 'linear') fail('percent display must be linear');
+    // A curved scale only shapes the track; the label may still read raw, percent, or normalized.
+    if (scale === 'power') {
+      if (!has('exponent')) fail('power scale requires ui.exponent');
+      if (!Number.isFinite(def.ui.exponent) || def.ui.exponent <= 1) fail('ui.exponent must be greater than 1');
+    } else if (has('exponent')) {
+      fail('ui.exponent requires scale: power');
+    }
     const stepCount = (def.range[1] - def.range[0]) / def.ui.step;
     const tolerance = Number.EPSILON * Math.max(1, Math.abs(stepCount)) * 16;
     if (Math.abs(stepCount - Math.round(stepCount)) > tolerance) {

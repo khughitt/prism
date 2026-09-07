@@ -20,6 +20,24 @@ test('shipped defs load and default the opacity pair to a fully transparent term
   assert.equal(defs.get('compositor.gaps').type, 'int');
 });
 
+test('glass slider ranges and curves follow the sweep evidence', () => {
+  // niri-material docs/materials/2026-09-06-glass-parameter-sweep-evidence.md, Part 2.
+  const defs = loadDefs(defsDir());
+  for (const key of ['glass.roughness', 'glass.inactive.roughness']) {
+    assert.deepEqual(defs.get(key).range, [0, 1]);
+    assert.equal(defs.get(key).ui.scale, 'power');
+    assert.equal(defs.get(key).ui.exponent, 2);
+    assert.equal(defs.get(key).ui.display, 'percent');
+  }
+  assert.deepEqual(defs.get('glass.thickness').range, [0, 100]);
+  assert.equal(defs.get('glass.thickness').ui.scale, 'power');
+  assert.equal(defs.get('glass.thickness').ui.exponent, 2);
+  assert.deepEqual(defs.get('glass.ior').range, [1, 2]);
+  assert.equal(defs.get('glass.ior').ui.scale, undefined);
+  assert.deepEqual(defs.get('glass.noise').range, [0, 1]);
+  assert.deepEqual(defs.get('glass.saturation').range, [0, 3]);
+});
+
 test('whole-window opacity is gone and the debug backdrop is CLI-only', () => {
   const defs = loadDefs(defsDir());
   assert.equal(defs.has('terminal.window.opacity.active'), false);
@@ -139,5 +157,24 @@ test('numeric slider grids fail early', () => {
   assert.throws(() => loadDefs(zeroLog), /logarithmic.*positive/);
 
   const percentLog = dirWith('- {key: a.b, type: float, range: [1, 2], default: 1, ui: {group: A, control: slider, label: B, order: 1, step: 0.1, display: percent, scale: logarithmic}, description: d}\n');
-  assert.throws(() => loadDefs(percentLog), /percent.*linear/);
+  assert.doesNotThrow(() => loadDefs(percentLog), 'a curved slider only changes the track; the label may still read percent');
+});
+
+test('power scale needs an exponent above one and may start at zero', () => {
+  const power = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1, step: 0.01, display: percent, scale: power, exponent: 2}, description: d}\n');
+  const defs = loadDefs(power);
+  assert.equal(defs.get('a.b').ui.scale, 'power');
+  assert.equal(defs.get('a.b').ui.exponent, 2);
+
+  const noExponent = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1, step: 0.1, scale: power}, description: d}\n');
+  assert.throws(() => loadDefs(noExponent), /power.*exponent/);
+
+  const flatExponent = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1, step: 0.1, scale: power, exponent: 1}, description: d}\n');
+  assert.throws(() => loadDefs(flatExponent), /exponent.*greater than 1/);
+
+  const strayExponent = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: A, control: slider, label: B, order: 1, step: 0.1, exponent: 2}, description: d}\n');
+  assert.throws(() => loadDefs(strayExponent), /exponent.*power/);
+
+  const nonSlider = dirWith('- {key: a.b, type: bool, default: true, ui: {group: A, control: toggle, label: B, order: 1, exponent: 2}, description: d}\n');
+  assert.throws(() => loadDefs(nonSlider), /slider-only/);
 });

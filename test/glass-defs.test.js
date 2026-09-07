@@ -68,7 +68,10 @@ test('every glass definition matches the native range and default', () => {
     const def = defs.get(key);
     assert.ok(def, `missing def ${key}`);
     assert.deepEqual(def.default, native.default, `${key} default`);
-    if (native.range) assert.deepEqual(def.range, native.range, `${key} range`);
+    if (native.range) {
+      assert.ok(def.range[0] >= native.range[0] && def.range[1] <= native.range[1],
+        `${key} range [${def.range}] leaves the native [${native.range}]`);
+    }
   }
 });
 
