@@ -287,7 +287,7 @@ test('noise and saturation are written even when they are neutral', () => {
 });
 
 test('every noise type is quoted and shared across glass materials', () => {
-  for (const type of ['white', 'fine', 'lightness']) {
+  for (const type of ['white', 'fine']) {
     for (const split of [true, false]) {
       const kdl = renderNiriFragment(with_({
         'glass.noiseType': type, 'glass.focusSplit': split,

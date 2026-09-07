@@ -145,10 +145,10 @@
   description: Film grain added to the glass of unfocused terminals
 - key: glass.noiseType
   type: enum
-  values: [white, fine, lightness]
+  values: [white, fine]
   default: fine
   ui: {group: Focus, control: select, label: Noise type, order: 275}
-  description: "Grain pattern shared by both focus states: white is coarse uniform grain, fine removes the clumps, lightness keeps the backdrop's colour and grains only its brightness"
+  description: "Grain pattern shared by both focus states: white is coarse uniform grain, fine removes the clumps"
 - key: glass.saturation
   type: float
   range: [0, 3]

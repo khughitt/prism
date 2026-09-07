@@ -127,7 +127,7 @@ local model = { target = "base", params = {
   },
   {
     key = "glass.noiseType", value = "fine", default = "fine", layer = "default", fallback = "fine",
-    effectiveDrag = "release", values = { "white", "fine", "lightness" },
+    effectiveDrag = "release", values = { "white", "fine" },
     ui = { control = "select", group = "Focus", order = 275, label = "Noise type" },
   },
 } }
@@ -177,7 +177,7 @@ assert(labels["Saturation"], "second matrix row label missing")
 assert(labels["Noise type"], "shared select row missing")
 local selects = collect(rendered, "select")
 equal(#selects, 1)
-equal(selects[1].props.options, { "white", "fine", "lightness" })
+equal(selects[1].props.options, { "white", "fine" })
 equal(selects[1].props.selectedIndex, 1)
 local sliderKeys = {}
 for _, slider in ipairs(collect(rendered, "slider")) do sliderKeys[slider.props.key] = true end
@@ -250,7 +250,7 @@ for _, label in ipairs(collect(rendered, "label")) do
   if label.props.text == "glass.noiseType has no select values" then missingValuesError = true end
 end
 assert(missingValuesError, "select without values was accepted")
-noise.values = { "white", "fine", "lightness" }
+noise.values = { "white", "fine" }
 
 equal(Presentation.stepPrecision(0.000001), 6)
 equal(Presentation.snapValue(100.04, { 0.1, 200 }, 0.1), 100)

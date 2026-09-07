@@ -3,13 +3,17 @@
 **Date:** 2026-09-06
 **Status:** merged into `main` 2026-09-07 with implementation commits
 `2166d35` and `aa80290`; automated acceptance passes. The installed and
-running niri are both `26.04 (f0370f52)`, which descends from native implementation `098bcdca`,
-and all six generated type/focus-split configurations pass `niri validate`.
-The merged `just gate` passes 212 tests. At the user's request, the merge
-precedes desktop acceptance so the installed main checkout can be tested.
-The panel select interaction, visible grain changes, and whether `lightness`
-is worth retaining
-still require the user's live check. Hub goal `prism-d6b600`; native piece
+running niri are both `26.04 (f0370f52)`, which descends from native implementation `098bcdca`.
+The original three-type implementation passed six generated type/focus-split
+configurations through `niri validate`. Its merged `just gate` passed 212 tests.
+At the user's request, that merge preceded desktop acceptance so the installed
+main checkout could be tested.
+Desktop acceptance reported 2026-09-07: the user confirms the updated panel
+works and `fine` and `lightness` look very similar. Prism retains `white` and
+`fine` (default), removing `lightness` from the selector; native support remains.
+Cleanup verification passes 212 Node tests plus Lua and all four retained
+type/focus-split parser cases. The native project owner handles its acceptance record.
+Hub goal `prism-d6b600`; native piece
 `material-6e7352`; Prism piece `prism-51f23b`.
 
 ## Context
@@ -31,11 +35,11 @@ node with three values:
 | Value | Grain |
 | --- | --- |
 | `white` | today's grain, character for character; the native default when omitted |
-| `fine` | a high-pass of the hash noise, bell-shaped, achromatic, scaled so its standard deviation matches `white` at the same amount |
+| `fine` | a high-pass of the hash noise, achromatic, scaled so its standard deviation matches `white` at the same amount |
 | `lightness` | the `fine` pattern applied to Oklab lightness, so chroma and hue hold except where the result leaves the sRGB gamut and clamps |
 
-Prism chooses which of them its glass uses. The native spec owns what each
-type does; this document owns how Prism exposes the choice.
+Prism exposes `white` and `fine` after the desktop comparison. The native
+spec owns what each type does; this document owns how Prism exposes the choice.
 
 ## Decision
 
@@ -56,7 +60,7 @@ the Saturation row:
 
 | Key | Type | Values | Default | ui |
 | --- | --- | --- | --- | --- |
-| `glass.noiseType` | enum | white, fine, lightness | fine | group Focus, control select, label Noise type, order 275 |
+| `glass.noiseType` | enum | white, fine | fine | group Focus, control select, label Noise type, order 275 |
 
 The key carries no `state` and no `row`, so the presentation layer renders
 it as a single-parameter row under the Noise matrix row, which it already
@@ -64,8 +68,7 @@ supports alongside matrix rows in the same section. The description says
 what each value does to the grain, not how niri implements it:
 
 > Grain pattern shared by both focus states: white is coarse uniform grain,
-> fine removes the clumps, lightness keeps the backdrop's colour and grains
-> only its brightness
+> fine removes the clumps
 
 This is the first definition to use the `enum` type and the `select`
 control. Both exist in `src/defs.js`, `src/values.js` and the panel already;
@@ -128,11 +131,13 @@ The generated `prism.kdl` fails `niri validate` on a build without the
 failure. The Prism piece therefore depends on the native piece landing and
 being installed first; the goal and the piece both record the dependency.
 
-Manual acceptance after install: with the unfocused pane at its default
-amplitude, switch the select through `white`, `fine` and `lightness` and
-confirm the grain changes; the native spec's desktop acceptance decides
-whether `lightness` stays. On 2026-09-07 the user requested merging first
-and doing this acceptance on `main`; the acceptance task remains open.
+On 2026-09-07 the user requested merging first and testing on `main`.
+After the reload, the user confirmed the updated panel works and reported
+that `fine` and `lightness` look very similar, asking to keep one. Prism keeps
+`fine`; native `lightness` support remains available to direct KDL users.
+No saved `lightness` overrides were found before the selector cleanup.
+The user report does not independently document every focus-split click
+in the original checklist; those output paths are covered by automated tests.
 
 ## Documentation
 

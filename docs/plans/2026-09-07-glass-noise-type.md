@@ -4,12 +4,15 @@
 
 **Status:** merged into `main` 2026-09-07 with implementation commits
 `2166d35` and `aa80290`; automated acceptance passes. Installed and running niri
-`26.04 (f0370f52)` descends from `098bcdca`, all six generated parser cases
-pass, and the merged `just gate` passes 212 tests. The user requested merging before desktop
-acceptance to test the installed main checkout. Desktop panel interaction, visible
-grain comparison, and the `lightness` retention decision remain pending.
+`26.04 (f0370f52)` descends from `098bcdca`. The original three-type
+implementation passed six generated parser cases and 212 tests at merge. The user requested merging before desktop
+acceptance to test the installed main checkout. The user subsequently confirmed the panel works and reported that `fine` and
+`lightness` look very similar. Acceptance cleanup retains `white` and `fine`
+(default) in Prism. Native support for `lightness` remains; its project owner
+handles the native acceptance record. Cleanup verification passes 212 Node tests
+plus Lua and all four retained type/focus-split parser cases.
 
-**Goal:** Expose one shared white/fine/lightness selector below the Focus Noise row and emit its quoted value into every glass material.
+**Goal:** Expose one shared white/fine selector below the Focus Noise row and emit its quoted value into every glass material.
 
 **Architecture:** Reuse the enum value pipeline and the existing single-row select renderer. Fix the panel validator, then add one definition, one reload binding, and one string serialization in the shared material renderer. Noise amplitudes remain per-state.
 
@@ -27,12 +30,12 @@ grain comparison, and the `lightness` retention decision remain pending.
 - Emit `noise <amount> type="<type>"`, including zero amounts and the single-material path. Leave `background-effect` noise syntax unchanged.
 - No additional dependency, compatibility layer, per-state type, or presentation abstraction.
 - The Prism piece lands only after the native build is installed on the machine that runs `prism apply`.
-- Desktop acceptance decides whether `lightness` stays. On 2026-09-07 the user requested merging first and testing on `main`; a completed native task or successful config parse does not prove visual acceptance.
+- Desktop comparison on 2026-09-07 resolved retention: keep `fine`, remove `lightness` from Prism. The original three-option snippets below record the implementation that was tested before this decision; the current spec and definitions govern the retained enum.
 - Use `tasks` for all task mutations. Start each child before implementation, note evidence as it changes, and close it in its implementation commit. Run `tasks check` before completion; report environmental warnings and resolve other warnings.
 
 ## Working tree and prerequisites
 
-Tasks 1 and 2 were implemented in `.worktrees/glass-noise-types` and merged into `main`. Continue the pending desktop acceptance from the main checkout. Read the spec and `AGENTS.md`, run `tasks prime` and `tasks ready`, and inspect `git status --short` before editing.
+Tasks 1 and 2 were implemented in `.worktrees/glass-noise-types` and merged into `main`. Desktop acceptance used the main checkout; the subsequent selector cleanup uses `.worktrees/glass-noise-acceptance`. Read the spec and `AGENTS.md`, run `tasks prime` and `tasks ready`, and inspect `git status --short` before editing.
 
 Native code is available in the project returned by `tasks root material-6e7352`. Verify implementation commit `098bcdca` is an ancestor of that project's current branch; read its noise-type spec and evidence. Repository ancestry proves source availability, not installation: Task 3 Step 2 checks the installed and running hashes. The review on 2026-09-07 verified installed `niri validate` accepts `type="fine"` and rejects `type=fine`; repeat the acceptance checks at execution time.
 
@@ -273,11 +276,11 @@ try {
 JS
 ```
 
-Require all six configs to parse. If the native build is missing, leave rollout open and report the blocker; do not remove type output to hide the mismatch.
+Require every retained type/focus-split combination to parse (originally six configs; four after removing `lightness`). If the native build is missing, leave rollout open and report the blocker; do not remove type output to hide the mismatch.
 
-- [ ] **Step 2: Check the running compositor and existing native acceptance evidence.** Record `niri --version` and `niri msg version`. The installed hash must equal or descend from implementation commit `098bcdca`; verify with `git merge-base --is-ancestor 098bcdca "$installed_hash"` in the native repository, using the hash actually printed by the installed binary. Check the running compositor hash the same way. Read the native spec's desktop acceptance result, not just task status. If still pending, compare the three grains with the user as described below before deciding the shipped enum. If lightness is indistinguishable, record that result and remove it consistently from both specs, Prism's enum, tests, and copy in a follow-up change; the native project owner handles its spec update.
+- [x] **Step 2: Check the running compositor and existing native acceptance evidence.** Record `niri --version` and `niri msg version`. The installed hash must equal or descend from implementation commit `098bcdca`; verify with `git merge-base --is-ancestor 098bcdca "$installed_hash"` in the native repository, using the hash actually printed by the installed binary. Check the running compositor hash the same way. Read the native spec's desktop acceptance result, not just task status. If still pending, compare the three grains with the user as described below before deciding the shipped enum. If lightness is indistinguishable, record that result and remove it consistently from both specs, Prism's enum, tests, and copy in a follow-up change; the native project owner handles its spec update.
 
-- [ ] **Step 3: Reload the main-checkout CLI and panel for the live check.** The active shell plugin is `~/.local/share/noctalia/plugins/prism`, plugin id `khughitt/prism`, panel id `khughitt/prism:panel`. The similarly named entry under `~/.config/noctalia/plugins/prism` is a decoy: changing it does not change the loaded plugin. At merge time the active plugin and the `prism` on PATH already pointed at the main checkout; no symlink change is needed. From that checkout, verify the targets and apply/reload:
+- [x] **Step 3: Reload the main-checkout CLI and panel for the live check.** The active shell plugin is `~/.local/share/noctalia/plugins/prism`, plugin id `khughitt/prism`, panel id `khughitt/prism:panel`. The similarly named entry under `~/.config/noctalia/plugins/prism` is a decoy: changing it does not change the loaded plugin. At merge time the active plugin and the `prism` on PATH already pointed at the main checkout; no symlink change is needed. From that checkout, verify the targets and apply/reload:
 
 ```bash
 readlink -f "$HOME/.local/share/noctalia/plugins/prism"
@@ -307,13 +310,20 @@ fi
 
 Leave the decoy entry alone. If the sandbox prevents `prism apply` from writing the live store, the user runs that command in their terminal. Plugin disable/enable can be requested through the existing shell IPC. Preserve the user's current values, target layer, and whether overrides existed, using `prism describe --json`, before changing controls.
 
-- [ ] **Step 4: Exercise the installed panel and composed config with the user.** This machine has no scripted pointer control; the executor cannot click the select. Split the evidence:
+**Acceptance evidence (2026-09-07):** The user ran the live apply, then reported
+that the updated panel works and `fine` and `lightness` look very similar.
+This is the recorded desktop acceptance and retention decision. Individual
+focus-split clicks and an exact noise amplitude were not reported; automated
+render/parser checks cover both split paths. The procedure below is the
+original checklist, not a claim that each action was independently observed.
+
+- [ ] **Step 4 (original detailed checklist, superseded by the user acceptance above): Exercise the installed panel and composed config with the user.** This machine has no scripted pointer control; the executor cannot click the select. Split the evidence:
 
   - Executor: verify the panel renders Noise type between Noise and Saturation, showing `fine` when there is no override. Drive values with `prism set glass.noiseType white`, `prism set glass.noiseType fine`, and `prism set glass.noiseType lightness`; inspect the generated fragment for quoted properties in both materials. Use `prism set glass.focusSplit false` to verify the single material carries the same type, then restore the previous split setting. `prism set` applies the changed sink; confirm successful command results and run `niri validate`. Reopen the panel to refresh after external CLI writes.
   - User: at unfocused noise amount 0.02, click through the three select options and confirm selection interaction, displayed labels, and visible grain changes. Swap focus between terminals and compare fine with lightness; record whether lightness is worth retaining. CLI writes and a rendered screenshot do not prove select interaction or visual acceptance. If the user is unavailable, finish all automated checks and leave desktop acceptance open.
 
 Record the native lightness decision and any API 22 fixes in task notes. Restore prior values using `unset` when no override originally existed, apply the restored values, and keep the CLI and plugin pointed at `main`. No worktree deployment or link restoration is needed for this post-merge check.
 
-- [ ] **Step 5: Record evidence and close the piece.** Run `just gate` and `tasks check`; record test results, niri versions, the retained types, and desktop observations in the design status. The code is already merged; add “desktop acceptance passed” only after the actual user check, with its date and observed result. Close this task, then `prism-51f23b` with a one-line result. Close hub `prism-d6b600` only after verifying both native and Prism deliverables satisfy its goal. Stage the status docs and task records and commit with `chore(glass): record noise type acceptance`.
+- [x] **Step 5: Record evidence and close the piece.** Run `just gate` and `tasks check`; record test results, niri versions, the retained types, and desktop observations in the design status. The code is already merged; add “desktop acceptance passed” only after the actual user check, with its date and observed result. Close this task, then `prism-51f23b` with a one-line result. Close hub `prism-d6b600` only after verifying both native and Prism deliverables satisfy its goal. Stage the status docs and task records and commit with `chore(glass): record noise type acceptance`.
 
 - [x] **Step 6: Correct status when the branch lands.** At integration, update this plan and the design status to the actual merged state in the landing change. Search `README.md` and `docs/notes` for the same claims, especially the retained enum values and shared-control description. Do not infer incomplete work from unchecked boxes; verify the tree and evidence.
