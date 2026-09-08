@@ -1,4 +1,26 @@
 #!/usr/bin/env node
-import { run } from '../src/cli.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+
+// The `yaml` dependency lives in node_modules, which is gitignored and carries
+// com.dropbox.ignored, so it is per-machine and never arrives with a sync or a
+// clone. A machine that has never run the install reaches this line, so say so
+// instead of letting Node print a bare ERR_MODULE_NOT_FOUND stack trace. A
+// resolution failure with node_modules present is a real bug and still throws.
+let run;
+try {
+  ({ run } = await import('../src/cli.js'));
+} catch (error) {
+  if (error?.code !== 'ERR_MODULE_NOT_FOUND'
+      || fs.existsSync(path.join(root, 'node_modules'))) throw error;
+  process.stderr.write(
+    'prism: Node dependencies are not installed.\n'
+    + `Run: npm ci --prefix ${root}\n`,
+  );
+  process.exit(1);
+}
 
 process.exitCode = await run(process.argv.slice(2));

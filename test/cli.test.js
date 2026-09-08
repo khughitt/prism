@@ -536,3 +536,25 @@ test('unset of the last key in a profile context still leaves an empty file: a p
   assert.deepEqual(readContext('profile', 'dusk'), { source: null, values: {} });
   assert.equal(fs.existsSync(contextPath('profile', 'dusk')), true);
 });
+
+// Every machine runs bin/prism before `npm ci` has ever run there: node_modules
+// is gitignored and carries com.dropbox.ignored, so it never arrives with a
+// sync. The entry point owes that machine the install command, not a trace.
+test('entrypoint names the dependency install when node_modules is absent', () => {
+  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-nodeps-'));
+  fs.mkdirSync(path.join(fixture, 'bin'));
+  fs.mkdirSync(path.join(fixture, 'src'));
+  fs.writeFileSync(path.join(fixture, 'package.json'), '{"type":"module"}\n');
+  fs.copyFileSync(prismBin, path.join(fixture, 'bin', 'prism'));
+  fs.writeFileSync(path.join(fixture, 'src', 'cli.js'),
+    "import 'yaml';\nexport const run = () => 0;\n");
+
+  const child = spawnSync(process.execPath, [path.join(fixture, 'bin', 'prism')], {
+    encoding: 'utf8',
+  });
+
+  assert.equal(child.status, 1, child.stderr);
+  assert.match(child.stderr, /Node dependencies are not installed/);
+  assert.match(child.stderr, /npm ci --prefix/);
+  assert.doesNotMatch(child.stderr, /ERR_MODULE_NOT_FOUND/);
+});
