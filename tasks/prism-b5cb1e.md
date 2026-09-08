@@ -5,7 +5,7 @@ status: todo
 priority: 1
 size: m
 created: 2026-09-05T01:10:50Z
-updated: 2026-09-07T08:21:16Z
+updated: 2026-09-08T22:56:56Z
 depends: []
 tags: [integration, noctalia, colors]
 ---
@@ -19,3 +19,4 @@ Outcome: the active terminal-glass material carries the Noctalia surface color a
 - 2026-09-05T02:00:00Z (main): Correction: glass.attenuationColor is a manual value (values.yaml), not wallpaper-derived; Noctalia colors.json (mSurface #13140f, mPrimary #bad065 today) does not reach Prism yet. Noctalia's template post_hook path (as used by noctalia-glass-sync for nvim) is the candidate transport.
 - 2026-09-05T18:51:00Z (main): Related 2026-09-05: prism-2f0b4b (context-specific profiles); an auto-derived tint shrinks what a wallpaper profile must store.
 - 2026-09-07T08:21:16Z (main): 2026-09-07 promoted to todo P1: with kitty at 0 the glass is the only thing behind the text; a fixed attenuation color drifts out of step within one rotation.
+- 2026-09-08T22:56:56Z (main): The focus matrix now has glass.inactive.attenuationColor as well (prism-a4ef9a), so a derived tint has two halves to fill; deriving only the focused one leaves the unfocused material on the shipped #dfe8ff.

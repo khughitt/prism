@@ -5,7 +5,7 @@ status: todo
 priority: 2
 size: l
 created: 2026-09-05T18:50:21Z
-updated: 2026-09-05T18:51:00Z
+updated: 2026-09-08T22:56:56Z
 depends: [dots-88dc34]
 tags: [profiles, noctalia, store]
 ---
@@ -17,3 +17,7 @@ Mechanism: a context layer in the Prism store. Resolution becomes defaults, then
 Facts established 2026-09-05: the store is one flat values.yaml per host with no layering; the Noctalia plugin panel is Luau on plugin API v5, whose declarative UI has ui.button and ui.input (text field), so in-panel naming is feasible but must be verified on the installed Noctalia 5.0.1 since an earlier note on prism-686374 listed no input control; Noctalia has no plugin-side wallpaper event, only noctalia.wallpaperPath(output), while the wallpaper_changed hook exports NOCTALIA_WALLPAPER_PATH and NOCTALIA_WALLPAPER_CONNECTOR and colors_changed fires after the palette regenerates; wallpapers rotate on all monitors every 15 minutes here, so a single global context keyed on the wallpaper path suffices.
 
 Related: prism-b5cb1e (an auto-derived attenuation color shrinks what a wallpaper profile must store) and material-f41c54 (the same state question from the signals side).
+
+## Notes
+
+- 2026-09-08T22:56:56Z (main): A context now has five more glass.inactive.* keys to snapshot (prism-a4ef9a: backdropBlur, attenuationColor, ior, thickness, distortionScale). If prism-7e4766 lands, decide whether a context that sets only the focused half should carry the unfocused one with it.
