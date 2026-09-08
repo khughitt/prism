@@ -25,6 +25,9 @@ local labelColumnWidth = 150
 local headColumnWidth = 190
 local valueColumnWidth = 56
 local inertOpacity = 0.35
+-- A shadowed control still writes; it is the value that cannot surface. Dimmer
+-- than full strength, lighter than inert, because the control is still live.
+local shadowedOpacity = 0.55
 local render
 local refresh
 local enqueue
@@ -82,6 +85,11 @@ local function validateModel(model)
     end
   end
   if type(model.target) ~= "string" then return "prism describe returned no write target" end
+  if type(model.layers) ~= "table" or #model.layers == 0 then return "prism describe returned no layer order" end
+  local ranks = Presentation.layerRanks(model.layers)
+  if ranks[model.target] == nil then
+    return "prism describe reported target " .. model.target .. " outside the layer order"
+  end
   for index, param in ipairs(model.params) do
     if type(param) ~= "table" or type(param.ui) ~= "table" or type(param.ui.control) ~= "string" then
       return "parameter " .. index .. " has invalid UI metadata"
@@ -89,6 +97,9 @@ local function validateModel(model)
     if param.ui.control ~= "none" then
       local message = visibleParamError(param, index)
       if message then return message end
+      if ranks[param.layer] == nil then
+        return param.key .. " reports layer " .. param.layer .. " outside the layer order"
+      end
     end
   end
   local titleOk, titleError = pcall(Presentation.titleParam, model.params)
@@ -107,9 +118,15 @@ local function finishRefresh()
   end
 end
 
-local function markOverrides(model)
+-- Overridden means "the value comes from where a write would land", so the row
+-- has something to reset. Shadowed is the opposite end: the value comes from
+-- above the target, so a write lands somewhere nothing can see.
+local function markLayers(model)
+  local ranks = Presentation.layerRanks(model.layers)
   for _, param in ipairs(model.params) do
-    param.overridden = param.ui.control ~= "none" and param.layer == model.target
+    local visible = param.ui.control ~= "none"
+    param.overridden = visible and param.layer == model.target
+    param.shadowed = visible and Presentation.isShadowed(param, ranks, model.target)
   end
 end
 
@@ -130,7 +147,7 @@ local function described(result)
   if invalidated then
     state.refreshAfterDrag = true
   elseif not message then
-    markOverrides(model)
+    markLayers(model)
     state.model = model
     state.errorText = nil
   end
@@ -185,9 +202,12 @@ enqueue = function(item)
   if result.launch then launch(result.launch) end
 end
 
+-- A shadowed row writes into the target as usual, but the target is not where
+-- its value comes from, so `layer == target` stays false and there is still no
+-- override on this row to remove.
 local function updateParam(param, value)
   param.value = value
-  param.overridden = true
+  if not param.shadowed then param.overridden = true end
 end
 
 local function writeParam(param, value)
@@ -361,13 +381,26 @@ local function infoButton(param)
 end
 
 -- Only exceptions are marked. Writing on release is the norm here, so saying it
--- on every row costs a line per row and distinguishes nothing.
-local function exceptionHint(param)
-  if param.effectiveDrag == nil then
-    return ui.label({text = "Unavailable", fontSize = 11, color = "error"})
+-- on every row costs a line per row and distinguishes nothing. One row can hold
+-- two parameters with different layers, so the hint is chosen across the whole
+-- row: an unavailable consumer is an error and outranks everything, a shadow
+-- explains why a working control has no visible effect, and Live is the mildest
+-- of the three -- it must never crowd out the other cell's shadow.
+local function rowHint(params)
+  for _, param in ipairs(params) do
+    if param.effectiveDrag == nil then
+      return ui.label({text = "Unavailable", fontSize = 11, color = "error"})
+    end
   end
-  if param.effectiveDrag == "live" then
-    return ui.label({text = "Live", fontSize = 11, color = "on_surface_variant"})
+  for _, param in ipairs(params) do
+    if param.shadowed then
+      return ui.label({text = Presentation.shadowHint(param), fontSize = 11, color = "on_surface_variant"})
+    end
+  end
+  for _, param in ipairs(params) do
+    if param.effectiveDrag == "live" then
+      return ui.label({text = "Live", fontSize = 11, color = "on_surface_variant"})
+    end
   end
   return nil
 end
@@ -375,8 +408,8 @@ end
 -- The leading column: label and its info button, at one fixed width so every
 -- control column starts at the same x and the matrix header can reserve the
 -- same span without guessing the button's natural width.
-local function headCell(text, param)
-  return ui.row({width = headColumnWidth, gap = 6, align = "center"}, {
+local function headCell(text, param, dimmed)
+  return ui.row({width = headColumnWidth, gap = 6, align = "center", opacity = dimmed and shadowedOpacity or 1.0}, {
     -- maxWidth, not width: a Label sizes to its text either way, so the cap is
     -- what keeps a long label from pushing its info button out of the span.
     ui.label({text = text, fontWeight = "medium", maxWidth = labelColumnWidth, maxLines = 1}),
@@ -399,7 +432,10 @@ local function controlCell(param, grow)
   -- natural width, so the slack goes here to hold the reset at the right edge.
   if param.ui.control ~= "slider" then children[#children + 1] = ui.spacer({flexGrow = 1}) end
   children[#children + 1] = resetButton(param, available)
-  return ui.row({key = param.key, gap = 6, align = "center", flexGrow = grow}, children)
+  return ui.row({
+    key = param.key, gap = 6, align = "center", flexGrow = grow,
+    opacity = param.shadowed and shadowedOpacity or 1.0,
+  }, children)
 end
 
 local function paramRow(key, cells, hint)
@@ -410,18 +446,19 @@ end
 
 local function singleRow(param)
   return paramRow(param.key .. ":row", {
-    headCell(param.ui.label or param.key, param),
+    headCell(param.ui.label or param.key, param, param.shadowed),
     controlCell(param, 1),
-  }, exceptionHint(param))
+  }, rowHint({param}))
 end
 
+-- The label heads both cells, so it only dims when the whole row is covered.
 local function matrixRow(row)
   return paramRow(row.row .. ":row", {
-    headCell(row.row, row.focused),
+    headCell(row.row, row.focused, row.focused.shadowed and row.unfocused.shadowed),
     controlCell(row.focused, 1),
     ui.separator({orientation = "vertical", spacing = 4}),
     controlCell(row.unfocused, 1),
-  }, exceptionHint(row.focused) or exceptionHint(row.unfocused))
+  }, rowHint({row.focused, row.unfocused}))
 end
 
 -- Mirrors matrixRow's children exactly - fixed head, grow, separator, grow - so
@@ -443,9 +480,14 @@ local function appendSection(children, section)
   children[#children + 1] = ui.row({gap = 8, align = "center"}, {
     ui.label({text = section.name, fontSize = 15, fontWeight = "bold", flexGrow = 1}),
     ui.label({text = toggle and (toggle.ui.label or toggle.key) or "", fontSize = 12, color = "on_surface_variant", visible = toggle ~= nil}),
+    ui.label({
+      text = toggle and toggle.shadowed and Presentation.shadowHint(toggle) or "",
+      fontSize = 11, color = "on_surface_variant", visible = toggle ~= nil and toggle.shadowed == true,
+    }),
     toggle and ui.toggle({
       checked = toggle.value == true,
       enabled = toggle.effectiveDrag ~= nil,
+      opacity = toggle.shadowed and shadowedOpacity or 1.0,
       onChange = function(value) writeParam(toggle, value == true or value == "true") end,
     }) or ui.spacer({}),
     ui.button({
@@ -467,6 +509,34 @@ local function appendSection(children, section)
   end
 end
 
+-- The wallpaper on screen, what it holds, and the pin that makes it the write
+-- target. The pin stays enabled even when a profile blocks it: Noctalia gates a
+-- Button's hit area on `enabled`, and the tooltip lives on that hit area, so a
+-- disabled pin could not say why it is unavailable. Greyed by opacity, guarded
+-- in the handler -- the same bargain every reset in this panel makes.
+local function wallpaperHeaderRow(header)
+  return ui.row({gap = 8, align = "center"}, {
+    ui.label({text = header.name, fontWeight = "medium", maxWidth = labelColumnWidth, maxLines = 1}),
+    ui.label({
+      text = header.overrides .. (header.overrides == 1 and " override" or " overrides"),
+      fontSize = 12, color = "on_surface_variant", flexGrow = 1,
+    }),
+    ui.button({
+      glyph = header.pinned and "pin-filled" or "pin",
+      variant = "ghost",
+      controlSize = "sm",
+      selected = header.pinned,
+      opacity = header.canPin and 1.0 or inertOpacity,
+      tooltip = header.tooltip,
+      onClick = function()
+        if not header.canPin then return end
+        enqueue({verb = "pin", on = not header.pinned})
+        render()
+      end,
+    }),
+  })
+end
+
 render = function()
   local children = {
     ui.label({
@@ -482,12 +552,19 @@ render = function()
     local title = Presentation.titleParam(state.model.params)
     children[#children + 1] = ui.row({gap = 10, align = "center"}, {
       ui.label({text = "Prism", fontSize = 18, fontWeight = "bold", flexGrow = 1}),
+      ui.label({
+        text = title.shadowed and Presentation.shadowHint(title) or "",
+        fontSize = 11, color = "on_surface_variant", visible = title.shadowed == true,
+      }),
       ui.toggle({
         checked = title.value == true,
         enabled = title.effectiveDrag ~= nil,
+        opacity = title.shadowed and shadowedOpacity or 1.0,
         onChange = function(value) writeParam(title, value == true or value == "true") end,
       }),
     })
+    local header = Presentation.wallpaperHeader(state.model)
+    if header then children[#children + 1] = wallpaperHeaderRow(header) end
     for _, section in ipairs(Presentation.sections(state.model.params)) do appendSection(children, section) end
   end
   panel.render(ui.scroll({flexGrow = 1, gap = 6, padding = 16}, children))

@@ -222,4 +222,63 @@ function M.overriddenCount(params)
   return count
 end
 
+-- describe states the store's resolution order, low to high. The panel ranks
+-- against what it is told rather than carrying a copy that goes stale the day
+-- the store gains a layer.
+function M.layerRanks(layers)
+  local ranks = {}
+  for index, name in ipairs(layers) do ranks[name] = index end
+  return ranks
+end
+
+-- Shadowed means the value comes from a layer above the write target: the
+-- control still writes, but into a layer the shadowing one covers, so the
+-- gesture has no visible effect. The model is validated before this runs, so an
+-- unrankable name is a broken contract rather than a case to absorb.
+function M.isShadowed(param, ranks, target)
+  local layerRank = ranks[param.layer] or error("unrankable layer " .. tostring(param.layer))
+  local targetRank = ranks[target] or error("unrankable target " .. tostring(target))
+  return layerRank > targetRank
+end
+
+-- Only the wallpaper offers a way out: pinning it makes it the write target. A
+-- pin cannot lift the wallpaper above a state layer, so every other shadow
+-- names itself and stops there rather than giving advice that would not work.
+local shadowAdvice = { wallpaper = "; pin to edit" }
+
+function M.shadowHint(param)
+  return "Overridden by " .. param.layer .. (shadowAdvice[param.layer] or "")
+end
+
+-- The active wallpaper as a header row: what it is, how many visible keys it
+-- holds, and whether it can become the write target. A loaded profile is always
+-- topmost, so it blocks the pin; the reason travels with the row because a
+-- Noctalia toggle takes no tooltip and a disabled Button's tooltip is
+-- unreachable.
+function M.wallpaperHeader(model)
+  local wallpaper = model.active and model.active.wallpaper
+  if wallpaper == nil then return nil end
+  local overrides = 0
+  for _, param in ipairs(model.params) do
+    if param.ui.control ~= "none" and param.layer == "wallpaper" then overrides = overrides + 1 end
+  end
+  local profile = model.active.profile
+  local pinned = wallpaper.pinned == true
+  local tooltip
+  if profile ~= nil then
+    tooltip = "Profile " .. profile .. " is loaded and holds the write target; clear it to tune this wallpaper"
+  elseif pinned then
+    tooltip = "Editing this wallpaper; unpin to edit the base values again"
+  else
+    tooltip = "Pin to tune this wallpaper instead of the base values"
+  end
+  return {
+    name = tostring(wallpaper.path):match("([^/]+)$") or tostring(wallpaper.path),
+    overrides = overrides,
+    pinned = pinned,
+    canPin = profile == nil,
+    tooltip = tooltip,
+  }
+end
+
 return M

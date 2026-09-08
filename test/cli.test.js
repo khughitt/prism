@@ -154,8 +154,9 @@ test('describe emits only the public counter-free JSON shape', async () => {
   let out = '';
   assert.equal(await cli.run(['describe', '--json'], { print: (s) => { out += s; } }), 0);
   const described = JSON.parse(out);
-  assert.deepEqual(Object.keys(described), ['active', 'target', 'params']);
+  assert.deepEqual(Object.keys(described), ['active', 'layers', 'target', 'params']);
   assert.deepEqual(described.active, { wallpaper: null, profile: null });
+  assert.deepEqual(described.layers, ['default', 'base', 'wallpaper', 'state', 'profile']);
   assert.equal(described.target, 'base');
   const p = described.params.find((item) => item.key === 'terminal.background.opacity.inactive');
   assert.deepEqual(Object.keys(p), [

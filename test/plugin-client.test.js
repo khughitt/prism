@@ -145,7 +145,10 @@ test('the isolated preview surface is gone, leaving live terminals as feedback',
   // What replaced it: live terminals. Rows mark only what is exceptional -
   // writing on release is the norm here and goes unsaid.
   assert.doesNotMatch(source, /On release/);
-  assert.match(source, /local function exceptionHint[\s\S]*text = "Unavailable"[\s\S]*text = "Live"/);
+  // One row can hold two parameters on different layers, so the hint is chosen
+  // across the row in a fixed precedence: a dead consumer, then a shadow that
+  // explains a control with no visible effect, then the mild Live marker.
+  assert.match(source, /local function rowHint[\s\S]*text = "Unavailable"[\s\S]*Presentation\.shadowHint[\s\S]*text = "Live"/);
 });
 
 test('row geometry is fixed, so nothing moves when a value crosses its default', async () => {
@@ -167,7 +170,7 @@ test('row geometry is fixed, so nothing moves when a value crosses its default',
 
 test('the info button carries a handler, without which its tooltip never opens', async () => {
   const source = await readEntry('panel.luau');
-  const infoButton = source.slice(source.indexOf('local function infoButton'), source.indexOf('local function exceptionHint'));
+  const infoButton = source.slice(source.indexOf('local function infoButton'), source.indexOf('local function rowHint'));
 
   assert.match(infoButton, /tooltip = param\.description or param\.key/);
   // Noctalia enables a Button's hit area only when it carries a handler, and a
@@ -180,9 +183,12 @@ test('the queue speaks only to prism', async () => {
 
   assert.match(source, /if item\.verb == "set" then return \{ "prism", "set", item\.key, tostring\(item\.value\) \} end/);
   assert.match(source, /if item\.verb == "unset" then return \{ "prism", "unset", item\.key \} end/);
+  assert.match(source, /if item\.verb == "pin" then return \{ "prism", "context", item\.on and "pin" or "unpin", "wallpaper" \} end/);
   assert.match(source, /error\("unknown queue verb: "/);
   assert.doesNotMatch(source, /preview|niri-glass|prismGlass|"qs"/);
-  assert.match(source, /function M\.affectsParams\(item\)\n  return item\.verb == "set" or item\.verb == "unset"\n/);
+  // A pin writes no parameter but moves the write target, so it too must leave
+  // the model stale and force a re-read.
+  assert.match(source, /function M\.affectsParams\(item\)\n  return item\.verb == "set" or item\.verb == "unset" or item\.verb == "pin"\n/);
 });
 
 test('the plugin describes native material control, not a separate preview', async () => {

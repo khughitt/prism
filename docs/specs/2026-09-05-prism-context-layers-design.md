@@ -5,7 +5,11 @@
 Revised 2026-09-06 for `prism-fc8491`: the write target is the topmost
 *explicit* layer and a wallpaper is a target only while pinned; `save` is
 for profiles; the wallpaper path is canonicalised.
-**Task:** `prism-6fd864`, first piece of goal `prism-2f0b4b`; `prism-fc8491`
+Revised 2026-09-08 for `prism-3b7c07`: `describe --json` also states the
+resolution order as `layers`, and the panel draws the wallpaper header row and
+shadows the rows a higher layer covers.
+**Task:** `prism-6fd864`, first piece of goal `prism-2f0b4b`; `prism-fc8491`;
+`prism-3b7c07`
 
 ## Context
 
@@ -231,16 +235,24 @@ it reports orphans in base today.
 
 ## Section 3: describe contract and the panel reset
 
-`describe --json` gains a top-level `active` object mirroring the slots and a
-top-level `target` naming the write-target layer. Each param gains `layer`,
-where its effective value comes from (`default`, `base`, `wallpaper`, `state`,
-or `profile`), and `fallback`, the value `unset` would leave in effect. The
+`describe --json` gains a top-level `active` object mirroring the slots, a
+top-level `target` naming the write-target layer, and a top-level `layers`
+giving the resolution order low to high. Each param gains `layer`, where its
+effective value comes from (`default`, `base`, `wallpaper`, `state`, or
+`profile`), and `fallback`, the value `unset` would leave in effect. The
 `modified` field is removed: it answered "differs from the default", and
 nothing needs that question any more.
 
+`layers` is `RESOLUTION_ORDER`, the two implicit layers under the context stack
+followed by `LAYER_ORDER` itself. A client cannot decide whether a value sits
+above where a write would land without ranking two layer names, and that
+ranking is the store's knowledge. Stating it keeps the panel from carrying a
+second copy that would silently mis-rank the day `state` becomes real.
+
 ```json
 {
-  "active": { "wallpaper": { "id": "3f9a1c2e", "path": "/path/to/wall.jpg" }, "profile": null },
+  "active": { "wallpaper": { "id": "3f9a1c2e", "path": "/path/to/wall.jpg", "pinned": true }, "profile": null },
+  "layers": ["default", "base", "wallpaper", "state", "profile"],
   "target": "wallpaper",
   "params": [
     { "key": "glass.ior", "value": 1.3, "layer": "wallpaper", "fallback": 1.24 }
@@ -263,7 +275,17 @@ those:
 - the reset tooltip reads `Remove override` for every target, since a profile
   reset may reveal a wallpaper value rather than the base one;
 - the model validator requires `layer`, `fallback`, and top-level `target`
-  instead of `modified`.
+  and `layers` instead of `modified`, and rejects a `target` or a param
+  `layer` that `layers` cannot rank.
+
+A parameter is *shadowed* when `rank(layer) > rank(target)`: its value comes
+from above where a write would land, so the control still writes but nothing
+visible changes. The panel dims such a row and says what covers it. The advice
+is layer-specific — pinning makes the wallpaper the target, but a pin cannot
+lift it above a state layer, so only a wallpaper shadow offers one. Writing
+under a shadow leaves the row un-overridden, because `layer == target` stays
+false: the write landed in the target, which is not where the value comes
+from.
 
 Profile controls that consume `active` (indicator, save button, select) still
 belong to `prism-ea6344`.

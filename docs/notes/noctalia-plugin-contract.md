@@ -42,10 +42,12 @@ as panel errors without replacing the last valid model.
 
 All parameter writes go through the panel's shared FIFO. Each command is
 serialized through `noctalia.runAsync`, and the next item starts only after
-the current item completes. `set` and `unset` are the only verbs; anything
-else fails loudly rather than reaching another backend. Parameter batches
-refresh the model after the queue drains, except when the completed tail is a
-live drag sample; that reconciliation waits for the drag's final write.
+the current item completes. `set`, `unset`, and `pin` are the only verbs;
+anything else fails loudly rather than reaching another backend. `pin` writes
+no parameter but moves the write target, so it counts as affecting the model
+and forces the same refresh a write does. Parameter batches refresh the model
+after the queue drains, except when the completed tail is a live drag sample;
+that reconciliation waits for the drag's final write.
 
 The panel tracks live slider samples at 100 ms frame intervals and always
 emits a final non-sample write on release. Release-mode sliders emit only that
@@ -95,29 +97,59 @@ The presentation module defines the panel's stable layout contract:
   is overridden; nothing appears or disappears as a value crosses its default.
 - Toggle, select, slider, color, and reset actions update the local displayed
   value before their required write boundary.
-- Only exceptional rows carry a marker: `Live` for a parameter that writes
-  while dragging, `Unavailable` for one with no consumer at all, whose control
-  is also disabled. Writing on release is the norm and is left unmarked.
+- Only exceptional rows carry a marker, and one row can hold two parameters on
+  different layers, so the marker is chosen across the whole row in a fixed
+  precedence: `Unavailable` for a parameter with no consumer at all, whose
+  control is also disabled; then the shadow hint; then `Live` for a parameter
+  that writes while dragging. A `Live` marker on one matrix cell never crowds
+  out a shadow on the other. Writing on release is the norm and is left
+  unmarked.
+- A parameter is *shadowed* when its `layer` ranks above `target` in `layers`:
+  the control still writes, but into a layer the shadowing one covers, so the
+  gesture has no visible effect. A shadowed cell dims; a matrix row's label
+  dims only when both of its cells are shadowed. The hint names the covering
+  layer and offers advice only where advice exists — `Overridden by wallpaper;
+  pin to edit`, but a bare `Overridden by state`, since pinning the wallpaper
+  cannot lift it above a state layer. Writing under a shadow does not mark the
+  row overridden: the write lands in the target, which is not where the value
+  comes from, so there is still no override on that row to reset.
+- When a wallpaper is active the panel draws a header row above the sections:
+  its basename, the count of visible parameters it holds, and a pin button that
+  runs `prism context pin|unpin wallpaper`. A loaded profile is always topmost
+  and blocks the pin; the button is then greyed by opacity and guarded in its
+  handler, never disabled, because Noctalia gates a Button's hit area on
+  `enabled` and the tooltip lives on that hit area — a disabled pin could not
+  say why it is unavailable. A Noctalia toggle takes no `tooltip` prop at all,
+  which is why the pin is a button and why shadowed toggles carry a visible
+  hint label instead. With no active wallpaper there is no header row.
 - Numeric controls preserve canonical values while supporting raw, percent,
   and normalized display metadata on linear, logarithmic, and power (`exponent`)
   scales; a curved scale shapes the track and the display only the label. The
   formatted value renders beside the native slider.
 
 `prism describe --json` carries `active` (the active context per kind),
-`target` (the write-target layer), and per parameter `layer` (where the value
-comes from) and `fallback` (what `unset` would leave). A parameter is
-overridden when `layer == target`; the reset is always present and shows full
-strength exactly then.
+`layers` (the store's resolution order, low to high), `target` (the
+write-target layer), and per parameter `layer` (where the value comes from) and
+`fallback` (what `unset` would leave). A parameter is overridden when
+`layer == target`; the reset is always present and shows full strength exactly
+then. The panel ranks a layer against the target with `layers` rather than
+carrying its own copy of the order, so a layer added to the store reaches the
+panel without a second list to keep in step.
 
 The panel is installed into Noctalia separately from the `prism` command, so
-the two must be upgraded together. An older panel reading the new CLI's
-`describe --json` fails `validateModel` with `<key> has no layer`, because it
-expects a shape the CLI no longer sends without `layer`; a newer panel reading
-an older CLI's output fails with `prism describe returned no write target`,
-because `target` does not exist yet. Both degrade to the panel's visible-error
-banner, which is the correct failure mode, but a user who sees either message
-should read it as "the panel and the `prism` command are out of sync" and
-upgrade whichever side is behind.
+the two must be upgraded together. The loud failure is one-sided, because every
+field the panel needs is one the CLI adds: a newer panel reading an older CLI's
+output fails `validateModel` on the first field that is absent — `prism
+describe returned no layer order` without `layers`, `prism describe returned no
+write target` without `target`, `<key> has no layer` without a per-parameter
+`layer` — and degrades to the panel's visible-error banner, which is the
+correct failure mode. The other direction is quiet: `validateModel` inspects
+only the fields it knows and does not reject unknown ones, so an older panel
+ignores what a newer CLI adds and keeps rendering under its own older rules,
+without shadowing rows it has no order to rank. A user who sees any of those
+messages, or a panel that draws no wallpaper header row against a CLI that
+reports one, should read it as "the panel and the `prism` command are out of
+sync" and upgrade whichever side is behind.
 
 The shipped panel is two sections: `Glass`, the parameters both focus states
 share, and `Focus`, the matrix of terminal opacity, blur, tint distance,

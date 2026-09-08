@@ -15,6 +15,12 @@ export function activeJson(active) {
   return { wallpaper, profile: active.profile ?? null };
 }
 
+// The full resolution order, low to high: the two implicit layers under the
+// context stack, then the context kinds themselves. Clients rank a parameter's
+// layer against the write target with this, so adding a kind to LAYER_ORDER
+// reaches them without a second list to keep in step.
+export const RESOLUTION_ORDER = ['default', 'base', ...LAYER_ORDER];
+
 // The active slots as layers in resolution order. A wallpaper without a file
 // is the untuned wallpaper: an empty layer. A profile without a file is broken.
 export function loadLayers(active) {

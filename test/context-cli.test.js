@@ -391,3 +391,22 @@ test('delete recovers from malformed active context files with a full fan-out', 
     for (const [, keys] of calls) assert.deepEqual(keys, ['terminal.background.opacity.inactive']);
   }
 });
+
+// The panel has to decide whether a parameter's value comes from a layer above
+// its write target. That ranking is the store's knowledge, so describe states
+// it rather than leaving every client to hardcode a copy that goes stale when
+// a layer is added to LAYER_ORDER.
+test('describe reports the resolution order, low to high', async () => {
+  const { RESOLUTION_ORDER } = await import('../src/layers.js');
+  assert.deepEqual(RESOLUTION_ORDER, ['default', 'base', 'wallpaper', 'state', 'profile']);
+
+  const wallpaper = wallpaperFile('order.jpg');
+  assert.equal(await cli.run(['context', 'wallpaper', wallpaper], { runner: () => {} }), 0);
+  const model = JSON.parse((await runCaptured(['describe', '--json'])).stdout);
+
+  assert.deepEqual(model.layers, RESOLUTION_ORDER);
+  assert.ok(model.layers.includes(model.target), 'the target must be rankable against the order');
+  for (const param of model.params) {
+    assert.ok(model.layers.includes(param.layer), `${param.key} reports unrankable layer ${param.layer}`);
+  }
+});

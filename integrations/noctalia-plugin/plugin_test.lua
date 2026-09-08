@@ -102,7 +102,9 @@ fails({
 -- before and after the asynchronous model arrives.
 local rendered
 local described
-local model = { target = "base", params = {
+-- The store's resolution order, low to high, as describe states it.
+local resolutionOrder = { "default", "base", "wallpaper", "state", "profile" }
+local model = { layers = resolutionOrder, target = "base", params = {
   {
     key = "glass.enabled", value = true, default = true, layer = "default", fallback = true,
     effectiveDrag = "release",
@@ -399,3 +401,227 @@ equal(Queue.isSample(unset("a.x")), false)
 
 equal(Shell.quote("a'b"), "'a'\"'\"'b'")
 equal(Shell.command({ "prism", "set", "name with space", "a'b" }), "'prism' 'set' 'name with space' 'a'\"'\"'b'")
+
+-- Layer ranking. describe states the resolution order, so the panel ranks a
+-- parameter's layer against the write target instead of carrying its own copy
+-- that goes stale when a layer is added to the store.
+local order = resolutionOrder
+local ranks = Presentation.layerRanks(order)
+equal(ranks, { default = 1, base = 2, wallpaper = 3, state = 4, profile = 5 })
+
+local function layered(layer, control)
+  return { key = "k." .. layer, layer = layer, ui = { control = control or "slider" } }
+end
+-- Shadowed means "the value comes from above where a write would land", so the
+-- control is live but has no visible effect.
+equal(Presentation.isShadowed(layered("wallpaper"), ranks, "base"), true)
+equal(Presentation.isShadowed(layered("base"), ranks, "base"), false)
+equal(Presentation.isShadowed(layered("default"), ranks, "base"), false)
+equal(Presentation.isShadowed(layered("wallpaper"), ranks, "wallpaper"), false)
+equal(Presentation.isShadowed(layered("base"), ranks, "wallpaper"), false)
+equal(Presentation.isShadowed(layered("state"), ranks, "wallpaper"), true)
+
+-- The advice is layer-specific: pinning the wallpaper makes it the target, but
+-- it cannot outrank a state layer, so a state shadow offers no pin.
+equal(Presentation.shadowHint(layered("wallpaper")), "Overridden by wallpaper; pin to edit")
+equal(Presentation.shadowHint(layered("state")), "Overridden by state")
+
+-- The wallpaper header row: what it names, how many keys it holds, and whether
+-- the pin is available.
+local headerParams = {
+  layered("wallpaper"), layered("base"), layered("wallpaper", "toggle"), layered("wallpaper", "none"),
+}
+headerParams[1].key, headerParams[3].key = "a", "b"
+local header = Presentation.wallpaperHeader({
+  active = { wallpaper = { id = "f8eb0556", path = "/pics/Deep Field.jpg", pinned = false }, profile = nil },
+  layers = order, target = "base", params = headerParams,
+})
+equal(header.name, "Deep Field.jpg")
+equal(header.overrides, 2, "the CLI-only wallpaper parameter is not a visible override")
+equal(header.pinned, false)
+equal(header.canPin, true)
+
+equal(Presentation.wallpaperHeader({ active = { wallpaper = nil, profile = nil }, params = {} }), nil,
+  "no wallpaper is nothing to pin")
+
+-- A loaded profile holds the write target, so the wallpaper cannot be pinned;
+-- the reason has to stay readable, because a Noctalia toggle carries no
+-- tooltip and a disabled Button's tooltip is unreachable.
+local blocked = Presentation.wallpaperHeader({
+  active = { wallpaper = { id = "f8eb0556", path = "/pics/a.jpg", pinned = false }, profile = "dusk" },
+  layers = order, target = "profile", params = {},
+})
+equal(blocked.canPin, false)
+assert(blocked.tooltip:find("dusk", 1, true), "the blocked pin must name the profile holding the target")
+
+-- The pin is a transport verb like set and unset, and it changes the write
+-- target, so the model must be re-read after it lands.
+equal(Queue.argvFor({ verb = "pin", on = true }), { "prism", "context", "pin", "wallpaper" })
+equal(Queue.argvFor({ verb = "pin", on = false }), { "prism", "context", "unpin", "wallpaper" })
+equal(Queue.affectsParams({ verb = "pin", on = true }), true)
+
+-- Panel layer rendering. The harness records write callbacks too, so a pin can
+-- be completed and its reconciliation observed rather than only its argv.
+local writeCallback
+noctalia.runAsync = function(cmd, callback)
+  commands[#commands + 1] = cmd
+  if cmd:find("describe", 1, true) then described = callback else writeCallback = callback end
+  return true
+end
+
+local function renderModel(next)
+  model = next
+  dofile(here .. "panel.luau")
+  onOpen({})
+  described({ exitCode = 0, stdout = "{}" })
+  return rendered
+end
+
+local function labelSet(tree)
+  local found = {}
+  for _, label in ipairs(collect(tree, "label")) do found[label.props.text or ""] = true end
+  return found
+end
+
+local function glyphButton(tree, glyph)
+  for _, button in ipairs(collect(tree, "button")) do
+    if button.props.glyph == glyph then return button end
+  end
+  return nil
+end
+
+local function cellFor(tree, key)
+  for _, row in ipairs(collect(tree, "row")) do
+    if row.props.key == key then return row end
+  end
+  return nil
+end
+
+local function layeredModel(overrides)
+  local m = {
+    active = { wallpaper = { id = "f8eb0556", path = "/pics/Deep Field.jpg", pinned = false } },
+    layers = order,
+    target = "base",
+    params = {
+      { key = "glass.enabled", value = true, default = true, layer = "wallpaper", fallback = true,
+        effectiveDrag = "release", ui = { control = "toggle", group = "Title", order = 0, label = "Glass" } },
+      { key = "compositor.gaps", value = 40, default = 24, layer = "wallpaper", fallback = 24,
+        effectiveDrag = "release", range = { 0, 128 },
+        ui = { control = "slider", group = "Glass", order = 10, step = 1, label = "Gaps" } },
+      { key = "glass.ior", value = 1.5, default = 1.4, layer = "base", fallback = 1.4,
+        effectiveDrag = "release", range = { 1, 2 },
+        ui = { control = "slider", group = "Glass", order = 11, step = 0.01, label = "Ior" } },
+      { key = "glass.focusSplit", value = true, default = true, layer = "wallpaper", fallback = true,
+        effectiveDrag = "release", ui = { control = "toggle", group = "Focus", order = 200, label = "Focus-state glass", header = true } },
+      { key = "glass.roughness", value = 0.2, default = 0.08, layer = "base", fallback = 0.1,
+        effectiveDrag = "live", range = { 0, 1 },
+        ui = { control = "slider", group = "Focus", order = 220, step = 0.01, label = "Blur", state = "focused", row = "Blur" } },
+      { key = "glass.inactive.roughness", value = 0.5, default = 0.5, layer = "wallpaper", fallback = 0.5,
+        effectiveDrag = "release", range = { 0, 1 },
+        ui = { control = "slider", group = "Focus", order = 221, step = 0.01, label = "Unfocused blur", state = "unfocused", row = "Blur" } },
+      { key = "debug.backdrop", value = false, default = false, layer = "wallpaper", fallback = false,
+        ui = { control = "none", group = "Debug" } },
+    },
+  }
+  for key, value in pairs(overrides or {}) do m[key] = value end
+  return m
+end
+
+-- The header row names the wallpaper on screen and counts what it holds.
+local tree = renderModel(layeredModel())
+local shown = labelSet(tree)
+assert(shown["Deep Field.jpg"], "the header row must name the active wallpaper")
+assert(shown["4 overrides"], "the header row must count the wallpaper's visible keys")
+local pin = glyphButton(tree, "pin")
+assert(pin, "an unpinned wallpaper offers a pin button")
+equal(pin.props.tooltip, "Pin to tune this wallpaper instead of the base values")
+equal(pin.props.opacity, 1.0)
+
+-- Shadowed rows: dimmed, and the hint says what covers them and what to do.
+assert(cellFor(tree, "compositor.gaps").props.opacity < 1.0, "a wallpaper-layer row is dimmed under a base target")
+equal(cellFor(tree, "glass.ior").props.opacity, 1.0, "a base-layer row is not dimmed under a base target")
+assert(shown["Overridden by wallpaper; pin to edit"], "a shadowed row must say why it has no visible effect")
+
+-- A matrix row's cells carry their own layers: dim only the shadowed half, and
+-- let the shadow outrank the other half's Live marker.
+equal(cellFor(tree, "glass.roughness").props.opacity, 1.0, "the base-layer focused cell keeps full strength")
+assert(cellFor(tree, "glass.inactive.roughness").props.opacity < 1.0, "the wallpaper-layer unfocused cell dims")
+assert(not shown["Live"], "a Live marker must not hide the other cell's shadow warning")
+
+-- The title and section header toggles are shadowed too, and say so.
+local toggles = collect(tree, "toggle")
+equal(#toggles, 2, "title and Focus header toggles")
+for _, toggle in ipairs(toggles) do
+  assert(toggle.props.opacity < 1.0, "a shadowed header toggle dims like any other shadowed control")
+end
+
+-- Editing base beneath a wallpaper still writes, but the value it writes stays
+-- covered: the row keeps its shadow and offers no reset to remove.
+local gaps = model.params[2]
+local slider = nil
+for _, node in ipairs(collect(tree, "slider")) do
+  if node.props.key == "compositor.gaps:slider" then slider = node end
+end
+slider.props.onChange(64)
+slider.props.onDragEnd()
+equal(gaps.shadowed, true, "writing under a shadow does not lift it")
+equal(gaps.overridden, false, "the write landed in base, which is not where the value comes from")
+
+-- A loaded profile holds the target, so the pin is greyed but still hoverable:
+-- a disabled Button's tooltip is unreachable, so the reason would vanish.
+local blockedTree = renderModel(layeredModel({
+  active = { wallpaper = { id = "f8eb0556", path = "/pics/a.jpg", pinned = false }, profile = "dusk" },
+  target = "profile",
+}))
+local blockedPin = glyphButton(blockedTree, "pin")
+assert(blockedPin.props.opacity < 1.0, "a blocked pin is greyed by opacity")
+assert(blockedPin.props.enabled ~= false, "a blocked pin stays enabled so its tooltip is reachable")
+assert(blockedPin.props.tooltip:find("dusk", 1, true), "the greyed pin names the profile holding the target")
+local commandsBefore = #commands
+blockedPin.props.onClick()
+equal(#commands, commandsBefore, "clicking a blocked pin enqueues nothing")
+
+-- Pinning: the command goes out, and when it lands the panel re-reads the model
+-- and every row that the wallpaper was covering becomes editable.
+local pinTree = renderModel(layeredModel())
+glyphButton(pinTree, "pin").props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "context", "pin", "wallpaper" }))
+writeCallback({ exitCode = 0, stdout = "" })
+assert(commands[#commands]:find("describe", 1, true), "a completed pin must re-read the model")
+described({ exitCode = 0, stdout = "{}" })
+model = layeredModel({
+  active = { wallpaper = { id = "f8eb0556", path = "/pics/Deep Field.jpg", pinned = true } },
+  target = "wallpaper",
+})
+described({ exitCode = 0, stdout = "{}" })
+equal(cellFor(rendered, "compositor.gaps").props.opacity, 1.0, "pinning lifts the shadow off the wallpaper's rows")
+equal(cellFor(rendered, "glass.ior").props.opacity, 1.0,
+  "a base-layer row is below the pinned target, so a write to the wallpaper surfaces over it")
+assert(glyphButton(rendered, "pin-filled"), "a pinned wallpaper shows the pinned glyph")
+assert(labelSet(rendered)["Overridden by wallpaper; pin to edit"] == nil, "nothing is covered by the wallpaper once it is the target")
+
+-- With no wallpaper there is nothing to pin and no header row to draw.
+local bareTree = renderModel(layeredModel({ active = {}, params = {
+  { key = "glass.enabled", value = true, default = true, layer = "base", fallback = true,
+    effectiveDrag = "release", ui = { control = "toggle", group = "Title", order = 0, label = "Glass" } },
+} }))
+equal(glyphButton(bareTree, "pin"), nil, "no wallpaper means no pin button")
+
+-- The layer order is part of the contract: without it the panel cannot rank a
+-- layer against the target, and must say so instead of guessing.
+local function panelError(next)
+  renderModel(next)
+  for _, label in ipairs(collect(rendered, "label")) do
+    if label.props.color == "error" and (label.props.text or "") ~= "" then return label.props.text end
+  end
+  return nil
+end
+local missingLayers = layeredModel()
+missingLayers.layers = nil
+equal(panelError(missingLayers), "prism describe returned no layer order")
+equal(panelError(layeredModel({ layers = {} })), "prism describe returned no layer order")
+equal(panelError(layeredModel({ target = "theme" })), "prism describe reported target theme outside the layer order")
+local unrankable = layeredModel()
+unrankable.params[2].layer = "theme"
+assert((panelError(unrankable) or ""):find("compositor.gaps", 1, true),
+  "a parameter on an unrankable layer names itself")

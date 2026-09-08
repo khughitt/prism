@@ -7,7 +7,7 @@ import { resolveLayered, writeResolved } from './resolve.js';
 import { fanOut, boundParams } from './fanout.js';
 import { readJson } from './store.js';
 import { withLock } from './lock.js';
-import { loadStore, loadLayers, writeTarget, activeJson } from './layers.js';
+import { loadStore, loadLayers, writeTarget, activeJson, RESOLUTION_ORDER } from './layers.js';
 import { listContexts, readContext, readActive, writeContext, deleteContext, contextPath, VERB_KINDS } from './contexts.js';
 import { runContext } from './context-cli.js';
 import {
@@ -174,7 +174,7 @@ export async function run(argv, opts = {}) {
           });
         }
 
-        print(`${JSON.stringify({ active: activeJson(store.active), target: store.target.kind, params: described }, null, 2)}\n`);
+        print(`${JSON.stringify({ active: activeJson(store.active), layers: RESOLUTION_ORDER, target: store.target.kind, params: described }, null, 2)}\n`);
         return 0;
       }
 
