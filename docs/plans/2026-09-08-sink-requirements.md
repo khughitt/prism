@@ -6,9 +6,10 @@
 running the sink and names the fix, and no sink failure is ever reported by
 inspecting a Node error object.
 
-**Architecture:** One new module, `src/sink.js`, holds the three primitives
-the sinks and the fan-out share: `diagnose` (a child's own words out of an
-error object), `sinkMain` (an apply script's top-level guard) and `onPath`.
+**Architecture:** One new module, `src/sink.js`, holds what the sinks, the
+probes and the fan-out share: `diagnose` (a child's own words out of an error
+object), `sinkMain` (an apply script's top-level guard), `onPath`, and the two
+timeout constants.
 `manifest.yaml` grows an optional `requires` list that `loadManifests`
 validates; `fanOut` evaluates it before spawning `apply` and `doctor` reports
 it directly. Each sink then declares what it needs.
@@ -20,8 +21,10 @@ it directly. Each sink then declares what it needs.
 ## Global Constraints
 
 - Node `>=20`, ESM only (`package.json` sets `"type": "module"`). No new dependencies.
-- Every child process prism spawns is bounded: `SINK_TIMEOUT = 5_000` ms with `killSignal: 'SIGKILL'`. Probes share the bound `apply` already has.
-- A `probe: <name>` entry names the executable `<sink dir>/probe-<name>`.
+- Every child process prism spawns is bounded: `SINK_TIMEOUT = 5_000` ms with `killSignal: 'SIGKILL'`, defined in `src/sink.js`. Probes share the bound `apply` already has.
+- A probe bounds its own children at `PROBE_CHILD_TIMEOUT = 2_000` ms. The outer bound kills the probe, never the probe's children, and `SIGKILL` runs no `finally`.
+- `execFileSync` reports a timeout as `code: 'ETIMEDOUT'` with `signal: 'SIGKILL'` and no `killed` property. Detect it by `code`.
+- A `probe: <name>` entry names the executable regular file `<sink dir>/probe-<name>`; `<name>` is a bare name with no path separator.
 - An unmet requirement is recorded as `ok: false` with the message in `entry.error`. No new sink status state.
 - Prism-composed messages are one line. A child's diagnostic is passed through as written, newlines included.
 - Comments explain why, not what, and match the density of the file they land in. No file gets a header comment it did not already have.
@@ -48,7 +51,9 @@ Closes `prism-2983d1`.
 - Produces:
   - `diagnose(error): string` — the child's stderr, else its stdout, else a spawn `ENOENT` message, else `error.message`, else `String(error)`. Never empty, never an inspected object.
   - `sinkMain(fn: () => void): void` — runs `fn`; on a throw writes `diagnose(error)` and a newline to stderr and exits 1.
-  - `onPath(command: string): boolean` — true when `command` is an executable file in a `PATH` directory.
+  - `onPath(command: string): boolean` — true when `command` is an executable regular file in a `PATH` directory.
+  - `SINK_TIMEOUT: number` (5000) — the bound every child prism spawns runs under.
+  - `PROBE_CHILD_TIMEOUT: number` (2000) — the bound a probe gives its own children, so it returns normally inside `SINK_TIMEOUT` and runs its cleanup.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -148,6 +153,15 @@ Expected: FAIL — `Cannot find module '../src/sink.js'`.
 import fs from 'node:fs';
 import path from 'node:path';
 
+// Every child prism spawns runs under this bound, apply and probes alike.
+export const SINK_TIMEOUT = 5_000;
+
+// A probe's own children get a tighter bound. A probe killed by SINK_TIMEOUT
+// dies on SIGKILL, which no finally block survives: it would leave both the
+// command it was waiting on and the temp config it wrote. Bounding its
+// children instead lets the probe return, report, and clean up.
+export const PROBE_CHILD_TIMEOUT = 2_000;
+
 const text = (value) => (Buffer.isBuffer(value) ? value.toString('utf8') : value ?? '').trim();
 
 // A child's own words, never Node's inspection of the error object. An
@@ -232,7 +246,61 @@ behaviour changes — in particular `applyToKittySockets` keeps throwing when it
 finds no sockets (`integrations/kitty/live.js:38`), which
 `test/kitty-sink.test.js:57` requires.
 
-- [ ] **Step 8: Pin the absence of the dump**
+- [ ] **Step 8: Give the debug-backdrop fixture a resolvable `src`**
+
+`test/debug-backdrop-sink.test.js` copies `apply` to `<tmp>/integration/apply`,
+one level shallower than the real `integrations/debug-backdrop/apply`. The new
+`../../src/sink.js` would resolve to `<tmpdir>/src/sink.js` and every test in
+the file would fail at module load. Mirror the real depth and point `src` at
+the repository's. In `fixture`, replace the `targetIntegration` lines:
+
+```js
+  const targetIntegration = path.join(dir, 'integrations', 'debug-backdrop');
+  const bin = path.join(dir, 'bin');
+  const log = path.join(dir, 'qs.log');
+  const resolved = path.join(dir, 'resolved.json');
+  fs.mkdirSync(targetIntegration, { recursive: true });
+  fs.mkdirSync(bin);
+  // apply imports ../../src/sink.js, so the copy needs the same depth below a
+  // src it can reach — the real one, so the test cannot drift from it.
+  fs.symlinkSync(fileURLToPath(new URL('../src/', import.meta.url)), path.join(dir, 'src'), 'dir');
+```
+
+Then add the `qs`-free PATH the skip test in Task 2 needs. `/usr/bin` holds
+both `node` and `qs` on a developer machine, so trimming directories cannot
+hide one without hiding the other; give the run a directory holding nothing but
+node. Still in `fixture`, before `run`:
+
+```js
+  // apply runs under `#!/usr/bin/env node`, so a PATH that hides qs must still
+  // find node — and node's own directory is usually the one qs lives in.
+  const nodeOnly = path.join(dir, 'node-only');
+  fs.mkdirSync(nodeOnly);
+  fs.symlinkSync(process.execPath, path.join(nodeOnly, 'node'));
+```
+
+and take a `qs` flag in `run`, defaulting to the present behaviour:
+
+```js
+  const run = ({
+    value,
+    qs = true,
+    actionStatus = 0,
+```
+
+with the `PATH` entry becoming:
+
+```js
+        PATH: qs ? `${bin}:${process.env.PATH}` : nodeOnly,
+```
+
+- [ ] **Step 9: Run the sink suites to verify nothing regressed**
+
+Run: `node --test test/debug-backdrop-sink.test.js test/kitty-sink.test.js test/niri-apply.test.js`
+Expected: PASS. A failure naming `Cannot find module` means the fixture's `src`
+symlink or its depth is wrong.
+
+- [ ] **Step 10: Pin the absence of the dump**
 
 In `test/niri-apply.test.js`, extend the two tests that already assert the
 diagnostic survives — `an invalid composed config restores the previous target
@@ -252,12 +320,12 @@ and, in the recorded-status test:
     'the recorded status is the diagnostic, not prism restating its own invocation');
 ```
 
-- [ ] **Step 9: Run the full suite**
+- [ ] **Step 11: Run the full suite**
 
 Run: `just test`
 Expected: PASS. The count rises by 7 from the current 212.
 
-- [ ] **Step 10: Close the task and commit**
+- [ ] **Step 12: Close the task and commit**
 
 ```bash
 tasks done prism-2983d1 "apply scripts and fan-out report the child's diagnostic; no error object is ever inspected"
@@ -306,8 +374,10 @@ function loadRequires(body) {
   const root = integ({
     'alpha/manifest.yaml': `sink: alpha\nbinds:\n  - {param: a.x, liveness: live}\nrequires:\n${body}`,
     'alpha/probe-present': '#!/bin/sh\nexit 0\n',
+    'alpha/probe-inert': 'not executable\n',
   });
   fs.chmodSync(path.join(root, 'alpha', 'probe-present'), 0o755);
+  fs.chmodSync(path.join(root, 'alpha', 'probe-inert'), 0o644);
   return () => loadManifests(root, defs);
 }
 
@@ -336,8 +406,22 @@ test('a requirement needs a fix', () => {
   assert.throws(loadRequires('  - {command: qs, fix: "  "}\n'), /needs a fix/);
 });
 
-test('a probe that is not an executable beside apply is a manifest error', () => {
-  assert.throws(loadRequires('  - {probe: absent, fix: x}\n'), /probe absent/);
+test('a probe that is not an executable file beside apply is a manifest error', () => {
+  assert.throws(loadRequires('  - {probe: absent, fix: x}\n'), /probe absent is missing/);
+  assert.throws(loadRequires('  - {probe: inert, fix: x}\n'), /probe inert is not executable/);
+});
+
+// X_OK is satisfied by a directory, which cannot be spawned, and a name with a
+// separator would reach out of the sink's directory entirely.
+test('a probe directory and a probe name with a separator are manifest errors', () => {
+  const root = integ({
+    'alpha/manifest.yaml': 'sink: alpha\nbinds:\n  - {param: a.x, liveness: live}\nrequires:\n  - {probe: dir, fix: x}\n',
+  });
+  fs.mkdirSync(path.join(root, 'alpha', 'probe-dir'));
+  assert.throws(() => loadManifests(root, defs), /probe dir is not a file/);
+
+  assert.throws(loadRequires('  - {probe: ../escape, fix: x}\n'), /must be a bare name/);
+  assert.throws(loadRequires('  - {probe: nested/thing, fix: x}\n'), /must be a bare name/);
 });
 
 // A when that names nothing, or names a param prism cannot read as a switch,
@@ -373,11 +457,24 @@ Inside the per-entry loop, after the `generates` block and before `manifests.pus
         throw new Error(`${file}: requires ${r[form]} needs a fix`);
       }
       if (form === 'probe') {
+        // "Beside apply" is the whole contract: a name carrying a separator
+        // would reach out of the sink's directory, and X_OK alone is satisfied
+        // by a directory, which cannot be spawned.
+        if (path.basename(r.probe) !== r.probe || r.probe === '.' || r.probe === '..') {
+          throw new Error(`${file}: probe ${JSON.stringify(r.probe)} must be a bare name`);
+        }
         const probe = path.join(dir, entry.name, `probe-${r.probe}`);
+        let stat = null;
+        try {
+          stat = fs.statSync(probe);
+        } catch {
+          throw new Error(`${file}: probe ${r.probe} is missing at ${probe}`);
+        }
+        if (!stat.isFile()) throw new Error(`${file}: probe ${r.probe} is not a file at ${probe}`);
         try {
           fs.accessSync(probe, fs.constants.X_OK);
         } catch {
-          throw new Error(`${file}: probe ${r.probe} is not an executable at ${probe}`);
+          throw new Error(`${file}: probe ${r.probe} is not executable at ${probe}`);
         }
       }
       if (r.when !== undefined) {
@@ -524,10 +621,14 @@ Expected: FAIL — `unmetRequirement` is not exported.
 Add the imports and the constant at the top:
 
 ```js
-import { diagnose, onPath } from './sink.js';
+import { diagnose, onPath, SINK_TIMEOUT } from './sink.js';
 
-export const SINK_TIMEOUT = 5_000;
+export { SINK_TIMEOUT };
 ```
+
+The constant lives in `src/sink.js` so `integrations/niri/probe-material` can
+reach it without importing the fan-out, which would drag the lock, the paths
+and the store into a probe.
 
 Change `runApply`'s default to the constant:
 
@@ -547,7 +648,10 @@ function probeProblem(file, name, timeout) {
     execFileSync(file, [], { stdio: 'pipe', timeout, killSignal: 'SIGKILL' });
     return null;
   } catch (error) {
-    if (error?.killed) return `probe ${name} did not finish within ${timeout / 1000}s`;
+    // execFileSync reports a timeout as code ETIMEDOUT with signal SIGKILL and
+    // no `killed` property at all — verified against Node 20 before this was
+    // written, because the obvious `error.killed` is silently always undefined.
+    if (error?.code === 'ETIMEDOUT') return `probe ${name} did not finish within ${timeout / 1000}s`;
     return diagnose(error);
   }
 }
@@ -680,18 +784,40 @@ if (!enabled && !onPath('qs')) return;
 
 - [ ] **Step 13: Write and run the debug-backdrop test**
 
-In `test/debug-backdrop-sink.test.js`, following its existing fixture style,
-add a case that runs the apply script with `debug.backdrop: false` and a `PATH`
-holding no `qs`:
+Use the fixture's own API — `run({ value, qs })` and `calls()`, with the
+`qs: false` PATH added in Task 1 Step 8. There is no `runApply` or
+`emptyBinDir` helper in this file.
 
 ```js
+// A machine that never wanted the backdrop should not need quickshell to
+// apply a store that has it off.
 test('the backdrop off with quickshell absent is a clean skip', (t) => {
-  const result = runApply(t, { 'debug.backdrop': false }, { PATH: emptyBinDir(t) });
+  const { run, calls } = fixture(t);
 
-  assert.equal(result.status, 0, result.stderr);
+  const result = run({ value: false, qs: false });
+
+  assert.equal(result.status, 0, diagnostic(result));
   assert.equal(result.stderr.trim(), '');
+  assert.deepEqual(calls(), [], 'nothing may be spawned when there is nothing to stop');
+});
+
+// With the backdrop on, an absent qs is a real failure — the fan-out reports
+// it from the manifest before apply is ever spawned, and apply itself must not
+// pretend otherwise if it is run directly.
+test('the backdrop on with quickshell absent still fails', (t) => {
+  const { run } = fixture(t);
+
+  const result = run({ value: true, qs: false });
+
+  assert.notEqual(result.status, 0);
+  assert.match(diagnostic(result), /qs is not installed/);
+  assert.doesNotMatch(diagnostic(result), /Buffer\(|Uint8Array/);
 });
 ```
+
+The second test is what `diagnose`'s spawn-`ENOENT` branch exists for: `qs`
+absent reaches `run()` as an `ENOENT` from `spawnSync`, and `sinkMain` turns it
+into that one line.
 
 Run: `node --test test/debug-backdrop-sink.test.js`
 Expected: PASS.
@@ -728,29 +854,52 @@ Closes `prism-d836de`.
 
 - [ ] **Step 1: Write the failing render test**
 
-In `test/niri-render.test.js`, following its existing fixture style:
+This file has no `PARAMS`: it uses a module-level `resolved` and a
+`with_(overrides)` helper (`test/niri-render.test.js:5-38`). The existing test
+at `test/niri-render.test.js:233`, `disabling glass omits the material field
+and the focus split`, asserts the opposite of what this task builds — line 238
+requires the definition to remain, and line 241 pins the whole fragment against
+`UNSPLIT` minus two lines. **Replace that test**; do not add alongside it.
+
+Add the new expected fragment beside `UNSPLIT`:
+
+```js
+// Glass off: no material definition, no assignment, no focus-ring override.
+// Everything left is upstream niri vocabulary, so a stock niri parses it.
+const GLASS_OFF = `// generated by prism — do not edit
+layout {
+    gaps 54
+}
+window-rule {
+    match app-id=${MATCHER}
+    background-effect {
+        blur false
+        noise 0
+        saturation 1
+    }
+}
+`;
+```
+
+and replace the test:
 
 ```js
 // A niri without niri-material rejects the whole config over a material node
-// it does not know, so glass off must leave none behind. The sink still owns
-// gaps, the terminal window rules and the inert background effect — all of it
-// upstream vocabulary, which a stock niri parses.
-test('glass off emits no material node at all', () => {
-  const fragment = renderNiriFragment({ params: { ...PARAMS, 'glass.enabled': false } });
+// it does not know, so glass off must leave none behind: the sink still owns
+// gaps, the terminal window rules and the inert background effect.
+test('disabling glass omits the material definition, its field and the focus split', () => {
+  const kdl = renderNiriFragment(with_({ 'glass.enabled': false }));
 
-  assert.doesNotMatch(fragment, /material /);
-  assert.match(fragment, /gaps 54/);
-  assert.match(fragment, /background-effect \{/);
-  assert.match(fragment, /blur false/);
-});
-
-test('glass on still emits the material definition and its assignment', () => {
-  const fragment = renderNiriFragment({ params: { ...PARAMS, 'glass.enabled': true } });
-
-  assert.match(fragment, /material "terminal-glass" \{/);
-  assert.match(fragment, /    material "terminal-glass"/);
+  assert.doesNotMatch(kdl, /material/, 'no material node may survive for a stock niri to reject');
+  assert.doesNotMatch(kdl, /terminal-glass/);
+  assert.equal(kdl.match(/window-rule \{/g)?.length, 1);
+  assert.equal(kdl, GLASS_OFF);
 });
 ```
+
+The `doesNotMatch(/material/)` is deliberately broader than the old
+`/^\s*material "terminal-glass"$/m`: what a stock niri rejects is the node, so
+the test forbids the word rather than one spelling of it.
 
 - [ ] **Step 2: Run the render test to verify it fails**
 
@@ -806,8 +955,25 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { PROBE_CHILD_TIMEOUT } from '../../src/sink.js';
 
 const PROBE = 'material "prism-probe" {\n    glass {\n        ior 1.5\n    }\n}\n';
+
+// Both calls carry their own bound. The fan-out's SINK_TIMEOUT kills this
+// probe with SIGKILL, which no finally block survives: a niri that hangs would
+// outlive the probe that spawned it and leave the temp config behind. Bounding
+// the children keeps the worst case inside the outer bound and returns here.
+const niri = (args) => execFileSync('niri', args, {
+  stdio: 'pipe', encoding: 'utf8', timeout: PROBE_CHILD_TIMEOUT, killSignal: 'SIGKILL',
+});
+
+function installed() {
+  try {
+    return `installed: ${niri(['--version']).trim()}`;
+  } catch {
+    return 'its version could not be read';
+  }
+}
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-probe-material-'));
 const file = path.join(dir, 'probe.kdl');
@@ -815,7 +981,7 @@ const file = path.join(dir, 'probe.kdl');
 let failure = null;
 try {
   fs.writeFileSync(file, PROBE);
-  execFileSync('niri', ['validate', '-c', file], { stdio: 'pipe' });
+  niri(['validate', '-c', file]);
 } catch (error) {
   failure = error?.code === 'ENOENT'
     ? 'niri is not installed'
@@ -824,20 +990,17 @@ try {
   fs.rmSync(dir, { recursive: true, force: true });
 }
 
-// process.exit skips finally, so the temp dir is gone before this runs.
+// process.exit skips finally, so the temp dir is already gone by here.
 if (failure !== null) {
   process.stderr.write(`${failure}\n`);
   process.exit(1);
 }
-
-function installed() {
-  try {
-    return `installed: ${execFileSync('niri', ['--version'], { encoding: 'utf8' }).trim()}`;
-  } catch {
-    return 'its version could not be read';
-  }
-}
 ```
+
+A niri that hangs is reported the same way as one that rejects the node: in
+both cases the probe has not established that the requirement is met, and the
+version call that builds the message is bounded too, so a doubly-hung niri
+still returns inside `SINK_TIMEOUT`.
 
 - [ ] **Step 6: Declare the requirement**
 
@@ -891,7 +1054,52 @@ test('probe-material succeeds against a niri that accepts the node', (t) => {
 
   assert.equal(result.status, 0, result.stderr);
 });
+
+// The outer bound kills the probe, not the probe's children. If validate were
+// unbounded, a hanging niri would outlive the probe and its temp config would
+// never be removed.
+test('a hanging niri is killed by the probe and leaves nothing behind', (t) => {
+  const { dir } = fixture(t);
+  const probe = fileURLToPath(new URL('../integrations/niri/probe-material', import.meta.url));
+  const pidFile = path.join(dir, 'niri.pid');
+  const tmp = path.join(dir, 'probe-tmp');
+  fs.mkdirSync(tmp);
+
+  // A niri that answers --version at once but never returns from validate.
+  fs.writeFileSync(path.join(dir, 'bin', 'niri'), `#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo "niri 26.04 (fake)"
+  exit 0
+fi
+echo $$ > "$NIRI_FAKE_PIDFILE"
+exec sleep 60
+`, { mode: 0o755 });
+
+  const started = Date.now();
+  const result = spawnSync(probe, [], {
+    encoding: 'utf8',
+    env: { ...process.env, PATH: `${path.join(dir, 'bin')}:${process.env.PATH}`,
+           NIRI_FAKE_PIDFILE: pidFile, TMPDIR: tmp },
+  });
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /does not accept the material node \(installed: niri 26\.04 \(fake\)\)/);
+  assert.ok(Date.now() - started < 5_000, 'the probe must return inside the outer bound');
+
+  const hung = Number(fs.readFileSync(pidFile, 'utf8').trim());
+  assert.throws(() => process.kill(hung, 0), /ESRCH/,
+    'the probe must not leave the command it was waiting on running');
+  assert.deepEqual(fs.readdirSync(tmp), [],
+    'the probe must remove the config it wrote');
+});
 ```
+
+Two details this test depends on. `TMPDIR` is what `os.tmpdir()` reads, so
+pointing it at an empty directory is how the cleanup becomes observable. And
+the fake uses `exec sleep 60`, not `sleep 60`: without `exec`, the recorded
+`$$` is the shell, `SIGKILL` reaps only the shell, and the `sleep` it forked
+survives — the test would pass while the leak it exists to catch continued.
+`exec` makes the recorded pid the process that actually hangs.
 
 Extend the fake niri in `fixture` with a `--version` branch, before its
 catch-all `echo "$*"` line:
