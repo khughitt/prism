@@ -1,11 +1,11 @@
 # Glass noise Dulling spike
 
 **Date:** 2026-09-07
-**Status:** isolated prototype and software-rendered distribution/capture checks executed;
-user preferences recorded at 0.06 and the 60-case RTX 3070 matrix verified.
-Incremental cost is inconclusive within repeat variation. Actual-output-resolution
-and live visual acceptance checks remain pending. See the
-[execution results](../notes/2026-09-07-glass-noise-dulling-spike-results.md).
+**Status:** spike concluded: isolated prototype, distribution checks, user preferences
+at 0.06, and 72 repeated RTX 3070 runs at 1280×720 / 3440×1440 verified. Dulling 2
+is the preferred candidate; performance remains inconclusive, including slow draws
+with noise off. Production is deferred pending investigation of slow draws and live
+acceptance. See the [execution results](../notes/2026-09-07-glass-noise-dulling-spike-results.md).
 **Task:** `prism-ba5f59`.
 **Prior research:** [GIMP comparison](../notes/2026-09-07-glass-noise-gimp-comparison.md).
 
