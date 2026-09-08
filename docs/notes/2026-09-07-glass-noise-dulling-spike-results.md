@@ -366,6 +366,16 @@ inconclusive performance result. No additional broad benchmark sweep is requeste
 and no implementation task has been created. The approved design permits this
 inconclusive outcome when missing evidence is named.
 
+Follow-up investigation: [prism-ed6be0](../../tasks/prism-ed6be0.md). Keep this
+spike closed and preserve its source/evidence as an immutable experiment snapshot
+in `niri-experiments`, whose README assigns it research/results/fixtures. Archive
+the report, scripts, source fixtures, source patches or a native Git bundle, and
+hashes; retain raw traces/captures in a durable indexed artifact location. The
+native prototype branch stays frozen; slow-draw investigation uses a fresh branch
+and reuses the fixture. Preservation has been scoped in the follow-up task but
+has not yet been performed. Prism's report/task commits still reside on
+`glass-noise-spike-plan` pending integration into its main branch.
+
 Native `just test` passed 401 tests. The updated `just check` passed, including 67 tooling
 tests and task validation with zero errors/warnings. Compiler output retains
 existing Clippy/unused-import warnings and stable-rustfmt warnings about nightly

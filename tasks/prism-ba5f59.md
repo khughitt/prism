@@ -6,7 +6,7 @@ priority: 2
 size: m
 owner: glass-noise-spike-plan
 created: 2026-09-07T21:34:19Z
-updated: 2026-09-08T20:10:35Z
+updated: 2026-09-08T20:16:21Z
 depends: []
 tags: [noise, spike, performance]
 source: docs/notes/2026-09-07-glass-noise-gimp-comparison.md
@@ -39,3 +39,4 @@ Done when a short evidence-backed report recommends a candidate and parameter se
 - 2026-09-08T10:08:03Z (glass-noise-spike-plan): Verified all 60 RTX 3070 cases and 59975 raw GPU samples, expected binary hashes and stable geometry. Dulling h2 medians 0.023552/0.069632 ms (one/three panes); baseline repeat ranges overlap candidate deltas, so incremental cost remains inconclusive. Full run ranges/chart and audit recorded. Prepared 12-case 3440x1440 shortlist check with tested handoff; actual-resolution and live acceptance remain.
 - 2026-09-08T20:10:35Z (glass-noise-spike-plan): Verified 12 actual-output-resolution RTX runs: 2474 valid samples, 3440x1440 scale 1, stable 2032x1400 pane. Dulling h2 aggregate median 0.043008 ms; run p95 0.036864-1.598464 ms, with noise-off also reaching 1.207296 ms. Conclude preferred achromatic h2 candidate but incremental/tail cost inconclusive. Stop bounded spike; defer rollout pending slow-draw investigation and live motion/refocus acceptance; no more broad reruns requested.
 - 2026-09-08T20:10:35Z (glass-noise-spike-plan): Prototyped and assessed Dulling; h2 preferred visually, 72 hardware runs leave incremental/tail cost inconclusive, so production is deferred.
+- 2026-09-08T20:16:21Z (glass-noise-spike-plan): Created separate follow-up prism-ed6be0 for slow GPU draws and preservation of the immutable spike snapshot in niri-experiments. Spike stays done; follow-up will reuse fixtures on a fresh investigation branch. Preservation and Prism main integration have not yet been performed.
