@@ -5,7 +5,7 @@ status: todo
 priority: 2
 size: l
 created: 2026-09-05T18:50:21Z
-updated: 2026-09-08T22:56:56Z
+updated: 2026-09-08T23:16:00Z
 depends: [dots-88dc34]
 tags: [profiles, noctalia, store]
 ---
@@ -21,3 +21,4 @@ Related: prism-b5cb1e (an auto-derived attenuation color shrinks what a wallpape
 ## Notes
 
 - 2026-09-08T22:56:56Z (main): A context now has five more glass.inactive.* keys to snapshot (prism-a4ef9a: backdropBlur, attenuationColor, ior, thickness, distortionScale). If prism-7e4766 lands, decide whether a context that sets only the focused half should carry the unfocused one with it.
+- 2026-09-08T23:16:00Z (panel-layers): Panel layer rendering landed 2026-09-08 (58da311). describe --json now also states the resolution order as 'layers', so a future state layer ranks correctly in the panel with no panel change.
