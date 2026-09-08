@@ -1,11 +1,11 @@
 ---
 id: prism-fcacfb
 title: Decide what context save snapshots when the target is not the topmost layer
-status: todo
+status: done
 priority: 2
 size: s
 created: 2026-09-05T22:55:40Z
-updated: 2026-09-07T01:23:13Z
+updated: 2026-09-08T23:28:01Z
 depends: []
 parent: prism-2f0b4b
 tags: [profiles, store]
@@ -17,3 +17,4 @@ prism context save <kind> <name> writes every effective parameter into the named
 ## Notes
 
 - 2026-09-07T01:23:13Z (main): 2026-09-06 decision (see prism-fc8491): option (a) plus restriction. save is limited to the profile kind and the target is always topmost by the new target rule, so a save can never absorb a layer above it. Wallpaper files come only from pinned edits.
+- 2026-09-08T23:28:01Z (main): Settled by prism-fc8491 as option (a) plus a restriction: the write target is always the topmost explicit layer, and save is limited to the profile kind (src/context-cli.js:132), so a save can no longer absorb a layer above its target. Pinned by test/context-cli.test.js:131 and recorded in the context-layers spec. Wallpaper contexts come only from pinned edits.
