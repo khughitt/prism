@@ -5,7 +5,7 @@ status: todo
 priority: 2
 size: m
 created: 2026-09-08T20:15:43Z
-updated: 2026-09-08T20:15:43Z
+updated: 2026-09-08T20:20:00Z
 depends: []
 tags: [performance, material, investigation]
 source: "docs/notes/2026-09-07-glass-noise-dulling-spike-results.md#completed-actual-output-resolution-check"
@@ -22,3 +22,7 @@ Scope:
 - Prefer a small discriminating experiment to another broad matrix sweep. Keep background-load observations separate from causal claims.
 
 Done when slow draws have a reproducible cause, or a bounded measurement limitation is established, with evidence and a concrete next action that supports or revises the Dulling cost conclusion. Production Dulling implementation and live visual acceptance remain separate work.
+
+## Notes
+
+- 2026-09-08T20:20:00Z (glass-noise-spike-plan): User clarified that the benchmark tests ran while the machine was in use. No continuous GPU-heavy tasks were running, but intermittent desktop activity could have contributed to slow draws. This is a possible confound, not an established cause; capture activity and GPU state during focused follow-up measurements.
