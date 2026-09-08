@@ -225,10 +225,12 @@ Weston runs without personal configuration or idle sleep. Load averages are save
 before/after each run as context, not as GPU-load measurements.
 
 `geometry-three-pane/` verified the headless 1280×720 layout on software GLES:
-three 358×680 panes at x=20/398/776, y=20. Hardware use of the headless backend
-still needs the user's quick renderer check; the existing visible hardware
-preflight does not establish that backend. Inspect the timed workload capture for
-damaged coverage. The shortlist still needs a run at the actual desktop output
+three 358×680 panes at x=20/398/776, y=20. The user's subsequent
+`hardware-headless-check/` confirmed RTX 3070 / NVIDIA 610.57.04 on the headless
+backend at 1280×720, scale 1, with three 358×680 panes; the saved capture shows
+all three fully visible. Its first material framebuffer is 8/8/8/8 with dithering
+disabled and GL error zero. This was a static renderer/geometry check, not a GPU
+timing run. The shortlist still needs a run at the actual desktop output
 dimensions/scale and live visual acceptance.
 
 `geometry-three-pane-gpu/` additionally exercised the timed workload on software
@@ -273,8 +275,8 @@ python3 "$SCRIPTS/glass-dulling-spike.py" --impl "$SPIKE/niri-prototype" --out "
 
 The prepared hardware command is `sh "$SPIKE/run-hardware-matrix.sh"`. It uses
 the headless backend to keep geometry fixed, requires the RTX 3070 renderer, and
-runs 60 cases at 0.06 into `hardware-matrix-006/`; allow roughly an hour. Inspect
-`hardware-headless-check/` first. The full case list can be reviewed using
+runs 60 cases at 0.06 into `hardware-matrix-006/`; allow roughly an hour. The
+headless hardware preflight has passed. The full case list can be reviewed using
 `glass-dulling-matrix.py gpu --dry-run` with the same arguments, without starting
 any compositor. `hardware-matrix-plan.json` retains that list. Fresh output roots
 are required, so reruns cannot silently mix old and new results.
