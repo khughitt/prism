@@ -303,6 +303,12 @@ Several controls reveal the limits of the experiment:
   They do not identify GPU contention. GPU clocks, utilization and power state
   were not logged, so the cause of the repeat variation is unresolved.
 
+The user subsequently clarified that the tests ran **while the machine was in
+use**. No continuous GPU-heavy tasks were running, but intermittent desktop
+activity could have contributed to the slow behavior. Treat this as a possible
+confound, not an established explanation; focused follow-up captures should
+record concurrent activity and GPU state.
+
 For GIMP h=2, the largest measured run p95 is **0.024576 ms** with one pane and
 **0.177152 ms** with three panes. These are small individual draw costs in this
 fixture. The nested output advertises 60 Hz (about 16.67 ms per frame), but this
@@ -366,15 +372,24 @@ inconclusive performance result. No additional broad benchmark sweep is requeste
 and no implementation task has been created. The approved design permits this
 inconclusive outcome when missing evidence is named.
 
-Follow-up investigation: [prism-ed6be0](../../tasks/prism-ed6be0.md). Keep this
-spike closed and preserve its source/evidence as an immutable experiment snapshot
-in `niri-experiments`, whose README assigns it research/results/fixtures. Archive
-the report, scripts, source fixtures, source patches or a native Git bundle, and
-hashes; retain raw traces/captures in a durable indexed artifact location. The
-native prototype branch stays frozen; slow-draw investigation uses a fresh branch
-and reuses the fixture. Preservation has been scoped in the follow-up task but
-has not yet been performed. Prism's report/task commits still reside on
-`glass-noise-spike-plan` pending integration into its main branch.
+Follow-up investigation: [prism-ed6be0](../../tasks/prism-ed6be0.md). The completed
+spike is frozen; investigation uses a fresh branch and reuses its fixture.
+
+The preservation snapshot is prepared as `niri-experiments` branch
+`results/glass-dulling`, commit `ebea8e25`, with a report, design, script/fixture
+snapshots and reviewed result tables. The separate evidence package contains
+**2,725 hash-verified files**, a self-contained native Git bundle at `17dfe00a`,
+and all **26 Git LFS objects** needed at that native HEAD. Restoration passed Git
+and LFS checks. Build target directories and shader caches are excluded.
+
+The package is durably staged in this Prism checkout under
+`.local-artifacts/glass-dulling-2026-09-08/` (locally ignored). Its tested `import.py`
+copies checksum-verified evidence to `niri-experiments/artifacts/glass-dulling-2026-09-08/`
+and imports the result branch without switching the destination worktree.
+The final destination import awaits the user's command because that repository is
+outside this session's writable directories. A Git push alone does not preserve
+the raw artifact folder; keep it with repository backups. Prism owns the canonical
+report and investigation task; the experiment repo contains immutable snapshots.
 
 Native `just test` passed 401 tests. The updated `just check` passed, including 67 tooling
 tests and task validation with zero errors/warnings. Compiler output retains
