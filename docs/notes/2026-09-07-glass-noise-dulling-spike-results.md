@@ -38,6 +38,9 @@ outside the product repository.
 - Native base: `691a13206bb090b2d434a84806564105ef23da76`.
 - Throwaway clone: `$SPIKE/native`, branch `spike/glass-dulling`.
 - Prototype commit: `56f368bb`; frozen practical-input driver: `ab59fe53`.
+- Repeated benchmark drivers/checks: `17dfe00a`; `benchmark-driver.patch` and
+  `benchmark-provenance.json` preserve this later script-only change and hashes.
+  The native binaries and original prototype patch above remain unchanged.
 - Both binaries were built with `cargo build --release --features profile-with-tracy`
   using separate target directories. The prototype reports
   `niri 26.04 (691a1320-modified)` because it was built before the prototype commit.
@@ -212,14 +215,37 @@ remain in `baseline-preflight/`.
 The predicted Dulling hash count is h+1: h=2 uses three hashes, h=8 nine, equal
 to fine's nine. This prediction is not a measured cost. No repeated hardware
 matrix, baseline variation, variant delta, or refresh-budget conclusion exists.
-The prepared `gpu` matrix runs seven variants, one/three panes, and three
-repetitions in normal/reversed/rotated order. Before accepting its results, verify
-hardware renderer identity, actual damaged coverage and all three visible panes.
-Also run unmodified white/fine controls, a matched-RMS shortlist control, and the
-shortlisted setting at the user's actual output dimensions/scale. Record load and
-report per-run medians/p95 and variation as specified in the design.
+The prepared `gpu` matrix now runs at logical amount **0.06**, with ten variants,
+one/three panes, and three repetitions in normal/reversed/rotated order: 60 cases.
+It includes unmodified white/fine, prototype off/white/fine, GIMP h=1/2/4/8, and
+matched-RMS h=2 (written amount about 0.08485). The renderer identity must match
+the requested GPU. Geometry checks require the requested size/scale, all panes
+fully visible, and unchanged geometry before/after capture and between variants.
+Weston runs without personal configuration or idle sleep. Load averages are saved
+before/after each run as context, not as GPU-load measurements.
 
-Native `just test` passed 401 tests. `just check` passed, including 64 tooling
+`geometry-three-pane/` verified the headless 1280×720 layout on software GLES:
+three 358×680 panes at x=20/398/776, y=20. Hardware use of the headless backend
+still needs the user's quick renderer check; the existing visible hardware
+preflight does not establish that backend. Inspect the timed workload capture for
+damaged coverage. The shortlist still needs a run at the actual desktop output
+dimensions/scale and live visual acceptance.
+
+`geometry-three-pane-gpu/` additionally exercised the timed workload on software
+GLES: 1,683 valid material draw spans in [20s, 40s), stable geometry, and a capture
+showing text damage across all three panes with transparent material between
+glyphs. Per-client 10 Hz damage can cause other visible panes to redraw too;
+these are per-material-draw samples, not independent frame samples or 10 Hz
+whole-compositor timing. This check validates instrumentation/coverage only.
+
+`results.json` retains per-run sample counts, medians and p95. `summary.json`
+reports median-of-medians, ranges of run medians/p95 and absolute/percentage deltas
+against both prototype and unmodified white/fine. The new benchmark tests verify
+hidden-pane/resize rejection, normalization limits, baseline binary selection,
+60-case orchestration, timestamp filtering, and the summary arithmetic with
+synthetic traces. They do not substitute for hardware captures.
+
+Native `just test` passed 401 tests. The updated `just check` passed, including 67 tooling
 tests and task validation with zero errors/warnings. Compiler output retains
 existing Clippy/unused-import warnings and stable-rustfmt warnings about nightly
 options. These gates do not execute GLSL; the captures and negative shader check
@@ -245,9 +271,13 @@ assigned to `TRACY_TOOLS`:
 python3 "$SCRIPTS/glass-dulling-spike.py" --impl "$SPIKE/niri-prototype" --out "$SPIKE/hardware-preflight" --visible --gpu --wall checker --tracy-tools "$TRACY_TOOLS"
 ```
 
-The subsequent matrix command is `glass-dulling-matrix.py gpu` with the same
-`--impl`, `--visible`, `--tracy-tools`, and a fresh `--out`. It performs 42 cases;
-allow roughly 40 minutes. Inspect the preflight before spending that time.
+The prepared hardware command is `sh "$SPIKE/run-hardware-matrix.sh"`. It uses
+the headless backend to keep geometry fixed, requires the RTX 3070 renderer, and
+runs 60 cases at 0.06 into `hardware-matrix-006/`; allow roughly an hour. Inspect
+`hardware-headless-check/` first. The full case list can be reviewed using
+`glass-dulling-matrix.py gpu --dry-run` with the same arguments, without starting
+any compositor. `hardware-matrix-plan.json` retains that list. Fresh output roots
+are required, so reruns cannot silently mix old and new results.
 
 If visible benefit and hardware cost support shipping, a native optional integer
 noise property can follow the existing `Noise` → `ResolvedGlass` → render uniform

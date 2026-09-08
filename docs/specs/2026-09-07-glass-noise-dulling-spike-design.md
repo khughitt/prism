@@ -337,6 +337,13 @@ Prism's live values or generated fragment.
 
 ### 3. Measure, review visually, and recommend
 
+**Execution refinement after visual review:** use logical amount 0.06 for the
+hardware matrix. Retain off/white/fine and GIMP h=1/2/4/8; interleave unmodified
+white/fine and matched-RMS h=2 controls in the same repeated matrix (60 cases
+across one/three panes). The visible preflight resized to 1651×1297. Prefer
+headless hardware rendering after verifying its GPU identity; fail on unexpected
+output dimensions, hidden panes or geometry changes instead of mixing coverage.
+
 For timings, cause controlled damage at 10 Hz across each probe pane with the
 same client workload in every case. Redraw a full-pane pattern of changing text,
 not merely a timestamp in one corner. Keep transparent background regions so the
