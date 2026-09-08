@@ -90,6 +90,23 @@ Composition: prism runs a file and reads an exit code, and the sink owns
 what the check means. A probe takes no arguments — `when` is evaluated by
 prism, before the probe runs.
 
+A probe is a child process and gets the same bound `apply` already has:
+`runApply` runs a sink under a five-second `timeout` with
+`killSignal: 'SIGKILL'` (`src/fanout.js:15`), and a probe added ahead of it
+would otherwise run unbounded, hanging the fan-out and every later sink with
+it — and `doctor`, which runs the same probes. Probes share that constant.
+A probe killed at the bound is an unmet requirement like any other, reported
+as such:
+
+```
+prism: niri: probe material did not finish within 5s — install niri-material
+```
+
+That is a deliberate reading. A probe that cannot answer in five seconds has
+not established that the requirement is met, and treating the silence as
+satisfaction would let the sink run into the failure the probe exists to
+prevent.
+
 ### 2. Checking, and what a failure says
 
 `fanOut` evaluates a selected sink's requirements before spawning its
@@ -115,7 +132,7 @@ prism: niri: this niri does not accept the material node (installed: niri 26.04 
 `when` against current resolved params, so a machine learns what it is
 missing without first provoking a failed apply.
 
-### 3. One line, never an object
+### 3. The diagnostic, never an object
 
 New `src/sink.js`, two exports:
 
@@ -128,7 +145,20 @@ New `src/sink.js`, two exports:
   stderr and exits 1.
 
 All three apply scripts wrap their body in `sinkMain`, so a throw at any
-depth becomes one line and the Buffer dumps have no path to stderr.
+depth reaches stderr as the diagnostic itself and the Buffer dumps have no
+path there.
+
+`diagnose` preserves the diagnostic as the child wrote it, newlines
+included. It is not a one-line contract, and must not become one: niri
+rejects a config with a multi-line miette report whose body carries the
+property name and its position, which is the only part an operator can act
+on. Trimming the ends is the whole normalisation. The one-line contract
+belongs to the messages prism composes itself — the unmet-requirement lines
+in section 2 — where prism controls every character.
+
+The distinction is the entire lesson of the europa failure: what flooded
+`doctor` was never the length of niri's diagnostic but an inspected error
+object printed in its place.
 
 `fanOut` uses `diagnose` in place of `String(error)` (`src/fanout.js:40`).
 That also drops the
@@ -161,7 +191,12 @@ states a capability, not a version.
 is false. With the requirement's `when: glass.enabled` the two agree: glass
 off means no `material` node is written and none is required, so the sink
 applies gaps, terminal window rules and the inert background effect on a
-stock niri. `apply` loses its bare `throw` to `sinkMain`.
+stock niri. Everything left in that fragment is upstream vocabulary:
+`background-effect` arrives with `931123f3`, "Implement ext-background-effect
+protocol", which is Ivan Molodetskikh's and an ancestor of `upstream/main`,
+while the `material` node is niri-material's own (`3040120e`). The escape
+hatch parses on a stock niri because nothing niri-material added is left in
+it. `apply` loses its bare `throw` to `sinkMain`.
 
 The probe covers a niri that does not know the `material` node at all. It
 does not cover a niri-material build too old for a property prism has since
@@ -175,17 +210,24 @@ this shell can be running if quickshell was never installed, so there is
 nothing to stop. That is the clean skip — stated explicitly, with the reason
 in a comment, not inferred from a swallowed error.
 
-**kitty.** Adopts `sinkMain`. It declares no requirement: `kitten` ships with
-kitty, and `live.js` already treats no sockets as a normal state.
+**kitty.** Adopts `sinkMain`, and nothing else. It declares no requirement:
+`kitten` ships with kitty, so a machine that can run a kitty terminal can run
+the sink. Its no-sockets behaviour is deliberately loud and stays that way —
+`applyToKittySockets` throws `no kitty remote-control sockets found …`
+(`integrations/kitty/live.js:38`) and `test/kitty-sink.test.js:57` requires
+that failure. `sinkMain` changes how that error is printed, never whether it
+is raised.
 
 ## Testing
 
 | Test | Fact |
 | --- | --- |
 | `sink.test.js` | `diagnose` on a Buffer-bearing error, an `ENOENT`, and a plain `Error` |
+| `sink.test.js` | a multi-line stderr survives `diagnose` intact, body and all |
 | `manifest.test.js` | each `requires` validation failure: both forms, neither form, missing `fix`, missing probe file, `when` naming an unknown param, `when` naming a non-`bool` param |
 | `fanout.test.js` | unmet with `when` true fails the sink with the fix line and never spawns `apply`; unmet with `when` false runs the sink |
-| `fanout.test.js` | a recorded failure carries the child's line without the `Command failed:` prefix |
+| `fanout.test.js` | a recorded failure carries the child's diagnostic, multi-line body included, without the `Command failed:` prefix |
+| `fanout.test.js` | a probe that never exits is killed at the bound, fails only its own sink, and a later selected sink still applies |
 | `niri-render.test.js` | `glass.enabled: false` emits no `material` block |
 | `niri-apply.test.js` | existing diagnostic assertions, plus `doesNotMatch(/Buffer\(|Uint8Array/)` |
 | `niri-apply.test.js` | `probe-material` against a fake niri that rejects the node: one line naming niri-material |
