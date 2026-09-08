@@ -167,6 +167,11 @@ fixed seed unless users need reproducible variants.
 If dulling settings should preserve material strength, match white's SD by using
 `A_h = a sqrt((h+1)(h+2)/24)`. Then `h=1` gives `A=a/2` (the current white
 distribution), while `h=2` gives `A=a/sqrt(2)`. GEGL itself does not normalize.
+If the prototype obtains this bound by scaling the existing KDL noise amount,
+its 0–1 limit caps logical `a` at `sqrt(6/((h+1)(h+2)))` (0.258199 at h=8).
+The [Dulling spike design](../specs/2026-09-07-glass-noise-dulling-spike-design.md)
+separates stronger distribution diagnostics from practical 8-bit visibility
+checks and records the required output-format/dithering assumptions.
 
 Dropping `lightness` is supported: LCh-L, HSV-V, and Oklab-L differ technically,
 but remain scalar brightness grain. If one GIMP-inspired experiment is wanted,
