@@ -75,6 +75,26 @@ local function visibleParamError(param, index)
   return nil
 end
 
+-- The order is a ranking, so it has to be a dense list of distinct names. A
+-- hole, a stray key, a non-string entry, or a repeat each rank silently wrong,
+-- and a wrong rank shadows the columns a user is trying to edit.
+local function layerOrderError(layers)
+  if type(layers) ~= "table" then return "prism describe returned no layer order" end
+  local count = 0
+  for _ in pairs(layers) do count = count + 1 end
+  if count == 0 then return "prism describe returned no layer order" end
+  if count ~= #layers then return "prism describe returned a malformed layer order" end
+  local seen = {}
+  for index = 1, #layers do
+    local name = layers[index]
+    if type(name) ~= "string" or name == "" or seen[name] then
+      return "prism describe returned a malformed layer order"
+    end
+    seen[name] = true
+  end
+  return nil
+end
+
 local function validateModel(model)
   if type(model) ~= "table" or type(model.params) ~= "table" or #model.params == 0 then
     return "prism describe returned an invalid parameter array"
@@ -85,7 +105,8 @@ local function validateModel(model)
     end
   end
   if type(model.target) ~= "string" then return "prism describe returned no write target" end
-  if type(model.layers) ~= "table" or #model.layers == 0 then return "prism describe returned no layer order" end
+  local orderError = layerOrderError(model.layers)
+  if orderError then return orderError end
   local ranks = Presentation.layerRanks(model.layers)
   if ranks[model.target] == nil then
     return "prism describe reported target " .. model.target .. " outside the layer order"
@@ -97,9 +118,14 @@ local function validateModel(model)
     if param.ui.control ~= "none" then
       local message = visibleParamError(param, index)
       if message then return message end
-      if ranks[param.layer] == nil then
-        return param.key .. " reports layer " .. param.layer .. " outside the layer order"
-      end
+    end
+    -- Every parameter is ranked, not only the drawn ones: a CLI-only parameter
+    -- on an unknown layer is the same broken contract, just quieter. This sits
+    -- after the visible checks so a drawn parameter missing `layer` outright
+    -- still reports that, which is the older-CLI symptom the contract note
+    -- names.
+    if ranks[param.layer] == nil then
+      return tostring(param.key) .. " reports layer " .. tostring(param.layer) .. " outside the layer order"
     end
   end
   local titleOk, titleError = pcall(Presentation.titleParam, model.params)

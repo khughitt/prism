@@ -625,3 +625,32 @@ local unrankable = layeredModel()
 unrankable.params[2].layer = "theme"
 assert((panelError(unrankable) or ""):find("compositor.gaps", 1, true),
   "a parameter on an unrankable layer names itself")
+
+-- The layer order is a ranking, so it has to be a dense list of distinct names.
+-- A hole, a stray key, a non-string entry, or a repeat all rank silently wrong,
+-- which is worse than refusing to draw.
+equal(panelError(layeredModel({ layers = { "default", "base", 3, "state", "profile" } })),
+  "prism describe returned a malformed layer order")
+equal(panelError(layeredModel({ layers = { "default", nil, "wallpaper" } })),
+  "prism describe returned a malformed layer order")
+equal(panelError(layeredModel({ layers = { "default", "base", "wallpaper", "state", "profile", extra = "x" } })),
+  "prism describe returned a malformed layer order")
+equal(panelError(layeredModel({ layers = { "default", "base", "base", "state", "profile" } })),
+  "prism describe returned a malformed layer order")
+
+-- Every parameter is ranked, not just the visible ones: a CLI-only parameter on
+-- an unknown layer is the same broken contract.
+local hiddenUnrankable = layeredModel()
+hiddenUnrankable.params[7].layer = "theme"
+assert((panelError(hiddenUnrankable) or ""):find("debug.backdrop", 1, true),
+  "a hidden parameter on an unrankable layer names itself")
+-- A drawn parameter missing `layer` outright keeps its own message: that is the
+-- symptom of an older CLI, and the contract note names it.
+local visibleNoLayer = layeredModel()
+visibleNoLayer.params[2].layer = nil
+equal(panelError(visibleNoLayer), "compositor.gaps has no layer")
+
+local hiddenNoLayer = layeredModel()
+hiddenNoLayer.params[7].layer = nil
+assert((panelError(hiddenNoLayer) or ""):find("debug.backdrop", 1, true),
+  "a hidden parameter with no layer at all is refused")

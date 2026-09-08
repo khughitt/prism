@@ -150,8 +150,8 @@ loaded, the target is always the topmost layer when it is a context.
 
 Under an unpinned wallpaper a key the wallpaper overrides is shadowed: a
 `set` to base changes the stored value and nothing on screen. `describe`
-reports `layer` and `target`, so the panel can dim such rows and point at the
-pin (`prism-3b7c07`).
+reports `layer`, `layers`, and `target`, so the panel dims such rows and points
+at the pin (`prism-3b7c07`).
 
 `set` stores the value in the target even when it equals the default, because
 the layer below may differ. `unset` removes the key from the target and lets
@@ -351,11 +351,14 @@ README states the config layout, and the plugin contract note records the
 
 ## Out of scope
 
+This is the boundary as first drawn. One item has since moved inside it: the
+2026-09-08 revision documents the panel's wallpaper header row, pin, and
+shadowed rows (`prism-3b7c07`), which landed against this spec rather than
+being deferred. The base-versus-wallpaper question from `prism-648e0f` is
+settled above.
+
 - Profile controls in the panel (`prism-ea6344`).
 - The Noctalia hook line (`dots-88dc34`).
-- The panel's wallpaper header row, pin toggle, and shadowed rows
-  (`prism-3b7c07`); the base-versus-wallpaper question from `prism-648e0f` is
-  settled above.
 - The `state` kind's activation sources and its composition rules
   (`prism-9298b9`).
 - Per-connector wallpaper contexts; wallpapers here are set on all monitors at
