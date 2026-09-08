@@ -10,8 +10,19 @@ zero so the glass is the only surface behind the text; with the focus split on,
 unfocused terminals get a second material whose optics are the `glass.inactive.*`
 overrides: frosted backdrop, blur, tint, tint distance, refraction, depth,
 fringing, distortion, distortion detail, directional blur, noise, and
-saturation. Each defaults to its focused value, so the split only diverges where
-you tune it. The two materials share the slab frame (`glass.paneLip`,
+saturation. Blur, tint distance, fringing, distortion, noise, and saturation
+ship already receded; the other six pairs start level, so the split only shows
+where you tune it.
+
+Every `glass.inactive.*` default is fixed, not inherited: tuning `glass.ior`
+leaves `glass.inactive.ior` at 1.5. Set both halves of a row, or the unfocused
+material keeps the shipped default for that optic. This bites on upgrade for
+frosted backdrop, tint, refraction, depth, and distortion detail, whose focused
+halves were shared parameters until the matrix widened — an existing
+`glass.backdropBlur = true` now frosts only the focused window until
+`glass.inactive.backdropBlur` is set to match.
+
+The two materials share the slab frame (`glass.paneLip`,
 `glass.paneShiftX`, `glass.paneShiftY`), the pane motion (`glass.jellyFlex`,
 `glass.jellyRipple`), and `glass.noiseType`: `white` or `fine` (the Prism
 default). The frame is shared deliberately — a per-state frame would resize and

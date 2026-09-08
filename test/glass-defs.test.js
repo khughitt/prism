@@ -218,6 +218,13 @@ const NEWLY_SPLIT = [
   'glass.thickness', 'glass.distortionScale',
 ];
 
+// The optics that ship already receded. Every other pair starts level, so the
+// README may not claim that the whole matrix defaults to its focused value.
+const RECEDED = [
+  'glass.roughness', 'glass.attenuationDistance', 'glass.chromaticAberration',
+  'glass.distortion', 'glass.noise', 'glass.saturation',
+];
+
 test('the focus matrix pairs every focused optic with an unfocused twin', () => {
   const defs = loadDefs(defsDir());
 
@@ -253,6 +260,35 @@ test('the newly split optics default to their focused value', () => {
   for (const key of NEWLY_SPLIT) {
     const twin = key.replace('glass.', 'glass.inactive.');
     assert.deepEqual(defs.get(twin).default, defs.get(key).default, twin);
+  }
+});
+
+test('exactly the receding optics ship with a divergent unfocused default', () => {
+  const defs = loadDefs(defsDir());
+  const level = MATRIX
+    .filter(([, focused, unfocused]) => defs.get(focused).default === defs.get(unfocused).default)
+    .map(([, focused]) => focused);
+
+  for (const key of RECEDED) {
+    const twin = key.replace('glass.', 'glass.inactive.');
+    assert.notEqual(defs.get(twin).default, defs.get(key).default, twin);
+  }
+  assert.deepEqual(
+    MATRIX.map(([, focused]) => focused).filter((key) => !RECEDED.includes(key)).sort(),
+    level.sort(),
+  );
+});
+
+test('an unfocused default is fixed, never inherited from its focused twin', () => {
+  const defs = loadDefs(defsDir());
+
+  // Tuning glass.X does not move glass.inactive.X: the store resolves defaults,
+  // then base, then contexts, with no link between a pair. The README documents
+  // this, so pin the shape the documentation describes.
+  for (const [, focused, unfocused] of MATRIX) {
+    assert.equal(Object.hasOwn(defs.get(unfocused), 'inherits'), false, unfocused);
+    assert.notEqual(defs.get(unfocused).default, undefined, unfocused);
+    assert.notEqual(defs.get(focused).default, undefined, focused);
   }
 });
 
