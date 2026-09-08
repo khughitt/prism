@@ -1,10 +1,10 @@
 # Glass noise Dulling spike results
 
-**Date:** 2026-09-07
-**Status:** prototype and distribution checks passed; hardware GPU preflight verified.
-User screenshot preferences are recorded at 0.06. Repeated desktop performance
-comparison and live visual acceptance remain unresolved. Task `prism-ba5f59`
-remains in progress.
+**Date:** 2026-09-07; updated 2026-09-08
+**Status:** prototype, distribution checks, user screenshot preferences, and the
+60-case RTX 3070 matrix are recorded. Incremental GPU cost is inconclusive because
+repeat ranges overlap. Actual-output-resolution and live visual acceptance checks
+remain; task `prism-ba5f59` is in progress.
 **Design:** [approved experiment](../specs/2026-09-07-glass-noise-dulling-spike-design.md).
 
 ## Current conclusion
@@ -15,9 +15,10 @@ renderer. Matched RMS preserves useful numerical strength at amount 0.02 as Dull
 rises; GIMP-style strength decreases substantially. At 0.06 the user preferred
 matched-RMS h=2 over fine on both warm and dark backgrounds, then preferred the
 softer GIMP-style h=2 over matched-RMS h=2 on warm and bright backgrounds. This
-supports **Dulling h=2 as the primary candidate for hardware cost and live visual
-checks**, with amplitude semantics still open. It does not establish desktop GPU
-cost or justify a production control yet.
+supports **Dulling h=2 as the primary candidate for actual-resolution and live
+visual checks**, with amplitude semantics still open. The repeated hardware matrix
+measured small absolute material-draw times at 1280×720, but repeat variation
+prevents a reliable incremental cost or speed ranking. No shipping decision yet.
 
 No production code, Prism definition, installed compositor, or live settings were
 changed. HSV, CIE LCh, and spatial grain sizing remain deferred: there is no user
@@ -213,9 +214,8 @@ race; acknowledged clean compositor shutdown is now handled. Raw trace and CSV
 remain in `baseline-preflight/`.
 
 The predicted Dulling hash count is h+1: h=2 uses three hashes, h=8 nine, equal
-to fine's nine. This prediction is not a measured cost. No repeated hardware
-matrix, baseline variation, variant delta, or refresh-budget conclusion exists.
-The prepared `gpu` matrix now runs at logical amount **0.06**, with ten variants,
+to fine's nine. The measured variant differences do not reliably resolve that
+prediction. The completed `gpu` matrix ran at logical amount **0.06**, with ten variants,
 one/three panes, and three repetitions in normal/reversed/rotated order: 60 cases.
 It includes unmodified white/fine, prototype off/white/fine, GIMP h=1/2/4/8, and
 matched-RMS h=2 (written amount about 0.08485). The renderer identity must match
@@ -246,6 +246,78 @@ against both prototype and unmodified white/fine. The new benchmark tests verify
 hidden-pane/resize rejection, normalization limits, baseline binary selection,
 60-case orchestration, timestamp filtering, and the summary arithmetic with
 synthetic traces. They do not substitute for hardware captures.
+
+### Completed RTX 3070 matrix
+
+All **60 cases** in `hardware-matrix-006/` were independently checked against their
+raw CSVs, manifests, binary hashes, renderer logs, and geometry records. There are
+**59,975** valid material draw samples in [20s, 40s), with **199–206** samples per
+one-pane run and **1,488–1,914** per three-pane run. Every case used NVIDIA RTX
+3070, driver 610.57.04, 1280×720 at scale 1, and consistent geometry for its pane
+count. `verified.json` retains the audit and load records.
+
+The following medians are medians of the three run medians; parentheses give
+minimum–maximum run medians. P95 columns give the range of the three run p95s.
+All values are **microseconds per material draw**, including the three-pane
+columns; these are not three-pane totals or whole-frame percentiles.
+
+| Variant | 1 pane median (range), µs | 1 pane p95 range, µs | 3 panes median (range), µs | 3 panes p95 range, µs |
+| --- | ---: | ---: | ---: | ---: |
+| baseline-white | 16.384 (11.264–23.552) | 17.408–23.552 | 40.960 (36.864–86.016) | 84.992–193.536 |
+| baseline-fine | 23.552 (16.384–23.552) | 17.408–23.552 | 58.368 (48.128–149.504) | 97.280–227.328 |
+| off | 23.552 (15.360–24.576) | 18.432–24.576 | 36.864 (36.864–118.784) | 93.184–185.344 |
+| white | 23.552 (14.336–24.576) | 18.432–24.576 | 58.368 (44.032–124.928) | 187.392–195.584 |
+| fine | 22.528 (14.336–24.576) | 18.432–24.576 | 124.928 (28.672–150.528) | 163.840–232.448 |
+| h1 | 23.552 (14.336–24.576) | 18.432–24.576 | 71.680 (48.128–137.216) | 164.864–218.112 |
+| h2 | 23.552 (14.336–23.552) | 18.432–24.576 | 69.632 (49.152–91.136) | 113.664–177.152 |
+| h4 | 23.552 (14.336–23.552) | 18.432–24.576 | 88.064 (40.960–104.448) | 103.424–234.496 |
+| h8 | 23.552 (14.336–24.576) | 18.432–24.576 | 101.376 (51.200–106.496) | 180.224–205.824 |
+| rms-h2 | 19.456 (14.336–23.552) | 18.432–24.576 | 45.056 (25.600–71.680) | 77.824–172.032 |
+
+Dulling 2's arithmetic deltas against prototype white/fine are respectively
+**0 / +1.024 µs** for one pane and **+11.264 / −55.296 µs** for three panes.
+Matched-RMS h=2 gives **−4.096 / −3.072 µs** and **−13.312 / −79.872 µs**.
+The apparent percentage changes (up to −64% for matched-RMS h=2 versus fine)
+are **not established speedups**: the relevant repeat ranges overlap substantially.
+`summary.json` retains every absolute and percentage delta, including unmodified
+white/fine controls, without converting them into a pass/fail performance claim.
+
+Several controls reveal the limits of the experiment:
+
+- One-pane prototype medians cluster around 14.336 µs in the first repetition
+  and 23–25 µs in later repetitions, across off, white, fine, and Dulling. The
+  observed durations are multiples of **1.024 µs**; many candidate differences
+  are just one such step.
+- Three-pane prototype fine spans **28.672–150.528 µs** across run medians;
+  unmodified fine spans **48.128–149.504 µs**. White and even noise-off also vary
+  substantially. This prevents attributing the variation to Dulling or prototype
+  shader layout.
+- The matched-RMS h=2 control runs the same shader/hash count as GIMP h=2 with a
+  different amount, yet their aggregate medians differ. That further cautions
+  against ranking algorithms from the aggregate point estimates.
+- Recorded system load averages range from roughly **0.3 to 8.0** at run start.
+  They do not identify GPU contention. GPU clocks, utilization and power state
+  were not logged, so the cause of the repeat variation is unresolved.
+
+For GIMP h=2, the largest measured run p95 is **0.024576 ms** with one pane and
+**0.177152 ms** with three panes. These are small individual draw costs in this
+fixture. The nested output advertises 60 Hz (about 16.67 ms per frame), but this
+partial GPU span cannot establish whole-frame compliance or actual-resolution
+cost. Do not sum its p95s. No broad matrix rerun is justified solely to seek a
+cleaner-looking result; retain this inconclusive incremental-cost finding.
+
+`timing-ranges.png` / `timing-ranges.svg`, generated by `plot-hardware-results.py`,
+show all three run medians rather than hiding the spread in one aggregate.
+
+The remaining output-size check is prepared as `run-output-check.py`: one pane
+at the recorded **3440×1440, scale 1** desktop size, off/white/fine/GIMP h=2 at
+0.06, three repetitions with reversed/rotated order (12 cases, about 12 minutes).
+It checks the current desktop mode before starting, uses the existing guarded
+capture driver, and records `hardware-output-006/results.json`. The small
+`check-output-runner.py` check exercised all 12 dispatches and timestamp bounds
+with synthetic captures. This is the design's outstanding resolution check,
+not a rerun intended to make the inconclusive broad comparison look significant.
+Live viewing remains separate; these new captures have not been run yet.
 
 Native `just test` passed 401 tests. The updated `just check` passed, including 67 tooling
 tests and task validation with zero errors/warnings. Compiler output retains

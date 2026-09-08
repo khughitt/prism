@@ -2,9 +2,9 @@
 
 **Date:** 2026-09-07
 **Status:** isolated prototype and software-rendered distribution/capture checks executed;
-hardware GPU preflight verified and user preferences recorded at 0.06 after an
-inconclusive 0.02 comparison. Repeated GPU comparison and live visual acceptance
-remain pending. See the
+user preferences recorded at 0.06 and the 60-case RTX 3070 matrix verified.
+Incremental cost is inconclusive within repeat variation. Actual-output-resolution
+and live visual acceptance checks remain pending. See the
 [execution results](../notes/2026-09-07-glass-noise-dulling-spike-results.md).
 **Task:** `prism-ba5f59`.
 **Prior research:** [GIMP comparison](../notes/2026-09-07-glass-noise-gimp-comparison.md).
