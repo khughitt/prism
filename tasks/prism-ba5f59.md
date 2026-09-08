@@ -6,7 +6,7 @@ priority: 2
 size: m
 owner: glass-noise-spike-plan
 created: 2026-09-07T21:34:19Z
-updated: 2026-09-07T23:21:41Z
+updated: 2026-09-08T00:25:09Z
 depends: []
 tags: [noise, spike, performance]
 source: docs/notes/2026-09-07-glass-noise-gimp-comparison.md
@@ -33,3 +33,4 @@ Done when a short evidence-backed report recommends a candidate and parameter se
 - 2026-09-07T22:11:14Z (glass-noise-spike-plan): Design review addressed: diagnostics use GIMP-style a=0.5 and matched-RMS a=0.25 within KDL limits; quantization-aware CDF/share shape gates, real float32 hash/salt reference, low-amplitude visibility and hash-cost predictions, output format/dithering evidence, native env naming and staged divergence-report gate. Spike remains unexecuted.
 - 2026-09-07T23:10:24Z (glass-noise-spike-plan): Prototype committed in throwaway native clone (56f368bb, ab59fe53). All 16 reference rows and 8 rendered Dulling shape cases pass; 65 static repeat pairs are identical. Results and reproducible evidence recorded in docs/notes/2026-09-07-glass-noise-dulling-spike-results.md. User chose 0.02 comparison and reports 0.05-0.06 preference for existing white/fine; 0.84 remains a temporary snapshot. Hardware GPU matrix and user preference remain pending; no production rollout or shipping recommendation.
 - 2026-09-07T23:21:41Z (glass-noise-spike-plan): User reports 0.02 images barely perceptible and insufficient to judge differences; requested 0.06. Generated comparison-006.html with 12 stable captures and 7 passing Dulling RGB shape cases. User hardware preflight verified RTX 3070/NVIDIA 610.57.04, 202 material GPU samples, median 0.032768 ms/p95 0.036864 ms for white 0.02; actual nested size 1651x1297. Variant cost and 0.06 preference remain pending.
+- 2026-09-08T00:25:09Z (glass-noise-spike-plan): Decoded 0.06 favorites from frozen A/B key: matched-RMS h2 beats fine on warm/dark; GIMP h2 beats matched-RMS h2 on warm/bright; GIMP h8 beats h2 on warm (both good), while matched-RMS h2 beats h8 (both good). Shortlist h2 for hardware cost/live checks. Policy comparisons confound RMS with shape; no shipping decision yet. Full preferences retained in report and comparison-006-preferences.json.
