@@ -8,15 +8,20 @@ import { defsDir } from '../src/paths.js';
 // must never offer a value the compositor rejects.
 const NATIVE = {
   'glass.ior': { range: [1, 3], default: 1.5 },
+  'glass.inactive.ior': { range: [1, 3], default: 1.5 },
   'glass.thickness': { range: [0, 200], default: 20 },
+  'glass.inactive.thickness': { range: [0, 200], default: 20 },
   'glass.attenuationColor': { default: '#dfe8ff' },
+  'glass.inactive.attenuationColor': { default: '#dfe8ff' },
   'glass.attenuationDistance': { range: [1, 65535], default: 60 },
   'glass.chromaticAberration': { range: [0, 1], default: 0 },
   'glass.distortion': { range: [0, 1], default: 0 },
   'glass.distortionScale': { range: [0.01, 2], default: 0.5 },
+  'glass.inactive.distortionScale': { range: [0.01, 2], default: 0.5 },
   'glass.anisotropicBlur': { range: [0, 1], default: 0 },
   'glass.roughness': { range: [0, 1], default: 0.08 },
   'glass.backdropBlur': { default: false },
+  'glass.inactive.backdropBlur': { default: false },
   'glass.jellyFlex': { range: [0, 0.02], default: 0.004 },
   'glass.jellyRipple': { range: [0, 0.5], default: 0.06 },
   'glass.paneLip': { range: [0, 64], default: 6 },
@@ -49,7 +54,8 @@ const NATIVE_UNITS = [
   'glass.thickness', 'glass.attenuationDistance', 'glass.chromaticAberration',
   'glass.distortion', 'glass.distortionScale',
   'glass.inactive.attenuationDistance', 'glass.inactive.chromaticAberration',
-  'glass.inactive.distortion',
+  'glass.inactive.distortion', 'glass.inactive.thickness',
+  'glass.inactive.distortionScale',
 ];
 
 const NATIVE_BEVEL_MAX = 128;
@@ -67,7 +73,7 @@ test('noise type is a shared Focus select with an explicit Prism default', () =>
   assert.equal(def.type, 'enum');
   assert.deepEqual(def.values, ['white', 'fine']);
   assert.equal(def.default, 'fine');
-  assert.deepEqual(def.ui, { group: 'Focus', control: 'select', label: 'Noise type', order: 275 });
+  assert.deepEqual(def.ui, { group: 'Focus', control: 'select', label: 'Noise type', order: 325 });
   assert.ok(defs.get('glass.inactive.noise').ui.order < def.ui.order);
   assert.ok(def.ui.order < defs.get('glass.saturation').ui.order);
 });
@@ -130,6 +136,7 @@ test('native values are presented in native units', () => {
       `${key} still describes a normalized value`);
   }
   assert.equal(defs.get('glass.thickness').ui.unit, 'px');
+  assert.equal(defs.get('glass.inactive.thickness').ui.unit, 'px');
   assert.equal(defs.get('glass.attenuationDistance').ui.unit, 'px');
   assert.equal(defs.get('glass.inactive.attenuationDistance').ui.unit, 'px');
   assert.equal(defs.get('glass.paneLip').ui.unit, 'px');
@@ -190,13 +197,25 @@ test('visible numeric defaults lie on their slider grids', () => {
 
 const MATRIX = [
   ['Terminal opacity', 'terminal.background.opacity.active', 'terminal.background.opacity.inactive'],
+  ['Frosted backdrop', 'glass.backdropBlur', 'glass.inactive.backdropBlur'],
   ['Blur', 'glass.roughness', 'glass.inactive.roughness'],
+  ['Tint', 'glass.attenuationColor', 'glass.inactive.attenuationColor'],
   ['Tint distance', 'glass.attenuationDistance', 'glass.inactive.attenuationDistance'],
+  ['Refraction', 'glass.ior', 'glass.inactive.ior'],
+  ['Depth', 'glass.thickness', 'glass.inactive.thickness'],
   ['Fringing', 'glass.chromaticAberration', 'glass.inactive.chromaticAberration'],
   ['Distortion', 'glass.distortion', 'glass.inactive.distortion'],
+  ['Distortion detail', 'glass.distortionScale', 'glass.inactive.distortionScale'],
   ['Directional blur', 'glass.anisotropicBlur', 'glass.inactive.anisotropicBlur'],
   ['Noise', 'glass.noise', 'glass.inactive.noise'],
   ['Saturation', 'glass.saturation', 'glass.inactive.saturation'],
+];
+
+// The optics split by this change default to their focused value, so widening
+// the matrix adds capability without altering the shipped appearance.
+const NEWLY_SPLIT = [
+  'glass.backdropBlur', 'glass.attenuationColor', 'glass.ior',
+  'glass.thickness', 'glass.distortionScale',
 ];
 
 test('the focus matrix pairs every focused optic with an unfocused twin', () => {
@@ -228,6 +247,27 @@ test('the focus matrix pairs every focused optic with an unfocused twin', () => 
   assert.deepEqual(stateful.sort(), MATRIX.flatMap(([, a, b]) => [a, b]).sort());
 });
 
+test('the newly split optics default to their focused value', () => {
+  const defs = loadDefs(defsDir());
+
+  for (const key of NEWLY_SPLIT) {
+    const twin = key.replace('glass.', 'glass.inactive.');
+    assert.deepEqual(defs.get(twin).default, defs.get(key).default, twin);
+  }
+});
+
+test('geometry and pane motion stay shared across focus states', () => {
+  const defs = loadDefs(defsDir());
+
+  for (const key of [
+    'glass.paneLip', 'glass.paneShiftX', 'glass.paneShiftY',
+    'glass.jellyFlex', 'glass.jellyRipple', 'glass.noiseType',
+  ]) {
+    assert.equal(defs.has(key.replace('glass.', 'glass.inactive.')), false,
+      `${key} gained a per-state twin; the swap is a hard cut, so a divergent slab jumps`);
+  }
+});
+
 test('everything outside the matrix is shared glass', () => {
   const defs = loadDefs(defsDir());
   const shared = [...defs.values()]
@@ -235,8 +275,7 @@ test('everything outside the matrix is shared glass', () => {
     .map((def) => def.key);
 
   assert.deepEqual(shared.sort(), [
-    'compositor.gaps', 'glass.attenuationColor', 'glass.ior', 'glass.thickness',
-    'glass.distortionScale', 'glass.backdropBlur', 'glass.paneLip', 'glass.paneShiftX',
+    'compositor.gaps', 'glass.paneLip', 'glass.paneShiftX',
     'glass.paneShiftY', 'glass.jellyFlex', 'glass.jellyRipple',
   ].sort());
   for (const key of shared) assert.equal(defs.get(key).ui.group, 'Glass', key);

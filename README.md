@@ -7,13 +7,19 @@ material and its terminal assignment. With glass enabled the layout block also
 turns niri's gradient focus ring off, since the material's own ring of light
 marks the focused window. Terminal background opacity defaults to
 zero so the glass is the only surface behind the text; with the focus split on,
-unfocused terminals get a second material whose roughness, tint distance,
-fringing, distortion, directional blur, noise, and saturation are the
-`glass.inactive.*` overrides. Both materials share `glass.noiseType`: `white` or
-`fine` (the Prism default). The Noctalia integration is a native
+unfocused terminals get a second material whose optics are the `glass.inactive.*`
+overrides: frosted backdrop, blur, tint, tint distance, refraction, depth,
+fringing, distortion, distortion detail, directional blur, noise, and
+saturation. Each defaults to its focused value, so the split only diverges where
+you tune it. The two materials share the slab frame (`glass.paneLip`,
+`glass.paneShiftX`, `glass.paneShiftY`), the pane motion (`glass.jellyFlex`,
+`glass.jellyRipple`), and `glass.noiseType`: `white` or `fine` (the Prism
+default). The frame is shared deliberately — a per-state frame would resize and
+shift the slab on every focus change, and niri swaps materials as a hard cut.
+The Noctalia integration is a native
 v5 plugin under `integrations/noctalia-plugin/`; its panel is a shared `Glass`
-section and a `Focus` matrix with a focused and an unfocused slider per optic
-and one shared Noise type select.
+section for the frame and pane motion, and a `Focus` matrix with a focused and
+an unfocused control per optic and one shared Noise type select.
 
 ## Configuration layout
 

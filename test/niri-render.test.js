@@ -23,6 +23,11 @@ const resolved = { params: {
   'glass.jellyRipple': 0.15,
   'glass.focusSplit': true,
   'glass.inactive.roughness': 0.5,
+  'glass.inactive.ior': 1.52,
+  'glass.inactive.thickness': 44,
+  'glass.inactive.attenuationColor': '#2a2f3a',
+  'glass.inactive.distortionScale': 0.4,
+  'glass.inactive.backdropBlur': false,
   'glass.inactive.attenuationDistance': 70,
   'glass.inactive.chromaticAberration': 0.08,
   'glass.inactive.distortion': 0.1,
@@ -65,17 +70,17 @@ material "terminal-glass" {
 }
 material "terminal-glass-inactive" {
     glass {
-        ior 1.38
-        thickness 32
-        attenuation-color "#bbc7db"
+        ior 1.52
+        thickness 44
+        attenuation-color "#2a2f3a"
         attenuation-distance 70
         chromatic-aberration 0.08
-        distortion 0.1 scale=0.05
+        distortion 0.1 scale=0.4
         anisotropic-blur 0.02
         roughness 0.5
         noise 0.02 type="fine"
         saturation 0.85
-        backdrop-blur true
+        backdrop-blur false
         jelly-flex 0.0038
         jelly-ripple 0.15
         bevel 9
@@ -140,19 +145,29 @@ window-rule {
 }
 `;
 
-test('the focus split renders an inactive material that inherits every other glass parameter', () => {
+test('the focus split inherits only the slab geometry, the pane motion, and the grain type', () => {
   const kdl = renderNiriFragment(resolved);
   const inactive = kdl.match(/material "terminal-glass-inactive" \{[^]*?\n\}\n/)[0];
 
   for (const line of [
-    'ior 1.38', 'thickness 32', 'attenuation-color "#bbc7db"',
-    'backdrop-blur true', 'jelly-flex 0.0038', 'jelly-ripple 0.15', 'bevel 9',
-    'offset-x 4', 'offset-y 4',
+    'jelly-flex 0.0038', 'jelly-ripple 0.15', 'bevel 9', 'offset-x 4', 'offset-y 4',
   ]) assert.ok(inactive.includes(`        ${line}\n`), `inherited line missing: ${line}`);
   for (const line of [
-    'attenuation-distance 70', 'chromatic-aberration 0.08', 'distortion 0.1 scale=0.05',
+    'attenuation-distance 70', 'chromatic-aberration 0.08', 'distortion 0.1 scale=0.4',
     'anisotropic-blur 0.02', 'roughness 0.5', 'noise 0.02 type="fine"', 'saturation 0.85',
+    'ior 1.52', 'thickness 44', 'attenuation-color "#2a2f3a"', 'backdrop-blur false',
   ]) assert.ok(inactive.includes(`        ${line}\n`), `override missing: ${line}`);
+});
+
+test('the unfocused slab keeps the focused frame so focus never resizes the glass', () => {
+  const kdl = renderNiriFragment(with_({
+    'glass.paneLip': 9, 'glass.paneShiftX': -7, 'glass.paneShiftY': 3,
+  }));
+  const [active, inactive] = kdl.match(/material "terminal-glass(?:-inactive)?" \{[^]*?\n\}\n/g);
+  const frame = (block) => block.match(/bevel \S+\n|offset-[xy] \S+\n/g);
+
+  assert.deepEqual(frame(inactive), frame(active));
+  assert.deepEqual(frame(active), ['bevel 16\n', 'offset-x -7\n', 'offset-y 3\n']);
 });
 
 test('the focus split assigns materials by is-active', () => {

@@ -156,7 +156,7 @@ end
 
 -- Sections are the panel's body: one per ui.group in order of first
 -- appearance by ui.order. A toggle flagged ui.header is the section's header
--- control. Sliders with ui.state pair into matrix rows keyed by ui.row
+-- control. Parameters with ui.state pair into matrix rows keyed by ui.row
 -- (focused left, unfocused right); everything else is a single-parameter row.
 function M.sections(params)
   local visible = {}

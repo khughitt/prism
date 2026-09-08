@@ -16,11 +16,6 @@ test('shipped presentation is a Glass section and a Focus matrix', () => {
   const glass = ordered.filter((def) => def.ui.group === 'Glass').map((def) => def.key);
   assert.deepEqual(glass, [
     'compositor.gaps',
-    'glass.attenuationColor',
-    'glass.ior',
-    'glass.thickness',
-    'glass.distortionScale',
-    'glass.backdropBlur',
     'glass.paneLip',
     'glass.paneShiftX',
     'glass.paneShiftY',
@@ -40,7 +35,8 @@ test('shipped presentation is a Glass section and a Focus matrix', () => {
     }
   }
   assert.deepEqual(rows.map((row) => row.row), [
-    'Terminal opacity', 'Blur', 'Tint distance', 'Fringing', 'Distortion', 'Directional blur',
+    'Terminal opacity', 'Frosted backdrop', 'Blur', 'Tint', 'Tint distance', 'Refraction',
+    'Depth', 'Fringing', 'Distortion', 'Distortion detail', 'Directional blur',
     'Noise', 'Noise type', 'Saturation',
   ]);
   assert.deepEqual(rows.filter((row) => row.single), [{ row: 'Noise type', single: 'glass.noiseType' }]);

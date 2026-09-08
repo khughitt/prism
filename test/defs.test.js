@@ -45,17 +45,31 @@ test('whole-window opacity is gone and the debug backdrop is CLI-only', () => {
   assert.equal(defs.get('debug.backdrop').ui.control, 'none');
 });
 
-test('ui.state and ui.row come together, on sliders only', () => {
+test('ui.state and ui.row come together, on the controls a matrix cell can draw', () => {
   const base = (ui) => `- {key: a.b, type: float, range: [0, 1], default: 0, ui: {group: g, control: slider, step: 0.1, label: B, order: 1, ${ui}}, description: d}\n`;
   assert.throws(() => loadDefs(dirWith(base('state: focused'))), /ui.state requires ui.row/);
   assert.throws(() => loadDefs(dirWith(base('row: Blur'))), /ui.row requires ui.state/);
   assert.throws(() => loadDefs(dirWith(base('state: active, row: Blur'))), /ui.state must be one of focused\|unfocused/);
-  assert.throws(() => loadDefs(dirWith(
-    `- {key: a.b, type: bool, default: false, ui: {group: g, control: toggle, label: B, order: 1, state: focused, row: Blur}, description: d}\n`,
-  )), /ui.state and ui.row are slider-only/);
   const defs = loadDefs(dirWith(base('state: unfocused, row: Blur')));
   assert.equal(defs.get('a.b').ui.state, 'unfocused');
   assert.equal(defs.get('a.b').ui.row, 'Blur');
+});
+
+// The panel draws a matrix cell from any control it can render on its own, so a
+// focus row is not limited to sliders. A select is excluded deliberately: an
+// enum shared by both states reads as one row, which is what noise type is.
+test('a matrix row may pair toggles and colors, but never a select', () => {
+  const def = (type, control, extra) =>
+    `- {key: a.b, type: ${type}, ${extra}ui: {group: g, control: ${control}, label: B, order: 1, state: focused, row: Blur}, description: d}\n`;
+
+  for (const [type, control, extra] of [['bool', 'toggle', 'default: false, '], ['color', 'color', "default: '#ffffff', "]]) {
+    const defs = loadDefs(dirWith(def(type, control, extra)));
+    assert.equal(defs.get('a.b').ui.state, 'focused', control);
+    assert.equal(defs.get('a.b').ui.row, 'Blur', control);
+  }
+
+  assert.throws(() => loadDefs(dirWith(def('enum', 'select', "values: [x, y], default: x, "))),
+    /ui.state and ui.row are not supported on control select/);
 });
 
 test('ui.header marks at most one toggle per group', () => {

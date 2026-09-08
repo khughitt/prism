@@ -8,15 +8,20 @@ binds:
   - {param: glass.paneShiftX, liveness: reload}
   - {param: glass.paneShiftY, liveness: reload}
   - {param: glass.ior, liveness: reload}
+  - {param: glass.inactive.ior, liveness: reload}
   - {param: glass.thickness, liveness: reload}
+  - {param: glass.inactive.thickness, liveness: reload}
   - {param: glass.attenuationColor, liveness: reload}
+  - {param: glass.inactive.attenuationColor, liveness: reload}
   - {param: glass.attenuationDistance, liveness: reload}
   - {param: glass.chromaticAberration, liveness: reload}
   - {param: glass.distortion, liveness: reload}
   - {param: glass.distortionScale, liveness: reload}
+  - {param: glass.inactive.distortionScale, liveness: reload}
   - {param: glass.anisotropicBlur, liveness: reload}
   - {param: glass.roughness, liveness: reload}
   - {param: glass.backdropBlur, liveness: reload}
+  - {param: glass.inactive.backdropBlur, liveness: reload}
   - {param: glass.jellyFlex, liveness: reload}
   - {param: glass.jellyRipple, liveness: reload}
   - {param: glass.focusSplit, liveness: reload}

@@ -7,6 +7,9 @@ export const CONTROLS = ['slider', 'toggle', 'color', 'select', 'none'];
 export const DISPLAYS = ['raw', 'percent', 'normalized'];
 export const SCALES = ['linear', 'logarithmic', 'power'];
 export const STATES = ['focused', 'unfocused'];
+// Controls the panel can draw twice in one focus row. A select is left out:
+// an enum shared by both states belongs in a single-parameter row instead.
+export const MATRIX_CONTROLS = ['slider', 'toggle', 'color'];
 
 export function loadDefs(dir) {
   const defs = new Map();
@@ -70,7 +73,9 @@ export function validateDef(def, src) {
     if (def.ui.header !== true) fail('ui.header must be true when present');
   }
   if (has('state')) {
-    if (!slider) fail('ui.state and ui.row are slider-only');
+    if (!MATRIX_CONTROLS.includes(def.ui.control)) {
+      fail(`ui.state and ui.row are not supported on control ${def.ui.control}`);
+    }
     if (!STATES.includes(def.ui.state)) fail(`ui.state must be one of ${STATES.join('|')}`);
     if (typeof def.ui.row !== 'string' || def.ui.row.trim() === '') fail('ui.row must be a non-empty string');
   }

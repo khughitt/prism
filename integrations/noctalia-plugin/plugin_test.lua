@@ -62,6 +62,19 @@ equal(sections[2].rows, {
   { row = "Tint", focused = params[8], unfocused = params[9] },
 })
 equal(Presentation.sectionParams(sections[2]), { params[2], params[6], params[4], params[8], params[9] })
+
+-- A focus row pairs on ui.state alone, so the frosted-backdrop toggles and the
+-- tint colors pair exactly like the slider rows do.
+local mixed = {
+  { key = "f.frost.focused", ui = { control = "toggle", group = "Focus", order = 220, state = "focused", row = "Frosted backdrop" } },
+  { key = "f.frost.unfocused", ui = { control = "toggle", group = "Focus", order = 221, state = "unfocused", row = "Frosted backdrop" } },
+  { key = "f.tint.focused", ui = { control = "color", group = "Focus", order = 240, state = "focused", row = "Tint" } },
+  { key = "f.tint.unfocused", ui = { control = "color", group = "Focus", order = 241, state = "unfocused", row = "Tint" } },
+}
+equal(Presentation.sections(mixed)[1].rows, {
+  { row = "Frosted backdrop", focused = mixed[1], unfocused = mixed[2] },
+  { row = "Tint", focused = mixed[3], unfocused = mixed[4] },
+})
 equal(Presentation.overriddenCount({ { overridden = true }, { overridden = false }, { overridden = true } }), 2)
 
 local function fails(candidate, pattern)

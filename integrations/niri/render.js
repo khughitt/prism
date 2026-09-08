@@ -26,17 +26,17 @@ function definition(name, params, glass) {
   return [
     `material ${JSON.stringify(name)} {`,
     '    glass {',
-    `        ior ${params['glass.ior']}`,
-    `        thickness ${params['glass.thickness']}`,
-    `        attenuation-color ${JSON.stringify(params['glass.attenuationColor'])}`,
+    `        ior ${glass.ior}`,
+    `        thickness ${glass.thickness}`,
+    `        attenuation-color ${JSON.stringify(glass.attenuationColor)}`,
     `        attenuation-distance ${glass.attenuationDistance}`,
     `        chromatic-aberration ${glass.chromaticAberration}`,
-    `        distortion ${glass.distortion} scale=${params['glass.distortionScale']}`,
+    `        distortion ${glass.distortion} scale=${glass.distortionScale}`,
     `        anisotropic-blur ${glass.anisotropicBlur}`,
     `        roughness ${glass.roughness}`,
     `        noise ${glass.noise} type=${JSON.stringify(params['glass.noiseType'])}`,
     `        saturation ${glass.saturation}`,
-    `        backdrop-blur ${params['glass.backdropBlur']}`,
+    `        backdrop-blur ${glass.backdropBlur}`,
     `        jelly-flex ${params['glass.jellyFlex']}`,
     `        jelly-ripple ${params['glass.jellyRipple']}`,
     `        bevel ${bevel}`,
@@ -47,31 +47,20 @@ function definition(name, params, glass) {
   ].join('\n');
 }
 
-// The focused glass is the whole glass surface; the unfocused variant
-// overrides only the optics that make a pane recede (the Focus matrix).
-function activeGlass(params) {
-  return {
-    attenuationDistance: params['glass.attenuationDistance'],
-    chromaticAberration: params['glass.chromaticAberration'],
-    distortion: params['glass.distortion'],
-    anisotropicBlur: params['glass.anisotropicBlur'],
-    roughness: params['glass.roughness'],
-    noise: params['glass.noise'],
-    saturation: params['glass.saturation'],
-  };
-}
+// Every optic the Focus matrix splits. The slab frame, the pane motion, and the
+// grain type stay in `params`: they are shared, because a material swap is a hard
+// cut and a divergent frame would make focus resize the glass.
+const OPTICS = [
+  'backdropBlur', 'roughness', 'attenuationColor', 'attenuationDistance',
+  'ior', 'thickness', 'chromaticAberration', 'distortion', 'distortionScale',
+  'anisotropicBlur', 'noise', 'saturation',
+];
 
-function inactiveGlass(params) {
-  return {
-    attenuationDistance: params['glass.inactive.attenuationDistance'],
-    chromaticAberration: params['glass.inactive.chromaticAberration'],
-    distortion: params['glass.inactive.distortion'],
-    anisotropicBlur: params['glass.inactive.anisotropicBlur'],
-    roughness: params['glass.inactive.roughness'],
-    noise: params['glass.inactive.noise'],
-    saturation: params['glass.inactive.saturation'],
-  };
-}
+const glassFor = (params, prefix) =>
+  Object.fromEntries(OPTICS.map((optic) => [optic, params[`${prefix}${optic}`]]));
+
+const activeGlass = (params) => glassFor(params, 'glass.');
+const inactiveGlass = (params) => glassFor(params, 'glass.inactive.');
 
 // The inert background effect pins the superseded blur/noise pass off for the
 // windows this file owns. It needs no xray override: an inert effect never
