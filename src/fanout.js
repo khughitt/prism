@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { withLock } from './lock.js';
 import { resolvedPath, sinkStatusPath, statusLockPath } from './paths.js';
+import { diagnose } from './sink.js';
 import { readJson, writeJsonAtomic } from './store.js';
 
 export function selectSinks(manifests, changedKeys) {
@@ -37,7 +38,7 @@ export async function fanOut({ manifests, resolved, changedKeys, runner = runApp
       await record(manifest.sink, { ok: true, at, params });
       applied.push(manifest.sink);
     } catch (error) {
-      const text = String(error);
+      const text = diagnose(error);
       await record(manifest.sink, { ok: false, at, params, error: text });
       failed.push({ sink: manifest.sink, error: text });
     }

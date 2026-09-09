@@ -3,38 +3,41 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { generatedPath } from '../../src/paths.js';
+import { sinkMain } from '../../src/sink.js';
 import { renderNiriFragment } from './render.js';
 
-const resolved = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-const target = generatedPath('prism.kdl');
-fs.mkdirSync(path.dirname(target), { recursive: true });
+sinkMain(() => {
+  const resolved = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+  const target = generatedPath('prism.kdl');
+  fs.mkdirSync(path.dirname(target), { recursive: true });
 
-let previous = null;
-try {
-  previous = fs.readFileSync(target);
-} catch (error) {
-  if (error.code !== 'ENOENT') throw error;
-}
-
-const tmp = `${target}.${process.pid}.tmp`;
-fs.writeFileSync(tmp, renderNiriFragment(resolved));
-fs.renameSync(tmp, target);
-
-// The candidate has to be in place for niri to compose it with the surrounding
-// config, so validation happens after the rename and rolls back on rejection.
-try {
-  execFileSync('niri', ['validate'], { stdio: 'pipe' });
-} catch (error) {
-  if (previous === null) {
-    fs.rmSync(target);
-  } else {
-    fs.writeFileSync(tmp, previous);
-    fs.renameSync(tmp, target);
+  let previous = null;
+  try {
+    previous = fs.readFileSync(target);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
   }
-  throw error;
-}
 
-// Deliberately unwrapped: a reload that cannot be requested — because niri is
-// not running — must fail the sink while leaving the validated file to load on
-// cold start.
-execFileSync('niri', ['msg', 'action', 'load-config-file'], { stdio: 'pipe' });
+  const tmp = `${target}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, renderNiriFragment(resolved));
+  fs.renameSync(tmp, target);
+
+  // The candidate has to be in place for niri to compose it with the surrounding
+  // config, so validation happens after the rename and rolls back on rejection.
+  try {
+    execFileSync('niri', ['validate'], { stdio: 'pipe' });
+  } catch (error) {
+    if (previous === null) {
+      fs.rmSync(target);
+    } else {
+      fs.writeFileSync(tmp, previous);
+      fs.renameSync(tmp, target);
+    }
+    throw error;
+  }
+
+  // Deliberately unwrapped: a reload that cannot be requested — because niri is
+  // not running — must fail the sink while leaving the validated file to load on
+  // cold start.
+  execFileSync('niri', ['msg', 'action', 'load-config-file'], { stdio: 'pipe' });
+});

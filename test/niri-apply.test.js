@@ -101,6 +101,8 @@ test('an invalid composed config restores the previous target exactly', (t) => {
   assert.equal(fs.readFileSync(target, 'utf8'), previous);
   assert.deepEqual(calls(), ['validate'], 'a rejected config must not be loaded');
   assert.match(result.stderr, new RegExp(OFFENDING));
+  assert.doesNotMatch(result.stderr, /Buffer\(|Uint8Array/,
+    'the error object must never be inspected onto stderr');
 });
 
 test('an invalid composed config with no previous target leaves none behind', (t) => {
@@ -188,4 +190,7 @@ test('the recorded sink failure names the value niri rejected', async (t) => {
   assert.equal(status.niri.ok, false);
   assert.match(status.niri.error, new RegExp(OFFENDING),
     'doctor must be able to report which value niri rejected');
+  assert.doesNotMatch(status.niri.error, /Buffer\(|Uint8Array/);
+  assert.doesNotMatch(status.niri.error, /Command failed:/,
+    'the recorded status is the diagnostic, not prism restating its own invocation');
 });

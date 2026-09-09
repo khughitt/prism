@@ -313,8 +313,8 @@ test('failed fan-out reports every sink error after committing state', async () 
       runner: (m) => { throw new Error(`${m.sink} down`); },
     });
   assert.equal(code, 1);
-  assert.match(stderr, /fastsink: Error: fastsink down/);
-  assert.match(stderr, /slowsink: Error: slowsink down/);
+  assert.match(stderr, /fastsink: fastsink down/);
+  assert.match(stderr, /slowsink: slowsink down/);
   assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8'))
     .params['terminal.background.opacity.inactive'], 0.42);
 });
@@ -340,7 +340,7 @@ test('doctor: a sink whose apply failed reports its error', async () => {
   const failedApply = await runCaptured(['set', 'terminal.background.opacity.inactive', '0.42'],
     { runner: (m) => { if (m.sink === 'slowsink') throw new Error('down'); } });
   assert.equal(failedApply.code, 1);
-  assert.match(failedApply.stderr, /slowsink: Error: down/);
+  assert.match(failedApply.stderr, /slowsink: down/);
   let out = '';
   const code = await cli.run(['doctor'], { runner: () => {}, print: (s) => { out += s; } });
   assert.equal(code, 1);
