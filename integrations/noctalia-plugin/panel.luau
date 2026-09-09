@@ -16,6 +16,7 @@ local state = {
   sampleElapsedMs = 0,
   renderedSliderCorrection = nil,
   expanded = {},
+  helpKey = nil,
 }
 
 local describeRunning = false
@@ -27,6 +28,7 @@ local hostSliderEpsilon = 0.0001
 local labelColumnWidth = 150
 local headColumnWidth = 190
 local valueColumnWidth = 56
+local cardPadding = 6
 local inertOpacity = 0.35
 -- A shadowed control still writes; it is the value that cannot surface. Dimmer
 -- than full strength, lighter than inert, because the control is still live.
@@ -433,17 +435,27 @@ local function nativeControl(param, available)
   })
 end
 
--- Noctalia enables a Button's hit area only when the button carries a handler,
--- and a disabled hit area never opens the tooltip. The click itself does
--- nothing; it is what makes the description reachable on hover.
-local function infoButton(param)
+-- Only buttons expose native tooltips. A ghost text button makes the name
+-- the help target; activation also exposes the description for keyboard users.
+local function nameButton(text, param)
   return ui.button({
-    glyph = "info-circle",
-    variant = "ghost",
-    controlSize = "sm",
+    key = param.key .. ":name", text = text,
+    variant = "ghost", controlSize = "sm", contentAlign = "start", flexGrow = 1,
     tooltip = param.description or param.key,
-    onClick = function() end,
+    onClick = function()
+      state.helpKey = state.helpKey ~= param.key and param.key or nil
+      render()
+    end,
   })
+end
+
+local function appendDescription(children, param)
+  if state.helpKey == param.key then
+    children[#children + 1] = ui.label({
+      key = param.key .. ":help", text = param.description or param.key,
+      fontSize = 12, color = "on_surface_variant",
+    })
+  end
 end
 
 -- Only exceptions are marked. Writing on release is the norm here, so saying it
@@ -471,15 +483,13 @@ local function rowHint(params)
   return nil
 end
 
--- The leading column: label and its info button, at one fixed width so every
--- control column starts at the same x and the matrix header can reserve the
--- same span without guessing the button's natural width.
+-- The leading column reserves one fixed span for the name and its help
+-- target, shared by ordinary rows, cards, and the matrix header.
 local function headCell(text, param, dimmed, indent)
   indent = indent or 0
   local children = {}
   if indent > 0 then children[#children + 1] = ui.spacer({width = indent}) end
-  children[#children + 1] = ui.label({text = text, fontWeight = "medium", maxWidth = labelColumnWidth - indent, maxLines = 1})
-  children[#children + 1] = infoButton(param)
+  children[#children + 1] = nameButton(text, param)
   return ui.row({width = headColumnWidth, gap = 6, align = "center", opacity = dimmed and shadowedOpacity or 1.0}, children)
 end
 
@@ -489,9 +499,11 @@ local function controlCell(param, grow)
   local available = param.effectiveDrag ~= nil
   local formattedValue = param.ui.control == "slider" and Presentation.formatValue(param.value, param) or nil
   local children = {
-    -- Rendered even when empty: a hidden child leaves the flex layout, which
-    -- would pull the control left on every row without a formatted value.
-    ui.label({text = formattedValue or "", fontSize = 12, color = "on_surface_variant", width = valueColumnWidth, textAlign = "end"}),
+    -- The native label ignores width. Its container reserves the value column,
+    -- even when empty, so value length and control kind never shift the track.
+    ui.row({width = valueColumnWidth, justify = "end", align = "center"}, {
+      ui.label({text = formattedValue or "", fontSize = 12, color = "on_surface_variant", maxWidth = valueColumnWidth, maxLines = 1, textAlign = "end"}),
+    }),
     nativeControl(param, available),
   }
   -- Sliders absorb the cell's slack themselves; the other controls keep their
@@ -504,9 +516,10 @@ local function controlCell(param, grow)
   }, children)
 end
 
-local function paramRow(key, cells, hint)
+local function paramRow(key, cells, hint, param)
   local children = {ui.row({gap = 8, align = "center"}, cells)}
   if hint then children[#children + 1] = ui.row({gap = 8, align = "center", justify = "end"}, {hint}) end
+  appendDescription(children, param)
   return ui.column({key = key, gap = 2, paddingV = 2}, children)
 end
 
@@ -514,7 +527,7 @@ local function singleRow(param, indent)
   return paramRow(param.key .. ":row", {
     headCell(param.ui.label or param.key, param, param.shadowed, indent),
     controlCell(param, 1),
-  }, rowHint({param}))
+  }, rowHint({param}), param)
 end
 
 -- The label heads both cells, so it only dims when the whole row is covered.
@@ -524,13 +537,13 @@ local function matrixRow(row, indent)
     controlCell(row.focused, 1),
     ui.separator({orientation = "vertical", spacing = 4}),
     controlCell(row.unfocused, 1),
-  }, rowHint({row.focused, row.unfocused}))
+  }, rowHint({row.focused, row.unfocused}), row.focused)
 end
 
 -- Mirrors matrixRow's children exactly - fixed head, grow, separator, grow - so
 -- each column title sits over the cell it names.
-local function matrixHeader()
-  return ui.row({gap = 8, align = "center"}, {
+local function matrixHeader(group, inset)
+  return ui.row({key = group .. ":columns", gap = 8, align = "center", paddingH = inset or 0}, {
     ui.spacer({width = headColumnWidth}),
     ui.label({text = "Focused", fontSize = 12, color = "on_surface_variant", textAlign = "center", flexGrow = 1}),
     ui.separator({orientation = "vertical", spacing = 4}),
@@ -561,7 +574,7 @@ local function lightRow(card)
 end
 
 -- The card's head spans the same fixed width as every other head cell, so the
--- mix cells line up under the matrix header: light, chevron, label, info.
+-- mix cells line up under the matrix header: light, chevron, name.
 local function cardHead(card, expanded)
   local mix = card.mix
   return ui.row({width = headColumnWidth, gap = 6, align = "center", opacity = (mix.focused.shadowed and mix.unfocused.shadowed) and shadowedOpacity or 1.0}, {
@@ -576,8 +589,7 @@ local function cardHead(card, expanded)
         render()
       end,
     }),
-    ui.label({text = card.label, fontWeight = "medium", maxWidth = labelColumnWidth - lightWidth - 34, maxLines = 1}),
-    infoButton(mix.focused),
+    nameButton(card.label, mix.focused),
   })
 end
 
@@ -594,13 +606,14 @@ local function deviceCard(card)
   }
   local hint = rowHint({card.bypass, mix.focused, mix.unfocused})
   if hint then children[#children + 1] = ui.row({gap = 8, align = "center", justify = "end"}, {hint}) end
+  appendDescription(children, mix.focused)
   if expanded then
     children[#children + 1] = singleRow(card.bypass, detailIndent)
     for _, row in ipairs(card.rows) do children[#children + 1] = matrixRow(row, detailIndent) end
     for _, param in ipairs(card.shared) do children[#children + 1] = singleRow(param, detailIndent) end
   end
   return ui.column({
-    key = card.device .. ":card", gap = 2, paddingV = 4, paddingH = 6, radius = 8,
+    key = card.device .. ":card", gap = 2, paddingV = 4, paddingH = cardPadding, radius = 8,
     fill = Presentation.categoryColors[card.category] .. "1f",
     opacity = card.bypassed and shadowedOpacity or 1.0,
   }, children)
@@ -640,7 +653,7 @@ local function appendSection(children, section)
   for _, row in ipairs(section.rows) do
     if row.param == nil then hasMatrix = true end
   end
-  if hasMatrix then children[#children + 1] = matrixHeader() end
+  if hasMatrix then children[#children + 1] = matrixHeader(section.name) end
   for _, row in ipairs(section.rows) do
     children[#children + 1] = row.param and singleRow(row.param) or matrixRow(row)
   end
@@ -649,7 +662,7 @@ end
 local function appendRack(children, rack)
   children[#children + 1] = ui.separator({spacing = 6})
   children[#children + 1] = sectionHeader(rack.group, rack.header, Presentation.rackParams(rack))
-  children[#children + 1] = matrixHeader()
+  children[#children + 1] = matrixHeader(rack.group, cardPadding)
   for _, card in ipairs(rack.cards) do children[#children + 1] = deviceCard(card) end
 end
 

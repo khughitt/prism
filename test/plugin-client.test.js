@@ -117,7 +117,7 @@ test('slider rows render the formatted local value beside the native control', a
   assert.match(parameterRow, /local formattedValue = param\.ui\.control == "slider" and Presentation\.formatValue\(param\.value, param\) or nil/);
   // Reserved on every row, empty text included: a hidden child leaves the flex
   // layout and pulls the control column left on rows without a value.
-  assert.match(parameterRow, /ui\.label\(\{text = formattedValue or ""[\s\S]*width = valueColumnWidth, textAlign = "end"\}\)[\s\S]*nativeControl\(param, available\)/);
+  assert.match(parameterRow, /ui\.row\(\{width = valueColumnWidth[\s\S]*ui\.label\(\{text = formattedValue or ""[\s\S]*nativeControl\(param, available\)/);
   assert.doesNotMatch(parameterRow, /visible = formattedValue ~= nil/);
   assert.match(source, /local function beginDrag[\s\S]*updateParam\(param, canonical\)[\s\S]*render\(\)/);
 });
@@ -166,23 +166,13 @@ test('row geometry is fixed, so nothing moves when a value crosses its default',
   assert.match(source, /opacity = param\.overridden and 1\.0 or inertOpacity/);
   assert.match(source, /opacity = overriddenCount > 0 and 1\.0 or inertOpacity/);
   // One reserved leading span, shared by the rows and the matrix header, so the
-  // header never has to guess the info button's natural width.
+  // header reserves the same leading span as the name controls.
   assert.match(source, /local function headCell[\s\S]*ui\.row\(\{width = headColumnWidth/);
   assert.match(source, /local function matrixHeader[\s\S]*ui\.spacer\(\{width = headColumnWidth\}\)/);
   // The header mirrors matrixRow's children, so each title sits over its cell.
   assert.match(source, /local function matrixHeader[\s\S]*text = "Focused"[\s\S]*ui\.separator\(\{orientation = "vertical", spacing = 4\}\)[\s\S]*text = "Unfocused"/);
   // Sliders take the cell's slack, so both matrix halves end flush.
   assert.match(source, /ui\.slider\(\{[\s\S]*flexGrow = 1/);
-});
-
-test('the info button carries a handler, without which its tooltip never opens', async () => {
-  const source = await readEntry('panel.luau');
-  const infoButton = source.slice(source.indexOf('local function infoButton'), source.indexOf('local function rowHint'));
-
-  assert.match(infoButton, /tooltip = param\.description or param\.key/);
-  // Noctalia enables a Button's hit area only when it carries a handler, and a
-  // disabled hit area never opens the tooltip.
-  assert.match(infoButton, /onClick = function\(\) end/);
 });
 
 test('the queue speaks only to prism', async () => {
