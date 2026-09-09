@@ -36,12 +36,18 @@ export function sinkMain(fn) {
     fn();
   } catch (error) {
     process.stderr.write(`${diagnose(error)}\n`);
-    process.exit(1);
+    // Not process.exit(1): under the fan-out stderr is a pipe, whose writes
+    // are asynchronous, and exit on this tick discards whatever has not
+    // drained — a large diagnostic arrives cut off. Setting the code lets the
+    // write finish and still fails the sink.
+    process.exitCode = 1;
   }
 }
 
 export function onPath(command) {
-  const dirs = (process.env.PATH ?? '').split(path.delimiter).filter(Boolean);
+  // An empty PATH component is the working directory, exactly as the execvp
+  // this check predicts reads it; dropping it would report installed as absent.
+  const dirs = (process.env.PATH ?? '').split(path.delimiter);
   return dirs.some((dir) => {
     const candidate = path.join(dir, command);
     try {

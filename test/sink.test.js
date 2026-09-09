@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { diagnose, onPath } from '../src/sink.js';
 
 // What execFileSync hands back: the child's output as Buffers. Printing the
@@ -77,4 +79,45 @@ test('onPath finds an executable and ignores a non-executable of the same name',
   assert.equal(onPath('runnable'), true);
   assert.equal(onPath('inert'), false);
   assert.equal(onPath('absent'), false);
+});
+
+// execvp reads an empty PATH component as the working directory; onPath must
+// agree with the spawn it predicts, or a machine is told to install what its
+// PATH already reaches.
+test('onPath reads an empty PATH entry as the current directory', (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-path-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.writeFileSync(path.join(dir, 'runnable'), '#!/bin/sh\n', { mode: 0o755 });
+
+  const restorePath = process.env.PATH;
+  const restoreCwd = process.cwd();
+  process.env.PATH = `:${path.join(dir, 'no-such-dir')}`;
+  process.chdir(dir);
+  t.after(() => { process.env.PATH = restorePath; process.chdir(restoreCwd); });
+
+  assert.equal(onPath('runnable'), true);
+});
+
+// Under the fan-out, an apply's stderr is a pipe, and a pipe write is
+// asynchronous: process.exit on the same tick discards whatever has not
+// drained. sinkMain must set the exit code and let the write finish, or a
+// large diagnostic — exactly the ones worth reading — arrives cut off.
+test('sinkMain lets a large diagnostic drain before the process exits', (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-sinkmain-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const script = path.join(dir, 'main.mjs');
+  const sinkPath = fileURLToPath(new URL('../src/sink.js', import.meta.url));
+  fs.writeFileSync(script, `
+import { sinkMain } from ${JSON.stringify(sinkPath)};
+sinkMain(() => {
+  const error = new Error('boom');
+  error.stderr = Buffer.from('x'.repeat(262143) + '\\nfinal-line');
+  throw error;
+});
+`);
+
+  const result = spawnSync(process.execPath, [script], { encoding: 'utf8' });
+
+  assert.equal(result.status, 1);
+  assert.equal(result.stderr, `${'x'.repeat(262143)}\nfinal-line\n`);
 });
