@@ -926,7 +926,7 @@ M.categoryColors = { source = "#5b9cf6", geometry = "#c78bfa", optic = "#4fd1c5"
 function M.rack(model)
   local rack = model.rack
   if type(rack) ~= "table" or type(rack.group) ~= "string" or type(rack.devices) ~= "table" then
-    error("prism describe returned no rack")
+    error("prism describe returned no rack", 0)
   end
   local rows, singles, header = {}, {}, nil
   for _, param in ipairs(model.params) do
@@ -1099,6 +1099,7 @@ The Noise device needs a Noise mix row: add these two params before `glass.noise
 
 Now several existing assertions change meaning. Update them in place:
 
+- `assert(labels["Blur"] and labels["Gaps"], "row labels missing")` becomes `assert(labels["Backdrop"] and labels["Gaps"], "row labels missing")`: the card displays the device label, not the mix row label.
 - `assert(labels["Noise type"], "shared select row missing")` becomes `assert(labels["Noise type"] == nil, "details stay hidden until a card is expanded")`.
 - `equal(#collect(rendered, "select"), 2, ...)` becomes `equal(#collect(rendered, "select"), 1, "only the profile selector while every card is collapsed")`, and the `paramSelect(rendered).props.options` / `selectedIndex` lines move below the expansion step added next.
 - `equal(#collect(rendered, "toggle"), 2, "title and Focus header toggles")` stays (bypass toggles live in the collapsed details).
