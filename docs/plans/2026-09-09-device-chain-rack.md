@@ -1039,6 +1039,7 @@ git commit -m "feat(panel): resolve the device rack from describe in the present
 **Interfaces:**
 - Consumes: `Presentation.rack`, `Presentation.cardParams`, `Presentation.rackParams`, `Presentation.categoryColors`, `Presentation.sections(params, skipGroup)` from Task 4; the `rack` field of real `describe` output from Task 2 (the contract test runs the CLI); the existing `controlCell`, `resetButton`, `infoButton`, `rowHint`, `writeParam`, `unsetParam`, `resetGroup`, `matrixHeader`.
 - Produces: the rendered rack section; `state.expanded[deviceId]`; the light row keyed `<device>:light`, the card column keyed `<device>:card`, the chevron button with tooltips `Show details` / `Hide details`.
+- Parameter interaction contract: an unavailable bypass gives its collapsed light no write handler; availability and shadowing dim that light and participate in its row hint, while a shadowed but available bypass still writes into the current target.
 
 - [x] **Step 1: Extend the test model and write the failing render assertions**
 
@@ -1341,13 +1342,16 @@ local lightWidth = 20
 -- its own bypass is set, hollow in the category color while the device it
 -- requires is bypassed. A glyph in a clickable row, because a toggle carries
 -- no tooltip and a button no color at the API this plugin declares. The click
--- is a plain set: the bypass row inside the card carries the reset.
+-- is a plain set when available: the bypass row inside the card carries the
+-- reset, and shadowing dims and explains the write without disabling it.
 local function lightRow(card)
+  local available = card.bypass.effectiveDrag ~= nil
   local color = card.bypassed and "on_surface_variant" or Presentation.categoryColors[card.category]
   local name = (card.bypassed or card.silenced) and "circle" or "circle-filled"
   return ui.row({
     key = card.device .. ":light", width = lightWidth, align = "center", justify = "center",
-    onClick = function() writeParam(card.bypass, not (card.bypass.value == true)) end,
+    opacity = (not available or card.bypass.shadowed) and shadowedOpacity or 1.0,
+    onClick = available and function() writeParam(card.bypass, not (card.bypass.value == true)) end or nil,
   }, {
     ui.glyph({name = name, size = 12, color = color}),
   })
@@ -1385,7 +1389,7 @@ local function deviceCard(card)
       controlCell(mix.unfocused, 1),
     }),
   }
-  local hint = rowHint({mix.focused, mix.unfocused})
+  local hint = rowHint({card.bypass, mix.focused, mix.unfocused})
   if hint then children[#children + 1] = ui.row({gap = 8, align = "center", justify = "end"}, {hint}) end
   if expanded then
     children[#children + 1] = singleRow(card.bypass, detailIndent)

@@ -387,6 +387,40 @@ local _, saturationLight = light("saturation")
 equal(saturationLight.props.name, "circle")
 equal(saturationLight.props.color, "on_surface_variant")
 
+-- The collapsed light is the bypass control: it must stay inert when the
+-- bypass has no consumer, even while both mix cells remain available.
+local noiseBypass = model.params[13]
+noiseBypass.effectiveDrag = nil
+dofile(here .. "panel.luau")
+onOpen({})
+described({ exitCode = 0, stdout = "{}" })
+local unavailableLight = light("noise")
+equal(unavailableLight.props.onClick, nil, "an unavailable bypass light has no write handler")
+assert(unavailableLight.props.opacity < 1.0, "an unavailable bypass light dims")
+local unavailableLabels = {}
+for _, label in ipairs(collect(rendered, "label")) do unavailableLabels[label.props.text or ""] = true end
+assert(unavailableLabels["Unavailable"], "a collapsed card reports its unavailable bypass")
+
+-- A wallpaper can shadow only the bypass. The light and hint say so, while
+-- the unshadowed mix cells stay full-strength and the ordinary write remains.
+noiseBypass.effectiveDrag, noiseBypass.layer = "release", "wallpaper"
+model.active = { wallpaper = { id = "f8eb0556", path = "/pics/Deep Field.jpg", pinned = false } }
+dofile(here .. "panel.luau")
+onOpen({})
+described({ exitCode = 0, stdout = "{}" })
+local shadowedLight = light("noise")
+assert(shadowedLight.props.opacity < 1.0, "a shadowed bypass light dims")
+equal(byKey(rendered, "glass.noise")[1].props.opacity, 1.0, "the focused mix cell stays unshadowed")
+equal(byKey(rendered, "glass.inactive.noise")[1].props.opacity, 1.0, "the unfocused mix cell stays unshadowed")
+local shadowedLabels = {}
+for _, label in ipairs(collect(rendered, "label")) do shadowedLabels[label.props.text or ""] = true end
+assert(shadowedLabels["Overridden by wallpaper; pin to edit"], "a collapsed card reports its shadowed bypass")
+local commandsBeforeShadowedLight = #commands
+shadowedLight.props.onClick()
+equal(#commands, commandsBeforeShadowedLight + 1, "a shadowed bypass light still writes")
+noiseBypass.layer = "default"
+model.active = {}
+
 -- Clicking a light flips the bypass key with a plain set, whatever the layer.
 -- The stub host never completes a write, so the reset above left an unset in
 -- flight and anything enqueued now would only wait behind it: start clean.
