@@ -203,6 +203,21 @@ draws its row. A field the CLI stops emitting fails there as the validator's own
 sentence, so a shape change reads as "the panel and the CLI disagree" instead of
 as a patched-by-hand fixture.
 
+The test renders describe output as a Lua literal on one assumption about the
+host: that `noctalia.json.decode` maps a JSON null to an absent key. The
+installed Noctalia (v5.0.1, verified against `src/scripting/luau_host.cpp` at
+the `v5.0.1` tag) confirms it. `jsonToLua` pushes Lua `nil` for every JSON
+value outside boolean, number, string, array, and object, null included, and
+the object branch then assigns that nil with `lua_setfield`, which deletes the
+key. A null field therefore decodes to no field at all, exactly the absent key
+`validateModel` and the profile selector read with `== nil`, and the
+serializer's null-filtering mirrors the host faithfully. Two edges sit outside
+the describe shape: a bare top-level `null` parses successfully into `nil`
+with no error, so the panel reports it through its generic "invalid JSON"
+fallback, and a null inside an array leaves a hole (`lua_rawseti` with nil),
+which would corrupt a length count; describe's arrays carry only strings and
+device ids, so neither edge can occur in practice.
+
 The shipped panel has a `Glass` section for parameters both focus states share,
 a `Focus` rack with eight device cards in shader order, and a `Terminal` matrix
 for the focused and unfocused opacity pair. Each rack card keeps its mix row
