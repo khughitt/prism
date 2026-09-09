@@ -174,6 +174,14 @@ messages, or a panel that draws no wallpaper header row against a CLI that
 reports one, should read it as "the panel and the `prism` command are out of
 sync" and upgrade whichever side is behind.
 
+That agreement is checked rather than assumed:
+`integrations/noctalia-plugin/contract.test.mjs` spawns `prism describe --json`
+against a temporary store, hands the real output to `panel.luau`, and asserts
+that `validateModel` accepts it and that every control kind describe emits
+draws its row. A field the CLI stops emitting fails there as the validator's own
+sentence, so a shape change reads as "the panel and the CLI disagree" instead of
+as a patched-by-hand fixture.
+
 The shipped panel is two sections: `Glass`, the parameters both focus states
 share, and `Focus`, the matrix of terminal opacity, blur, tint distance,
 fringing, distortion, directional blur, noise, and saturation.
