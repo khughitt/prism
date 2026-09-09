@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { renderNiriFragment } from '../integrations/niri/render.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { parse } from 'yaml';
+import { renderNiriFragment, DRY } from '../integrations/niri/render.js';
+import { defsDir } from '../src/paths.js';
 
 const resolved = { params: {
   'compositor.gaps': 54,
@@ -37,6 +41,14 @@ const resolved = { params: {
   'glass.saturation': 1,
   'glass.inactive.noise': 0.02,
   'glass.inactive.saturation': 0.85,
+  'glass.bypass.backdrop': false,
+  'glass.bypass.distortion': false,
+  'glass.bypass.refraction': false,
+  'glass.bypass.fringing': false,
+  'glass.bypass.directionalBlur': false,
+  'glass.bypass.tint': false,
+  'glass.bypass.saturation': false,
+  'glass.bypass.noise': false,
 } };
 
 const with_ = (overrides) => ({ params: { ...resolved.params, ...overrides } });
@@ -297,6 +309,60 @@ test('regex metacharacters in an app id are escaped, not interpreted', () => {
   const kdl = renderNiriFragment(with_({ 'terminal.apps': ['a.b+c(d)|e', 'f*g'] }));
 
   assert.ok(kdl.includes('r#"^(a\\.b\\+c\\(d\\)\\|e|f\\*g)$"#'), kdl);
+});
+
+const count = (text, needle) => text.split(needle).length - 1;
+
+test('a bypassed device writes its dry value into both materials and nothing else moves', () => {
+  const noise = renderNiriFragment(with_({ 'glass.bypass.noise': true }));
+  assert.equal(count(noise, 'noise 0 type="fine"'), 2);
+  assert.equal(count(noise, 'noise 0.02'), 0);
+  assert.equal(count(noise, 'saturation 0.85'), 1, 'the unfocused saturation is untouched');
+
+  const backdrop = renderNiriFragment(with_({ 'glass.bypass.backdrop': true }));
+  assert.equal(count(backdrop, 'roughness 0\n'), 2);
+  assert.equal(count(backdrop, 'backdrop-blur false'), 2);
+
+  const tint = renderNiriFragment(with_({ 'glass.bypass.tint': true }));
+  assert.equal(count(tint, 'attenuation-color "#ffffff"'), 2);
+  assert.equal(count(tint, 'attenuation-distance 178'), 1, 'tint distance keeps its focused value');
+  assert.equal(count(tint, 'attenuation-distance 70'), 1, 'tint distance keeps its unfocused value');
+
+  const distortion = renderNiriFragment(with_({ 'glass.bypass.distortion': true }));
+  assert.equal(count(distortion, 'distortion 0 scale=0.05'), 1);
+  assert.equal(count(distortion, 'distortion 0 scale=0.4'), 1);
+
+  // Both window rules carry an inert `saturation 1` of their own, so the two
+  // materials make four in total; the unfocused 0.85 is what must be gone.
+  const saturation = renderNiriFragment(with_({ 'glass.bypass.saturation': true }));
+  assert.equal(count(saturation, 'saturation 1\n'), 4);
+  assert.equal(count(saturation, 'saturation 0.85'), 0);
+
+  assert.equal(count(renderNiriFragment(with_({ 'glass.bypass.fringing': true })), 'chromatic-aberration 0\n'), 2);
+  assert.equal(count(renderNiriFragment(with_({ 'glass.bypass.directionalBlur': true })), 'anisotropic-blur 0\n'), 2);
+});
+
+test('bypassing refraction also silences fringing and directional blur', () => {
+  const withDependents = renderNiriFragment(with_({ 'glass.bypass.refraction': true }));
+  assert.equal(count(withDependents, 'ior 1\n'), 2);
+  assert.equal(count(withDependents, 'chromatic-aberration 0\n'), 2);
+  assert.equal(count(withDependents, 'anisotropic-blur 0\n'), 2);
+  assert.equal(count(withDependents, 'thickness 32'), 1, 'depth keeps its focused value');
+  assert.equal(count(withDependents, 'thickness 44'), 1, 'depth keeps its unfocused value');
+
+  const withoutDependents = renderNiriFragment(with_({
+    'glass.bypass.refraction': true,
+    'glass.chromaticAberration': 0,
+    'glass.inactive.chromaticAberration': 0,
+    'glass.anisotropicBlur': 0,
+    'glass.inactive.anisotropicBlur': 0,
+  }));
+  assert.equal(withoutDependents, withDependents);
+});
+
+test('every rack device has a dry entry and every dry entry is a rack device', () => {
+  const rack = parse(fs.readFileSync(path.join(defsDir(), 'rack', 'devices.yaml'), 'utf8'));
+  assert.deepEqual(Object.keys(DRY).sort(), rack.devices.map((device) => device.bypass).sort());
 });
 
 test('a literal containing a raw-string terminator selects a longer delimiter', () => {
