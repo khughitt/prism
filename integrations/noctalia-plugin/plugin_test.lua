@@ -405,8 +405,8 @@ for _, button in ipairs(collect(rendered, "button")) do
   assert(button.props.glyph ~= "info-circle", "row help lives on names rather than info icons")
 end
 local commandsBeforeHelp, treeBeforeHelp = #commands, rendered
-nameButton.props.onClick()
-assert(rendered == treeBeforeHelp, "name clicks must not expand help")
+byKey(rendered, "compositor.gaps:name")[1].props.onClick()
+assert(rendered == treeBeforeHelp, "parameter name clicks must not expand help")
 equal(#commands, commandsBeforeHelp, "reading help must not write parameters")
 
 equal(#byKey(rendered, "backdrop:card"), 1)
@@ -501,8 +501,17 @@ local function chevron(device)
   return nil
 end
 equal(chevron("noise").props.tooltip, "Show details")
+local commandsBeforeExpansion = #commands
+byKey(rendered, "glass.noise:name")[1].props.onClick()
+equal(chevron("noise").props.tooltip, "Hide details", "card titles expand details")
 chevron("noise").props.onClick()
+equal(chevron("noise").props.tooltip, "Show details", "chevrons share the title's expansion state")
+byKey(rendered, "glass.noise:name")[1].props.onClick()
 equal(chevron("noise").props.tooltip, "Hide details")
+byKey(rendered, "glass.noise:name")[1].props.onClick()
+equal(chevron("noise").props.tooltip, "Show details", "card titles collapse details")
+byKey(rendered, "glass.noise:name")[1].props.onClick()
+equal(#commands, commandsBeforeExpansion, "expansion must not write parameters")
 equal(#collect(rendered, "select"), 2, "the noise type select appears once its card is expanded")
 equal(paramSelect(rendered).props.options, { "white", "fine" })
 equal(paramSelect(rendered).props.selectedIndex, 1)

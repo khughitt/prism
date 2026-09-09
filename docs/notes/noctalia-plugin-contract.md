@@ -93,7 +93,8 @@ The presentation module defines the panel's stable layout contract:
   light, a chevron, and the device name, in the same fixed span as every other
   head cell; then the mix row's focused and unfocused cells. The name is a
   ghost text button whose hover tooltip carries the mix description. Clicking
-  a name does nothing; the chevron is the expansion control. The light is a glyph: `circle-filled` in the category color
+  the card title or chevron toggles details; ordinary parameter names remain
+  hover-only. The light is a glyph: `circle-filled` in the category color
   while active, `circle` in `on_surface_variant` while the device's bypass key
   is true, `circle` in the category color while the device it `requires` is
   bypassed. Clicking the light sets the bypass key. The chevron expands the

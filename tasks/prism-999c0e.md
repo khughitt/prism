@@ -1,12 +1,12 @@
 ---
 id: prism-999c0e
 title: Align and justify sliders consistently across rack cards
-status: doing
+status: done
 priority: 2
 size: s
 owner: rack-ui-polish
 created: 2026-09-09T13:08:43Z
-updated: 2026-09-09T13:43:07Z
+updated: 2026-09-09T14:12:26Z
 depends: []
 parent: prism-a03862
 tags: [ui, noctalia]
@@ -22,3 +22,4 @@ Reference: [desktop acceptance screenshot](../docs/notes/2026-09-09-device-chain
 - 2026-09-09T13:23:18Z (rack-ui-polish): Root cause confirmed in Noctalia: label props accept width but the label reconciler returns without applying it. Reserve formatted value width with a layout container; account for card padding in the matrix header.
 - 2026-09-09T13:28:04Z (rack-ui-polish): Implemented fixed layout containers for value columns and matching rack-header/card insets. Lua regression reproduced the old failure and now passes; just gate passes 264 Node tests plus Lua; native plugin lint is clean. Live screenshot comparison remains before closeout.
 - 2026-09-09T13:43:07Z (rack-ui-polish): User live review accepted alignment but found clipped expanded names. Native Spacer defaults to flexGrow=1 even with width set; set flexGrow=0 for all sized spacers (indentation, matrix header, profile name alignment). Lua regression fails before the fix and passes after it.
+- 2026-09-09T14:12:26Z (rack-ui-polish): Aligned slider columns and preserved expanded label space; user desktop acceptance confirmed and final gate passes.

@@ -435,13 +435,13 @@ local function nativeControl(param, available)
 end
 
 -- Only buttons expose native tooltips, and their hit area needs a handler.
--- The name's click is deliberately inert: help stays in the hover tooltip.
-local function nameButton(text, param)
+-- Card titles toggle details; ordinary parameter names only expose hover help.
+local function nameButton(text, param, onClick)
   return ui.button({
     key = param.key .. ":name", text = text,
     variant = "ghost", controlSize = "sm", contentAlign = "start", flexGrow = 1,
     tooltip = param.description or param.key,
-    onClick = function() end,
+    onClick = onClick or function() end,
   })
 end
 
@@ -564,6 +564,10 @@ end
 -- mix cells line up under the matrix header: light, chevron, name.
 local function cardHead(card, expanded)
   local mix = card.mix
+  local function toggleExpanded()
+    state.expanded[card.device] = not expanded
+    render()
+  end
   return ui.row({width = headColumnWidth, gap = 6, align = "center", opacity = (mix.focused.shadowed and mix.unfocused.shadowed) and shadowedOpacity or 1.0}, {
     lightRow(card),
     ui.button({
@@ -571,12 +575,9 @@ local function cardHead(card, expanded)
       variant = "ghost",
       controlSize = "sm",
       tooltip = expanded and "Hide details" or "Show details",
-      onClick = function()
-        state.expanded[card.device] = not expanded
-        render()
-      end,
+      onClick = toggleExpanded,
     }),
-    nameButton(card.label, mix.focused),
+    nameButton(card.label, mix.focused, toggleExpanded),
   })
 end
 
