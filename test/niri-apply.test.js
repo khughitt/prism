@@ -51,6 +51,10 @@ function fixture(t) {
   fs.mkdirSync(state);
 
   fs.writeFileSync(path.join(bin, 'niri'), `#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo "niri 26.04 (fake)"
+  exit 0
+fi
 if [ "$1" = validate ]; then
   echo validate >> "$NIRI_FAKE_LOG"
   if [ -n "$NIRI_FAKE_VALIDATE_FAILS" ]; then
@@ -101,6 +105,8 @@ test('an invalid composed config restores the previous target exactly', (t) => {
   assert.equal(fs.readFileSync(target, 'utf8'), previous);
   assert.deepEqual(calls(), ['validate'], 'a rejected config must not be loaded');
   assert.match(result.stderr, new RegExp(OFFENDING));
+  assert.doesNotMatch(result.stderr, /Buffer\(|Uint8Array/,
+    'the error object must never be inspected onto stderr');
 });
 
 test('an invalid composed config with no previous target leaves none behind', (t) => {
@@ -188,4 +194,78 @@ test('the recorded sink failure names the value niri rejected', async (t) => {
   assert.equal(status.niri.ok, false);
   assert.match(status.niri.error, new RegExp(OFFENDING),
     'doctor must be able to report which value niri rejected');
+  assert.doesNotMatch(status.niri.error, /Buffer\(|Uint8Array/);
+  assert.doesNotMatch(status.niri.error, /Command failed:/,
+    'the recorded status is the diagnostic, not prism restating its own invocation');
+});
+
+// The probe's whole job is to replace a screenful of KDL parse errors with a
+// statement of the cause.
+test('probe-material names niri-material and what is installed', (t) => {
+  const { dir } = fixture(t);
+  const probe = fileURLToPath(new URL('../integrations/niri/probe-material', import.meta.url));
+
+  const result = spawnSync(probe, [], {
+    encoding: 'utf8',
+    env: { ...process.env, PATH: `${path.join(dir, 'bin')}:${process.env.PATH}`,
+           NIRI_FAKE_LOG: path.join(dir, 'niri.log'),
+           NIRI_FAKE_DIAGNOSTIC: 'unexpected node `material`',
+           NIRI_FAKE_VALIDATE_FAILS: '1' },
+  });
+
+  assert.equal(result.status, 1);
+  assert.equal(result.stderr.trim(),
+    'this niri does not accept the material node (installed: niri 26.04 (fake))');
+  assert.doesNotMatch(result.stderr, /Buffer\(|Uint8Array/);
+});
+
+test('probe-material succeeds against a niri that accepts the node', (t) => {
+  const { dir } = fixture(t);
+  const probe = fileURLToPath(new URL('../integrations/niri/probe-material', import.meta.url));
+
+  const result = spawnSync(probe, [], {
+    encoding: 'utf8',
+    env: { ...process.env, PATH: `${path.join(dir, 'bin')}:${process.env.PATH}`,
+           NIRI_FAKE_LOG: path.join(dir, 'niri.log') },
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+});
+
+// The outer bound kills the probe, not the probe's children. If validate were
+// unbounded, a hanging niri would outlive the probe and its temp config would
+// never be removed.
+test('a hanging niri is killed by the probe and leaves nothing behind', (t) => {
+  const { dir } = fixture(t);
+  const probe = fileURLToPath(new URL('../integrations/niri/probe-material', import.meta.url));
+  const pidFile = path.join(dir, 'niri.pid');
+  const tmp = path.join(dir, 'probe-tmp');
+  fs.mkdirSync(tmp);
+
+  // A niri that answers --version at once but never returns from validate.
+  fs.writeFileSync(path.join(dir, 'bin', 'niri'), `#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo "niri 26.04 (fake)"
+  exit 0
+fi
+echo $$ > "$NIRI_FAKE_PIDFILE"
+exec sleep 60
+`, { mode: 0o755 });
+
+  const started = Date.now();
+  const result = spawnSync(probe, [], {
+    encoding: 'utf8',
+    env: { ...process.env, PATH: `${path.join(dir, 'bin')}:${process.env.PATH}`,
+           NIRI_FAKE_PIDFILE: pidFile, TMPDIR: tmp },
+  });
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /does not accept the material node \(installed: niri 26\.04 \(fake\)\)/);
+  assert.ok(Date.now() - started < 5_000, 'the probe must return inside the outer bound');
+
+  const hung = Number(fs.readFileSync(pidFile, 'utf8').trim());
+  assert.throws(() => process.kill(hung, 0), /ESRCH/,
+    'the probe must not leave the command it was waiting on running');
+  assert.deepEqual(fs.readdirSync(tmp), [],
+    'the probe must remove the config it wrote');
 });

@@ -4,7 +4,7 @@ import { loadDefs } from './defs.js';
 import { loadManifests } from './manifest.js';
 import { readValues, writeValues, parseCliValue, validateValue } from './values.js';
 import { resolveLayered, writeResolved } from './resolve.js';
-import { fanOut, boundParams } from './fanout.js';
+import { fanOut, boundParams, unmetRequirement } from './fanout.js';
 import { readJson } from './store.js';
 import { withLock } from './lock.js';
 import { loadStore, loadLayers, writeTarget, activeJson, RESOLUTION_ORDER } from './layers.js';
@@ -275,6 +275,12 @@ export async function run(argv, opts = {}) {
         if (blocked) return 1;
         const status = readJson(sinkStatusPath(), {});
         for (const manifest of manifests) {
+          const unmet = unmetRequirement(manifest, { params });
+          if (unmet) {
+            print(`doctor: ${manifest.sink}: ${unmet}\n`);
+            problems++;
+            continue;
+          }
           const entry = status[manifest.sink];
           const expected = boundParams(manifest, { params });
           if (!entry) {
