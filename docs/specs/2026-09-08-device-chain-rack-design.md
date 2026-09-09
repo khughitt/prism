@@ -2,6 +2,9 @@
 
 **Date:** 2026-09-08
 **Status:** design approved in conversation; not implemented.
+Revised 2026-09-09 after review: the rack file moves out of the defs scan,
+every bypass gets an individual reset, and Refraction's bypass also silences
+the two devices that ride its taps.
 **Task:** `prism-9331c1`, first piece of goal `prism-a03862`
 
 ## Context
@@ -31,7 +34,7 @@ and are out of scope here.
 ## Decisions
 
 - **The rack is data in `defs/`, not knowledge in the panel.** A new
-  `defs/rack.yaml` lists the devices in shader order and says which matrix
+  `defs/rack/devices.yaml` lists the devices in shader order and says which matrix
   rows and shared keys each one owns. `prism describe --json` carries it as
   `rack`. The panel keeps naming no parameter keys.
 - **A device's mix is one of its existing rows.** No synthetic mix parameter
@@ -60,24 +63,32 @@ and are out of scope here.
 
 ### The device table
 
-| # | Device id | Label | Category | Mix row | Detail rows | Shared keys | Bypass key |
-|---|---|---|---|---|---|---|---|
-| 1 | `backdrop` | Backdrop | source | Blur | Frosted backdrop | | `glass.bypass.backdrop` |
-| 2 | `distortion` | Distortion | geometry | Distortion | Distortion detail | | `glass.bypass.distortion` |
-| 3 | `refraction` | Refraction | optic | Refraction | Depth | | `glass.bypass.refraction` |
-| 4 | `fringing` | Fringing | optic | Fringing | | | `glass.bypass.fringing` |
-| 5 | `directionalBlur` | Directional blur | optic | Directional blur | | | `glass.bypass.directionalBlur` |
-| 6 | `tint` | Tint | optic | Tint | Tint distance | | `glass.bypass.tint` |
-| 7 | `saturation` | Saturation | post | Saturation | | | `glass.bypass.saturation` |
-| 8 | `noise` | Noise | post | Noise | | `glass.noiseType` | `glass.bypass.noise` |
+| # | Device id | Label | Category | Mix row | Detail rows | Shared keys | Bypass key | Requires |
+|---|---|---|---|---|---|---|---|---|
+| 1 | `backdrop` | Backdrop | source | Blur | Frosted backdrop | | `glass.bypass.backdrop` |  |
+| 2 | `distortion` | Distortion | geometry | Distortion | Distortion detail | | `glass.bypass.distortion` |  |
+| 3 | `refraction` | Refraction | optic | Refraction | Depth | | `glass.bypass.refraction` |  |
+| 4 | `fringing` | Fringing | optic | Fringing | | | `glass.bypass.fringing` | refraction |
+| 5 | `directionalBlur` | Directional blur | optic | Directional blur | | | `glass.bypass.directionalBlur` | refraction |
+| 6 | `tint` | Tint | optic | Tint | Tint distance | | `glass.bypass.tint` |  |
+| 7 | `saturation` | Saturation | post | Saturation | | | `glass.bypass.saturation` |  |
+| 8 | `noise` | Noise | post | Noise | | `glass.noiseType` | `glass.bypass.noise` |  |
 
 The order is the shader's. Fringing and directional blur are gains inside the
-refraction taps, so they sit directly after Refraction. Tint's mix is the
+refraction taps, so they sit directly after Refraction and declare that they
+require it: with the index of refraction at 1 the depth-jittered taps all
+sample one point, so directional blur has nothing to smear, while the green
+and blue channels of fringing keep an index above 1 and would still refract.
+Bypassing the carrier therefore silences both, in the sink and in the panel. Tint's mix is the
 color rather than the distance: distance is inverted (higher is less tint)
 and log-scaled, which makes a poor mix, while white is exact identity in the
 Beer-Lambert term.
 
-### `defs/rack.yaml`
+### `defs/rack/devices.yaml`
+
+`loadDefs` reads every `.yaml` file directly inside `defs/` as a list of
+params and rejects anything else, so the rack, which is a mapping, lives one
+directory down where that scan does not look. `loadDefs` is not changed.
 
 ```yaml
 group: Focus
@@ -90,6 +101,14 @@ devices:
     shared: []
     bypass: glass.bypass.backdrop
   # ... one entry per row of the table above, in this order
+  - device: fringing
+    label: Fringing
+    category: optic
+    mix: Fringing
+    rows: []
+    shared: []
+    bypass: glass.bypass.fringing
+    requires: refraction
   - device: noise
     label: Noise
     category: post
@@ -101,12 +120,13 @@ devices:
 
 `mix` and `rows` name matrix rows by their `ui.row` label. `shared` names
 keys that carry no state. `bypass` names a key. `rows` and `shared` may be
-empty but must be present.
+empty but must be present. `requires` is optional and names one earlier
+device whose bypass also silences this one.
 
 ### The loader
 
 A new module `src/rack.js` exports `loadRack(defs)`. It reads
-`defs/rack.yaml` and validates, failing the load on the first violation:
+`defs/rack/devices.yaml` and validates, failing the load on the first violation:
 
 - `group` is a non-empty string; `devices` is a non-empty list.
 - `device` matches `^[a-z][a-zA-Z0-9]*$` and is unique. `label` is a
@@ -117,6 +137,7 @@ A new module `src/rack.js` exports `loadRack(defs)`. It reads
   key in `group` with no `ui.state`. Every `bypass` entry names a key in
   `group` of type `bool` with `control: toggle` and no `ui.state`.
 - No row or key is referenced by two devices, or twice by one.
+- `requires`, when present, names a device that appears earlier in the list.
 - Every visible param in `group` other than the group's header toggle is
   referenced by exactly one device. The rack is complete or it does not load.
 
@@ -147,6 +168,9 @@ The payload gains a `rack` field:
 "rack": {
   "group": "Focus",
   "devices": [
+    {"device": "fringing", "label": "Fringing", "category": "optic",
+     "mix": "Fringing", "rows": [], "shared": [],
+     "bypass": "glass.bypass.fringing", "requires": "refraction"},
     {"device": "noise", "label": "Noise", "category": "post",
      "mix": "Noise", "rows": [], "shared": ["glass.noiseType"],
      "bypass": "glass.bypass.noise"}
@@ -154,7 +178,8 @@ The payload gains a `rack` field:
 }
 ```
 
-It is the validated file verbatim. The panel resolves row labels and keys
+A device with `requires` carries it as a string; one without omits the
+field. It is the validated file verbatim. The panel resolves row labels and keys
 against `params` itself; `describe` adds nothing the panel could derive.
 
 ## Section 2: bypass through the store and the niri sink
@@ -172,7 +197,7 @@ unfocused material:
 |---|---|
 | `glass.bypass.backdrop` | `roughness 0`, `backdrop-blur false` |
 | `glass.bypass.distortion` | `distortion 0` (scale unchanged) |
-| `glass.bypass.refraction` | `ior 1` (thickness unchanged) |
+| `glass.bypass.refraction` | `ior 1`, `chromatic-aberration 0`, `anisotropic-blur 0` (thickness unchanged) |
 | `glass.bypass.fringing` | `chromatic-aberration 0` |
 | `glass.bypass.directionalBlur` | `anisotropic-blur 0` |
 | `glass.bypass.tint` | `attenuation-color "#ffffff"` (distance unchanged) |
@@ -183,10 +208,21 @@ unfocused material:
 resolved values on the bus are untouched and only the KDL differs. The
 window rules and the slab frame are not affected.
 
-Two couplings are recorded, not hidden. The shader scales the roughness
-prefilter by how far ior sits above 1, so bypassing Refraction also silences
-Blur. Noise type is shared, so bypassing Noise clears both states' grain.
-Both are stated in the bypass keys' descriptions.
+The Refraction entry writes three fields because Fringing and Directional
+blur ride the refraction taps: at ior 1 every jittered tap lands on the same
+point, so directional blur vanishes on its own, but the green and blue
+channels of fringing use an index above 1 and would keep refracting. Zeroing
+both makes "bypass Refraction" mean no refraction at all, whatever the two
+dependent devices are set to. Their own bypass keys are untouched and their
+own dry entries stand.
+
+One coupling is recorded rather than modelled. The renderer's prefilter
+level is `roughness` scaled by how far ior sits above 1, so bypassing
+Refraction also flattens Blur while frosted backdrop still selects the
+blurred source. The Refraction bypass description says so; no `requires` is
+declared, because the sink writes nothing for it and the panel would be
+claiming a silence that is only partial. Noise type is shared, so bypassing
+Noise clears both states' grain; its description says that too.
 
 ## Section 3: the panel
 
@@ -207,23 +243,34 @@ per device in rack order.
   plugins no theme palette, so they stay constants until a plugin setting
   earns its place. A bypassed card drops to the panel's dim opacity.
 - **Light.** A `ui.glyph` in a clickable `ui.row`. Lit in the category color
-  while the bypass key is false, grey while true. Clicking the row queues
-  `prism set <bypass key> <not current>`. It is a glyph in a row because a
-  toggle cannot carry a tooltip and a button cannot be colored at the plugin
-  API Prism declares.
+  while the device is active, grey while its own bypass key is true, and
+  hollow (the outline glyph, category color) while it is active but the
+  device it requires is bypassed. Clicking the row queues
+  `prism set <bypass key> <not current>`, a plain set, whatever the layer.
+  It is a glyph in a row because a toggle cannot carry a tooltip and a
+  button cannot be colored at the plugin API Prism declares.
+- **Bypass row.** The bypass key renders as an ordinary single row at the
+  top of the expanded details: label, toggle, and the reset button every row
+  has, dim without an override and issuing `prism unset` with one. This is
+  the only way to drop a bypass override from a profile or a pinned
+  wallpaper without resetting the whole section, because `set` in a context
+  layer always persists the value, even `false`. The light and the toggle
+  show the same key.
 - **Mix cells.** The existing `controlCell` in both columns: formatted
   value, control, reset. Tint's mix cell is the color button. Shadowing and
   dimming stay per cell.
 - **Expand.** A chevron `ui.button` per card. Expanded state is a table in
   panel memory keyed by device id: collapsed when the plugin loads,
   remembered across opens within a shell session. When expanded, detail rows
-  render as matrix rows and shared keys as single rows, both indented under
-  the light, using the current column geometry.
+  render as matrix rows and shared keys as single rows after the bypass
+  row, all indented under the light, using the current column geometry.
 - **Everything else** is untouched: title, profile, and wallpaper rows, the
   Glass section, and the Terminal section rendered as today's matrix.
 
 Presentation logic gains `rack(model)`, a pure function returning the cards
-in file order with each row label and key resolved to its params. It errors
+in file order with each row label and key resolved to its params, and for
+each card a `silenced` flag that is true when the device it requires has
+its bypass key set. It errors
 on a row or key the payload does not carry, an unreferenced param in the
 rack's group, or a missing `rack` field, and the panel shows that as the
 contract banner it already uses. `sections(params)` keeps serving the Glass
@@ -239,10 +286,13 @@ it.
 Node tests:
 
 - `test/rack.test.js`: one case per validation rule in Section 1, plus the
-  shipped file loading cleanly against the shipped defs.
+  shipped file loading cleanly against the shipped defs, and `loadDefs`
+  still loading with the rack directory present.
 - The existing CLI or describe test: the payload carries `rack` verbatim.
 - `test/niri-render.test.js`: the golden gains a case with one device
-  bypassed in each category, and a cross-check that every bypass key in
+  bypassed in each category, two cases for Refraction bypassed with fringing
+  and directional blur non-zero (both come out zeroed in both materials) and
+  with them at zero (the output is the same as the first), and a cross-check that every bypass key in
   `defs/rack.yaml` has a dry entry in the renderer and vice versa.
 - `test/glass-defs.test.js`: the matrix table gains no rows; the "shared
   glass" table gains the eight bypass keys; terminal opacity is in group
@@ -250,10 +300,13 @@ Node tests:
 
 Lua tests in `plugin_test.lua`:
 
-- A rack golden vector: cards in file order, mix and details resolved, the
-  three error messages verbatim.
+- A rack golden vector: cards in file order, mix and details resolved,
+  `silenced` set on a dependent while its upstream is bypassed, the three
+  error messages verbatim.
 - Rendered tree: one card and one light per device, details absent until a
-  card is expanded and present after, the bypass click argv, the Terminal
+  card is expanded and present after, the bypass row first among them with
+  a reset that issues `unset`, the light hollow on Fringing while Refraction
+  is bypassed, the bypass click argv, the Terminal
   section still a matrix, and the select and toggle counts updated.
 
 Desktop acceptance is manual: repoint the plugin symlink to the worktree,
