@@ -90,9 +90,11 @@ The presentation module defines the panel's stable layout contract:
   Each section shows a reset that removes every override its parameters hold
   in the write target, dim while the section holds no overrides.
 - The rack is one card per device in `rack.devices` order. A card's head is a
-  light, a chevron, the device label, and the mix row's info button, in the
-  same fixed span as every other head cell; then the mix row's focused and
-  unfocused cells. The light is a glyph: `circle-filled` in the category color
+  light, a chevron, and the device name, in the same fixed span as every other
+  head cell; then the mix row's focused and unfocused cells. The name is a
+  ghost text button whose hover tooltip carries the mix description. Clicking
+  the card title or chevron toggles details; ordinary parameter names remain
+  hover-only. The light is a glyph: `circle-filled` in the category color
   while active, `circle` in `on_surface_variant` while the device's bypass key
   is true, `circle` in the category color while the device it `requires` is
   bypassed. Clicking the light sets the bypass key. The chevron expands the
@@ -109,14 +111,18 @@ The presentation module defines the panel's stable layout contract:
   a matrix row: one label, the focused control on the left, the unfocused on
   the right, under `Focused` / `Unfocused` column labels. A row with a missing
   or duplicated state, or one that spans sections, is a model error.
-- Every other visible parameter is a single row: label, an info button whose
-  tooltip carries the description, the formatted value, the native control,
-  and a per-parameter reset that removes the override in the write target and
-  shows the fallback value until describe reconciles.
-- Row geometry is fixed and independent of parameter state. The label, info
-  button, and formatted value occupy reserved widths, the two matrix cells
-  divide the remaining span evenly, and the `Focused` / `Unfocused` titles
-  reserve the same leading span as the rows they head. Every reset stays in
+- Every other visible parameter is a single row: its name with the same help
+  behavior, the formatted value, the native control, and a per-parameter reset
+  that removes the override in the write target and shows the fallback value
+  until describe reconciles. Plain matrix rows use the same name/help control.
+- Row geometry is fixed and independent of parameter state. Names and
+  formatted values occupy reserved widths, the two matrix cells divide the
+  remaining span evenly, and the `Focused` / `Unfocused` titles reserve the
+  same leading span and horizontal inset as the rows they head. Value labels
+  sit in fixed-width layout containers because the native label reconciler
+  ignores `width`; the value column stays present even for non-slider cells.
+  Sized spacers explicitly disable growth so indentation and header spacing
+  cannot consume the space reserved for names and controls. Every reset stays in
   the tree, dim when its parameter holds no override and full strength when it
   is overridden; nothing appears or disappears as a value crosses its default.
 - Toggle, select, slider, color, and reset actions update the local displayed

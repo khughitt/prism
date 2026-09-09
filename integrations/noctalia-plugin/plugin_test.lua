@@ -210,6 +210,7 @@ local model = { active = {}, profiles = {}, layers = resolutionOrder, target = "
   },
   {
     key = "glass.roughness", value = 0.2, default = 0.08, layer = "base", fallback = 0.1,
+    description = "Backdrop test description",
     effectiveDrag = "release", range = { 0, 1 },
     ui = { control = "slider", group = "Focus", order = 220, step = 0.01, label = "Blur", display = "percent", state = "focused", row = "Blur" },
   },
@@ -311,7 +312,9 @@ local function collect(tree, kind, found)
   return found
 end
 local labels = {}
-for _, label in ipairs(collect(rendered, "label")) do labels[label.props.text or ""] = true end
+for _, kind in ipairs({"label", "button"}) do
+  for _, label in ipairs(collect(rendered, kind)) do labels[label.props.text or ""] = true end
+end
 assert(labels["Glass"] and labels["Focus"], "section headers missing")
 assert(labels["Focused"] and labels["Unfocused"], "matrix column labels missing")
 assert(labels["Backdrop"] and labels["Gaps"], "row labels missing")
@@ -370,6 +373,42 @@ local function byKey(tree, key, found)
   for _, child in ipairs(tree.children or {}) do byKey(child, key, found) end
   return found
 end
+-- Labels do not honour width in the native host. Value columns must reserve
+-- their space with a layout container, including non-slider and empty values.
+local valueWidth
+for _, key in ipairs({"compositor.gaps", "glass.roughness", "glass.saturation", "terminal.background.opacity.active"}) do
+  local cell = byKey(rendered, key)[1]
+  assert(cell, "missing control cell " .. key)
+  local column = cell.children[1]
+  assert(column.kind == "row" or column.kind == "column", "value width must be enforced by a layout container")
+  assert(column.props.width and column.props.width > 0, "value column needs a reserved width")
+  valueWidth = valueWidth or column.props.width
+  equal(column.props.width, valueWidth, "formatted values must reserve the same width")
+end
+
+-- The rack header includes the same horizontal inset as its cards.
+local rackHeader
+for _, row in ipairs(collect(rendered, "row")) do
+  if row.props.key == "Focus:columns" then rackHeader = row end
+end
+assert(rackHeader, "rack column header missing")
+equal(rackHeader.props.paddingH, byKey(rendered, "backdrop:card")[1].props.paddingH,
+  "rack header and card control columns must share their inset")
+
+-- Names expose hover help without adding a second, expandable help surface.
+local nameButton = byKey(rendered, "glass.roughness:name")[1]
+assert(nameButton and nameButton.kind == "button", "effect name must be an interactive tooltip target")
+equal(nameButton.props.text, "Backdrop")
+equal(nameButton.props.tooltip, "Backdrop test description")
+equal(nameButton.props.glyph, nil, "effect help needs no separate info glyph")
+for _, button in ipairs(collect(rendered, "button")) do
+  assert(button.props.glyph ~= "info-circle", "row help lives on names rather than info icons")
+end
+local commandsBeforeHelp, treeBeforeHelp = #commands, rendered
+byKey(rendered, "compositor.gaps:name")[1].props.onClick()
+assert(rendered == treeBeforeHelp, "parameter name clicks must not expand help")
+equal(#commands, commandsBeforeHelp, "reading help must not write parameters")
+
 equal(#byKey(rendered, "backdrop:card"), 1)
 equal(#byKey(rendered, "saturation:card"), 1)
 equal(#byKey(rendered, "noise:card"), 1)
@@ -462,12 +501,34 @@ local function chevron(device)
   return nil
 end
 equal(chevron("noise").props.tooltip, "Show details")
+local commandsBeforeExpansion = #commands
+byKey(rendered, "glass.noise:name")[1].props.onClick()
+equal(chevron("noise").props.tooltip, "Hide details", "card titles expand details")
 chevron("noise").props.onClick()
+equal(chevron("noise").props.tooltip, "Show details", "chevrons share the title's expansion state")
+byKey(rendered, "glass.noise:name")[1].props.onClick()
 equal(chevron("noise").props.tooltip, "Hide details")
+byKey(rendered, "glass.noise:name")[1].props.onClick()
+equal(chevron("noise").props.tooltip, "Show details", "card titles collapse details")
+byKey(rendered, "glass.noise:name")[1].props.onClick()
+equal(#commands, commandsBeforeExpansion, "expansion must not write parameters")
 equal(#collect(rendered, "select"), 2, "the noise type select appears once its card is expanded")
 equal(paramSelect(rendered).props.options, { "white", "fine" })
 equal(paramSelect(rendered).props.selectedIndex, 1)
 local noiseCard = byKey(rendered, "noise:card")[1]
+local selectValueColumn = byKey(noiseCard, "glass.noiseType")[1].children[1]
+equal(selectValueColumn.props.width, valueWidth, "non-slider controls reserve the value column too")
+equal(collect(selectValueColumn, "label")[1].props.text, "")
+local selectName = byKey(noiseCard, "glass.noiseType:name")[1]
+equal(selectName.props.tooltip, "glass.noiseType", "missing descriptions fall back to the parameter key")
+-- A width alone does not make a native spacer fixed: Spacer defaults to grow=1.
+-- Fixed indentation must leave the rest of the head available for long names.
+for _, spacer in ipairs(collect(rendered, "spacer")) do
+  if spacer.props.width ~= nil then
+    equal(spacer.props.flexGrow, 0, "sized spacers must not compete with names or column titles")
+  end
+end
+
 local expandedToggles = collect(noiseCard, "toggle")
 equal(#expandedToggles, 1, "the bypass row's toggle")
 local detailRows = {}
