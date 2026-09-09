@@ -439,6 +439,11 @@ test('loadDefs still loads with the rack directory beside the def files', () => 
   assert.ok(fs.existsSync(path.join(defsDir(), 'rack', 'devices.yaml')));
 });
 
+test('a row with two parameters of one state is rejected before a device can claim it', () => {
+  const doubled = defsFrom(DEFS + `- {key: r.blur2, type: float, range: [0, 1], default: 0, ui: {group: R, control: slider, step: 0.1, label: Blur again, order: 11, state: focused, row: Blur}, description: d}\n`);
+  assert.throws(() => validateRack(complete, doubled), /row Blur in group R has two focused parameters/);
+});
+
 const rackWith = (edit) => {
   const rack = structuredClone(complete);
   edit(rack);
@@ -515,6 +520,9 @@ export function validateRack(rack, defs) {
     if (def.ui.group !== group || def.ui.control === 'none') continue;
     if (def.ui.state !== undefined) {
       const row = rows.get(def.ui.row) ?? {};
+      // loadDefs does not pair rows; the panel's sections() rejects a doubled
+      // state, and so must the rack, or one of the two defs silently vanishes.
+      if (row[def.ui.state]) fail(`row ${def.ui.row} in group ${group} has two ${def.ui.state} parameters`);
       row[def.ui.state] = def.key;
       rows.set(def.ui.row, row);
     } else if (def.ui.header !== true) {
@@ -875,6 +883,13 @@ rackFails(function(m) m.rack.devices[2] = nil end, "row Depth belongs to no devi
 rackFails(function(m) m.rack.devices[1].shared = {} end, "parameter r.kind belongs to no device")
 rackFails(function(m) m.rack.devices[2].requires = "three" end, "device two requires unknown device three")
 rackFails(function(m) m.rack.devices[1].category = "light" end, "device one has unknown category light")
+-- sections() rejects these two shapes; the rack path must not let them through.
+rackFails(function(m)
+  m.params[#m.params + 1] = { key = "r.blur2", value = 0, ui = { control = "slider", group = "Rack", order = 12, state = "focused", row = "Blur" } }
+end, "row Blur has two focused parameters")
+rackFails(function(m)
+  m.params[#m.params + 1] = { key = "r.split2", value = true, ui = { control = "toggle", group = "Rack", order = 13, header = true } }
+end, "section Rack has two header toggles")
 ```
 
 - [ ] **Step 2: Run and confirm it fails**
@@ -918,9 +933,13 @@ function M.rack(model)
     if param.ui.control ~= "none" and param.ui.group == rack.group then
       if param.ui.state ~= nil then
         local row = rows[param.ui.row] or { row = param.ui.row }
+        if row[param.ui.state] ~= nil then
+          error("row " .. param.ui.row .. " has two " .. param.ui.state .. " parameters")
+        end
         row[param.ui.state] = param
         rows[param.ui.row] = row
       elseif param.ui.header == true then
+        if header ~= nil then error("section " .. rack.group .. " has two header toggles") end
         header = param
       else
         singles[param.key] = param
@@ -1128,6 +1147,11 @@ equal(saturationLight.props.name, "circle")
 equal(saturationLight.props.color, "on_surface_variant")
 
 -- Clicking a light flips the bypass key with a plain set, whatever the layer.
+-- The stub host never completes a write, so the reset above left an unset in
+-- flight and anything enqueued now would only wait behind it: start clean.
+dofile(here .. "panel.luau")
+onOpen({})
+described({ exitCode = 0, stdout = "{}" })
 local commandsBeforeLight = #commands
 local backdropLightRow = light("backdrop")
 backdropLightRow.props.onClick()
@@ -1214,6 +1238,61 @@ model.rack = savedRack
 ```
 
 The block above is one contiguous Lua snippet: paste it after the existing reset assertions.
+
+**Migrate the other panel fixtures.** `validateModel` now refuses a model without `rack`, so every fixture that reaches it needs one:
+
+- `layeredModel(overrides)` in `plugin_test.lua`: add a bypass param and a rack. Append to its `params` list, after `glass.inactive.roughness` and before `debug.backdrop`:
+
+  ```lua
+      { key = "glass.bypass.backdrop", value = false, default = false, layer = "default", fallback = false,
+        effectiveDrag = "release", ui = { control = "toggle", group = "Focus", order = 400, label = "Bypass backdrop" } },
+  ```
+
+  and add a `rack` field to the table beside `target`:
+
+  ```lua
+    rack = { group = "Focus", devices = {
+      { device = "backdrop", label = "Backdrop", category = "source", mix = "Blur", rows = {}, shared = {}, bypass = "glass.bypass.backdrop" },
+    } },
+  ```
+
+  The bypass sits on `default`, so the header still counts `4 overrides`. The `cellFor` assertions key on parameter keys, which the mix cells keep; the shadow hint still renders from `rowHint` inside the card.
+- The `bareTree` model overrides `params` with a lone title toggle, so give it `rack = { group = "Focus", devices = {} }` in the same overrides table. `Presentation.rack` accepts an empty device list when the group holds no parameters; the loader is what refuses an empty file.
+- `test/plugin-panel-lifecycle.test.js`: its harness model has only a Title toggle and a Quick slider. Add a Focus group and a rack. After the `glass.depth` entry add:
+
+  ```lua
+    {
+      key = "glass.focusSplit", value = true, default = true, layer = "default", fallback = true,
+      effectiveDrag = "release", description = "",
+      ui = {control = "toggle", group = "Focus", order = 200, label = "Focus-state glass", header = true},
+    },
+    {
+      key = "glass.noise", value = 0, default = 0, layer = "default", fallback = 0,
+      effectiveDrag = "release", description = "", range = {0, 1},
+      ui = {control = "slider", group = "Focus", order = 320, label = "Noise", step = 0.01, state = "focused", row = "Noise"},
+    },
+    {
+      key = "glass.inactive.noise", value = 0.02, default = 0.02, layer = "default", fallback = 0.02,
+      effectiveDrag = "release", description = "", range = {0, 1},
+      ui = {control = "slider", group = "Focus", order = 321, label = "Unfocused noise", step = 0.01, state = "unfocused", row = "Noise"},
+    },
+    {
+      key = "glass.bypass.noise", value = false, default = false, layer = "default", fallback = false,
+      effectiveDrag = "release", description = "",
+      ui = {control = "toggle", group = "Focus", order = 470, label = "Bypass noise"},
+    },
+  ```
+
+  and change the model's opening line to carry the rack:
+
+  ```lua
+  local model = {active = {}, profiles = {}, layers = {"default", "base", "wallpaper", "state", "profile"}, target = "base",
+    rack = {group = "Focus", devices = {
+      {device = "noise", label = "Noise", category = "post", mix = "Noise", rows = {}, shared = {}, bypass = "glass.bypass.noise"},
+    }}, params = {
+  ```
+
+  Its `ui` stub enumerates the kinds it will build; add `"glyph"` to that list (`{"button", "column", "glyph", "label", ...}`), or the light's glyph is a nil call. The test drives only the `glass.depth` slider, which stays in the Quick section, so nothing else in it changes.
 
 - [ ] **Step 2: Run and confirm it fails**
 
@@ -1507,6 +1586,10 @@ Then `tasks note prism-9331c1 "<what was verified: suite counts, describe output
 Desktop acceptance cannot be automated here (no pointer automation). Give the user this checklist, with the exact commands:
 
 ```
+# The panel runs `prism` from PATH, and ~/bin/prism points at the main checkout,
+# whose describe has no rack; switch both, and record the original CLI target.
+readlink ~/bin/prism   # note this; it is what to restore
+ln -sfn /mnt/ssd/Dropbox/prism/.worktrees/device-chain/bin/prism ~/bin/prism
 ln -sfn /mnt/ssd/Dropbox/prism/.worktrees/device-chain/integrations/noctalia-plugin ~/.local/share/noctalia/plugins/prism
 noctalia msg plugins disable khughitt/prism
 noctalia msg plugins enable khughitt/prism
@@ -1514,4 +1597,4 @@ noctalia msg plugins enable khughitt/prism
 noctalia msg panel-open khughitt/prism:panel
 ```
 
-Check: eight cards under Focus in shader order with colored fills; lights lit; clicking Noise's light greys it and the grain disappears on the desktop; expanding Noise shows Bypass noise (on) with a lit reset, then Noise type; resetting the bypass row un-bypasses; bypassing Refraction hollows the Fringing and Directional blur lights; the Terminal section still shows the opacity sliders. Then restore the symlink to the main checkout's plugin directory after merge. `tasks done prism-9331c1` is the user's call after that check, in the merge commit.
+Check: eight cards under Focus in shader order with colored fills; lights lit; clicking Noise's light greys it and the grain disappears on the desktop; expanding Noise shows Bypass noise (on) with a lit reset, then Noise type; resetting the bypass row un-bypasses; bypassing Refraction hollows the Fringing and Directional blur lights; the Terminal section still shows the opacity sliders. Afterwards restore both links: `ln -sfn <the readlink output> ~/bin/prism` and the plugin link back to the main checkout's `integrations/noctalia-plugin`, then disable and enable the plugin again. Do this before merging as well if the branch is left for a while, or the panel and CLI disagree the moment the worktree moves. `tasks done prism-9331c1` is the user's call after that check, in the merge commit.
