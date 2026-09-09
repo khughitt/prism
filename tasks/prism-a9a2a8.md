@@ -6,7 +6,7 @@ priority: 2
 size: m
 owner: main
 created: 2026-09-04T21:44:54Z
-updated: 2026-09-06T09:00:50Z
+updated: 2026-09-09T01:55:28Z
 depends: [ops-31f038]
 tags: [testing]
 ---
@@ -19,3 +19,4 @@ Piece of ops-65837b (the cross-project audit in the ops hub). 1. Measure: full-s
 - 2026-09-05T11:41:44Z (test-ci-audit): step 1 (instrument, no policy change): justfile front door, vendored tools/tt (version 2), .githooks + core.hooksPath, README and AGENTS.md test commands routed through it; no prior hooks and no CI here, so the template gates are the first ones. Measured full suite 150 tests, 1.3s median / 1.4s p90 wall over 3 runs of `just test`, 0 failures; `tasks check` is 0.0s. No affected-only selection for node --test, so test-fast = test. Verified one line each under claude (shared log), codex (worktree .tt fallback, harvested by tt-report), and by hand. Wall time is not the cost here: the spec reporter prints 150 lines per run, so the quiet reporter is the step 3 hygiene item.
 - 2026-09-05T22:56:36Z (main): Suite hygiene item found while merging prism-6fd864: prism-e76678 — test/fanout.test.js's timeout test spends its 100ms sink budget on node interpreter startup, so it fails under full-suite contention and passes alone. Measured here: node -e '' is 20-30ms at load ~24, sh -c ':' is ~0ms.
 - 2026-09-06T09:00:50Z (main): step 4 hygiene: prism-e76678 landed (fan-out timeout test now measures the kill path, not node startup); reproduced and verified under 96 CPU burners on the 32-core box.
+- 2026-09-09T01:55:28Z (main): Step 4 cost datapoint: prism-52bc13's contract test is the most expensive single test in the suite -- two 'prism describe' spawns plus one lua spawn, ~300ms of a ~1.87s full suite (was ~1.78s). Process spawns, not compute; nothing to trim without giving up the end-to-end check.
