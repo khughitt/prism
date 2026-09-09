@@ -157,3 +157,112 @@ test('child fan-outs wait for the status lock and retain unique snapshots', { ti
   assert.deepEqual(status.first.params, { 'first.value': 101 });
   assert.deepEqual(status.second.params, { 'second.value': 202 });
 });
+
+const { unmetRequirement, SINK_TIMEOUT } = await import('../src/fanout.js');
+
+function sinkDir(t, files) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-sink-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  for (const [name, body] of Object.entries(files)) {
+    fs.writeFileSync(path.join(dir, name), body, { mode: 0o755 });
+  }
+  return dir;
+}
+
+test('a command requirement whose when param is false is not checked', (t) => {
+  const manifest = {
+    sink: 'alpha',
+    dir: sinkDir(t, {}),
+    binds: [],
+    generates: [],
+    requires: [{ command: 'definitely-not-installed', when: 'a.on', fix: 'install it' }],
+  };
+
+  assert.equal(unmetRequirement(manifest, { params: { 'a.on': false } }), null);
+  assert.match(
+    unmetRequirement(manifest, { params: { 'a.on': true } }),
+    /definitely-not-installed is not installed — install it/,
+  );
+});
+
+// The probe owns what is actually installed; the manifest owns what to do.
+test('an unmet probe requirement joins the probe stderr to the manifest fix', (t) => {
+  const manifest = {
+    sink: 'alpha',
+    dir: sinkDir(t, { 'probe-thing': '#!/bin/sh\necho "no thing here (installed: 1.0)" >&2\nexit 1\n' }),
+    binds: [],
+    generates: [],
+    requires: [{ probe: 'thing', fix: 'install thing' }],
+  };
+
+  assert.equal(
+    unmetRequirement(manifest, { params: {} }),
+    'no thing here (installed: 1.0) — install thing',
+  );
+});
+
+test('a satisfied probe requirement reports nothing', (t) => {
+  const manifest = {
+    sink: 'alpha',
+    dir: sinkDir(t, { 'probe-thing': '#!/bin/sh\nexit 0\n' }),
+    binds: [],
+    generates: [],
+    requires: [{ probe: 'thing', fix: 'install thing' }],
+  };
+
+  assert.equal(unmetRequirement(manifest, { params: {} }), null);
+});
+
+// A probe that cannot answer has not established that the requirement is met,
+// and an unbounded one would hang the fan-out, every later sink, and doctor.
+test('a hung probe is killed at the bound and reported as unmet', (t) => {
+  const manifest = {
+    sink: 'alpha',
+    dir: sinkDir(t, { 'probe-slow': '#!/bin/sh\nsleep 30\n' }),
+    binds: [],
+    generates: [],
+    requires: [{ probe: 'slow', fix: 'install thing' }],
+  };
+
+  const started = Date.now();
+  const unmet = unmetRequirement(manifest, { params: {} }, { timeout: 200 });
+
+  assert.match(unmet, /probe slow did not finish within 0\.2s — install thing/);
+  assert.ok(Date.now() - started < 5_000, 'the probe must not have run to completion');
+});
+
+test('an unmet requirement fails only its own sink and never spawns apply', async (t) => {
+  freshState();
+  const spawned = [];
+  const blocked = {
+    sink: 'blocked',
+    dir: sinkDir(t, {}),
+    binds: [{ param: 'a.on', liveness: 'live' }],
+    generates: [],
+    requires: [{ command: 'definitely-not-installed', fix: 'install it' }],
+  };
+  const later = {
+    sink: 'later', dir: sinkDir(t, {}), binds: [{ param: 'a.on', liveness: 'live' }],
+    generates: [], requires: [],
+  };
+
+  const { applied, failed } = await fanOut({
+    manifests: [blocked, later],
+    resolved: { params: { 'a.on': true } },
+    changedKeys: ['a.on'],
+    runner: (manifest) => { spawned.push(manifest.sink); },
+  });
+
+  assert.deepEqual(spawned, ['later'], 'the blocked sink must not be spawned');
+  assert.deepEqual(applied, ['later'], 'a blocked sink must not stop a later one');
+  assert.equal(failed.length, 1);
+  assert.match(failed[0].error, /definitely-not-installed is not installed — install it/);
+
+  const status = JSON.parse(fs.readFileSync(sinkStatusPath(), 'utf8'));
+  assert.equal(status.blocked.ok, false);
+  assert.match(status.blocked.error, /install it/);
+});
+
+test('SINK_TIMEOUT is the bound both apply and probes run under', () => {
+  assert.equal(SINK_TIMEOUT, 5_000);
+});

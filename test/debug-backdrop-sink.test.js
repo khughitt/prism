@@ -166,3 +166,28 @@ test('a missing shell fails before qs is invoked', (t) => {
   assert.equal(calls().length, 0);
   assert.match(diagnostic(result), /shell\.qml/);
 });
+
+// A machine that never wanted the backdrop should not need quickshell to
+// apply a store that has it off.
+test('the backdrop off with quickshell absent is a clean skip', (t) => {
+  const { run, calls } = fixture(t);
+
+  const result = run({ value: false, qs: false });
+
+  assert.equal(result.status, 0, diagnostic(result));
+  assert.equal(result.stderr.trim(), '');
+  assert.deepEqual(calls(), [], 'nothing may be spawned when there is nothing to stop');
+});
+
+// With the backdrop on, an absent qs is a real failure — the fan-out reports
+// it from the manifest before apply is ever spawned, and apply itself must not
+// pretend otherwise if it is run directly.
+test('the backdrop on with quickshell absent still fails', (t) => {
+  const { run } = fixture(t);
+
+  const result = run({ value: true, qs: false });
+
+  assert.notEqual(result.status, 0);
+  assert.match(diagnostic(result), /qs is not installed/);
+  assert.doesNotMatch(diagnostic(result), /Buffer\(|Uint8Array/);
+});

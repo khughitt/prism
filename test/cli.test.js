@@ -351,6 +351,39 @@ test('doctor: a sink whose apply failed reports its error', async () => {
   assert.doesNotMatch(out, /gensink/);
 });
 
+// doctor exists so a machine learns what it is missing without first
+// provoking a failed apply.
+test('doctor reports an unmet requirement, and says nothing when its when is false', async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-req-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(dir, 'reqsink'));
+  fs.writeFileSync(path.join(dir, 'reqsink', 'manifest.yaml'), [
+    'sink: reqsink',
+    'requires:',
+    '  - {command: definitely-not-installed, when: debug.backdrop, fix: install it}',
+    'binds:',
+    '  - {param: debug.backdrop, liveness: live}',
+    '',
+  ].join('\n'));
+
+  const restore = process.env.PRISM_INTEGRATIONS_DIR;
+  process.env.PRISM_INTEGRATIONS_DIR = dir;
+  t.after(() => { process.env.PRISM_INTEGRATIONS_DIR = restore; });
+
+  const doctorOutput = async () => {
+    let out = '';
+    await cli.run(['doctor'], { runner: () => {}, print: (text) => { out += text; } });
+    return out;
+  };
+
+  // debug.backdrop defaults to false, so the requirement does not apply.
+  assert.doesNotMatch(await doctorOutput(), /definitely-not-installed/);
+
+  await cli.run(['set', 'debug.backdrop', 'true'], { runner: () => {} });
+  assert.match(await doctorOutput(),
+    /doctor: reqsink: definitely-not-installed is not installed — install it/);
+});
+
 test('doctor: a sink whose snapshot drifted is stale', async () => {
   await cli.run(['apply'], { runner: () => {} });   // every sink current at the defaults
   // A pulled values.yaml changes a canonical value with no fan-out behind it —

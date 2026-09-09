@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { sinkMain } from '../../src/sink.js';
+import { sinkMain, onPath } from '../../src/sink.js';
 
 sinkMain(() => {
   const shell = fileURLToPath(new URL('./shell.qml', import.meta.url));
@@ -10,6 +10,11 @@ sinkMain(() => {
 
   const resolved = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
   const enabled = resolved.params['debug.backdrop'];
+
+  // The manifest declares qs, but only checks it when the backdrop is on. With
+  // the backdrop off and quickshell absent there is nothing to stop: no instance
+  // of this shell can be running if qs was never installed.
+  if (!enabled && !onPath('qs')) return;
 
   function diagnostic(result, fallback) {
     return [result.stderr, result.stdout].filter((text) => text?.trim()).join('\n').trim() || fallback;
