@@ -168,16 +168,16 @@ invocation to an operator who did not type it.
 
 ### 4. The three sinks
 
-**niri.** A new `integrations/niri/probe-material` writes a minimal config
-to a temp file and runs `niri validate -c` on it:
+**niri.** A new `integrations/niri/probe-material` writes a config to a temp
+file and runs `niri validate -c` on it.
 
-```kdl
-material "prism-probe" {
-    glass {
-        ior 1.5
-    }
-}
-```
+Superseded by material-09d8c0 on 2026-09-09: the probe was a minimal
+`material "prism-probe" { glass { ior 1.5 } }`, which a build that knows the
+material node but not a property prism has since started emitting — the `type=`
+on noise, against the three packages that predated it — answers yes to, before
+failing at apply time. The probe is now the fragment the sink writes, rendered
+by `renderNiriFragment` from the defs' own defaults with both glass states on,
+so a new property is probed the moment it can be emitted.
 
 Verified on titan 2026-09-08: exit 0 under niri-material, and exit 1 for a
 config containing a node niri does not know. On failure the probe writes one
@@ -230,7 +230,8 @@ is raised.
 | `fanout.test.js` | a probe that never exits is killed at the bound, fails only its own sink, and a later selected sink still applies |
 | `niri-render.test.js` | `glass.enabled: false` emits no `material` block |
 | `niri-apply.test.js` | existing diagnostic assertions, plus `doesNotMatch(/Buffer\(|Uint8Array/)` |
-| `niri-apply.test.js` | `probe-material` against a fake niri that rejects the node: one line naming niri-material |
+| `niri-apply.test.js` | `probe-material` against a fake niri that rejects the node: the failure and niri's own first line |
+| `niri-apply.test.js` | `probe-material` against a fake niri that accepts the node and refuses one property prism emits |
 | `debug-backdrop-sink.test.js` | `debug.backdrop: false` with `qs` absent exits 0 |
 | `cli.test.js` | `doctor` reports an unmet requirement, and stays silent when `when` is false |
 

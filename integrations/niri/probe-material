@@ -1,16 +1,34 @@
 #!/usr/bin/env node
 // Stock niri answers a config containing a material node with a screenful of
 // KDL parse errors that name a syntax position and never the cause. Ask it
-// about a minimal material block on its own, so the answer is one yes or no.
+// about the material config on its own, so the answer is one yes or no.
 // niri --version prints upstream's version with a build commit, so there is no
 // niri-material version to compare a minimum against: this states a capability.
+//
+// The probe is the fragment prism emits, rendered from the defs' own defaults
+// with both glass states on, not a hand-written sample. A build that knows the
+// material node but not a property prism has since started emitting -- the
+// type= on noise, against the three packages that predated it -- passes a
+// minimal probe and then fails at apply time. Rendering the probe from the
+// same code the sink writes means a new property is probed the moment it can
+// be emitted, with nothing to keep in step.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PROBE_CHILD_TIMEOUT } from '../../src/sink.js';
+import { loadDefs } from '../../src/defs.js';
+import { defsDir } from '../../src/paths.js';
+import { renderNiriFragment } from './render.js';
 
-const PROBE = 'material "prism-probe" {\n    glass {\n        ior 1.5\n    }\n}\n';
+const defaults = Object.fromEntries(
+  [...loadDefs(defsDir())].map(([key, def]) => [key, def.default]),
+);
+// Both states, whatever the defaults say: the inactive material is emitted only
+// under focusSplit, and it carries the same properties.
+const PROBE = renderNiriFragment({
+  params: { ...defaults, 'glass.enabled': true, 'glass.focusSplit': true },
+});
 
 // Both calls carry their own bound. The fan-out's SINK_TIMEOUT kills this
 // probe with SIGKILL, which no finally block survives: a niri that hangs would
@@ -28,17 +46,27 @@ function installed() {
   }
 }
 
+// One line of niri's own stderr. A build that is merely too old names the
+// property it does not know, which is the whole answer; a stock niri names a
+// parse position, which at least says the node itself was refused.
+function diagnostic(error) {
+  const [first] = String(error?.stderr ?? '').split('\n').filter((line) => line.trim());
+  return first === undefined ? null : `niri: ${first.trim().slice(0, 200)}`;
+}
+
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-probe-material-'));
 const file = path.join(dir, 'probe.kdl');
 
 let failure = null;
+let detail = null;
 try {
   fs.writeFileSync(file, PROBE);
   niri(['validate', '-c', file]);
 } catch (error) {
   failure = error?.code === 'ENOENT'
     ? 'niri is not installed'
-    : `this niri does not accept the material node (${installed()})`;
+    : `this niri does not accept the config prism emits (${installed()})`;
+  detail = error?.code === 'ENOENT' ? null : diagnostic(error);
 } finally {
   fs.rmSync(dir, { recursive: true, force: true });
 }
@@ -46,5 +74,6 @@ try {
 // process.exit skips finally, so the temp dir is already gone by here.
 if (failure !== null) {
   process.stderr.write(`${failure}\n`);
+  if (detail !== null) process.stderr.write(`${detail}\n`);
   process.exit(1);
 }

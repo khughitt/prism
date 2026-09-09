@@ -3,7 +3,7 @@ generates: [prism.kdl]
 requires:
   - probe: material
     when: glass.enabled
-    fix: "install niri-material; stock niri does not know the material node"
+    fix: "install or update niri-material; this niri does not accept the config prism emits"
 binds:
   - {param: compositor.gaps, liveness: reload}
   - {param: terminal.apps, liveness: reload}

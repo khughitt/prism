@@ -61,6 +61,12 @@ if [ "$1" = validate ]; then
     printf '%s\\n' "$NIRI_FAKE_DIAGNOSTIC" >&2
     exit 1
   fi
+  # A build that knows the material node but not one property: it refuses only
+  # the configs that carry the pattern, exactly as an outdated package does.
+  if [ -n "$NIRI_FAKE_REJECT_PATTERN" ] && grep -q "$NIRI_FAKE_REJECT_PATTERN" "$3"; then
+    printf "error: unknown property '%s'\\n" "$NIRI_FAKE_REJECT_PATTERN" >&2
+    exit 1
+  fi
   exit 0
 fi
 echo "$*" >> "$NIRI_FAKE_LOG"
@@ -214,9 +220,32 @@ test('probe-material names niri-material and what is installed', (t) => {
   });
 
   assert.equal(result.status, 1);
-  assert.equal(result.stderr.trim(),
-    'this niri does not accept the material node (installed: niri 26.04 (fake))');
+  assert.deepEqual(result.stderr.trim().split('\n'), [
+    'this niri does not accept the config prism emits (installed: niri 26.04 (fake))',
+    'niri: unexpected node `material`',
+  ]);
   assert.doesNotMatch(result.stderr, /Buffer\(|Uint8Array/);
+});
+
+// The case three shipped packages were in: they knew `material`, and predated the
+// type= prism emits on noise. A probe of a minimal block says yes and apply then
+// fails, so the probe is the fragment the sink writes, rendered from the same code.
+test('probe-material rejects a build too old for a property prism emits', (t) => {
+  const { dir } = fixture(t);
+  const probe = fileURLToPath(new URL('../integrations/niri/probe-material', import.meta.url));
+
+  const result = spawnSync(probe, [], {
+    encoding: 'utf8',
+    env: { ...process.env, PATH: `${path.join(dir, 'bin')}:${process.env.PATH}`,
+           NIRI_FAKE_LOG: path.join(dir, 'niri.log'),
+           NIRI_FAKE_REJECT_PATTERN: 'type=' },
+  });
+
+  assert.equal(result.status, 1);
+  assert.deepEqual(result.stderr.trim().split('\n'), [
+    'this niri does not accept the config prism emits (installed: niri 26.04 (fake))',
+    "niri: error: unknown property 'type='",
+  ]);
 });
 
 test('probe-material succeeds against a niri that accepts the node', (t) => {
@@ -260,7 +289,7 @@ exec sleep 60
   });
 
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /does not accept the material node \(installed: niri 26\.04 \(fake\)\)/);
+  assert.match(result.stderr, /does not accept the config prism emits \(installed: niri 26\.04 \(fake\)\)/);
   assert.ok(Date.now() - started < 5_000, 'the probe must return inside the outer bound');
 
   const hung = Number(fs.readFileSync(pidFile, 'utf8').trim());
