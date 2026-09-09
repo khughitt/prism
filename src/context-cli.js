@@ -4,7 +4,7 @@ import { withLock } from './lock.js';
 import { lockPath } from './paths.js';
 import {
   VERB_KINDS, assertKind, assertName, deleteContext, inspectContext, listContexts, readActive, readContext,
-  wallpaperId, canonicalWallpaperPath, writeActive, writeContext,
+  renameContext, wallpaperId, canonicalWallpaperPath, writeActive, writeContext,
 } from './contexts.js';
 import { activeName, loadLayers, loadStore } from './layers.js';
 import { readValues } from './values.js';
@@ -189,6 +189,25 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
       }, () => deleteContext(kind, name));
     }
 
+    // A profile keeps its identity under a new name: the file moves and, when
+    // it is the loaded one, the slot follows. Nothing effective changes, so
+    // resolved.json and the sinks are never touched. A wallpaper's name is a
+    // hash of its path, so it has nothing to rename.
+    case 'rename': {
+      if (rest.length !== 3) throw usage('rename <kind> <old> <new>');
+      const [kind, from, to] = rest;
+      assertKind(kind);
+      assertName(from);
+      assertName(to);
+      if (kind !== 'profile') throw new Error('rename is for profiles; a wallpaper is named by its path');
+      await withLock(lockPath(), async () => {
+        const active = readActive();
+        renameContext(kind, from, to);
+        if (active.profile === from) writeActive({ ...active, profile: to });
+      });
+      return null;
+    }
+
     // The hook's entry point. The same wallpaper again (a second connector, a
     // re-set) changes nothing, pin included; a different one is a new
     // activation and arrives unpinned.
@@ -201,6 +220,6 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
     }
 
     default:
-      throw usage('list|show|save|activate|deactivate|delete|pin|unpin|wallpaper');
+      throw usage('list|show|save|rename|activate|deactivate|delete|pin|unpin|wallpaper');
   }
 }

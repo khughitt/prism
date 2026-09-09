@@ -1016,9 +1016,12 @@ equal(Queue.argvFor({ verb = "activate", name = "dusk" }), { "prism", "context",
 equal(Queue.argvFor({ verb = "deactivate" }), { "prism", "context", "deactivate", "profile" })
 equal(Queue.argvFor({ verb = "save", name = "dusk" }), { "prism", "context", "save", "profile", "dusk" })
 equal(Queue.argvFor({ verb = "delete", name = "dusk" }), { "prism", "context", "delete", "profile", "dusk" })
+equal(Queue.argvFor({ verb = "rename", name = "dusk", newName = "dawn" }),
+  { "prism", "context", "rename", "profile", "dusk", "dawn" })
 for _, item in ipairs({
   { verb = "activate", name = "dusk" }, { verb = "deactivate" },
   { verb = "save", name = "dusk" }, { verb = "delete", name = "dusk" },
+  { verb = "rename", name = "dusk", newName = "dawn" },
 }) do
   equal(Queue.affectsParams(item), true)
 end
@@ -1091,10 +1094,10 @@ equal(#collect(saveTree, "input"), 0, "the name field stays out of the way until
 glyphButton(saveTree, "device-floppy").props.onClick()
 local nameField = collect(rendered, "input")[1]
 assert(nameField, "the save button opens a name field")
-nameField.props.onSubmit("dusk")
-equal(commands[#commands], Shell.command({ "prism", "context", "save", "profile", "dusk" }))
+nameField.props.onSubmit("noon")
+equal(commands[#commands], Shell.command({ "prism", "context", "save", "profile", "noon" }))
 writeCallback({ exitCode = 0, stdout = "" })
-equal(commands[#commands], Shell.command({ "prism", "context", "activate", "profile", "dusk" }),
+equal(commands[#commands], Shell.command({ "prism", "context", "activate", "profile", "noon" }),
   "a landed save is entered, so the next edit goes into the profile just named")
 
 -- A failed save must not be followed by an activate: the FIFO keeps going after
@@ -1102,8 +1105,8 @@ equal(commands[#commands], Shell.command({ "prism", "context", "activate", "prof
 -- never happened.
 local failTree = renderModel(profileModel())
 glyphButton(failTree, "device-floppy").props.onClick()
-collect(rendered, "input")[1].props.onSubmit("dusk")
-equal(commands[#commands], Shell.command({ "prism", "context", "save", "profile", "dusk" }))
+collect(rendered, "input")[1].props.onSubmit("noon")
+equal(commands[#commands], Shell.command({ "prism", "context", "save", "profile", "noon" }))
 local afterFailedSave = #commands
 writeCallback({ exitCode = 1, stdout = "", stderr = "disk full" })
 for index = afterFailedSave + 1, #commands do
@@ -1141,11 +1144,106 @@ local beforeDelete = #commands
 trash.props.onClick()
 equal(#commands, beforeDelete, "delete with nothing loaded enqueues nothing")
 
+local function textButton(tree, text)
+  for _, button in ipairs(collect(tree, "button")) do
+    if button.props.text == text then return button end
+  end
+  return nil
+end
+
+local function bannerOf(tree)
+  for _, label in ipairs(collect(tree, "label")) do
+    if label.props.color == "error" and (label.props.text or "") ~= "" then return label.props.text end
+  end
+  return nil
+end
+
+-- Deleting is asked about in place: Noctalia has no dialog, so the question is
+-- a row where the name field would be, and only ever about the loaded profile.
 local loadedDelete = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
 local liveTrash = glyphButton(loadedDelete, "trash")
 equal(liveTrash.props.opacity, 1.0)
+local beforeConfirm = #commands
 liveTrash.props.onClick()
+equal(#commands, beforeConfirm, "delete asks before it acts")
+assert(labelSet(rendered)["Delete profile dusk?"], "the question names the profile")
+textButton(rendered, "Cancel").props.onClick()
+equal(#commands, beforeConfirm, "cancel deletes nothing")
+equal(labelSet(rendered)["Delete profile dusk?"], nil, "cancel closes the question")
+glyphButton(rendered, "trash").props.onClick()
+textButton(rendered, "Delete").props.onClick()
 equal(commands[#commands], Shell.command({ "prism", "context", "delete", "profile", "dusk" }))
+equal(labelSet(rendered)["Delete profile dusk?"], nil, "a confirmed delete closes the question")
+
+-- Saving under a name that already exists asks first. The loaded profile's own
+-- name does not: every edit already lands there, so a resave replaces nothing
+-- the user has not already seen.
+local overwriteTree = renderModel(profileModel())
+glyphButton(overwriteTree, "device-floppy").props.onClick()
+local beforeOverwrite = #commands
+collect(rendered, "input")[1].props.onSubmit("dawn")
+equal(#commands, beforeOverwrite, "an existing name is not replaced without asking")
+assert(labelSet(rendered)["Replace profile dawn?"], "the question names the profile")
+equal(#collect(rendered, "input"), 0, "the question takes the name field's place")
+textButton(rendered, "Cancel").props.onClick()
+equal(#commands, beforeOverwrite, "cancel saves nothing")
+equal(labelSet(rendered)["Replace profile dawn?"], nil, "cancel closes the question")
+glyphButton(rendered, "device-floppy").props.onClick()
+collect(rendered, "input")[1].props.onSubmit("dawn")
+textButton(rendered, "Replace").props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "context", "save", "profile", "dawn" }))
+writeCallback({ exitCode = 0, stdout = "" })
+equal(commands[#commands], Shell.command({ "prism", "context", "activate", "profile", "dawn" }),
+  "a confirmed replace is entered like any other save")
+
+local resaveTree = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
+glyphButton(resaveTree, "device-floppy").props.onClick()
+collect(rendered, "input")[1].props.onSubmit("dusk")
+equal(commands[#commands], Shell.command({ "prism", "context", "save", "profile", "dusk" }),
+  "saving the loaded profile under its own name asks nothing")
+
+-- Rename follows the reset idiom and reuses the name field, seeded with the
+-- current name. A taken name is refused here, the way the store refuses it,
+-- and the same name is a no-op that just closes the field.
+local renameTree = renderModel(profileModel())
+local pencil = glyphButton(renameTree, "pencil")
+assert(pencil, "the profile row offers a rename button")
+assert(pencil.props.opacity < 1.0, "rename is dim with no profile loaded")
+pencil.props.onClick()
+equal(#collect(rendered, "input"), 0, "rename with nothing loaded opens nothing")
+
+local loadedRename = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
+local livePencil = glyphButton(loadedRename, "pencil")
+equal(livePencil.props.opacity, 1.0)
+local beforeRename = #commands
+livePencil.props.onClick()
+local renameField = collect(rendered, "input")[1]
+assert(renameField, "rename opens the name field")
+equal(renameField.props.value, "dusk", "the field starts from the current name")
+renameField.props.onSubmit("dawn")
+equal(#commands, beforeRename, "a taken name queues nothing")
+assert((bannerOf(rendered) or ""):find("already", 1, true), "a taken name says so")
+assert(collect(rendered, "input")[1], "the field stays open to try again")
+collect(rendered, "input")[1].props.onSubmit("dusk")
+equal(#commands, beforeRename, "the same name changes nothing")
+equal(#collect(rendered, "input"), 0, "and closes the field")
+glyphButton(rendered, "pencil").props.onClick()
+collect(rendered, "input")[1].props.onSubmit("noon")
+equal(commands[#commands], Shell.command({ "prism", "context", "rename", "profile", "dusk", "noon" }))
+equal(#collect(rendered, "input"), 0, "a queued rename closes the field")
+
+-- The save and rename buttons share one field, so opening one closes the
+-- other, and either closes a pending question.
+local switchTree = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
+glyphButton(switchTree, "trash").props.onClick()
+assert(labelSet(rendered)["Delete profile dusk?"])
+glyphButton(rendered, "device-floppy").props.onClick()
+equal(labelSet(rendered)["Delete profile dusk?"], nil, "opening the name field drops the question")
+equal(collect(rendered, "input")[1].props.value, "", "save starts from an empty name")
+glyphButton(rendered, "pencil").props.onClick()
+equal(collect(rendered, "input")[1].props.value, "dusk", "rename takes the field over with the current name")
+glyphButton(rendered, "pencil").props.onClick()
+equal(#collect(rendered, "input"), 0, "the same button again closes it")
 
 local noActive = layeredModel()
 noActive.active = nil

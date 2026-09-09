@@ -11,6 +11,10 @@ clears, saves, and deletes them.
 Revised 2026-09-08 for `prism-3b7c07`: `describe --json` also states the
 resolution order as `layers`, and the panel draws the wallpaper header row and
 shadows the rows a higher layer covers.
+Revised 2026-09-09 for `prism-cc4e81` and `prism-54f8c7`: `context rename`
+moves a profile and repoints the slot; the panel gains a rename button, asks
+before replacing an existing profile or deleting the loaded one, and refuses a
+rename onto a taken name locally.
 **Task:** `prism-6fd864`, first piece of goal `prism-2f0b4b`; `prism-fc8491`;
 `prism-3b7c07`; `prism-ea6344`
 
@@ -173,6 +177,7 @@ All new verbs sit under one subcommand so the existing verbs keep their shape:
 prism context list                       # every context by kind, active ones marked
 prism context show <kind> <name>         # the context's contents
 prism context save <kind> <name>         # snapshot every effective parameter into a new or replaced context
+prism context rename <kind> <old> <new>  # move a profile; the loaded one keeps being loaded under its new name
 prism context activate <kind> <name>     # set the slot; the file must exist
 prism context deactivate <kind>          # clear the slot
 prism context delete <kind> <name>       # remove the file; clears the slot if it was active
@@ -194,6 +199,12 @@ fails: enumerating what exists never requires every file to parse. `list`
 prints a context that does not parse with `!` in the active column and the
 reason beside the name, pointing at `doctor`; `show` prints such a file as it
 is, with the reason on stderr. `doctor` remains the verb that fails on it.
+
+`rename` takes the profile kind only, since a wallpaper is named by the hash
+of its path. It refuses a missing source and a taken target, moves the file
+under the store lock, and repoints `active.profile` when the loaded profile is
+the one renamed. No effective value changes, so it never touches
+`resolved.json` or a sink.
 
 `activate wallpaper <id>` requires the file so it can copy `_source` into the
 slot's path; only `context wallpaper <path>` can activate a wallpaper that has
@@ -362,9 +373,9 @@ README states the config layout, and the plugin contract note records the
 This is the boundary as first drawn. One item has since moved inside it: the
 2026-09-08 revisions document the panel's wallpaper header row, pin, and
 shadowed rows (`prism-3b7c07`) and its profile row (`prism-ea6344`), which
-landed against this spec rather than being deferred. Renaming a profile has no
-CLI verb and is deferred with its panel control. The base-versus-wallpaper question from `prism-648e0f` is
-settled above.
+landed against this spec rather than being deferred, as did renaming
+(`prism-cc4e81`) and the panel's confirmations (`prism-54f8c7`). The
+base-versus-wallpaper question from `prism-648e0f` is settled above.
 
 - The Noctalia hook line (`dots-88dc34`).
 - The `state` kind's activation sources and its composition rules

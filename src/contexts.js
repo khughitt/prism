@@ -157,6 +157,14 @@ export function deleteContext(kind, name) {
   }
 }
 
+// A file move only. The caller holds the store lock and has decided what the
+// slots do; renaming never changes an effective value.
+export function renameContext(kind, from, to) {
+  if (readContextText(kind, from) === null) throw new Error(`${kind} ${from}: no such context`);
+  if (readContextText(kind, to) !== null) throw new Error(`${kind} ${to} already exists`);
+  fs.renameSync(contextPath(kind, from), contextPath(kind, to));
+}
+
 export function listContexts() {
   const out = {};
   for (const kind of VERB_KINDS) {

@@ -55,8 +55,8 @@ the active profile. `prism set` writes into the topmost explicit layer: the
 loaded profile, else the wallpaper while it is pinned, else base; a wallpaper
 the hook activated on its own is an overlay and never captures edits.
 `prism set --base` writes the base file regardless. `prism context` manages
-contexts: `list`, `show`, `save` (profiles), `activate`, `deactivate`,
-`delete`, `pin` and `unpin wallpaper`, and `wallpaper <path>`, the last being
+contexts: `list`, `show`, `save` and `rename` (profiles), `activate`,
+`deactivate`, `delete`, `pin` and `unpin wallpaper`, and `wallpaper <path>`, the last being
 what a Noctalia `wallpaper_changed` hook calls. Design:
 `docs/specs/2026-09-05-prism-context-layers-design.md`.
 

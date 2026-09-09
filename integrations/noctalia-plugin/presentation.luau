@@ -289,6 +289,13 @@ function M.validProfileName(name)
   return type(name) == "string" and name:match("^[A-Za-z0-9._%-]+$") ~= nil
 end
 
+function M.profileExists(model, name)
+  for _, candidate in ipairs(model.profiles) do
+    if candidate == name then return true end
+  end
+  return false
+end
+
 -- The selector doubles as the clear control, so index 0 is "no profile". It is
 -- deliberately not "base values": deactivating a profile leaves the wallpaper
 -- layer active, so what is on screen may still come from it. Only the write

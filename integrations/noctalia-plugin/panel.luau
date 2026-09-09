@@ -11,7 +11,10 @@ local state = {
   describeInvalidated = false,
   refreshAfterDrag = false,
   drag = nil,
+  -- The one name field, shared by save and rename: {mode, text}, or nil.
   naming = nil,
+  -- A destructive action waiting for its answer: {kind, name}, or nil.
+  confirm = nil,
   errorSticky = false,
   sampleElapsedMs = 0,
   renderedSliderCorrection = nil,
@@ -653,24 +656,67 @@ local function appendRack(children, rack)
   for _, card in ipairs(rack.cards) do children[#children + 1] = deviceCard(card) end
 end
 
+local function showNameError(text)
+  state.errorText = text
+  state.errorSticky = true
+  render()
+end
+
+-- Save and rename share the field. A save under a taken name becomes a
+-- question rather than a command; the loaded profile's own name is exempt,
+-- since every edit already lands there. A rename onto a taken name is refused
+-- outright, the way the store refuses it, and onto its own name is a no-op.
 local function commitName(text)
   local name = trimmed(text)
+  local naming = state.naming
+  if naming == nil then return end
   if not Presentation.validProfileName(name) then
-    state.errorText = "A profile name may use letters, digits, dot, dash, and underscore"
-    state.errorSticky = true
-    render()
+    showNameError("A profile name may use letters, digits, dot, dash, and underscore")
     return
   end
+  local active = state.model.active.profile
+  if naming.mode == "rename" then
+    if name ~= active then
+      if Presentation.profileExists(state.model, name) then
+        showNameError("A profile named " .. name .. " already exists")
+        return
+      end
+      enqueue({verb = "rename", name = active, newName = name})
+    end
+  elseif name ~= active and Presentation.profileExists(state.model, name) then
+    state.confirm = {kind = "replace", name = name}
+  else
+    enqueue({verb = "save", name = name, activateAfter = true})
+  end
   state.naming = nil
-  enqueue({verb = "save", name = name, activateAfter = true})
+  render()
+end
+
+-- One field and one question share the space under the profile row, so
+-- opening either closes the other.
+local function toggleNaming(mode, text)
+  state.confirm = nil
+  if state.naming ~= nil and state.naming.mode == mode then
+    state.naming = nil
+  else
+    state.naming = {mode = mode, text = text}
+  end
+  render()
+end
+
+local function ask(kind, name)
+  state.naming = nil
+  state.confirm = {kind = kind, name = name}
   render()
 end
 
 -- One selector loads and clears: index 0 is "no profile", which deactivates.
--- Save and delete follow the reset idiom - always in the tree, state carried by
--- opacity and tooltip, and the guard in the handler rather than `enabled`.
+-- Save, rename, and delete follow the reset idiom - always in the tree, state
+-- carried by opacity and tooltip, and the guard in the handler rather than
+-- `enabled`.
 local function profileRow(section)
   local loaded = section.activeName ~= nil
+  local mode = state.naming ~= nil and state.naming.mode or nil
   return ui.row({gap = 8, align = "center"}, {
     ui.label({text = "Profile", fontWeight = "medium", width = labelColumnWidth, maxLines = 1}),
     ui.select({
@@ -699,11 +745,20 @@ local function profileRow(section)
       glyph = "device-floppy",
       variant = "ghost",
       controlSize = "sm",
-      selected = state.naming ~= nil,
+      selected = mode == "save",
       tooltip = "Save the current values as a profile",
+      onClick = function() toggleNaming("save", "") end,
+    }),
+    ui.button({
+      glyph = "pencil",
+      variant = "ghost",
+      controlSize = "sm",
+      selected = mode == "rename",
+      opacity = loaded and 1.0 or inertOpacity,
+      tooltip = loaded and ("Rename profile " .. section.activeName) or "No profile loaded to rename",
       onClick = function()
-        state.naming = state.naming == nil and "" or nil
-        render()
+        if section.activeName == nil then return end
+        toggleNaming("rename", section.activeName)
       end,
     }),
     ui.button({
@@ -714,25 +769,64 @@ local function profileRow(section)
       tooltip = loaded and ("Delete profile " .. section.activeName) or "No profile loaded to delete",
       onClick = function()
         if section.activeName == nil then return end
-        enqueue({verb = "delete", name = section.activeName})
-        render()
+        ask("delete", section.activeName)
       end,
     }),
   })
 end
 
 local function nameRow()
+  local renaming = state.naming.mode == "rename"
   return ui.row({gap = 8, align = "center"}, {
     ui.spacer({width = labelColumnWidth, flexGrow = 0}),
     ui.input({
-      value = state.naming,
-      placeholder = "Profile name",
+      value = state.naming.text,
+      placeholder = renaming and "New name" or "Profile name",
       controlSize = "sm",
       flexGrow = 1,
       focus = true,
       submitOnEnter = true,
-      onChange = function(text) state.naming = tostring(text or "") end,
+      onChange = function(text) state.naming.text = tostring(text or "") end,
       onSubmit = commitName,
+    }),
+  })
+end
+
+-- Noctalia has no dialog, so a destructive action asks in the row the name
+-- field would occupy: the question, the action named plainly, and a cancel.
+local confirmActions = {
+  replace = {label = "Replace", question = "Replace profile %s?"},
+  delete = {label = "Delete", question = "Delete profile %s?"},
+}
+
+local function confirmRow()
+  local confirm = state.confirm
+  local action = confirmActions[confirm.kind]
+  return ui.row({gap = 8, align = "center"}, {
+    ui.spacer({width = labelColumnWidth, flexGrow = 0}),
+    ui.label({text = string.format(action.question, confirm.name), flexGrow = 1, maxLines = 1}),
+    ui.button({
+      text = action.label,
+      variant = "destructive",
+      controlSize = "sm",
+      onClick = function()
+        state.confirm = nil
+        if confirm.kind == "replace" then
+          enqueue({verb = "save", name = confirm.name, activateAfter = true})
+        else
+          enqueue({verb = "delete", name = confirm.name})
+        end
+        render()
+      end,
+    }),
+    ui.button({
+      text = "Cancel",
+      variant = "ghost",
+      controlSize = "sm",
+      onClick = function()
+        state.confirm = nil
+        render()
+      end,
     }),
   })
 end
@@ -795,6 +889,7 @@ render = function()
     -- here too.
     children[#children + 1] = profileRow(Presentation.profileSection(state.model))
     if state.naming ~= nil then children[#children + 1] = nameRow() end
+    if state.confirm ~= nil then children[#children + 1] = confirmRow() end
     local header = Presentation.wallpaperHeader(state.model)
     if header then children[#children + 1] = wallpaperHeaderRow(header) end
     local rack = Presentation.rack(state.model)

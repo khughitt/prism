@@ -185,7 +185,7 @@ test('the queue speaks only to prism', async () => {
   assert.doesNotMatch(source, /preview|niri-glass|prismGlass|"qs"/);
   // A pin and the profile verbs write no parameter but move the write target or
   // the resolved values, so each must leave the model stale and force a re-read.
-  assert.match(source, /local staleAfter = \{\n  set = true, unset = true, pin = true,\n  activate = true, deactivate = true, save = true, delete = true,\n\}/);
+  assert.match(source, /local staleAfter = \{\n  set = true, unset = true, pin = true,\n  activate = true, deactivate = true, save = true, delete = true, rename = true,\n\}/);
   assert.match(source, /function M\.affectsParams\(item\)\n  return staleAfter\[item\.verb\] == true\nend/);
 });
 
