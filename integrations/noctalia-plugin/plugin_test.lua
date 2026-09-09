@@ -229,11 +229,50 @@ local model = { active = {}, profiles = {}, layers = resolutionOrder, target = "
     ui = { control = "slider", group = "Focus", order = 281, step = 0.05, label = "Unfocused saturation", state = "unfocused", row = "Saturation" },
   },
   {
+    key = "glass.noise", value = 0, default = 0, layer = "default", fallback = 0,
+    effectiveDrag = "release", range = { 0, 1 },
+    ui = { control = "slider", group = "Focus", order = 320, step = 0.01, label = "Noise", display = "percent", state = "focused", row = "Noise" },
+  },
+  {
+    key = "glass.inactive.noise", value = 0.02, default = 0.02, layer = "default", fallback = 0.02,
+    effectiveDrag = "release", range = { 0, 1 },
+    ui = { control = "slider", group = "Focus", order = 321, step = 0.01, label = "Unfocused noise", display = "percent", state = "unfocused", row = "Noise" },
+  },
+  {
     key = "glass.noiseType", value = "fine", default = "fine", layer = "default", fallback = "fine",
     effectiveDrag = "release", values = { "white", "fine" },
     ui = { control = "select", group = "Focus", order = 275, label = "Noise type" },
   },
-} }
+  {
+    key = "glass.bypass.backdrop", value = false, default = false, layer = "default", fallback = false,
+    effectiveDrag = "release",
+    ui = { control = "toggle", group = "Focus", order = 400, label = "Bypass backdrop" },
+  },
+  {
+    key = "glass.bypass.saturation", value = true, default = false, layer = "base", fallback = false,
+    effectiveDrag = "release",
+    ui = { control = "toggle", group = "Focus", order = 460, label = "Bypass saturation" },
+  },
+  {
+    key = "glass.bypass.noise", value = false, default = false, layer = "default", fallback = false,
+    effectiveDrag = "release",
+    ui = { control = "toggle", group = "Focus", order = 470, label = "Bypass noise" },
+  },
+  {
+    key = "terminal.background.opacity.active", value = 0, default = 0, layer = "default", fallback = 0,
+    effectiveDrag = "release", range = { 0, 1 },
+    ui = { control = "slider", group = "Terminal", order = 210, step = 0.01, label = "Terminal opacity", display = "percent", state = "focused", row = "Terminal opacity" },
+  },
+  {
+    key = "terminal.background.opacity.inactive", value = 0, default = 0, layer = "default", fallback = 0,
+    effectiveDrag = "release", range = { 0, 1 },
+    ui = { control = "slider", group = "Terminal", order = 211, step = 0.01, label = "Unfocused terminal opacity", display = "percent", state = "unfocused", row = "Terminal opacity" },
+  },
+}, rack = { group = "Focus", devices = {
+  { device = "backdrop", label = "Backdrop", category = "source", mix = "Blur", rows = {}, shared = {}, bypass = "glass.bypass.backdrop" },
+  { device = "saturation", label = "Saturation", category = "post", mix = "Saturation", rows = {}, shared = {}, bypass = "glass.bypass.saturation", requires = "backdrop" },
+  { device = "noise", label = "Noise", category = "post", mix = "Noise", rows = {}, shared = { "glass.noiseType" }, bypass = "glass.bypass.noise" },
+} } }
 
 ui = setmetatable({}, { __index = function(_, kind)
   return function(props, children) return { kind = kind, props = props or {}, children = children or {} } end
@@ -275,20 +314,18 @@ local labels = {}
 for _, label in ipairs(collect(rendered, "label")) do labels[label.props.text or ""] = true end
 assert(labels["Glass"] and labels["Focus"], "section headers missing")
 assert(labels["Focused"] and labels["Unfocused"], "matrix column labels missing")
-assert(labels["Blur"] and labels["Gaps"], "row labels missing")
+assert(labels["Backdrop"] and labels["Gaps"], "row labels missing")
 assert(labels["Saturation"], "second matrix row label missing")
-assert(labels["Noise type"], "shared select row missing")
--- Two selects now: the profile selector in the header and the shared noise
--- type row. Find the parameter one by its options rather than by position.
+assert(labels["Noise type"] == nil, "details stay hidden until a card is expanded")
+-- Once the Noise card expands there are two selects. Find its parameter select
+-- by options rather than by position.
 local function paramSelect(tree)
   for _, node in ipairs(collect(tree, "select")) do
     if (node.props.options or {})[1] ~= "No profile" then return node end
   end
   return nil
 end
-equal(#collect(rendered, "select"), 2, "the profile selector and the noise type select")
-equal(paramSelect(rendered).props.options, { "white", "fine" })
-equal(paramSelect(rendered).props.selectedIndex, 1)
+equal(#collect(rendered, "select"), 1, "only the profile selector while every card is collapsed")
 local sliderKeys = {}
 for _, slider in ipairs(collect(rendered, "slider")) do sliderKeys[slider.props.key] = true end
 assert(sliderKeys["glass.roughness:slider"] and sliderKeys["glass.inactive.roughness:slider"], "matrix sliders missing")
@@ -304,7 +341,7 @@ for _, button in ipairs(collect(rendered, "button")) do
     resetCandidates[#resetCandidates + 1] = button
   end
 end
-equal(#resetCandidates, 6, "a reset renders for every visible parameter row")
+equal(#resetCandidates, 9, "a reset renders for every visible cell: gaps, three mix pairs, and the terminal pair")
 local overriddenResets = {}
 for _, button in ipairs(resetCandidates) do
   if button.props.tooltip == "Remove override" and button.props.opacity == 1.0 then
@@ -319,9 +356,126 @@ for _, button in ipairs(resetCandidates) do
 end
 local sectionResets = 0
 for _, button in ipairs(collect(rendered, "button")) do
-  if button.props.tooltip == "Reset section (1)" and button.props.opacity == 1.0 then sectionResets = sectionResets + 1 end
+  if button.props.tooltip == "Reset section (2)" and button.props.opacity == 1.0 then sectionResets = sectionResets + 1 end
 end
-equal(sectionResets, 1, "the Focus section counts its one override")
+equal(sectionResets, 1, "the Focus rack counts its two overrides")
+assert(labels["Terminal"], "terminal section header missing")
+
+-- Cards: one per device in rack order, each with a light whose glyph and color
+-- say active, bypassed, or silenced by an upstream bypass.
+local function byKey(tree, key, found)
+  found = found or {}
+  if type(tree) ~= "table" then return found end
+  if tree.props and tree.props.key == key then found[#found + 1] = tree end
+  for _, child in ipairs(tree.children or {}) do byKey(child, key, found) end
+  return found
+end
+equal(#byKey(rendered, "backdrop:card"), 1)
+equal(#byKey(rendered, "saturation:card"), 1)
+equal(#byKey(rendered, "noise:card"), 1)
+equal(byKey(rendered, "backdrop:card")[1].props.fill, "#5b9cf61f")
+equal(byKey(rendered, "saturation:card")[1].props.opacity < 1.0, true, "a bypassed card dims")
+equal(byKey(rendered, "noise:card")[1].props.opacity, 1.0)
+local function light(device)
+  local row = byKey(rendered, device .. ":light")[1]
+  return row, collect(row, "glyph")[1]
+end
+local _, backdropLight = light("backdrop")
+equal(backdropLight.props.name, "circle-filled")
+equal(backdropLight.props.color, "#5b9cf6")
+local _, saturationLight = light("saturation")
+equal(saturationLight.props.name, "circle")
+equal(saturationLight.props.color, "on_surface_variant")
+
+-- Clicking a light flips the bypass key with a plain set, whatever the layer.
+-- The stub host never completes a write, so the reset above left an unset in
+-- flight and anything enqueued now would only wait behind it: start clean.
+dofile(here .. "panel.luau")
+onOpen({})
+described({ exitCode = 0, stdout = "{}" })
+local commandsBeforeLight = #commands
+local backdropLightRow = light("backdrop")
+backdropLightRow.props.onClick()
+equal(#commands, commandsBeforeLight + 1)
+assert(commands[#commands]:find("set", 1, true) and commands[#commands]:find("glass.bypass.backdrop", 1, true)
+  and commands[#commands]:find("true", 1, true), "light click sets the bypass")
+
+-- Silenced: active itself, but the device it requires is bypassed.
+for _, param in ipairs(model.params) do
+  if param.key == "glass.bypass.backdrop" then param.value, param.layer = true, "base" end
+  if param.key == "glass.bypass.saturation" then param.value, param.layer = false, "default" end
+end
+dofile(here .. "panel.luau")
+onOpen({})
+described({ exitCode = 0, stdout = "{}" })
+local _, silencedLight = light("saturation")
+equal(silencedLight.props.name, "circle")
+equal(silencedLight.props.color, "#f6ad55", "a silenced light keeps its category color, hollow")
+for _, param in ipairs(model.params) do
+  if param.key == "glass.bypass.backdrop" then param.value, param.layer = false, "default" end
+  if param.key == "glass.bypass.saturation" then param.value, param.layer = true, "base" end
+end
+dofile(here .. "panel.luau")
+onOpen({})
+described({ exitCode = 0, stdout = "{}" })
+
+-- Expanding a card shows the bypass row first, then details; the bypass row
+-- carries the ordinary reset that issues unset.
+local function chevron(device)
+  for _, button in ipairs(collect(byKey(rendered, device .. ":card")[1], "button")) do
+    if button.props.tooltip == "Show details" or button.props.tooltip == "Hide details" then return button end
+  end
+  return nil
+end
+equal(chevron("noise").props.tooltip, "Show details")
+chevron("noise").props.onClick()
+equal(chevron("noise").props.tooltip, "Hide details")
+equal(#collect(rendered, "select"), 2, "the noise type select appears once its card is expanded")
+equal(paramSelect(rendered).props.options, { "white", "fine" })
+equal(paramSelect(rendered).props.selectedIndex, 1)
+local noiseCard = byKey(rendered, "noise:card")[1]
+local expandedToggles = collect(noiseCard, "toggle")
+equal(#expandedToggles, 1, "the bypass row's toggle")
+local detailRows = {}
+for _, node in ipairs(collect(noiseCard, "column")) do
+  if node.props.key == "glass.bypass.noise:row" or node.props.key == "glass.noiseType:row" then
+    detailRows[#detailRows + 1] = node.props.key
+  end
+end
+equal(detailRows, { "glass.bypass.noise:row", "glass.noiseType:row" })
+chevron("saturation").props.onClick()
+local saturationCard = byKey(rendered, "saturation:card")[1]
+local bypassReset
+for _, button in ipairs(collect(saturationCard, "button")) do
+  if button.props.tooltip == "Remove override" and button.props.opacity == 1.0 then bypassReset = button end
+end
+assert(bypassReset, "the bypass row of a bypassed-in-base device offers a full-strength reset")
+bypassReset.props.onClick()
+assert(commands[#commands]:find("'unset' 'glass.bypass.saturation'", 1, true), "bypass reset enqueues prism unset")
+
+-- Expansion survives close and reopen within a session.
+onClose()
+onOpen({})
+described({ exitCode = 0, stdout = "{}" })
+equal(chevron("noise").props.tooltip, "Hide details")
+chevron("noise").props.onClick()
+equal(chevron("noise").props.tooltip, "Show details")
+
+-- The terminal pair still renders as a plain matrix section.
+local terminalSliders = {}
+for _, node in ipairs(collect(rendered, "slider")) do terminalSliders[node.props.key] = true end
+assert(terminalSliders["terminal.background.opacity.active:slider"] and terminalSliders["terminal.background.opacity.inactive:slider"],
+  "terminal matrix sliders missing")
+
+-- A model without a rack is a contract error, named.
+local savedRack = model.rack
+model.rack = nil
+dofile(here .. "panel.luau")
+onOpen({})
+described({ exitCode = 0, stdout = "{}" })
+local errorLabel = collect(rendered, "label")[1]
+equal(errorLabel.props.text, "prism describe returned no rack")
+model.rack = savedRack
 
 -- Clicking a reset with nothing to remove must do nothing: the onClick guard
 -- checks the live param, not just whether the button is drawn dim.
@@ -339,12 +493,16 @@ equal(model.params[4].overridden, false)
 assert(commands[#commands]:find("unset", 1, true) and commands[#commands]:find("glass.roughness", 1, true),
   "reset enqueues prism unset for the row")
 
-local noise = model.params[#model.params]
+local noise
+for _, param in ipairs(model.params) do
+  if param.key == "glass.noiseType" then noise = param end
+end
 for index, value in ipairs(noise.values) do
   noise.value, noise.layer = "fine", "default"
   dofile(here .. "panel.luau")
   onOpen({})
   described({ exitCode = 0, stdout = "{}" })
+  chevron("noise").props.onClick()
   paramSelect(rendered).props.onChange(index - 1)
   equal(noise.value, value)
   equal(paramSelect(rendered).props.selectedIndex, index - 1)
@@ -615,9 +773,14 @@ local function layeredModel(overrides)
       { key = "glass.inactive.roughness", value = 0.5, default = 0.5, layer = "wallpaper", fallback = 0.5,
         effectiveDrag = "release", range = { 0, 1 },
         ui = { control = "slider", group = "Focus", order = 221, step = 0.01, label = "Unfocused blur", state = "unfocused", row = "Blur" } },
+      { key = "glass.bypass.backdrop", value = false, default = false, layer = "default", fallback = false,
+        effectiveDrag = "release", ui = { control = "toggle", group = "Focus", order = 400, label = "Bypass backdrop" } },
       { key = "debug.backdrop", value = false, default = false, layer = "wallpaper", fallback = false,
         ui = { control = "none", group = "Debug" } },
     },
+    rack = { group = "Focus", devices = {
+      { device = "backdrop", label = "Backdrop", category = "source", mix = "Blur", rows = {}, shared = {}, bypass = "glass.bypass.backdrop" },
+    } },
   }
   for key, value in pairs(overrides or {}) do m[key] = value end
   return m
@@ -697,7 +860,7 @@ assert(glyphButton(rendered, "pin-filled"), "a pinned wallpaper shows the pinned
 assert(labelSet(rendered)["Overridden by wallpaper; pin to edit"] == nil, "nothing is covered by the wallpaper once it is the target")
 
 -- With no wallpaper there is nothing to pin and no header row to draw.
-local bareTree = renderModel(layeredModel({ active = {}, params = {
+local bareTree = renderModel(layeredModel({ active = {}, rack = { group = "Focus", devices = {} }, params = {
   { key = "glass.enabled", value = true, default = true, layer = "base", fallback = true,
     effectiveDrag = "release", ui = { control = "toggle", group = "Title", order = 0, label = "Glass" } },
 } }))
@@ -737,7 +900,7 @@ equal(panelError(layeredModel({ layers = { "default", "base", "base", "state", "
 -- Every parameter is ranked, not just the visible ones: a CLI-only parameter on
 -- an unknown layer is the same broken contract.
 local hiddenUnrankable = layeredModel()
-hiddenUnrankable.params[7].layer = "theme"
+hiddenUnrankable.params[8].layer = "theme"
 assert((panelError(hiddenUnrankable) or ""):find("debug.backdrop", 1, true),
   "a hidden parameter on an unrankable layer names itself")
 -- A drawn parameter missing `layer` outright keeps its own message: that is the
@@ -747,7 +910,7 @@ visibleNoLayer.params[2].layer = nil
 equal(panelError(visibleNoLayer), "compositor.gaps has no layer")
 
 local hiddenNoLayer = layeredModel()
-hiddenNoLayer.params[7].layer = nil
+hiddenNoLayer.params[8].layer = nil
 assert((panelError(hiddenNoLayer) or ""):find("debug.backdrop", 1, true),
   "a hidden parameter with no layer at all is refused")
 

@@ -15,6 +15,7 @@ local state = {
   errorSticky = false,
   sampleElapsedMs = 0,
   renderedSliderCorrection = nil,
+  expanded = {},
 }
 
 local describeRunning = false
@@ -151,7 +152,9 @@ local function validateModel(model)
   end
   local titleOk, titleError = pcall(Presentation.titleParam, model.params)
   if not titleOk then return tostring(titleError) end
-  local sectionsOk, sectionsError = pcall(Presentation.sections, model.params)
+  local rackOk, rackError = pcall(Presentation.rack, model)
+  if not rackOk then return tostring(rackError) end
+  local sectionsOk, sectionsError = pcall(Presentation.sections, model.params, model.rack.group)
   if not sectionsOk then return tostring(sectionsError) end
   return nil
 end
@@ -471,13 +474,13 @@ end
 -- The leading column: label and its info button, at one fixed width so every
 -- control column starts at the same x and the matrix header can reserve the
 -- same span without guessing the button's natural width.
-local function headCell(text, param, dimmed)
-  return ui.row({width = headColumnWidth, gap = 6, align = "center", opacity = dimmed and shadowedOpacity or 1.0}, {
-    -- maxWidth, not width: a Label sizes to its text either way, so the cap is
-    -- what keeps a long label from pushing its info button out of the span.
-    ui.label({text = text, fontWeight = "medium", maxWidth = labelColumnWidth, maxLines = 1}),
-    infoButton(param),
-  })
+local function headCell(text, param, dimmed, indent)
+  indent = indent or 0
+  local children = {}
+  if indent > 0 then children[#children + 1] = ui.spacer({width = indent}) end
+  children[#children + 1] = ui.label({text = text, fontWeight = "medium", maxWidth = labelColumnWidth - indent, maxLines = 1})
+  children[#children + 1] = infoButton(param)
+  return ui.row({width = headColumnWidth, gap = 6, align = "center", opacity = dimmed and shadowedOpacity or 1.0}, children)
 end
 
 -- A control cell: formatted value, native control, and reset. Shared by the
@@ -507,17 +510,17 @@ local function paramRow(key, cells, hint)
   return ui.column({key = key, gap = 2, paddingV = 2}, children)
 end
 
-local function singleRow(param)
+local function singleRow(param, indent)
   return paramRow(param.key .. ":row", {
-    headCell(param.ui.label or param.key, param, param.shadowed),
+    headCell(param.ui.label or param.key, param, param.shadowed, indent),
     controlCell(param, 1),
   }, rowHint({param}))
 end
 
 -- The label heads both cells, so it only dims when the whole row is covered.
-local function matrixRow(row)
+local function matrixRow(row, indent)
   return paramRow(row.row .. ":row", {
-    headCell(row.row, row.focused, row.focused.shadowed and row.unfocused.shadowed),
+    headCell(row.row, row.focused, row.focused.shadowed and row.unfocused.shadowed, indent),
     controlCell(row.focused, 1),
     ui.separator({orientation = "vertical", spacing = 4}),
     controlCell(row.unfocused, 1),
@@ -535,13 +538,75 @@ local function matrixHeader()
   })
 end
 
-local function appendSection(children, section)
-  local sectionParams = Presentation.sectionParams(section)
+local detailIndent = 26
+local lightWidth = 20
+
+-- The light: category color while the device is active, grey and hollow while
+-- its own bypass is set, hollow in the category color while the device it
+-- requires is bypassed. A glyph in a clickable row, because a toggle carries
+-- no tooltip and a button no color at the API this plugin declares. The click
+-- is a plain set: the bypass row inside the card carries the reset.
+local function lightRow(card)
+  local color = card.bypassed and "on_surface_variant" or Presentation.categoryColors[card.category]
+  local name = (card.bypassed or card.silenced) and "circle" or "circle-filled"
+  return ui.row({
+    key = card.device .. ":light", width = lightWidth, align = "center", justify = "center",
+    onClick = function() writeParam(card.bypass, not (card.bypass.value == true)) end,
+  }, {
+    ui.glyph({name = name, size = 12, color = color}),
+  })
+end
+
+-- The card's head spans the same fixed width as every other head cell, so the
+-- mix cells line up under the matrix header: light, chevron, label, info.
+local function cardHead(card, expanded)
+  local mix = card.mix
+  return ui.row({width = headColumnWidth, gap = 6, align = "center", opacity = (mix.focused.shadowed and mix.unfocused.shadowed) and shadowedOpacity or 1.0}, {
+    lightRow(card),
+    ui.button({
+      glyph = expanded and "chevron-down" or "chevron-right",
+      variant = "ghost",
+      controlSize = "sm",
+      tooltip = expanded and "Hide details" or "Show details",
+      onClick = function()
+        state.expanded[card.device] = not expanded
+        render()
+      end,
+    }),
+    ui.label({text = card.label, fontWeight = "medium", maxWidth = labelColumnWidth - lightWidth - 34, maxLines = 1}),
+    infoButton(mix.focused),
+  })
+end
+
+local function deviceCard(card)
+  local expanded = state.expanded[card.device] == true
+  local mix = card.mix
+  local children = {
+    ui.row({gap = 8, align = "center"}, {
+      cardHead(card, expanded),
+      controlCell(mix.focused, 1),
+      ui.separator({orientation = "vertical", spacing = 4}),
+      controlCell(mix.unfocused, 1),
+    }),
+  }
+  local hint = rowHint({mix.focused, mix.unfocused})
+  if hint then children[#children + 1] = ui.row({gap = 8, align = "center", justify = "end"}, {hint}) end
+  if expanded then
+    children[#children + 1] = singleRow(card.bypass, detailIndent)
+    for _, row in ipairs(card.rows) do children[#children + 1] = matrixRow(row, detailIndent) end
+    for _, param in ipairs(card.shared) do children[#children + 1] = singleRow(param, detailIndent) end
+  end
+  return ui.column({
+    key = card.device .. ":card", gap = 2, paddingV = 4, paddingH = 6, radius = 8,
+    fill = Presentation.categoryColors[card.category] .. "1f",
+    opacity = card.bypassed and shadowedOpacity or 1.0,
+  }, children)
+end
+
+local function sectionHeader(name, toggle, sectionParams)
   local overriddenCount = Presentation.overriddenCount(sectionParams)
-  local toggle = section.toggle
-  children[#children + 1] = ui.separator({spacing = 6})
-  children[#children + 1] = ui.row({gap = 8, align = "center"}, {
-    ui.label({text = section.name, fontSize = 15, fontWeight = "bold", flexGrow = 1}),
+  return ui.row({gap = 8, align = "center"}, {
+    ui.label({text = name, fontSize = 15, fontWeight = "bold", flexGrow = 1}),
     ui.label({text = toggle and (toggle.ui.label or toggle.key) or "", fontSize = 12, color = "on_surface_variant", visible = toggle ~= nil}),
     ui.label({
       text = toggle and toggle.shadowed and Presentation.shadowHint(toggle) or "",
@@ -562,6 +627,12 @@ local function appendSection(children, section)
       onClick = function() if overriddenCount > 0 then resetGroup(sectionParams) end end,
     }),
   })
+end
+
+local function appendSection(children, section)
+  local sectionParams = Presentation.sectionParams(section)
+  children[#children + 1] = ui.separator({spacing = 6})
+  children[#children + 1] = sectionHeader(section.name, section.toggle, sectionParams)
   local hasMatrix = false
   for _, row in ipairs(section.rows) do
     if row.param == nil then hasMatrix = true end
@@ -570,6 +641,13 @@ local function appendSection(children, section)
   for _, row in ipairs(section.rows) do
     children[#children + 1] = row.param and singleRow(row.param) or matrixRow(row)
   end
+end
+
+local function appendRack(children, rack)
+  children[#children + 1] = ui.separator({spacing = 6})
+  children[#children + 1] = sectionHeader(rack.group, rack.header, Presentation.rackParams(rack))
+  children[#children + 1] = matrixHeader()
+  for _, card in ipairs(rack.cards) do children[#children + 1] = deviceCard(card) end
 end
 
 local function commitName(text)
@@ -716,7 +794,20 @@ render = function()
     if state.naming ~= nil then children[#children + 1] = nameRow() end
     local header = Presentation.wallpaperHeader(state.model)
     if header then children[#children + 1] = wallpaperHeaderRow(header) end
-    for _, section in ipairs(Presentation.sections(state.model.params)) do appendSection(children, section) end
+    local rack = Presentation.rack(state.model)
+    local sections = Presentation.sections(state.model.params, rack.group)
+    local rackPlaced = false
+    for _, section in ipairs(sections) do
+      if not rackPlaced and rack.header ~= nil and section.rows[1] ~= nil then
+        local first = section.rows[1].param or section.rows[1].focused
+        if first.ui.order > rack.header.ui.order then
+          appendRack(children, rack)
+          rackPlaced = true
+        end
+      end
+      appendSection(children, section)
+    end
+    if not rackPlaced then appendRack(children, rack) end
   end
   panel.render(ui.scroll({flexGrow = 1, gap = 6, padding = 16}, children))
 end
