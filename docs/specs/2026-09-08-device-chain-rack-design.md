@@ -1,7 +1,7 @@
 # Device chain: the rack presentation and per-device bypass
 
 **Date:** 2026-09-08
-**Status:** design approved in conversation; not implemented.
+**Status:** implemented on `device-chain` at 72b846f; suite passing; desktop acceptance pending.
 Revised 2026-09-09 after review: the rack file moves out of the defs scan,
 every bypass gets an individual reset, and Refraction's bypass also silences
 the two devices that ride its taps.
@@ -125,7 +125,7 @@ device whose bypass also silences this one.
 
 ### The loader
 
-A new module `src/rack.js` exports `loadRack(defs)`. It reads
+A new module `src/rack.js` exports `loadRack(dir, defs)`. It reads
 `defs/rack/devices.yaml` and validates, failing the load on the first violation:
 
 - `group` is a non-empty string; `devices` is a non-empty list.

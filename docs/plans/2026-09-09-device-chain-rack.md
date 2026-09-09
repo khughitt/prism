@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** not started.
+**Status:** implemented on `device-chain` at 72b846f; suite passing; desktop acceptance pending.
 
 **Goal:** Render the Focus optics as a rack of device cards in the shader's order, each with an always-visible mix, expandable details, a category light, and a real bypass the niri sink honours.
 
@@ -62,7 +62,7 @@ Task 1 is the shared contract and lands first. Tasks 2, 3, and 4 are independent
 - Consumes: the def schema in `src/defs.js` (`validateDef`), which already accepts a bool toggle with no `state`.
 - Produces: eight defs `glass.bypass.<id>`; `defs/rack/devices.yaml` in the shape Task 2 validates and Task 4 resolves; `terminal.background.opacity.*` in group `Terminal`.
 
-- [ ] **Step 1: Write the failing defs tests**
+- [x] **Step 1: Write the failing defs tests**
 
 In `test/glass-defs.test.js`, make four edits and leave the `NEWLY_SPLIT` and `RECEDED` constants and their tests untouched.
 
@@ -196,16 +196,16 @@ In `test/plugin-presentation.test.js`, inside `'shipped presentation is a Glass 
     1 + glass.length + 1 + terminal.length + rows.reduce((n, row) => n + (row.single ? 1 : 2), 0));
 ```
 
-- [ ] **Step 2: Run the two test files and confirm they fail**
+- [x] **Step 2: Run the two test files and confirm they fail**
 
 Run: `node --test test/glass-defs.test.js test/plugin-presentation.test.js`
 Expected: FAIL. The bypass keys do not exist, the terminal pair is still in Focus.
 
-- [ ] **Step 3: Move terminal opacity to the Terminal group**
+- [x] **Step 3: Move terminal opacity to the Terminal group**
 
 In `defs/terminal.yaml`, change `group: Focus` to `group: Terminal` on both `terminal.background.opacity.active` (line 5) and `terminal.background.opacity.inactive` (line 11). Nothing else changes.
 
-- [ ] **Step 4: Add the eight bypass keys**
+- [x] **Step 4: Add the eight bypass keys**
 
 Append to `defs/glass.yaml`:
 
@@ -258,7 +258,7 @@ Append to `defs/glass.yaml`:
   description: Silence the noise stage; both materials get noise 0 while set, since the grain type is shared, and the Noise values keep their numbers
 ```
 
-- [ ] **Step 5: Create the rack file**
+- [x] **Step 5: Create the rack file**
 
 Create `defs/rack/devices.yaml`:
 
@@ -331,7 +331,7 @@ devices:
     bypass: glass.bypass.noise
 ```
 
-- [ ] **Step 6: Bind the bypass keys in the niri manifest**
+- [x] **Step 6: Bind the bypass keys in the niri manifest**
 
 Append to `integrations/niri/manifest.yaml`:
 
@@ -348,12 +348,12 @@ Append to `integrations/niri/manifest.yaml`:
 
 Without these, `describe` reports no consumer for the keys and the panel draws them as `Unavailable` with disabled controls.
 
-- [ ] **Step 7: Run the whole suite**
+- [x] **Step 7: Run the whole suite**
 
 Run: `just test`
 Expected: PASS. `loadDefs` ignores the `rack` directory because it filters on the `.yaml` suffix of direct entries. If any other test enumerates Focus keys or the manifest bind count, update its expectation to include the eight keys and say so in the commit body.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add defs test integrations/niri/manifest.yaml
@@ -374,7 +374,7 @@ git commit -m "feat(defs): bypass keys, the rack file, and a Terminal group for 
 - Consumes: `loadDefs(dir)` from `src/defs.js` returning `Map<key, def>`; `defsDir()` from `src/paths.js`.
 - Produces: `loadRack(dir, defs)` and `validateRack(rack, defs)` in `src/rack.js`, both returning the validated rack object `{ group, devices: [{ device, label, category, mix, rows, shared, bypass, requires? }] }`; `CATEGORIES`; `describe --json` output gains a top-level `rack` field holding that object verbatim.
 
-- [ ] **Step 1: Write the failing loader tests**
+- [x] **Step 1: Write the failing loader tests**
 
 Create `test/rack.test.js`:
 
@@ -481,12 +481,12 @@ test('bypass must be a bool toggle without state, and requires an earlier device
 });
 ```
 
-- [ ] **Step 2: Run it and confirm it fails**
+- [x] **Step 2: Run it and confirm it fails**
 
 Run: `node --test test/rack.test.js`
 Expected: FAIL with `Cannot find module '../src/rack.js'`.
 
-- [ ] **Step 3: Write the loader**
+- [x] **Step 3: Write the loader**
 
 Create `src/rack.js`:
 
@@ -576,12 +576,12 @@ export function validateRack(rack, defs) {
 
 `ids.add(id)` runs after the `requires` check, so a device can only require one listed above it and never itself.
 
-- [ ] **Step 4: Run the loader tests**
+- [x] **Step 4: Run the loader tests**
 
 Run: `node --test test/rack.test.js`
 Expected: PASS. If an error-message regex in the test disagrees with the message the code produces, align the test to the message above; the messages in Step 3 are the contract.
 
-- [ ] **Step 5: Write the failing describe test**
+- [x] **Step 5: Write the failing describe test**
 
 Append to `test/cli.test.js`:
 
@@ -605,7 +605,7 @@ test('describe carries the rack verbatim', async () => {
 Run: `node --test test/cli.test.js`
 Expected: FAIL, `rack` is undefined.
 
-- [ ] **Step 6: Emit the rack from describe**
+- [x] **Step 6: Emit the rack from describe**
 
 In `src/cli.js`, add the import next to the other `src/` imports:
 
@@ -627,7 +627,7 @@ and change the final `print` to include it:
 
 `defsDir` is already imported by `load()`; confirm rather than assume.
 
-- [ ] **Step 7: Run the suite and commit**
+- [x] **Step 7: Run the suite and commit**
 
 Run: `just test`
 Expected: PASS.
@@ -649,7 +649,7 @@ git commit -m "feat(rack): load the device rack against the defs and carry it in
 - Consumes: `resolved.params` including the eight `glass.bypass.*` booleans from Task 1; `defs/rack/devices.yaml` for the cross-check.
 - Produces: exported `DRY` table keyed by bypass param; `renderNiriFragment` applies it inside `glassFor` for both materials.
 
-- [ ] **Step 1: Extend the fixture and write the failing tests**
+- [x] **Step 1: Extend the fixture and write the failing tests**
 
 In `test/niri-render.test.js`, add the bypass keys to the `resolved.params` fixture, after `'glass.inactive.saturation': 0.85,`:
 
@@ -736,12 +736,12 @@ test('every rack device has a dry entry and every dry entry is a rack device', (
 });
 ```
 
-- [ ] **Step 2: Run and confirm the failures**
+- [x] **Step 2: Run and confirm the failures**
 
 Run: `node --test test/niri-render.test.js`
 Expected: FAIL, `DRY` is not exported and no dry value is applied.
 
-- [ ] **Step 3: Add the dry table and apply it**
+- [x] **Step 3: Add the dry table and apply it**
 
 In `integrations/niri/render.js`, replace the `glassFor` definition with:
 
@@ -774,12 +774,12 @@ const glassFor = (params, prefix) => {
 };
 ```
 
-- [ ] **Step 4: Run the suite**
+- [x] **Step 4: Run the suite**
 
 Run: `just test`
 Expected: PASS. `test/niri-apply.test.js` renders through the same function; if its fixture lacks the bypass keys the output is unchanged, because an absent key is not `true`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add integrations/niri/render.js test/niri-render.test.js
@@ -798,7 +798,7 @@ git commit -m "feat(niri): write each device's dry value into both materials whi
 - Consumes: a describe model with `rack` in the shape Task 2 emits and `params` carrying `ui.group`, `ui.state`, `ui.row`, `ui.header`, `value`, `key`.
 - Produces: `Presentation.categoryColors` (table by category); `Presentation.rack(model)` returning `{ group, header, cards }` where each card is `{ device, label, category, mix = {row, focused, unfocused}, rows = {...}, shared = {param...}, bypass = param, requires = card|nil, bypassed = bool, silenced = bool }`; `Presentation.cardParams(card)` (bypass, then mix pair, detail pairs, shared); `Presentation.rackParams(rack)` (header toggle if any, then every card's params); `Presentation.sections(params, skipGroup)`.
 
-- [ ] **Step 1: Write the failing golden vectors**
+- [x] **Step 1: Write the failing golden vectors**
 
 In `plugin_test.lua`, after the `equal(Presentation.overriddenCount(...), 2)` line, add:
 
@@ -892,12 +892,12 @@ rackFails(function(m)
 end, "section Rack has two header toggles")
 ```
 
-- [ ] **Step 2: Run and confirm it fails**
+- [x] **Step 2: Run and confirm it fails**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
 Expected: FAIL, `attempt to call a nil value (field 'rack')`.
 
-- [ ] **Step 3: Implement the rack resolver**
+- [x] **Step 3: Implement the rack resolver**
 
 In `presentation.luau`, change the `sections` signature and its filter so a group can be skipped:
 
@@ -1016,12 +1016,12 @@ end
 
 `ipairs` stops at the first nil, so a `devices` list with a hole (the `m.rack.devices[2] = nil` case) simply ends early and the unclaimed-row check reports it.
 
-- [ ] **Step 4: Run the Lua tests**
+- [x] **Step 4: Run the Lua tests**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
 Expected: PASS through the new vectors. The later panel-rendering assertions still pass because the panel has not changed yet.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add integrations/noctalia-plugin/presentation.luau integrations/noctalia-plugin/plugin_test.lua
@@ -1040,7 +1040,7 @@ git commit -m "feat(panel): resolve the device rack from describe in the present
 - Consumes: `Presentation.rack`, `Presentation.cardParams`, `Presentation.rackParams`, `Presentation.categoryColors`, `Presentation.sections(params, skipGroup)` from Task 4; the `rack` field of real `describe` output from Task 2 (the contract test runs the CLI); the existing `controlCell`, `resetButton`, `infoButton`, `rowHint`, `writeParam`, `unsetParam`, `resetGroup`, `matrixHeader`.
 - Produces: the rendered rack section; `state.expanded[deviceId]`; the light row keyed `<device>:light`, the card column keyed `<device>:card`, the chevron button with tooltips `Show details` / `Hide details`.
 
-- [ ] **Step 1: Extend the test model and write the failing render assertions**
+- [x] **Step 1: Extend the test model and write the failing render assertions**
 
 In `plugin_test.lua`, the rendered-tree `model` (the one with `glass.enabled`, `compositor.gaps`, ...) needs a rack and the params it covers. Replace its `glass.noiseType` entry and the closing `} }` with:
 
@@ -1295,12 +1295,12 @@ The block above is one contiguous Lua snippet: paste it after the existing reset
 
   Its `ui` stub enumerates the kinds it will build; add `"glyph"` to that list (`{"button", "column", "glyph", "label", ...}`), or the light's glyph is a nil call. The test drives only the `glass.depth` slider, which stays in the Quick section, so nothing else in it changes.
 
-- [ ] **Step 2: Run and confirm it fails**
+- [x] **Step 2: Run and confirm it fails**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
 Expected: FAIL at the first card assertion, no `backdrop:card` node.
 
-- [ ] **Step 3: Validate the rack in the model check**
+- [x] **Step 3: Validate the rack in the model check**
 
 In `panel.luau`, at the end of `validateModel` before `return nil`, after the `sections` pcall, change the sections call and add the rack check:
 
@@ -1314,7 +1314,7 @@ In `panel.luau`, at the end of `validateModel` before `return nil`, after the `s
 
 (the rack check goes first so a missing rack reports itself rather than a stray Focus row). Add `expanded = {}` to the `state` table at the top of the file; it is not cleared in `onOpen` or `onClose`, so expansion lasts for the shell session.
 
-- [ ] **Step 4: Give rows an indent and render the cards**
+- [x] **Step 4: Give rows an indent and render the cards**
 
 Change `headCell` to accept an indent and shrink the label to fit:
 
@@ -1472,12 +1472,12 @@ In `render`, replace the sections loop with the rack in the position its group w
 
 With the shipped defs this yields Glass, Focus (the rack), Terminal.
 
-- [ ] **Step 5: Run the Lua tests**
+- [x] **Step 5: Run the Lua tests**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
 Expected: PASS. The stub `ui` accepts any element kind, so `glyph` needs no harness change.
 
-- [ ] **Step 6: Expand every card in the describe-contract harness**
+- [x] **Step 6: Expand every card in the describe-contract harness**
 
 `integrations/noctalia-plugin/contract.test.mjs` feeds real `describe` output to the panel and asserts that every control kind describe emits is drawn by at least one row. With every card collapsed the noise-type select is not drawn, so the harness must expand the cards first. In the `inspect` function of the `harness` string, after the `described({...})` call and before `local errorLabel`, add:
 
@@ -1491,7 +1491,7 @@ Expected: PASS. The stub `ui` accepts any element kind, so `glyph` needs no harn
 
 `collect` there returns every node, and `render()` replaces `rendered` on each click, so the loop iterates a snapshot and the final `rendered` holds every card open. Run: `node --test integrations/noctalia-plugin/contract.test.mjs`. Expected: PASS, with `report.error` undefined for both models.
 
-- [ ] **Step 7: Run the whole suite and commit**
+- [x] **Step 7: Run the whole suite and commit**
 
 Run: `just test`
 Expected: PASS.
@@ -1510,21 +1510,22 @@ git commit -m "feat(panel): render the Focus group as a rack of device cards wit
 - Modify: `docs/notes/noctalia-plugin-contract.md` (the Declarative presentation section)
 - Modify: `docs/specs/2026-09-08-device-chain-rack-design.md` (status line)
 - Modify: `docs/plans/2026-09-09-device-chain-rack.md` (status line)
+- Stop tracking: `.superpowers/sdd/2026-09-09-device-chain-rack/task-1-report.md`
 
 **Interfaces:**
 - Consumes: everything above on one branch.
 - Produces: a merged-ready branch, docs that describe the shipped panel, a task record that says what was verified and what waits on the desktop.
 
-- [ ] **Step 1: Run the full suite on the merged branch**
+- [x] **Step 1: Run the full suite on the merged branch**
 
 Run: `just test`
 Expected: PASS. Then run `prism describe --json | head -40` from the worktree's `bin/prism` against a throwaway config (`PRISM_CONFIG_DIR=$(mktemp -d) PRISM_STATE_DIR=$(mktemp -d) bin/prism describe --json`) and confirm the `rack` field prints before `params`.
 
-- [ ] **Step 2: Check the real describe output against the panel's validator**
+- [x] **Step 2: Check the real describe output against the panel's validator**
 
 `integrations/noctalia-plugin/contract.test.mjs` (`'real describe output satisfies the panel model validator'`) spawns the real CLI and runs the panel's `validateModel` over its output. Run: `node --test integrations/noctalia-plugin/contract.test.mjs`. Expected: PASS for both the fresh and the tuned store, with every control kind drawn once the harness expands the cards (Task 5 Step 6).
 
-- [ ] **Step 3: Update the README**
+- [x] **Step 3: Update the README**
 
 Replace lines 31 to 33 of `README.md` (the sentence beginning "The Noctalia integration is a native v5 plugin") with:
 
@@ -1543,7 +1544,7 @@ and Directional blur, which ride its taps, and flattens Blur. Design:
 `docs/specs/2026-09-08-device-chain-rack-design.md`.
 ```
 
-- [ ] **Step 4: Update the plugin contract note**
+- [x] **Step 4: Update the plugin contract note**
 
 In `docs/notes/noctalia-plugin-contract.md`, under `## Declarative presentation`, replace the bullet beginning "Every other `ui.group` is a section" with:
 
@@ -1569,33 +1570,50 @@ In `docs/notes/noctalia-plugin-contract.md`, under `## Declarative presentation`
   contract error and shows as the banner.
 ```
 
-- [ ] **Step 5: Mark the spec and plan as implemented**
+- [x] **Step 5: Mark the spec and plan as implemented**
 
 In the spec, change the status line to `**Status:** implemented on \`device-chain\` at <sha>; suite passing; desktop acceptance pending.` with the real short sha of the Task 5 commit. In this plan, change `**Status:** not started.` to the same wording.
 
-- [ ] **Step 6: Commit and record the task**
+- [x] **Step 6: Commit and record the task**
 
 ```bash
 git add README.md docs/notes/noctalia-plugin-contract.md docs/specs/2026-09-08-device-chain-rack-design.md docs/plans/2026-09-09-device-chain-rack.md
 git commit -m "docs: describe the rack panel and record the device-chain rack as implemented"
 ```
 
-Then `tasks note prism-9331c1 "<what was verified: suite counts, describe output, what desktop acceptance still needs>"`.
+Before committing, close `prism-ca29f6` with a one-line result and add a note to
+`prism-9331c1` recording the suite counts, describe output, and remaining
+desktop acceptance. Keep the parent open.
 
-- [ ] **Step 7: Hand over the desktop acceptance checklist**
+- [x] **Step 7: Hand over the desktop acceptance checklist**
 
-Desktop acceptance cannot be automated here (no pointer automation). Give the user this checklist, with the exact commands:
+Desktop acceptance cannot be automated here (no pointer automation). From the
+device-chain worktree, run this checklist. It records and restores both current
+link targets:
 
 ```
-# The panel runs `prism` from PATH, and ~/bin/prism points at the main checkout,
-# whose describe has no rack; switch both, and record the original CLI target.
-readlink ~/bin/prism   # note this; it is what to restore
-ln -sfn /mnt/ssd/Dropbox/prism/.worktrees/device-chain/bin/prism ~/bin/prism
-ln -sfn /mnt/ssd/Dropbox/prism/.worktrees/device-chain/integrations/noctalia-plugin ~/.local/share/noctalia/plugins/prism
+rack_tree=$(git rev-parse --show-toplevel)
+cli_link=$(command -v prism)
+plugin_link=${XDG_DATA_HOME:-$HOME/.local/share}/noctalia/plugins/prism
+test -L "$cli_link" && test -L "$plugin_link"
+cli_target=$(readlink "$cli_link")
+plugin_target=$(readlink "$plugin_link")
+
+ln -sfn "$rack_tree/bin/prism" "$cli_link"
+ln -sfn "$rack_tree/integrations/noctalia-plugin" "$plugin_link"
 noctalia msg plugins disable khughitt/prism
 noctalia msg plugins enable khughitt/prism
 # wait a beat
 noctalia msg panel-open khughitt/prism:panel
 ```
 
-Check: eight cards under Focus in shader order with colored fills; lights lit; clicking Noise's light greys it and the grain disappears on the desktop; expanding Noise shows Bypass noise (on) with a lit reset, then Noise type; resetting the bypass row un-bypasses; bypassing Refraction hollows the Fringing and Directional blur lights; the Terminal section still shows the opacity sliders. Afterwards restore both links: `ln -sfn <the readlink output> ~/bin/prism` and the plugin link back to the main checkout's `integrations/noctalia-plugin`, then disable and enable the plugin again. Do this before merging as well if the branch is left for a while, or the panel and CLI disagree the moment the worktree moves. `tasks done prism-9331c1` is the user's call after that check, in the merge commit.
+Check: eight cards under Focus in shader order with colored fills; lights lit; clicking Noise's light greys it and the grain disappears on the desktop; expanding Noise shows Bypass noise (on) with a lit reset, then Noise type; resetting the bypass row un-bypasses; bypassing Refraction hollows the Fringing and Directional blur lights; the Terminal section still shows the opacity sliders. Afterwards restore both links and reload the plugin:
+
+```bash
+ln -sfn "$cli_target" "$cli_link"
+ln -sfn "$plugin_target" "$plugin_link"
+noctalia msg plugins disable khughitt/prism
+noctalia msg plugins enable khughitt/prism
+```
+
+Do this before merging as well if the branch is left for a while, or the panel and CLI disagree the moment the worktree moves. `tasks done prism-9331c1` is the user's call after that check, in the merge commit.
