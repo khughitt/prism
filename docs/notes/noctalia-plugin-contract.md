@@ -48,7 +48,7 @@ open rather than greeting the next one behind a model that reconciles fine.
 All parameter writes go through the panel's shared FIFO. Each command is
 serialized through `noctalia.runAsync`, and the next item starts only after
 the current item completes. `set`, `unset`, `pin`, and the profile verbs
-`activate`, `deactivate`, `save`, and `delete` are the only verbs; anything
+`activate`, `deactivate`, `save`, `rename`, and `delete` are the only verbs; anything
 else fails loudly rather than reaching another backend. None but `set` and
 `unset` write a parameter, but each moves the write target or the resolved
 values, so each counts as affecting the model and forces the same refresh a
@@ -144,15 +144,27 @@ The presentation module defines the panel's stable layout contract:
   row overridden: the write lands in the target, which is not where the value
   comes from, so there is still no override on that row to reset.
 - The panel draws a profile row above the sections, and above the wallpaper
-  header because a profile outranks a wallpaper: a selector, a save button, and
-  a delete button. The selector doubles as the clear control — index 0 is
+  header because a profile outranks a wallpaper: a selector, a save button, a
+  rename button, and a delete button. The selector doubles as the clear control — index 0 is
   `No profile`, which deactivates. It is deliberately not "base values":
   deactivating leaves the wallpaper layer active, so what is on screen may
   still come from it, and only the write target returns to base. Save opens a
   name field (`ui.input`, `submitOnEnter`), validates the name against the
   store's rule locally rather than spending a failed command on it, then saves
-  and enters the new profile. Delete carries the reset idiom: dim and inert
-  with nothing loaded, live once a profile is.
+  and enters the new profile. A name that already belongs to another profile
+  is not replaced silently: the name field gives way to a question row
+  (`Replace profile <name>?`, a destructive button, a cancel), because Noctalia
+  has no dialog. Saving the loaded profile under its own name asks nothing,
+  since every edit already lands there. Rename and delete carry the reset
+  idiom: dim and inert with nothing loaded, live once a profile is, and both
+  act only on the loaded profile — deleting or renaming another one means
+  selecting it first, which loads it. That is intended: the row acts on what
+  is on screen, and the selector makes every profile reachable. Rename opens
+  the same name field seeded with the current name and runs `prism context
+  rename`; a taken name is refused locally, the way the store refuses it, and
+  the same name closes the field. Delete asks first in the same question row
+  (`Delete profile <name>?`). Opening the name field drops a pending question
+  and a question drops the field, so at most one occupies the row.
 - When a wallpaper is active the panel draws a header row above the sections:
   its basename, the count of visible parameters it holds, and a pin button that
   runs `prism context pin|unpin wallpaper`. A loaded profile is always topmost

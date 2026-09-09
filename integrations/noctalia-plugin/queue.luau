@@ -13,7 +13,7 @@ end
 -- state has to be re-read once one lands.
 local staleAfter = {
   set = true, unset = true, pin = true,
-  activate = true, deactivate = true, save = true, delete = true,
+  activate = true, deactivate = true, save = true, delete = true, rename = true,
 }
 
 function M.affectsParams(item)
@@ -55,6 +55,7 @@ function M.argvFor(item)
   if item.verb == "unset" then return { "prism", "unset", item.key } end
   if item.verb == "pin" then return { "prism", "context", item.on and "pin" or "unpin", "wallpaper" } end
   if item.verb == "deactivate" then return { "prism", "context", "deactivate", "profile" } end
+  if item.verb == "rename" then return { "prism", "context", "rename", "profile", item.name, item.newName } end
   for _, verb in ipairs({ "activate", "save", "delete" }) do
     if item.verb == verb then return { "prism", "context", verb, "profile", item.name } end
   end

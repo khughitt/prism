@@ -430,3 +430,62 @@ test('describe lists the saved profile names, including ones it cannot read', as
   const after = JSON.parse((await runCaptured(['describe', '--json'])).stdout);
   assert.deepEqual(after.profiles, ['broken', 'dusk', 'noon']);
 });
+
+test('context rename moves the profile file, repoints the active slot, and touches neither resolved.json nor sinks', async () => {
+  fs.writeFileSync(valuesPath(), 'glass.ior: 1.24\n');
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.5 } });
+  writeActive({ wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' });
+  await cli.run(['apply'], { runner: () => {} });
+  const before = fs.readFileSync(resolvedPath(), 'utf8');
+
+  const calls = [];
+  assert.equal(await cli.run(['context', 'rename', 'profile', 'dusk', 'dawn'], { runner: (m) => calls.push(m.sink) }), 0);
+  assert.deepEqual(calls, [], 'rename must not run any sink');
+  assert.equal(fs.readFileSync(resolvedPath(), 'utf8'), before, 'rename must not touch resolved.json');
+  assert.equal(readContext('profile', 'dusk'), null, 'the old file is gone');
+  assert.deepEqual(readContext('profile', 'dawn'), { source: null, values: { 'glass.ior': 1.5 } });
+  assert.deepEqual(readActive(), { wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dawn' },
+    'the loaded profile follows its new name; the wallpaper slot is untouched');
+});
+
+test('context rename of a profile that is not loaded leaves the active slots alone', async () => {
+  writeContext('profile', 'dusk', { source: null, values: {} });
+  writeContext('profile', 'noon', { source: null, values: {} });
+  writeActive({ profile: 'noon' });
+  assert.equal(await cli.run(['context', 'rename', 'profile', 'dusk', 'dawn'], { runner: () => {} }), 0);
+  assert.deepEqual(readActive(), { profile: 'noon' });
+  assert.equal(readContext('profile', 'dusk'), null);
+  assert.notEqual(readContext('profile', 'dawn'), null);
+});
+
+test('context rename refuses a missing source, an existing target, the wallpaper kind, and a bad shape', async () => {
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.5 } });
+  writeContext('profile', 'noon', { source: null, values: { 'glass.ior': 1.1 } });
+  writeContext('wallpaper', 'abc12345', { source: '/walls/a.jpg', values: {} });
+
+  const missing = await runCaptured(['context', 'rename', 'profile', 'nope', 'dawn']);
+  assert.notEqual(missing.code, 0);
+  assert.match(missing.stderr, /profile nope: no such context/);
+  assert.equal(readContext('profile', 'dawn'), null);
+
+  const taken = await runCaptured(['context', 'rename', 'profile', 'dusk', 'noon']);
+  assert.notEqual(taken.code, 0);
+  assert.match(taken.stderr, /profile noon already exists/);
+  assert.deepEqual(readContext('profile', 'noon').values, { 'glass.ior': 1.1 }, 'the existing profile is untouched');
+  assert.deepEqual(readContext('profile', 'dusk').values, { 'glass.ior': 1.5 }, 'the source is untouched');
+
+  const wallpaper = await runCaptured(['context', 'rename', 'wallpaper', 'abc12345', 'deadbeef']);
+  assert.notEqual(wallpaper.code, 0);
+  assert.match(wallpaper.stderr, /rename is for profiles/);
+  assert.notEqual(readContext('wallpaper', 'abc12345'), null);
+
+  for (const argv of [
+    ['context', 'rename'], ['context', 'rename', 'profile', 'dusk'], ['context', 'rename', 'profile', 'dusk', 'a', 'b'],
+    ['context', 'rename', 'profile', 'dusk', 'bad name'], ['context', 'rename', 'state', 'a', 'b'],
+  ]) {
+    const failure = await runCaptured(argv);
+    assert.notEqual(failure.code, 0, `${argv.join(' ')} unexpectedly succeeded`);
+  }
+  assert.match((await runCaptured(['context', 'rename'])).stderr, /usage: prism context rename <kind> <old> <new>/);
+  assert.match((await runCaptured(['context', 'rename', 'profile', 'dusk', 'bad name'])).stderr, /invalid context name/);
+});
