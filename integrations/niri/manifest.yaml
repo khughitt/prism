@@ -1,5 +1,9 @@
 sink: niri
 generates: [prism.kdl]
+requires:
+  - probe: material
+    when: glass.enabled
+    fix: "install niri-material; stock niri does not know the material node"
 binds:
   - {param: compositor.gaps, liveness: reload}
   - {param: terminal.apps, liveness: reload}

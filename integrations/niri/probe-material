@@ -1,0 +1,50 @@
+#!/usr/bin/env node
+// Stock niri answers a config containing a material node with a screenful of
+// KDL parse errors that name a syntax position and never the cause. Ask it
+// about a minimal material block on its own, so the answer is one yes or no.
+// niri --version prints upstream's version with a build commit, so there is no
+// niri-material version to compare a minimum against: this states a capability.
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { PROBE_CHILD_TIMEOUT } from '../../src/sink.js';
+
+const PROBE = 'material "prism-probe" {\n    glass {\n        ior 1.5\n    }\n}\n';
+
+// Both calls carry their own bound. The fan-out's SINK_TIMEOUT kills this
+// probe with SIGKILL, which no finally block survives: a niri that hangs would
+// outlive the probe that spawned it and leave the temp config behind. Bounding
+// the children keeps the worst case inside the outer bound and returns here.
+const niri = (args) => execFileSync('niri', args, {
+  stdio: 'pipe', encoding: 'utf8', timeout: PROBE_CHILD_TIMEOUT, killSignal: 'SIGKILL',
+});
+
+function installed() {
+  try {
+    return `installed: ${niri(['--version']).trim()}`;
+  } catch {
+    return 'its version could not be read';
+  }
+}
+
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-probe-material-'));
+const file = path.join(dir, 'probe.kdl');
+
+let failure = null;
+try {
+  fs.writeFileSync(file, PROBE);
+  niri(['validate', '-c', file]);
+} catch (error) {
+  failure = error?.code === 'ENOENT'
+    ? 'niri is not installed'
+    : `this niri does not accept the material node (${installed()})`;
+} finally {
+  fs.rmSync(dir, { recursive: true, force: true });
+}
+
+// process.exit skips finally, so the temp dir is already gone by here.
+if (failure !== null) {
+  process.stderr.write(`${failure}\n`);
+  process.exit(1);
+}
