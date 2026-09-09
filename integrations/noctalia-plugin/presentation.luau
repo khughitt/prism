@@ -158,10 +158,12 @@ end
 -- appearance by ui.order. A toggle flagged ui.header is the section's header
 -- control. Parameters with ui.state pair into matrix rows keyed by ui.row
 -- (focused left, unfocused right); everything else is a single-parameter row.
-function M.sections(params)
+function M.sections(params, skipGroup)
   local visible = {}
   for _, param in ipairs(params) do
-    if param.ui.control ~= "none" and param.ui.group ~= "Title" then visible[#visible + 1] = param end
+    if param.ui.control ~= "none" and param.ui.group ~= "Title" and param.ui.group ~= skipGroup then
+      visible[#visible + 1] = param
+    end
   end
   table.sort(visible, function(a, b) return a.ui.order < b.ui.order end)
 
@@ -299,6 +301,105 @@ function M.profileSection(model)
     if name == model.active.profile then selectedIndex = index end
   end
   return { options = options, selectedIndex = selectedIndex, activeName = model.active.profile }
+end
+
+-- One color per device category. Noctalia gives a plugin no theme palette, so
+-- these are constants; a card's fill is the same color at hex alpha 1f.
+M.categoryColors = { source = "#5b9cf6", geometry = "#c78bfa", optic = "#4fd1c5", post = "#f6ad55" }
+
+-- The rack: the group describe names, as an ordered list of device cards. Each
+-- card owns one mix row (always shown), detail rows and shared keys (shown
+-- when expanded), and its bypass key. The panel resolves row labels and keys
+-- against params itself and refuses a rack that does not cover the group, so
+-- a definition added without a device fails loudly instead of vanishing.
+function M.rack(model)
+  local rack = model.rack
+  if type(rack) ~= "table" or type(rack.group) ~= "string" or type(rack.devices) ~= "table" then
+    error("prism describe returned no rack", 0)
+  end
+  local rows, singles, header = {}, {}, nil
+  for _, param in ipairs(model.params) do
+    if param.ui.control ~= "none" and param.ui.group == rack.group then
+      if param.ui.state ~= nil then
+        local row = rows[param.ui.row] or { row = param.ui.row }
+        if row[param.ui.state] ~= nil then
+          error("row " .. param.ui.row .. " has two " .. param.ui.state .. " parameters")
+        end
+        row[param.ui.state] = param
+        rows[param.ui.row] = row
+      elseif param.ui.header == true then
+        if header ~= nil then error("section " .. rack.group .. " has two header toggles") end
+        header = param
+      else
+        singles[param.key] = param
+      end
+    end
+  end
+  local claimedRows, claimedKeys, byId, cards = {}, {}, {}, {}
+  local function takeRow(label, id)
+    local row = rows[label]
+    if row == nil or row.focused == nil or row.unfocused == nil then
+      error("device " .. id .. " names no matrix row " .. tostring(label))
+    end
+    if claimedRows[label] then error("row " .. label .. " belongs to two devices") end
+    claimedRows[label] = true
+    return row
+  end
+  local function takeKey(key, id)
+    local param = singles[key]
+    if param == nil then error("device " .. id .. " names no parameter " .. tostring(key)) end
+    if claimedKeys[key] then error("parameter " .. key .. " belongs to two devices") end
+    claimedKeys[key] = true
+    return param
+  end
+  for _, device in ipairs(rack.devices) do
+    local id = tostring(device.device)
+    if M.categoryColors[device.category] == nil then
+      error("device " .. id .. " has unknown category " .. tostring(device.category))
+    end
+    local card = { device = id, label = device.label, category = device.category, rows = {}, shared = {} }
+    card.mix = takeRow(device.mix, id)
+    for _, label in ipairs(device.rows or {}) do card.rows[#card.rows + 1] = takeRow(label, id) end
+    for _, key in ipairs(device.shared or {}) do card.shared[#card.shared + 1] = takeKey(key, id) end
+    card.bypass = takeKey(device.bypass, id)
+    if device.requires ~= nil then
+      card.requires = byId[device.requires]
+        or error("device " .. id .. " requires unknown device " .. tostring(device.requires))
+    end
+    byId[id] = card
+    cards[#cards + 1] = card
+  end
+  for label in pairs(rows) do
+    if not claimedRows[label] then error("row " .. label .. " belongs to no device") end
+  end
+  for key in pairs(singles) do
+    if not claimedKeys[key] then error("parameter " .. key .. " belongs to no device") end
+  end
+  for _, card in ipairs(cards) do
+    card.bypassed = card.bypass.value == true
+    card.silenced = card.requires ~= nil and card.requires.bypass.value == true
+  end
+  return { group = rack.group, header = header, cards = cards }
+end
+
+-- Bypass first: it is the first row of the expanded card.
+function M.cardParams(card)
+  local list = { card.bypass, card.mix.focused, card.mix.unfocused }
+  for _, row in ipairs(card.rows) do
+    list[#list + 1] = row.focused
+    list[#list + 1] = row.unfocused
+  end
+  for _, param in ipairs(card.shared) do list[#list + 1] = param end
+  return list
+end
+
+function M.rackParams(rack)
+  local list = {}
+  if rack.header then list[#list + 1] = rack.header end
+  for _, card in ipairs(rack.cards) do
+    for _, param in ipairs(M.cardParams(card)) do list[#list + 1] = param end
+  end
+  return list
 end
 
 return M

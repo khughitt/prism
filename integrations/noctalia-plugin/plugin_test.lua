@@ -77,6 +77,94 @@ equal(Presentation.sections(mixed)[1].rows, {
 })
 equal(Presentation.overriddenCount({ { overridden = true }, { overridden = false }, { overridden = true } }), 2)
 
+-- The rack resolves describe's device list against the group's rows and keys.
+-- Every visible parameter in the group other than the header must belong to a
+-- device, so a definition added without one fails here instead of vanishing.
+local rackParams = {
+  { key = "r.split", value = true, ui = { control = "toggle", group = "Rack", order = 1, header = true } },
+  { key = "r.blur", value = 0.2, ui = { control = "slider", group = "Rack", order = 2, state = "focused", row = "Blur" } },
+  { key = "r.inactive.blur", value = 0.5, ui = { control = "slider", group = "Rack", order = 3, state = "unfocused", row = "Blur" } },
+  { key = "r.depth", value = 1, ui = { control = "slider", group = "Rack", order = 4, state = "focused", row = "Depth" } },
+  { key = "r.inactive.depth", value = 1, ui = { control = "slider", group = "Rack", order = 5, state = "unfocused", row = "Depth" } },
+  { key = "r.kind", value = "a", ui = { control = "select", group = "Rack", order = 6 } },
+  { key = "r.bypass.one", value = false, ui = { control = "toggle", group = "Rack", order = 7 } },
+  { key = "r.bypass.two", value = false, ui = { control = "toggle", group = "Rack", order = 8 } },
+  { key = "g.one", value = 1, ui = { control = "slider", group = "Glass", order = 9 } },
+  { key = "hidden", value = 1, ui = { control = "none", group = "Rack" } },
+}
+local rackModel = { params = rackParams, rack = { group = "Rack", devices = {
+  { device = "one", label = "One", category = "optic", mix = "Blur", rows = {}, shared = { "r.kind" }, bypass = "r.bypass.one" },
+  { device = "two", label = "Two", category = "post", mix = "Depth", rows = {}, shared = {}, bypass = "r.bypass.two", requires = "one" },
+} } }
+local rack = Presentation.rack(rackModel)
+equal(rack.group, "Rack")
+equal(rack.header, rackParams[1])
+equal(#rack.cards, 2)
+equal(rack.cards[1].device, "one")
+equal(rack.cards[1].label, "One")
+equal(rack.cards[1].category, "optic")
+equal(rack.cards[1].mix, { row = "Blur", focused = rackParams[2], unfocused = rackParams[3] })
+equal(rack.cards[1].rows, {})
+equal(rack.cards[1].shared, { rackParams[6] })
+equal(rack.cards[1].bypass, rackParams[7])
+equal(rack.cards[1].requires, nil)
+equal(rack.cards[1].bypassed, false)
+equal(rack.cards[1].silenced, false)
+equal(rack.cards[2].mix.row, "Depth")
+equal(rack.cards[2].requires, rack.cards[1])
+equal(Presentation.cardParams(rack.cards[1]), { rackParams[7], rackParams[2], rackParams[3], rackParams[6] })
+equal(Presentation.rackParams(rack), {
+  rackParams[1], rackParams[7], rackParams[2], rackParams[3], rackParams[6], rackParams[8], rackParams[4], rackParams[5],
+})
+equal(Presentation.categoryColors.optic, "#4fd1c5")
+equal(Presentation.categoryColors.post, "#f6ad55")
+equal(Presentation.categoryColors.source, "#5b9cf6")
+equal(Presentation.categoryColors.geometry, "#c78bfa")
+
+-- A bypassed upstream silences its dependents; the dependent's own key stands.
+rackParams[7].value = true
+local bypassed = Presentation.rack(rackModel)
+equal(bypassed.cards[1].bypassed, true)
+equal(bypassed.cards[1].silenced, false)
+equal(bypassed.cards[2].bypassed, false)
+equal(bypassed.cards[2].silenced, true)
+rackParams[7].value = false
+
+-- The rack's group is served by the rack, not by sections.
+equal(#Presentation.sections(rackParams, "Rack"), 1)
+equal(Presentation.sections(rackParams, "Rack")[1].name, "Glass")
+equal(#Presentation.sections(rackParams), 2)
+
+local function rackFails(edit, pattern)
+  local params, devices = {}, {}
+  for i, p in ipairs(rackParams) do params[i] = { key = p.key, value = p.value, ui = p.ui } end
+  for i, d in ipairs(rackModel.rack.devices) do
+    devices[i] = { device = d.device, label = d.label, category = d.category, mix = d.mix, rows = {}, shared = {}, bypass = d.bypass, requires = d.requires }
+    for j, s in ipairs(d.shared) do devices[i].shared[j] = s end
+  end
+  local model = { params = params, rack = { group = "Rack", devices = devices } }
+  edit(model)
+  local ok, err = pcall(Presentation.rack, model)
+  assert(not ok, "expected a rack error matching " .. pattern)
+  assert(tostring(err):find(pattern, 1, true), "expected " .. pattern .. ", got " .. tostring(err))
+end
+rackFails(function(m) m.rack = nil end, "prism describe returned no rack")
+rackFails(function(m) m.rack.devices[1].mix = "Gap" end, "device one names no matrix row Gap")
+rackFails(function(m) m.rack.devices[1].shared = { "r.nope" } end, "device one names no parameter r.nope")
+rackFails(function(m) m.rack.devices[2].mix = "Blur" end, "row Blur belongs to two devices")
+rackFails(function(m) m.rack.devices[2].shared = { "r.kind" } end, "parameter r.kind belongs to two devices")
+rackFails(function(m) m.rack.devices[2] = nil end, "row Depth belongs to no device")
+rackFails(function(m) m.rack.devices[1].shared = {} end, "parameter r.kind belongs to no device")
+rackFails(function(m) m.rack.devices[2].requires = "three" end, "device two requires unknown device three")
+rackFails(function(m) m.rack.devices[1].category = "light" end, "device one has unknown category light")
+-- sections() rejects these two shapes; the rack path must not let them through.
+rackFails(function(m)
+  m.params[#m.params + 1] = { key = "r.blur2", value = 0, ui = { control = "slider", group = "Rack", order = 12, state = "focused", row = "Blur" } }
+end, "row Blur has two focused parameters")
+rackFails(function(m)
+  m.params[#m.params + 1] = { key = "r.split2", value = true, ui = { control = "toggle", group = "Rack", order = 13, header = true } }
+end, "section Rack has two header toggles")
+
 local function fails(candidate, pattern)
   local ok, err = pcall(Presentation.sections, candidate)
   assert(not ok and tostring(err):find(pattern, 1, true), "expected failure containing " .. pattern .. ", got " .. tostring(err))
