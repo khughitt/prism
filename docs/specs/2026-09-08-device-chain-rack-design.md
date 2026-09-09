@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-08
 **Status:** design approved in conversation; not implemented.
-**Task:** first piece of goal `prism-a03862`
+**Task:** `prism-9331c1`, first piece of goal `prism-a03862`
 
 ## Context
 
