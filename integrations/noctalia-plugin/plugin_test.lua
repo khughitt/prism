@@ -804,3 +804,24 @@ equal(commands[#commands], Shell.command({ "prism", "context", "delete", "profil
 local noActive = layeredModel()
 noActive.active = nil
 equal(panelError(noActive), "prism describe returned no active contexts")
+
+-- A command's error outlives the refresh it triggers, but it must not outlive
+-- the panel. The Luau runtime survives a close, so without this a failure from
+-- one session greets the next one behind a model that is perfectly fine.
+local function errorBanner(tree)
+  for _, label in ipairs(collect(tree, "label")) do
+    if label.props.color == "error" and (label.props.text or "") ~= "" then return label.props.text end
+  end
+  return nil
+end
+
+local reopenTree = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
+glyphButton(reopenTree, "trash").props.onClick()
+writeCallback({ exitCode = 1, stdout = "", stderr = "profile in use" })
+described({ exitCode = 0, stdout = "{}" })
+equal(errorBanner(rendered), "profile in use", "the error survives the refresh it triggered")
+
+onClose()
+onOpen({})
+described({ exitCode = 0, stdout = "{}" })
+equal(errorBanner(rendered), nil, "opening the panel is a fresh gesture and starts without the last error")

@@ -41,7 +41,9 @@ timeouts, launch failures, non-zero exits, and truncated output remain visible
 as panel errors without replacing the last valid model. An error raised by a
 command outlives the refresh that command triggers, and only the next gesture
 clears it; otherwise the reason a profile would not load flashes past behind
-the successful `describe` that follows it.
+the successful `describe` that follows it. Opening the panel is such a gesture:
+the panel runtime survives a close, so an error from one session is dropped on
+open rather than greeting the next one behind a model that reconciles fine.
 
 All parameter writes go through the panel's shared FIFO. Each command is
 serialized through `noctalia.runAsync`, and the next item starts only after

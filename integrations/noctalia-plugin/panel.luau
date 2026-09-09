@@ -721,7 +721,14 @@ render = function()
   panel.render(ui.scroll({flexGrow = 1, gap = 6, padding = 16}, children))
 end
 
-function onOpen(context) refresh() end
+-- Opening the panel is a fresh gesture, like starting a batch: the Luau runtime
+-- survives a close, so a sticky command error would otherwise greet the next
+-- session behind a model that reconciles perfectly well.
+function onOpen(context)
+  state.errorText = nil
+  state.errorSticky = false
+  refresh()
+end
 
 function onClose()
   state.drag = nil
