@@ -5,8 +5,8 @@ status: todo
 priority: 2
 size: s
 created: 2026-09-09T09:25:49Z
-updated: 2026-09-09T09:25:49Z
-depends: [prism-7d8418]
+updated: 2026-09-09T09:26:05Z
+depends: [prism-7d8418, prism-3ea2a0]
 parent: prism-9331c1
 tags: [docs]
 plan: docs/plans/2026-09-09-device-chain-rack.md

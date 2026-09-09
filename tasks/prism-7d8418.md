@@ -6,8 +6,8 @@ priority: 2
 size: s
 parallel: true
 created: 2026-09-09T09:25:49Z
-updated: 2026-09-09T09:25:49Z
-depends: []
+updated: 2026-09-09T09:26:05Z
+depends: [prism-1f9fa1]
 parent: prism-9331c1
 tags: [niri]
 plan: docs/plans/2026-09-09-device-chain-rack.md
