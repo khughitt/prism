@@ -256,7 +256,7 @@ end
 -- Noctalia toggle takes no tooltip and a disabled Button's tooltip is
 -- unreachable.
 function M.wallpaperHeader(model)
-  local wallpaper = model.active and model.active.wallpaper
+  local wallpaper = model.active.wallpaper
   if wallpaper == nil then return nil end
   local overrides = 0
   for _, param in ipairs(model.params) do
@@ -279,6 +279,26 @@ function M.wallpaperHeader(model)
     canPin = profile == nil,
     tooltip = tooltip,
   }
+end
+
+-- The store's rule for a context name, checked here so a bad one never becomes
+-- a failed command the user has to read out of an error banner.
+function M.validProfileName(name)
+  return type(name) == "string" and name:match("^[A-Za-z0-9._%-]+$") ~= nil
+end
+
+-- The selector doubles as the clear control, so index 0 is "no profile". It is
+-- deliberately not "base values": deactivating a profile leaves the wallpaper
+-- layer active, so what is on screen may still come from it. Only the write
+-- target returns to base.
+function M.profileSection(model)
+  local options = { "No profile" }
+  local selectedIndex = 0
+  for index, name in ipairs(model.profiles) do
+    options[index + 1] = name
+    if name == model.active.profile then selectedIndex = index end
+  end
+  return { options = options, selectedIndex = selectedIndex, activeName = model.active.profile }
 end
 
 return M

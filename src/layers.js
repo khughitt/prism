@@ -1,5 +1,5 @@
 import { readValues } from './values.js';
-import { LAYER_ORDER, readActive, readContext } from './contexts.js';
+import { LAYER_ORDER, listContexts, readActive, readContext } from './contexts.js';
 import { resolveLayered } from './resolve.js';
 
 export function activeName(active, kind) {
@@ -60,6 +60,10 @@ export function layersBelow(layers, target) {
 export function loadStore(defs) {
   const base = readValues();
   const active = readActive();
+  // Listed in the same locked read as the active slots: a list read separately
+  // could disagree with the slot it is drawn beside. Names only -- a profile
+  // whose file is broken stays listed and fails when it is activated.
+  const profiles = listContexts().profile;
   const layers = loadLayers(active);
   const { params, layerOf } = resolveLayered(defs, base, layers);
   const target = writeTarget(active);
@@ -71,5 +75,5 @@ export function loadStore(defs) {
   for (const key of Object.keys(params)) {
     fallback[key] = layerOf[key] === target.kind ? below[key] : params[key];
   }
-  return { base, active, layers, target, params, layerOf, fallback };
+  return { base, active, profiles, layers, target, params, layerOf, fallback };
 }

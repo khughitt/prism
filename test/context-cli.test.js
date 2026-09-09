@@ -410,3 +410,23 @@ test('describe reports the resolution order, low to high', async () => {
     assert.ok(model.layers.includes(param.layer), `${param.key} reports unrankable layer ${param.layer}`);
   }
 });
+
+// The panel populates its profile selector from describe, so the names ride in
+// the same locked snapshot as `active` and the parameters: a list read
+// separately could disagree with the active slot it is drawn beside.
+test('describe lists the saved profile names, including ones it cannot read', async () => {
+  writeContext('profile', 'noon', { source: null, values: {} });
+  writeContext('profile', 'dusk', { source: null, values: {} });
+  // Listing a name does not read it. A profile whose file is broken stays
+  // listed and fails loudly when it is activated, rather than quietly missing
+  // from a selector the user saved it into.
+  fs.writeFileSync(contextPath('profile', 'broken'), 'values: [oops\n');
+
+  const model = JSON.parse((await runCaptured(['describe', '--json'])).stdout);
+  assert.deepEqual(model.profiles, ['broken', 'dusk', 'noon'], 'sorted, and the unreadable one is kept');
+
+  // A wallpaper context is keyed by hash and never offered as a profile.
+  writeContext('wallpaper', 'abc12345', { source: '/w', values: {} });
+  const after = JSON.parse((await runCaptured(['describe', '--json'])).stdout);
+  assert.deepEqual(after.profiles, ['broken', 'dusk', 'noon']);
+});

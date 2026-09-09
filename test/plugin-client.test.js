@@ -74,7 +74,12 @@ test('queue is the sole serialization point and refreshes only after a completed
 
   assert.match(source, /Queue\.enqueue\(state\.queue, item\)/);
   assert.match(source, /Queue\.argvFor\(item\)/);
-  assert.match(source, /Queue\.shouldRefresh\(state\.batchAffectsParams, state\.queue\.inFlight\)/);
+  // The completed item drives both the refresh decision and any follow-up, so
+  // it is read once, before Queue.finish rotates it out.
+  assert.match(source, /local completed = state\.queue\.inFlight\n  local shouldRefresh = Queue\.shouldRefresh\(state\.batchAffectsParams, completed\)/);
+  // A follow-up command runs only when the one it depends on landed: the FIFO
+  // keeps going after a failure.
+  assert.match(source, /if not message and completed and completed\.activateAfter then/);
   assert.match(source, /Queue\.finish\(state\.queue\)/);
   assert.match(source, /local next = Queue\.finish\(state\.queue\)[\s\S]*if next\.launch then[\s\S]*launch\(next\.launch\)[\s\S]*elseif next\.drained then/);
 });
@@ -186,9 +191,10 @@ test('the queue speaks only to prism', async () => {
   assert.match(source, /if item\.verb == "pin" then return \{ "prism", "context", item\.on and "pin" or "unpin", "wallpaper" \} end/);
   assert.match(source, /error\("unknown queue verb: "/);
   assert.doesNotMatch(source, /preview|niri-glass|prismGlass|"qs"/);
-  // A pin writes no parameter but moves the write target, so it too must leave
-  // the model stale and force a re-read.
-  assert.match(source, /function M\.affectsParams\(item\)\n  return item\.verb == "set" or item\.verb == "unset" or item\.verb == "pin"\n/);
+  // A pin and the profile verbs write no parameter but move the write target or
+  // the resolved values, so each must leave the model stale and force a re-read.
+  assert.match(source, /local staleAfter = \{\n  set = true, unset = true, pin = true,\n  activate = true, deactivate = true, save = true, delete = true,\n\}/);
+  assert.match(source, /function M\.affectsParams\(item\)\n  return staleAfter\[item\.verb\] == true\nend/);
 });
 
 test('the plugin describes native material control, not a separate preview', async () => {

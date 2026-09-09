@@ -5,11 +5,14 @@
 Revised 2026-09-06 for `prism-fc8491`: the write target is the topmost
 *explicit* layer and a wallpaper is a target only while pinned; `save` is
 for profiles; the wallpaper path is canonicalised.
+Revised 2026-09-08 for `prism-ea6344`: `describe --json` also lists the saved
+profile names as `profiles`, and the panel gains the profile row that loads,
+clears, saves, and deletes them.
 Revised 2026-09-08 for `prism-3b7c07`: `describe --json` also states the
 resolution order as `layers`, and the panel draws the wallpaper header row and
 shadows the rows a higher layer covers.
 **Task:** `prism-6fd864`, first piece of goal `prism-2f0b4b`; `prism-fc8491`;
-`prism-3b7c07`
+`prism-3b7c07`; `prism-ea6344`
 
 ## Context
 
@@ -236,8 +239,12 @@ it reports orphans in base today.
 ## Section 3: describe contract and the panel reset
 
 `describe --json` gains a top-level `active` object mirroring the slots, a
-top-level `target` naming the write-target layer, and a top-level `layers`
-giving the resolution order low to high. Each param gains `layer`, where its
+top-level `target` naming the write-target layer, a top-level `layers`
+giving the resolution order low to high, and a top-level `profiles` listing the
+saved profile names. `profiles` is read in the same locked snapshot as `active`
+and the parameters, so a selector drawn from it cannot disagree with the slot
+drawn beside it; names are listed without being read, so a profile whose file
+is broken stays listed and fails loudly when it is activated. Each param gains `layer`, where its
 effective value comes from (`default`, `base`, `wallpaper`, `state`, or
 `profile`), and `fallback`, the value `unset` would leave in effect. The
 `modified` field is removed: it answered "differs from the default", and
@@ -252,6 +259,7 @@ second copy that would silently mis-rank the day `state` becomes real.
 ```json
 {
   "active": { "wallpaper": { "id": "3f9a1c2e", "path": "/path/to/wall.jpg", "pinned": true }, "profile": null },
+  "profiles": ["dawn", "dusk"],
   "layers": ["default", "base", "wallpaper", "state", "profile"],
   "target": "wallpaper",
   "params": [
@@ -352,12 +360,12 @@ README states the config layout, and the plugin contract note records the
 ## Out of scope
 
 This is the boundary as first drawn. One item has since moved inside it: the
-2026-09-08 revision documents the panel's wallpaper header row, pin, and
-shadowed rows (`prism-3b7c07`), which landed against this spec rather than
-being deferred. The base-versus-wallpaper question from `prism-648e0f` is
+2026-09-08 revisions document the panel's wallpaper header row, pin, and
+shadowed rows (`prism-3b7c07`) and its profile row (`prism-ea6344`), which
+landed against this spec rather than being deferred. Renaming a profile has no
+CLI verb and is deferred with its panel control. The base-versus-wallpaper question from `prism-648e0f` is
 settled above.
 
-- Profile controls in the panel (`prism-ea6344`).
 - The Noctalia hook line (`dots-88dc34`).
 - The `state` kind's activation sources and its composition rules
   (`prism-9298b9`).

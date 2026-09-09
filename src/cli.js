@@ -174,7 +174,7 @@ export async function run(argv, opts = {}) {
           });
         }
 
-        print(`${JSON.stringify({ active: activeJson(store.active), layers: RESOLUTION_ORDER, target: store.target.kind, params: described }, null, 2)}\n`);
+        print(`${JSON.stringify({ active: activeJson(store.active), profiles: store.profiles, layers: RESOLUTION_ORDER, target: store.target.kind, params: described }, null, 2)}\n`);
         return 0;
       }
 

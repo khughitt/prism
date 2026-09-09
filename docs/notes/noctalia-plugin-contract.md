@@ -38,14 +38,22 @@ suite.
 The panel owns its rendered model and lifecycle state. `onOpen` starts an
 authoritative `prism describe --json`; invalid JSON, malformed models,
 timeouts, launch failures, non-zero exits, and truncated output remain visible
-as panel errors without replacing the last valid model.
+as panel errors without replacing the last valid model. An error raised by a
+command outlives the refresh that command triggers, and only the next gesture
+clears it; otherwise the reason a profile would not load flashes past behind
+the successful `describe` that follows it.
 
 All parameter writes go through the panel's shared FIFO. Each command is
 serialized through `noctalia.runAsync`, and the next item starts only after
-the current item completes. `set`, `unset`, and `pin` are the only verbs;
-anything else fails loudly rather than reaching another backend. `pin` writes
-no parameter but moves the write target, so it counts as affecting the model
-and forces the same refresh a write does. Parameter batches refresh the model
+the current item completes. `set`, `unset`, `pin`, and the profile verbs
+`activate`, `deactivate`, `save`, and `delete` are the only verbs; anything
+else fails loudly rather than reaching another backend. None but `set` and
+`unset` write a parameter, but each moves the write target or the resolved
+values, so each counts as affecting the model and forces the same refresh a
+write does. A queued item may name a follow-up (`activateAfter`), which is
+enqueued only once the item itself has landed: the FIFO continues after a
+failure, so an unconditional pair would enter a profile whose save never
+happened. Parameter batches refresh the model
 after the queue drains, except when the completed tail is a live drag sample;
 that reconciliation waits for the drag's final write.
 
@@ -113,6 +121,16 @@ The presentation module defines the panel's stable layout contract:
   cannot lift it above a state layer. Writing under a shadow does not mark the
   row overridden: the write lands in the target, which is not where the value
   comes from, so there is still no override on that row to reset.
+- The panel draws a profile row above the sections, and above the wallpaper
+  header because a profile outranks a wallpaper: a selector, a save button, and
+  a delete button. The selector doubles as the clear control — index 0 is
+  `No profile`, which deactivates. It is deliberately not "base values":
+  deactivating leaves the wallpaper layer active, so what is on screen may
+  still come from it, and only the write target returns to base. Save opens a
+  name field (`ui.input`, `submitOnEnter`), validates the name against the
+  store's rule locally rather than spending a failed command on it, then saves
+  and enters the new profile. Delete carries the reset idiom: dim and inert
+  with nothing loaded, live once a profile is.
 - When a wallpaper is active the panel draws a header row above the sections:
   its basename, the count of visible parameters it holds, and a pin button that
   runs `prism context pin|unpin wallpaper`. A loaded profile is always topmost
@@ -128,6 +146,8 @@ The presentation module defines the panel's stable layout contract:
   formatted value renders beside the native slider.
 
 `prism describe --json` carries `active` (the active context per kind),
+`profiles` (the saved profile names, listed in the same locked snapshot as
+`active` so the selector cannot disagree with the slot drawn beside it),
 `layers` (the store's resolution order, low to high), `target` (the
 write-target layer), and per parameter `layer` (where the value comes from) and
 `fallback` (what `unset` would leave). A parameter is overridden when
@@ -140,8 +160,9 @@ The panel is installed into Noctalia separately from the `prism` command, so
 the two must be upgraded together. The loud failure is one-sided, because every
 field the panel needs is one the CLI adds: a newer panel reading an older CLI's
 output fails `validateModel` on the first field that is absent — `prism
-describe returned no layer order` without `layers`, `prism describe returned no
-write target` without `target`, `<key> has no layer` without a per-parameter
+describe returned no layer order` without `layers`, `prism describe returned
+no profile list` without `profiles`, `prism describe returned no write target`
+without `target`, `<key> has no layer` without a per-parameter
 `layer` — and degrades to the panel's visible-error banner, which is the
 correct failure mode. The other direction is quiet: `validateModel` inspects
 only the fields it knows and does not reject unknown ones, so an older panel

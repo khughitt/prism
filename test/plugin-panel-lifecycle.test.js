@@ -18,7 +18,7 @@ local function newHost()
     sliders = {},
     suppressNextReconcileCallback = false,
   }
-  local model = {layers = {"default", "base", "wallpaper", "state", "profile"}, target = "base", params = {
+  local model = {active = {}, profiles = {}, layers = {"default", "base", "wallpaper", "state", "profile"}, target = "base", params = {
     {
       key = "glass.enabled", value = true, default = true, layer = "default", fallback = true,
       effectiveDrag = "release", description = "",

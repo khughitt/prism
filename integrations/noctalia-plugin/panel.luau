@@ -11,6 +11,8 @@ local state = {
   describeInvalidated = false,
   refreshAfterDrag = false,
   drag = nil,
+  naming = nil,
+  errorSticky = false,
   sampleElapsedMs = 0,
   renderedSliderCorrection = nil,
 }
@@ -75,23 +77,37 @@ local function visibleParamError(param, index)
   return nil
 end
 
+local function denseStringArray(value)
+  if type(value) ~= "table" then return false end
+  local count = 0
+  for _ in pairs(value) do count = count + 1 end
+  if count ~= #value then return false end
+  for index = 1, #value do
+    if type(value[index]) ~= "string" or value[index] == "" then return false end
+  end
+  return true
+end
+
 -- The order is a ranking, so it has to be a dense list of distinct names. A
 -- hole, a stray key, a non-string entry, or a repeat each rank silently wrong,
 -- and a wrong rank shadows the columns a user is trying to edit.
 local function layerOrderError(layers)
   if type(layers) ~= "table" then return "prism describe returned no layer order" end
-  local count = 0
-  for _ in pairs(layers) do count = count + 1 end
-  if count == 0 then return "prism describe returned no layer order" end
-  if count ~= #layers then return "prism describe returned a malformed layer order" end
+  if next(layers) == nil then return "prism describe returned no layer order" end
+  if not denseStringArray(layers) then return "prism describe returned a malformed layer order" end
   local seen = {}
-  for index = 1, #layers do
-    local name = layers[index]
-    if type(name) ~= "string" or name == "" or seen[name] then
-      return "prism describe returned a malformed layer order"
-    end
+  for _, name in ipairs(layers) do
+    if seen[name] then return "prism describe returned a malformed layer order" end
     seen[name] = true
   end
+  return nil
+end
+
+-- No saved profiles is an empty list, not an absent field: an absent one would
+-- draw an empty selector that looks like an answer.
+local function profileListError(profiles)
+  if type(profiles) ~= "table" then return "prism describe returned no profile list" end
+  if not denseStringArray(profiles) then return "prism describe returned a malformed profile list" end
   return nil
 end
 
@@ -107,6 +123,11 @@ local function validateModel(model)
   if type(model.target) ~= "string" then return "prism describe returned no write target" end
   local orderError = layerOrderError(model.layers)
   if orderError then return orderError end
+  local profileError = profileListError(model.profiles)
+  if profileError then return profileError end
+  -- describe always states the active slots, empty or not, so an absent object
+  -- is a broken contract rather than "nothing is active".
+  if type(model.active) ~= "table" then return "prism describe returned no active contexts" end
   local ranks = Presentation.layerRanks(model.layers)
   if ranks[model.target] == nil then
     return "prism describe reported target " .. model.target .. " outside the layer order"
@@ -175,7 +196,10 @@ local function described(result)
   elseif not message then
     markLayers(model)
     state.model = model
-    state.errorText = nil
+    -- A command's error outlives the refresh it triggers. Clearing it here
+    -- would flash the reason a profile would not load past the user and leave
+    -- the panel looking fine.
+    if not state.errorSticky then state.errorText = nil end
   end
   render()
   finishRefresh()
@@ -199,9 +223,19 @@ end
 
 local function finishWrite(result, launchError)
   local message = launchError or resultError(result, "Prism command")
-  if message then state.errorText = message end
+  if message then
+    state.errorText = message
+    state.errorSticky = true
+  end
 
-  local shouldRefresh = Queue.shouldRefresh(state.batchAffectsParams, state.queue.inFlight)
+  local completed = state.queue.inFlight
+  local shouldRefresh = Queue.shouldRefresh(state.batchAffectsParams, completed)
+  -- A follow-up runs only once the command it depends on has landed. The FIFO
+  -- keeps going after a failure, so an unconditional pair would enter a profile
+  -- whose save never happened.
+  if not message and completed and completed.activateAfter then
+    enqueue({verb = "activate", name = completed.name})
+  end
   local next = Queue.finish(state.queue)
   state.queue = next.state
   if next.launch then
@@ -222,7 +256,10 @@ end
 
 enqueue = function(item)
   state.batchAffectsParams = state.batchAffectsParams or Queue.affectsParams(item)
-  if state.queue.inFlight == nil then state.errorText = nil end
+  if state.queue.inFlight == nil then
+    state.errorText = nil
+    state.errorSticky = false
+  end
   local result = Queue.enqueue(state.queue, item)
   state.queue = result.state
   if result.launch then launch(result.launch) end
@@ -535,6 +572,90 @@ local function appendSection(children, section)
   end
 end
 
+local function commitName(text)
+  local name = trimmed(text)
+  if not Presentation.validProfileName(name) then
+    state.errorText = "A profile name may use letters, digits, dot, dash, and underscore"
+    state.errorSticky = true
+    render()
+    return
+  end
+  state.naming = nil
+  enqueue({verb = "save", name = name, activateAfter = true})
+  render()
+end
+
+-- One selector loads and clears: index 0 is "no profile", which deactivates.
+-- Save and delete follow the reset idiom - always in the tree, state carried by
+-- opacity and tooltip, and the guard in the handler rather than `enabled`.
+local function profileRow(section)
+  local loaded = section.activeName ~= nil
+  return ui.row({gap = 8, align = "center"}, {
+    ui.label({text = "Profile", fontWeight = "medium", width = labelColumnWidth, maxLines = 1}),
+    ui.select({
+      options = section.options,
+      selectedIndex = section.selectedIndex,
+      controlSize = "sm",
+      flexGrow = 1,
+      onChange = function(index)
+        index = tonumber(index) or -1
+        if index == section.selectedIndex then return end
+        if index == 0 then
+          enqueue({verb = "deactivate"})
+        else
+          local name = section.options[index + 1]
+          if name == nil then
+            state.errorText = "Prism returned an invalid selection index"
+            render()
+            return
+          end
+          enqueue({verb = "activate", name = name})
+        end
+        render()
+      end,
+    }),
+    ui.button({
+      glyph = "device-floppy",
+      variant = "ghost",
+      controlSize = "sm",
+      selected = state.naming ~= nil,
+      tooltip = "Save the current values as a profile",
+      onClick = function()
+        state.naming = state.naming == nil and "" or nil
+        render()
+      end,
+    }),
+    ui.button({
+      glyph = "trash",
+      variant = "ghost",
+      controlSize = "sm",
+      opacity = loaded and 1.0 or inertOpacity,
+      tooltip = loaded and ("Delete profile " .. section.activeName) or "No profile loaded to delete",
+      onClick = function()
+        if section.activeName == nil then return end
+        enqueue({verb = "delete", name = section.activeName})
+        render()
+      end,
+    }),
+  })
+end
+
+local function nameRow()
+  return ui.row({gap = 8, align = "center"}, {
+    ui.spacer({width = labelColumnWidth}),
+    ui.input({
+      value = state.naming,
+      placeholder = "Profile name",
+      controlSize = "sm",
+      flexGrow = 1,
+      focus = true,
+      submitOnEnter = true,
+      onChange = function(text) state.naming = tostring(text or "") end,
+      onSubmit = commitName,
+    }),
+  })
+end
+
 -- The wallpaper on screen, what it holds, and the pin that makes it the write
 -- target. The pin stays enabled even when a profile blocks it: Noctalia gates a
 -- Button's hit area on `enabled`, and the tooltip lives on that hit area, so a
@@ -589,6 +710,10 @@ render = function()
         onChange = function(value) writeParam(title, value == true or value == "true") end,
       }),
     })
+    -- Profile sits above wallpaper in the resolution order, so it sits above it
+    -- here too.
+    children[#children + 1] = profileRow(Presentation.profileSection(state.model))
+    if state.naming ~= nil then children[#children + 1] = nameRow() end
     local header = Presentation.wallpaperHeader(state.model)
     if header then children[#children + 1] = wallpaperHeaderRow(header) end
     for _, section in ipairs(Presentation.sections(state.model.params)) do appendSection(children, section) end

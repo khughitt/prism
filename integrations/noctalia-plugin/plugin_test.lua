@@ -104,7 +104,7 @@ local rendered
 local described
 -- The store's resolution order, low to high, as describe states it.
 local resolutionOrder = { "default", "base", "wallpaper", "state", "profile" }
-local model = { layers = resolutionOrder, target = "base", params = {
+local model = { active = {}, profiles = {}, layers = resolutionOrder, target = "base", params = {
   {
     key = "glass.enabled", value = true, default = true, layer = "default", fallback = true,
     effectiveDrag = "release",
@@ -190,10 +190,17 @@ assert(labels["Focused"] and labels["Unfocused"], "matrix column labels missing"
 assert(labels["Blur"] and labels["Gaps"], "row labels missing")
 assert(labels["Saturation"], "second matrix row label missing")
 assert(labels["Noise type"], "shared select row missing")
-local selects = collect(rendered, "select")
-equal(#selects, 1)
-equal(selects[1].props.options, { "white", "fine" })
-equal(selects[1].props.selectedIndex, 1)
+-- Two selects now: the profile selector in the header and the shared noise
+-- type row. Find the parameter one by its options rather than by position.
+local function paramSelect(tree)
+  for _, node in ipairs(collect(tree, "select")) do
+    if (node.props.options or {})[1] ~= "No profile" then return node end
+  end
+  return nil
+end
+equal(#collect(rendered, "select"), 2, "the profile selector and the noise type select")
+equal(paramSelect(rendered).props.options, { "white", "fine" })
+equal(paramSelect(rendered).props.selectedIndex, 1)
 local sliderKeys = {}
 for _, slider in ipairs(collect(rendered, "slider")) do sliderKeys[slider.props.key] = true end
 assert(sliderKeys["glass.roughness:slider"] and sliderKeys["glass.inactive.roughness:slider"], "matrix sliders missing")
@@ -250,9 +257,9 @@ for index, value in ipairs(noise.values) do
   dofile(here .. "panel.luau")
   onOpen({})
   described({ exitCode = 0, stdout = "{}" })
-  collect(rendered, "select")[1].props.onChange(index - 1)
+  paramSelect(rendered).props.onChange(index - 1)
   equal(noise.value, value)
-  equal(collect(rendered, "select")[1].props.selectedIndex, index - 1)
+  equal(paramSelect(rendered).props.selectedIndex, index - 1)
   equal(commands[#commands], Shell.command({ "prism", "set", "glass.noiseType", value }))
 end
 
@@ -500,6 +507,7 @@ end
 local function layeredModel(overrides)
   local m = {
     active = { wallpaper = { id = "f8eb0556", path = "/pics/Deep Field.jpg", pinned = false } },
+    profiles = {},
     layers = order,
     target = "base",
     params = {
@@ -654,3 +662,145 @@ local hiddenNoLayer = layeredModel()
 hiddenNoLayer.params[7].layer = nil
 assert((panelError(hiddenNoLayer) or ""):find("debug.backdrop", 1, true),
   "a hidden parameter with no layer at all is refused")
+
+-- Profile transport. Loading, clearing, saving, and deleting are all context
+-- verbs, and each moves the write target or the resolved values, so each leaves
+-- the model stale exactly as a parameter write does.
+equal(Queue.argvFor({ verb = "activate", name = "dusk" }), { "prism", "context", "activate", "profile", "dusk" })
+equal(Queue.argvFor({ verb = "deactivate" }), { "prism", "context", "deactivate", "profile" })
+equal(Queue.argvFor({ verb = "save", name = "dusk" }), { "prism", "context", "save", "profile", "dusk" })
+equal(Queue.argvFor({ verb = "delete", name = "dusk" }), { "prism", "context", "delete", "profile", "dusk" })
+for _, item in ipairs({
+  { verb = "activate", name = "dusk" }, { verb = "deactivate" },
+  { verb = "save", name = "dusk" }, { verb = "delete", name = "dusk" },
+}) do
+  equal(Queue.affectsParams(item), true)
+end
+
+-- Names are the store's rule, checked here so a bad one never becomes a failed
+-- command the user has to read out of a banner.
+equal(Presentation.validProfileName("dusk"), true)
+equal(Presentation.validProfileName("dusk-2.0_a"), true)
+equal(Presentation.validProfileName("a b"), false)
+equal(Presentation.validProfileName(""), false)
+equal(Presentation.validProfileName("a/b"), false)
+
+-- The selector doubles as the clear control: index 0 is "no profile", which
+-- deactivates. It is not "base values" -- deactivating leaves the wallpaper
+-- layer active, so what is on screen may still come from it; only the write
+-- target returns to base.
+local section = Presentation.profileSection({
+  active = { profile = "dusk" }, profiles = { "dawn", "dusk", "noon" },
+})
+equal(section.options, { "No profile", "dawn", "dusk", "noon" })
+equal(section.selectedIndex, 2)
+equal(section.activeName, "dusk")
+
+local none = Presentation.profileSection({ active = {}, profiles = { "dawn" } })
+equal(none.options, { "No profile", "dawn" })
+equal(none.selectedIndex, 0)
+equal(none.activeName, nil)
+
+-- The profile list is part of the contract, not an optional extra: an absent
+-- field must report that, never quietly draw an empty selector.
+equal(panelError(layeredModel({ profiles = "dusk" })), "prism describe returned no profile list")
+equal(panelError(layeredModel({ profiles = { "dusk", 7 } })), "prism describe returned a malformed profile list")
+local noProfiles = layeredModel()
+noProfiles.profiles = nil
+equal(panelError(noProfiles), "prism describe returned no profile list")
+
+local function profileModel(overrides)
+  local m = layeredModel({ profiles = { "dawn", "dusk" } })
+  for key, value in pairs(overrides or {}) do m[key] = value end
+  return m
+end
+
+local function selectWithOption(tree, option)
+  for _, node in ipairs(collect(tree, "select")) do
+    for _, candidate in ipairs(node.props.options or {}) do
+      if candidate == option then return node end
+    end
+  end
+  return nil
+end
+
+-- Loading and clearing both run through the one selector.
+local profileTree = renderModel(profileModel())
+local selector = selectWithOption(profileTree, "No profile")
+assert(selector, "the panel offers a profile selector")
+equal(selector.props.options, { "No profile", "dawn", "dusk" })
+equal(selector.props.selectedIndex, 0)
+selector.props.onChange(2)
+equal(commands[#commands], Shell.command({ "prism", "context", "activate", "profile", "dusk" }))
+
+local loadedTree = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
+equal(selectWithOption(loadedTree, "No profile").props.selectedIndex, 2)
+selectWithOption(loadedTree, "No profile").props.onChange(0)
+equal(commands[#commands], Shell.command({ "prism", "context", "deactivate", "profile" }))
+
+-- Saving names the profile first, and entering it is a second command that only
+-- runs once the save has actually landed.
+local saveTree = renderModel(profileModel())
+equal(#collect(saveTree, "input"), 0, "the name field stays out of the way until asked for")
+glyphButton(saveTree, "device-floppy").props.onClick()
+local nameField = collect(rendered, "input")[1]
+assert(nameField, "the save button opens a name field")
+nameField.props.onSubmit("dusk")
+equal(commands[#commands], Shell.command({ "prism", "context", "save", "profile", "dusk" }))
+writeCallback({ exitCode = 0, stdout = "" })
+equal(commands[#commands], Shell.command({ "prism", "context", "activate", "profile", "dusk" }),
+  "a landed save is entered, so the next edit goes into the profile just named")
+
+-- A failed save must not be followed by an activate: the FIFO keeps going after
+-- a failure, so an unconditional pair would enter a profile whose overwrite
+-- never happened.
+local failTree = renderModel(profileModel())
+glyphButton(failTree, "device-floppy").props.onClick()
+collect(rendered, "input")[1].props.onSubmit("dusk")
+equal(commands[#commands], Shell.command({ "prism", "context", "save", "profile", "dusk" }))
+local afterFailedSave = #commands
+writeCallback({ exitCode = 1, stdout = "", stderr = "disk full" })
+for index = afterFailedSave + 1, #commands do
+  assert(not commands[index]:find("activate", 1, true), "a failed save must not activate")
+end
+
+-- A command error has to survive the refresh that follows it, or the reason a
+-- profile would not load flashes past and the panel looks fine.
+assert(commands[#commands]:find("describe", 1, true), "a finished batch still re-reads the model")
+described({ exitCode = 0, stdout = "{}" })
+local banner
+for _, label in ipairs(collect(rendered, "label")) do
+  if label.props.color == "error" and (label.props.text or "") ~= "" then banner = label.props.text end
+end
+equal(banner, "disk full", "a successful describe must not erase why the last command failed")
+
+-- Names are checked before anything is queued.
+local badTree = renderModel(profileModel())
+glyphButton(badTree, "device-floppy").props.onClick()
+local before = #commands
+collect(rendered, "input")[1].props.onSubmit("a b")
+equal(#commands, before, "an invalid name queues nothing")
+local nameError
+for _, label in ipairs(collect(rendered, "label")) do
+  if label.props.color == "error" and (label.props.text or "") ~= "" then nameError = label.props.text end
+end
+assert((nameError or ""):find("letters", 1, true), "an invalid name says what a name may contain")
+
+-- Delete follows the reset idiom: inert and dim with nothing loaded, live once
+-- a profile is.
+local deleteTree = renderModel(profileModel())
+local trash = glyphButton(deleteTree, "trash")
+assert(trash.props.opacity < 1.0, "delete is dim with no profile loaded")
+local beforeDelete = #commands
+trash.props.onClick()
+equal(#commands, beforeDelete, "delete with nothing loaded enqueues nothing")
+
+local loadedDelete = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
+local liveTrash = glyphButton(loadedDelete, "trash")
+equal(liveTrash.props.opacity, 1.0)
+liveTrash.props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "context", "delete", "profile", "dusk" }))
+
+local noActive = layeredModel()
+noActive.active = nil
+equal(panelError(noActive), "prism describe returned no active contexts")

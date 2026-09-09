@@ -8,10 +8,16 @@ function M.isSample(item)
   return item ~= nil and item.verb == "set" and item.sample == true
 end
 
--- A pin writes no value, but it moves the write target, so every row's
--- override and shadow state has to be re-read once it lands.
+-- A pin writes no value and a profile verb writes no parameter, but each moves
+-- the write target or the resolved values, so every row's override and shadow
+-- state has to be re-read once one lands.
+local staleAfter = {
+  set = true, unset = true, pin = true,
+  activate = true, deactivate = true, save = true, delete = true,
+}
+
 function M.affectsParams(item)
-  return item.verb == "set" or item.verb == "unset" or item.verb == "pin"
+  return staleAfter[item.verb] == true
 end
 
 function M.shouldRefresh(batchAffectsParams, lastItem)
@@ -48,6 +54,10 @@ function M.argvFor(item)
   if item.verb == "set" then return { "prism", "set", item.key, tostring(item.value) } end
   if item.verb == "unset" then return { "prism", "unset", item.key } end
   if item.verb == "pin" then return { "prism", "context", item.on and "pin" or "unpin", "wallpaper" } end
+  if item.verb == "deactivate" then return { "prism", "context", "deactivate", "profile" } end
+  for _, verb in ipairs({ "activate", "save", "delete" }) do
+    if item.verb == verb then return { "prism", "context", verb, "profile", item.name } end
+  end
   error("unknown queue verb: " .. item.verb)
 end
 
