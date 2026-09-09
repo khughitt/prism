@@ -1,4 +1,8 @@
 sink: debug-backdrop
 generates: []
+requires:
+  - command: qs
+    when: debug.backdrop
+    fix: "install quickshell (extra/quickshell); it comes from extra, not from Noctalia"
 binds:
   - {param: debug.backdrop, liveness: live}

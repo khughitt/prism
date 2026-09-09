@@ -2,49 +2,57 @@
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { sinkMain, onPath } from '../../src/sink.js';
 
-const shell = fileURLToPath(new URL('./shell.qml', import.meta.url));
-fs.accessSync(shell, fs.constants.R_OK);
+sinkMain(() => {
+  const shell = fileURLToPath(new URL('./shell.qml', import.meta.url));
+  fs.accessSync(shell, fs.constants.R_OK);
 
-const resolved = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-const enabled = resolved.params['debug.backdrop'];
+  const resolved = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+  const enabled = resolved.params['debug.backdrop'];
 
-function diagnostic(result, fallback) {
-  return [result.stderr, result.stdout].filter((text) => text?.trim()).join('\n').trim() || fallback;
-}
+  // The manifest declares qs, but only checks it when the backdrop is on. With
+  // the backdrop off and quickshell absent there is nothing to stop: no instance
+  // of this shell can be running if qs was never installed.
+  if (!enabled && !onPath('qs')) return;
 
-function run(args, accepted) {
-  const result = spawnSync('qs', args, { encoding: 'utf8' });
-  if (result.error) throw result.error;
-  if (!accepted.includes(result.status)) {
-    throw new Error(diagnostic(result, `qs ${args.join(' ')} exited ${result.status}`));
+  function diagnostic(result, fallback) {
+    return [result.stderr, result.stdout].filter((text) => text?.trim()).join('\n').trim() || fallback;
   }
-  return result;
-}
 
-const action = enabled
-  ? run(['-d', '-n', '-p', shell], [0])
-  : run(['kill', '-p', shell], [0, 255]);
-const listed = run(['list', '-p', shell, '--json'], [0]);
-const empty = `No running instances for "${shell}"\nUse --all to list all instances.\n`;
-
-let instances;
-if (listed.stdout === empty) {
-  instances = [];
-} else {
-  try {
-    instances = JSON.parse(listed.stdout);
-  } catch {
-    throw new Error(`unexpected qs list output: ${JSON.stringify(listed.stdout)}`);
+  function run(args, accepted) {
+    const result = spawnSync('qs', args, { encoding: 'utf8' });
+    if (result.error) throw result.error;
+    if (!accepted.includes(result.status)) {
+      throw new Error(diagnostic(result, `qs ${args.join(' ')} exited ${result.status}`));
+    }
+    return result;
   }
-  if (!Array.isArray(instances)
-      || instances.some((instance) => typeof instance?.config_path !== 'string')) {
-    throw new Error(`unexpected qs list output: ${JSON.stringify(listed.stdout)}`);
-  }
-}
 
-const running = instances.some((instance) => instance.config_path === shell);
-if (enabled && !running) {
-  throw new Error(diagnostic(action, 'debug backdrop did not start'));
-}
-if (!enabled && running) throw new Error('debug backdrop is still running');
+  const action = enabled
+    ? run(['-d', '-n', '-p', shell], [0])
+    : run(['kill', '-p', shell], [0, 255]);
+  const listed = run(['list', '-p', shell, '--json'], [0]);
+  const empty = `No running instances for "${shell}"\nUse --all to list all instances.\n`;
+
+  let instances;
+  if (listed.stdout === empty) {
+    instances = [];
+  } else {
+    try {
+      instances = JSON.parse(listed.stdout);
+    } catch {
+      throw new Error(`unexpected qs list output: ${JSON.stringify(listed.stdout)}`);
+    }
+    if (!Array.isArray(instances)
+        || instances.some((instance) => typeof instance?.config_path !== 'string')) {
+      throw new Error(`unexpected qs list output: ${JSON.stringify(listed.stdout)}`);
+    }
+  }
+
+  const running = instances.some((instance) => instance.config_path === shell);
+  if (enabled && !running) {
+    throw new Error(diagnostic(action, 'debug backdrop did not start'));
+  }
+  if (!enabled && running) throw new Error('debug backdrop is still running');
+});

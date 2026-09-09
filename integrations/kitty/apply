@@ -3,22 +3,25 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { generatedPath } from '../../src/paths.js';
+import { sinkMain } from '../../src/sink.js';
 import { renderKittyConf } from './render.js';
 import { applyToKittySockets } from './live.js';
 
-const resolved = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+sinkMain(() => {
+  const resolved = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 
-const target = generatedPath('kitty.conf');
-fs.mkdirSync(path.dirname(target), { recursive: true });
-const tmp = `${target}.${process.pid}.tmp`;
-fs.writeFileSync(tmp, renderKittyConf(resolved));
-fs.renameSync(tmp, target);
+  const target = generatedPath('kitty.conf');
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  const tmp = `${target}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, renderKittyConf(resolved));
+  fs.renameSync(tmp, target);
 
-const kitten = (socket, args) =>
-  execFileSync('kitten', ['@', '--to', socket, ...args], { stdio: 'pipe' });
-applyToKittySockets(
-  resolved,
-  fs.readFileSync('/proc/net/unix', 'utf8'),
-  kitten,
-  () => fs.readFileSync('/proc/net/unix', 'utf8'),
-);
+  const kitten = (socket, args) =>
+    execFileSync('kitten', ['@', '--to', socket, ...args], { stdio: 'pipe' });
+  applyToKittySockets(
+    resolved,
+    fs.readFileSync('/proc/net/unix', 'utf8'),
+    kitten,
+    () => fs.readFileSync('/proc/net/unix', 'utf8'),
+  );
+});

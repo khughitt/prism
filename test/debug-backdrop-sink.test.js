@@ -15,12 +15,15 @@ function fixture(t, { shell = true } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-debug-backdrop-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
-  const targetIntegration = path.join(dir, 'integration');
+  const targetIntegration = path.join(dir, 'integrations', 'debug-backdrop');
   const bin = path.join(dir, 'bin');
   const log = path.join(dir, 'qs.log');
   const resolved = path.join(dir, 'resolved.json');
-  fs.mkdirSync(targetIntegration);
+  fs.mkdirSync(targetIntegration, { recursive: true });
   fs.mkdirSync(bin);
+  // apply imports ../../src/sink.js, so the copy needs the same depth below a
+  // src it can reach — the real one, so the test cannot drift from it.
+  fs.symlinkSync(fileURLToPath(new URL('../src/', import.meta.url)), path.join(dir, 'src'), 'dir');
 
   const apply = path.join(targetIntegration, 'apply');
   const shellPath = path.join(targetIntegration, 'shell.qml');
@@ -47,8 +50,15 @@ exit "${'${QS_FAKE_ACTION_STATUS:-0}'}"
     : []);
   const empty = `No running instances for "${shellPath}"\nUse --all to list all instances.\n`;
   const present = JSON.stringify([{ config_path: shellPath }]);
+  // apply runs under `#!/usr/bin/env node`, so a PATH that hides qs must still
+  // find node — and node's own directory is usually the one qs lives in.
+  const nodeOnly = path.join(dir, 'node-only');
+  fs.mkdirSync(nodeOnly);
+  fs.symlinkSync(process.execPath, path.join(nodeOnly, 'node'));
+
   const run = ({
     value,
+    qs = true,
     actionStatus = 0,
     actionStdout = '',
     actionStderr = '',
@@ -61,7 +71,7 @@ exit "${'${QS_FAKE_ACTION_STATUS:-0}'}"
       encoding: 'utf8',
       env: {
         ...process.env,
-        PATH: `${bin}:${process.env.PATH}`,
+        PATH: qs ? `${bin}:${process.env.PATH}` : nodeOnly,
         QS_FAKE_LOG: log,
         QS_FAKE_ACTION_STATUS: String(actionStatus),
         QS_FAKE_ACTION_STDOUT: actionStdout,
@@ -155,4 +165,29 @@ test('a missing shell fails before qs is invoked', (t) => {
   assert.notEqual(result.status, 0);
   assert.equal(calls().length, 0);
   assert.match(diagnostic(result), /shell\.qml/);
+});
+
+// A machine that never wanted the backdrop should not need quickshell to
+// apply a store that has it off.
+test('the backdrop off with quickshell absent is a clean skip', (t) => {
+  const { run, calls } = fixture(t);
+
+  const result = run({ value: false, qs: false });
+
+  assert.equal(result.status, 0, diagnostic(result));
+  assert.equal(result.stderr.trim(), '');
+  assert.deepEqual(calls(), [], 'nothing may be spawned when there is nothing to stop');
+});
+
+// With the backdrop on, an absent qs is a real failure — the fan-out reports
+// it from the manifest before apply is ever spawned, and apply itself must not
+// pretend otherwise if it is run directly.
+test('the backdrop on with quickshell absent still fails', (t) => {
+  const { run } = fixture(t);
+
+  const result = run({ value: true, qs: false });
+
+  assert.notEqual(result.status, 0);
+  assert.match(diagnostic(result), /qs is not installed/);
+  assert.doesNotMatch(diagnostic(result), /Buffer\(|Uint8Array/);
 });
