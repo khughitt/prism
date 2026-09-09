@@ -132,6 +132,12 @@ local function inspect(model)
   described({timedOut = false, exitCode = 0, stdout = "{}", stderr = "",
     stdoutTruncated = false, stderrTruncated = false})
 
+  -- Every card starts collapsed; the contract is that each control kind can
+  -- be drawn, so open them all before reading the rows.
+  for _, node in ipairs(collect(rendered)) do
+    if node.kind == "button" and node.props.tooltip == "Show details" then node.props.onClick() end
+  end
+
   -- render() puts the error label first and hides it when there is nothing to
   -- say, so its text is exactly what validateModel returned.
   local errorLabel = rendered.children[1]

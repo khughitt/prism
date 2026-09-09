@@ -1,0 +1,66 @@
+# The rack: the Focus group as an ordered list of devices, in the order the
+# material shader applies them (niri-material docs/materials/render-pipeline.md).
+# `mix` and `rows` name matrix rows by their ui.row label; `shared` names keys
+# with no state; `bypass` names the device's bool toggle. `requires` names an
+# earlier device whose bypass also silences this one. Every visible parameter
+# in the group other than its header toggle must belong to exactly one device.
+group: Focus
+devices:
+  - device: backdrop
+    label: Backdrop
+    category: source
+    mix: Blur
+    rows: [Frosted backdrop]
+    shared: []
+    bypass: glass.bypass.backdrop
+  - device: distortion
+    label: Distortion
+    category: geometry
+    mix: Distortion
+    rows: [Distortion detail]
+    shared: []
+    bypass: glass.bypass.distortion
+  - device: refraction
+    label: Refraction
+    category: optic
+    mix: Refraction
+    rows: [Depth]
+    shared: []
+    bypass: glass.bypass.refraction
+  - device: fringing
+    label: Fringing
+    category: optic
+    mix: Fringing
+    rows: []
+    shared: []
+    bypass: glass.bypass.fringing
+    requires: refraction
+  - device: directionalBlur
+    label: Directional blur
+    category: optic
+    mix: Directional blur
+    rows: []
+    shared: []
+    bypass: glass.bypass.directionalBlur
+    requires: refraction
+  - device: tint
+    label: Tint
+    category: optic
+    mix: Tint
+    rows: [Tint distance]
+    shared: []
+    bypass: glass.bypass.tint
+  - device: saturation
+    label: Saturation
+    category: post
+    mix: Saturation
+    rows: []
+    shared: []
+    bypass: glass.bypass.saturation
+  - device: noise
+    label: Noise
+    category: post
+    mix: Noise
+    rows: []
+    shared: [glass.noiseType]
+    bypass: glass.bypass.noise

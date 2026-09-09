@@ -39,3 +39,11 @@ binds:
   - {param: glass.saturation, liveness: reload}
   - {param: glass.inactive.noise, liveness: reload}
   - {param: glass.inactive.saturation, liveness: reload}
+  - {param: glass.bypass.backdrop, liveness: reload}
+  - {param: glass.bypass.distortion, liveness: reload}
+  - {param: glass.bypass.refraction, liveness: reload}
+  - {param: glass.bypass.fringing, liveness: reload}
+  - {param: glass.bypass.directionalBlur, liveness: reload}
+  - {param: glass.bypass.tint, liveness: reload}
+  - {param: glass.bypass.saturation, liveness: reload}
+  - {param: glass.bypass.noise, liveness: reload}

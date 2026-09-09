@@ -29,8 +29,16 @@ default). The frame is shared deliberately — a per-state frame would resize an
 shift the slab on every focus change, and niri swaps materials as a hard cut.
 The Noctalia integration is a native
 v5 plugin under `integrations/noctalia-plugin/`; its panel is a shared `Glass`
-section for the frame and pane motion, and a `Focus` matrix with a focused and
-an unfocused control per optic and one shared Noise type select.
+section for the frame and pane motion, a `Focus` rack with one card per glass
+stage in the shader's order (Backdrop, Distortion, Refraction, Fringing,
+Directional blur, Tint, Saturation, Noise), and a `Terminal` matrix for the
+terminal opacity pair. Each card shows its mix for both focus states, a light
+colored by category that bypasses the stage when clicked, and a chevron that
+reveals its other parameters. Bypass is a real `glass.bypass.<device>` value:
+the niri sink writes the stage's dry value into both materials while it is
+set and the mix keeps its number. Bypassing Refraction also silences Fringing
+and Directional blur, which ride its taps, and flattens Blur. Design:
+`docs/specs/2026-09-08-device-chain-rack-design.md`.
 
 ## Configuration layout
 

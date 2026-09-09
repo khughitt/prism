@@ -85,10 +85,24 @@ The presentation module defines the panel's stable layout contract:
 
 - `Title` contains exactly one visible toggle and supplies the title control.
 - Every other `ui.group` is a section, ordered by first appearance in
-  `ui.order`. Sections are always open; there is no Quick group and no
-  expansion state. Each section shows a reset that removes every override its
-  parameters hold in the write target, dim while the section holds no
-  overrides.
+  `ui.order`, except the group `describe` names in `rack.group`, which is
+  drawn as the rack. Sections are always open; there is no Quick group.
+  Each section shows a reset that removes every override its parameters hold
+  in the write target, dim while the section holds no overrides.
+- The rack is one card per device in `rack.devices` order. A card's head is a
+  light, a chevron, the device label, and the mix row's info button, in the
+  same fixed span as every other head cell; then the mix row's focused and
+  unfocused cells. The light is a glyph: `circle-filled` in the category color
+  while active, `circle` in `on_surface_variant` while the device's bypass key
+  is true, `circle` in the category color while the device it `requires` is
+  bypassed. Clicking the light sets the bypass key. The chevron expands the
+  card; expansion is panel memory keyed by device id and lasts the shell
+  session. Expanded, the card lists the bypass key as an ordinary single row
+  (with the per-parameter reset that issues `unset`), then its detail matrix
+  rows, then its shared single rows, all indented. A bypassed card dims. A
+  model without `rack`, a device naming a row or key the group does not
+  carry, or a visible parameter in the group that no device claims is a
+  contract error and shows as the banner.
 - A toggle flagged `ui.header` is its section's header control (the Focus
   section's focus-state toggle). A group may carry at most one.
 - Sliders flagged `ui.state` (`focused` or `unfocused`) and `ui.row` pair into
@@ -151,7 +165,8 @@ The presentation module defines the panel's stable layout contract:
 `profiles` (the saved profile names, listed in the same locked snapshot as
 `active` so the selector cannot disagree with the slot drawn beside it),
 `layers` (the store's resolution order, low to high), `target` (the
-write-target layer), and per parameter `layer` (where the value comes from) and
+write-target layer), `rack` (the validated device order and ownership), and
+`params`, whose entries include `layer` (where the value comes from) and
 `fallback` (what `unset` would leave). A parameter is overridden when
 `layer == target`; the reset is always present and shows full strength exactly
 then. The panel ranks a layer against the target with `layers` rather than
@@ -182,11 +197,11 @@ draws its row. A field the CLI stops emitting fails there as the validator's own
 sentence, so a shape change reads as "the panel and the CLI disagree" instead of
 as a patched-by-hand fixture.
 
-The shipped panel is two sections: `Glass`, the parameters both focus states
-share, and `Focus`, the matrix of terminal opacity, blur, tint distance,
-fringing, distortion, directional blur, noise, and saturation.
-A single Noise type select sits between the Noise and Saturation matrix rows
-and applies to both states.
+The shipped panel has a `Glass` section for parameters both focus states share,
+a `Focus` rack with eight device cards in shader order, and a `Terminal` matrix
+for the focused and unfocused opacity pair. Each rack card keeps its mix row
+visible and reveals its bypass, detail rows, and shared rows when expanded;
+Noise type is the Noise card's shared row and applies to both states.
 `debug.backdrop` is CLI-only and does not appear.
 
 The widget and panel use Noctalia's native v5 entries and controls. No

@@ -35,16 +35,27 @@ test('shipped presentation is a Glass section and a Focus matrix', () => {
     }
   }
   assert.deepEqual(rows.map((row) => row.row), [
-    'Terminal opacity', 'Frosted backdrop', 'Blur', 'Tint', 'Tint distance', 'Refraction',
+    'Frosted backdrop', 'Blur', 'Tint', 'Tint distance', 'Refraction',
     'Depth', 'Fringing', 'Distortion', 'Distortion detail', 'Directional blur',
     'Noise', 'Noise type', 'Saturation',
+    'Bypass backdrop', 'Bypass distortion', 'Bypass refraction', 'Bypass fringing',
+    'Bypass directional blur', 'Bypass tint', 'Bypass saturation', 'Bypass noise',
   ]);
-  assert.deepEqual(rows.filter((row) => row.single), [{ row: 'Noise type', single: 'glass.noiseType' }]);
+  assert.deepEqual(rows.filter((row) => row.single).map((row) => row.single), [
+    'glass.noiseType',
+    'glass.bypass.backdrop', 'glass.bypass.distortion', 'glass.bypass.refraction',
+    'glass.bypass.fringing', 'glass.bypass.directionalBlur', 'glass.bypass.tint',
+    'glass.bypass.saturation', 'glass.bypass.noise',
+  ]);
   assert.ok(rows.filter((row) => !row.single).every((row) => row.focused && row.unfocused));
 
+  const terminal = ordered.filter((def) => def.ui.group === 'Terminal').map((def) => def.key);
+  assert.deepEqual(terminal, ['terminal.background.opacity.active', 'terminal.background.opacity.inactive']);
+
   const groups = new Set(visible.map((def) => def.ui.group));
-  assert.deepEqual([...groups].sort(), ['Focus', 'Glass', 'Title']);
-  assert.equal(visible.length, 1 + glass.length + 1 + rows.reduce((n, row) => n + (row.single ? 1 : 2), 0));
+  assert.deepEqual([...groups].sort(), ['Focus', 'Glass', 'Terminal', 'Title']);
+  assert.equal(visible.length,
+    1 + glass.length + 1 + terminal.length + rows.reduce((n, row) => n + (row.single ? 1 : 2), 0));
   assert.ok(ordered.filter((def) => def.ui.group === 'Glass').every((def) => def.ui.order < focus[0].ui.order),
     'the Glass section precedes the Focus section');
 });

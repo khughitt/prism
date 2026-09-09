@@ -1,12 +1,14 @@
 ---
 id: prism-a03862
 title: "Device chain: frame the glass bus as an ordered rack of effects with a mix per device"
-status: idea
+status: todo
 priority: 2
+size: xl
 created: 2026-09-09T00:48:50Z
-updated: 2026-09-09T00:48:50Z
+updated: 2026-09-09T03:03:38Z
 depends: []
 tags: [ui, material, noctalia, bus]
+spec: docs/specs/2026-09-08-device-chain-rack-design.md
 ---
 
 Reframe the parameter bus and its panel as a device chain, after the insert chains in DAWs and VST racks (eq, filter, reverb, saturation, compression, ...). Today the bus is a flat key/value map and the panel is a Focus matrix of one row per optic; the shader in niri-material already applies those optics in a fixed sequence, but nothing in prism names that sequence.
@@ -41,3 +43,7 @@ Reframe the parameter bus and its panel as a device chain, after the insert chai
 - Honest first slice: presentational. Render the Focus matrix as a rack in the shader's real pass order, one device per row with a mix and a bypass, colored by category. No new bus semantics. Second slice: noise as the first true multi-instance device, which forces the chain-merge decision above.
 
 Related: prism-686374 (VST panel), prism-7e4766 (inactive follows focused), prism-d54be4 (GPU cost per parameter).
+
+## Notes
+
+- 2026-09-09T03:03:30Z (device-chain): Promoted to a goal 2026-09-08 after brainstorming; first piece is the rack presentation (docs/specs/2026-09-08-device-chain-rack-design.md); stacked noise, focus as modulation, and reordering are separate children

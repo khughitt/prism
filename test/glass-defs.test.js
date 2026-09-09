@@ -22,6 +22,14 @@ const NATIVE = {
   'glass.roughness': { range: [0, 1], default: 0.08 },
   'glass.backdropBlur': { default: false },
   'glass.inactive.backdropBlur': { default: false },
+  'glass.bypass.backdrop': { default: false },
+  'glass.bypass.distortion': { default: false },
+  'glass.bypass.refraction': { default: false },
+  'glass.bypass.fringing': { default: false },
+  'glass.bypass.directionalBlur': { default: false },
+  'glass.bypass.tint': { default: false },
+  'glass.bypass.saturation': { default: false },
+  'glass.bypass.noise': { default: false },
   'glass.jellyFlex': { range: [0, 0.02], default: 0.004 },
   'glass.jellyRipple': { range: [0, 0.5], default: 0.06 },
   'glass.paneLip': { range: [0, 64], default: 6 },
@@ -196,7 +204,6 @@ test('visible numeric defaults lie on their slider grids', () => {
 });
 
 const MATRIX = [
-  ['Terminal opacity', 'terminal.background.opacity.active', 'terminal.background.opacity.inactive'],
   ['Frosted backdrop', 'glass.backdropBlur', 'glass.inactive.backdropBlur'],
   ['Blur', 'glass.roughness', 'glass.inactive.roughness'],
   ['Tint', 'glass.attenuationColor', 'glass.inactive.attenuationColor'],
@@ -209,6 +216,24 @@ const MATRIX = [
   ['Directional blur', 'glass.anisotropicBlur', 'glass.inactive.anisotropicBlur'],
   ['Noise', 'glass.noise', 'glass.inactive.noise'],
   ['Saturation', 'glass.saturation', 'glass.inactive.saturation'],
+];
+
+// The terminal opacity pair is a kitty sink parameter, not a glass stage, so
+// it sits in its own matrix section rather than among the rack's devices.
+const TERMINAL = ['Terminal opacity', 'terminal.background.opacity.active', 'terminal.background.opacity.inactive'];
+
+// One bypass per rack device, shared by both focus states: the niri sink
+// writes the device's dry value while the key is true and the mix keeps its
+// number (docs/specs/2026-09-08-device-chain-rack-design.md).
+const BYPASS = [
+  ['glass.bypass.backdrop', 'Bypass backdrop', 400],
+  ['glass.bypass.distortion', 'Bypass distortion', 410],
+  ['glass.bypass.refraction', 'Bypass refraction', 420],
+  ['glass.bypass.fringing', 'Bypass fringing', 430],
+  ['glass.bypass.directionalBlur', 'Bypass directional blur', 440],
+  ['glass.bypass.tint', 'Bypass tint', 450],
+  ['glass.bypass.saturation', 'Bypass saturation', 460],
+  ['glass.bypass.noise', 'Bypass noise', 470],
 ];
 
 // The optics split by this change default to their focused value, so widening
@@ -225,25 +250,28 @@ const RECEDED = [
   'glass.distortion', 'glass.noise', 'glass.saturation',
 ];
 
+function assertPair(defs, group, [row, focusedKey, unfocusedKey]) {
+  const focused = defs.get(focusedKey);
+  const unfocused = defs.get(unfocusedKey);
+  assert.equal(focused.ui.group, group, focusedKey);
+  assert.equal(unfocused.ui.group, group, unfocusedKey);
+  assert.equal(focused.ui.state, 'focused', focusedKey);
+  assert.equal(unfocused.ui.state, 'unfocused', unfocusedKey);
+  assert.equal(focused.ui.row, row);
+  assert.equal(unfocused.ui.row, row);
+  assert.equal(unfocused.ui.order, focused.ui.order + 1, row);
+  assert.deepEqual(unfocused.range, focused.range, row);
+  assert.equal(unfocused.ui.step, focused.ui.step, row);
+  assert.equal(unfocused.ui.display, focused.ui.display, row);
+  assert.equal(unfocused.ui.scale, focused.ui.scale, row);
+  assert.equal(unfocused.ui.unit, focused.ui.unit, row);
+}
+
 test('the focus matrix pairs every focused optic with an unfocused twin', () => {
   const defs = loadDefs(defsDir());
 
-  for (const [row, focusedKey, unfocusedKey] of MATRIX) {
-    const focused = defs.get(focusedKey);
-    const unfocused = defs.get(unfocusedKey);
-    assert.equal(focused.ui.group, 'Focus', focusedKey);
-    assert.equal(unfocused.ui.group, 'Focus', unfocusedKey);
-    assert.equal(focused.ui.state, 'focused', focusedKey);
-    assert.equal(unfocused.ui.state, 'unfocused', unfocusedKey);
-    assert.equal(focused.ui.row, row);
-    assert.equal(unfocused.ui.row, row);
-    assert.equal(unfocused.ui.order, focused.ui.order + 1, row);
-    assert.deepEqual(unfocused.range, focused.range, row);
-    assert.equal(unfocused.ui.step, focused.ui.step, row);
-    assert.equal(unfocused.ui.display, focused.ui.display, row);
-    assert.equal(unfocused.ui.scale, focused.ui.scale, row);
-    assert.equal(unfocused.ui.unit, focused.ui.unit, row);
-  }
+  for (const pair of MATRIX) assertPair(defs, 'Focus', pair);
+  assertPair(defs, 'Terminal', TERMINAL);
   const split = defs.get('glass.focusSplit');
   assert.equal(split.ui.group, 'Focus');
   assert.equal(split.ui.control, 'toggle');
@@ -251,7 +279,30 @@ test('the focus matrix pairs every focused optic with an unfocused twin', () => 
   assert.equal(split.ui.state, undefined);
   assert.equal(defs.get('glass.backdropBlur').ui.header, undefined);
   const stateful = [...defs.values()].filter((def) => def.ui.state !== undefined).map((def) => def.key);
-  assert.deepEqual(stateful.sort(), MATRIX.flatMap(([, a, b]) => [a, b]).sort());
+  assert.deepEqual(stateful.sort(), [...MATRIX, TERMINAL].flatMap(([, a, b]) => [a, b]).sort());
+});
+
+test('every rack device has one shared bool bypass toggle in the Focus group', () => {
+  const defs = loadDefs(defsDir());
+
+  for (const [key, label, order] of BYPASS) {
+    const def = defs.get(key);
+    assert.ok(def, key);
+    assert.equal(def.type, 'bool', key);
+    assert.equal(def.default, false, key);
+    assert.equal(def.ui.group, 'Focus', key);
+    assert.equal(def.ui.control, 'toggle', key);
+    assert.equal(def.ui.label, label, key);
+    assert.equal(def.ui.order, order, key);
+    assert.equal(def.ui.state, undefined, key);
+    assert.equal(def.ui.header, undefined, key);
+    assert.equal(defs.has(key.replace('glass.bypass.', 'glass.inactive.bypass.')), false,
+      `${key} gained a per-state twin; bypass is shared`);
+  }
+  assert.match(defs.get('glass.bypass.refraction').description, /fringing/i);
+  assert.match(defs.get('glass.bypass.refraction').description, /directional blur/i);
+  assert.match(defs.get('glass.bypass.refraction').description, /blur flattens/i);
+  assert.match(defs.get('glass.bypass.noise').description, /both materials/i);
 });
 
 test('the newly split optics default to their focused value', () => {
@@ -304,7 +355,7 @@ test('geometry and pane motion stay shared across focus states', () => {
   }
 });
 
-test('everything outside the matrix is shared glass', () => {
+test('everything outside the matrix is shared glass or the terminal pair', () => {
   const defs = loadDefs(defsDir());
   const shared = [...defs.values()]
     .filter((def) => def.ui.control !== 'none' && def.ui.group !== 'Focus' && def.ui.group !== 'Title')
@@ -313,6 +364,9 @@ test('everything outside the matrix is shared glass', () => {
   assert.deepEqual(shared.sort(), [
     'compositor.gaps', 'glass.paneLip', 'glass.paneShiftX',
     'glass.paneShiftY', 'glass.jellyFlex', 'glass.jellyRipple',
+    'terminal.background.opacity.active', 'terminal.background.opacity.inactive',
   ].sort());
-  for (const key of shared) assert.equal(defs.get(key).ui.group, 'Glass', key);
+  for (const key of shared) {
+    assert.equal(defs.get(key).ui.group, key.startsWith('terminal.') ? 'Terminal' : 'Glass', key);
+  }
 });

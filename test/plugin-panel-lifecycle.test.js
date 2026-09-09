@@ -18,7 +18,10 @@ local function newHost()
     sliders = {},
     suppressNextReconcileCallback = false,
   }
-  local model = {active = {}, profiles = {}, layers = {"default", "base", "wallpaper", "state", "profile"}, target = "base", params = {
+  local model = {active = {}, profiles = {}, layers = {"default", "base", "wallpaper", "state", "profile"}, target = "base",
+    rack = {group = "Focus", devices = {
+      {device = "noise", label = "Noise", category = "post", mix = "Noise", rows = {}, shared = {}, bypass = "glass.bypass.noise"},
+    }}, params = {
     {
       key = "glass.enabled", value = true, default = true, layer = "default", fallback = true,
       effectiveDrag = "release", description = "",
@@ -29,13 +32,33 @@ local function newHost()
       effectiveDrag = "live", description = "", range = {0.1, 200},
       ui = {control = "slider", group = "Quick", order = 1, label = "Depth", step = 0.1, display = "normalized"},
     },
+    {
+      key = "glass.focusSplit", value = true, default = true, layer = "default", fallback = true,
+      effectiveDrag = "release", description = "",
+      ui = {control = "toggle", group = "Focus", order = 200, label = "Focus-state glass", header = true},
+    },
+    {
+      key = "glass.noise", value = 0, default = 0, layer = "default", fallback = 0,
+      effectiveDrag = "release", description = "", range = {0, 1},
+      ui = {control = "slider", group = "Focus", order = 320, label = "Noise", step = 0.01, state = "focused", row = "Noise"},
+    },
+    {
+      key = "glass.inactive.noise", value = 0.02, default = 0.02, layer = "default", fallback = 0.02,
+      effectiveDrag = "release", description = "", range = {0, 1},
+      ui = {control = "slider", group = "Focus", order = 321, label = "Unfocused noise", step = 0.01, state = "unfocused", row = "Noise"},
+    },
+    {
+      key = "glass.bypass.noise", value = false, default = false, layer = "default", fallback = false,
+      effectiveDrag = "release", description = "",
+      ui = {control = "toggle", group = "Focus", order = 470, label = "Bypass noise"},
+    },
   }}
 
   local function node(kind, props, children)
     return {kind = kind, props = props or {}, children = children or {}}
   end
   local ui = {}
-  for _, kind in ipairs({"button", "column", "label", "row", "scroll", "select", "separator", "slider", "spacer", "toggle"}) do
+  for _, kind in ipairs({"button", "column", "glyph", "label", "row", "scroll", "select", "separator", "slider", "spacer", "toggle"}) do
     ui[kind] = function(props, children) return node(kind, props, children) end
   end
 

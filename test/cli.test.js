@@ -154,7 +154,7 @@ test('describe emits only the public counter-free JSON shape', async () => {
   let out = '';
   assert.equal(await cli.run(['describe', '--json'], { print: (s) => { out += s; } }), 0);
   const described = JSON.parse(out);
-  assert.deepEqual(Object.keys(described), ['active', 'profiles', 'layers', 'target', 'params']);
+  assert.deepEqual(Object.keys(described), ['active', 'profiles', 'layers', 'target', 'rack', 'params']);
   assert.deepEqual(described.active, { wallpaper: null, profile: null });
   assert.deepEqual(described.profiles, [], 'no saved profiles is an empty list, not an absent field');
   assert.deepEqual(described.layers, ['default', 'base', 'wallpaper', 'state', 'profile']);
@@ -166,6 +166,21 @@ test('describe emits only the public counter-free JSON shape', async () => {
   ]);
   assert.equal(p.layer, 'default');
   assert.equal(p.fallback, p.value);
+});
+
+test('describe carries the rack verbatim', async () => {
+  let out = '';
+  await cli.run(['describe', '--json'], { runner: () => {}, print: (s) => { out += s; } });
+  const { rack } = JSON.parse(out);
+  assert.equal(rack.group, 'Focus');
+  assert.deepEqual(rack.devices.map((d) => d.device), [
+    'backdrop', 'distortion', 'refraction', 'fringing', 'directionalBlur', 'tint', 'saturation', 'noise',
+  ]);
+  assert.deepEqual(rack.devices[3], {
+    device: 'fringing', label: 'Fringing', category: 'optic', mix: 'Fringing',
+    rows: [], shared: [], bypass: 'glass.bypass.fringing', requires: 'refraction',
+  });
+  assert.equal(Object.hasOwn(rack.devices[0], 'requires'), false);
 });
 
 test('get, list, and describe read through the active layers', async () => {

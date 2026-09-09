@@ -10,6 +10,7 @@ import { withLock } from './lock.js';
 import { loadStore, loadLayers, writeTarget, activeJson, RESOLUTION_ORDER } from './layers.js';
 import { listContexts, readContext, readActive, writeContext, deleteContext, contextPath, VERB_KINDS } from './contexts.js';
 import { runContext } from './context-cli.js';
+import { loadRack } from './rack.js';
 import {
   defsDir,
   generatedPath,
@@ -141,6 +142,7 @@ export async function run(argv, opts = {}) {
         }
         const { defs, manifests } = load();
         const store = await snapshot(defs);
+        const rack = loadRack(defsDir(), defs);
         const described = [];
 
         for (const [key, def] of defs) {
@@ -174,7 +176,7 @@ export async function run(argv, opts = {}) {
           });
         }
 
-        print(`${JSON.stringify({ active: activeJson(store.active), profiles: store.profiles, layers: RESOLUTION_ORDER, target: store.target.kind, params: described }, null, 2)}\n`);
+        print(`${JSON.stringify({ active: activeJson(store.active), profiles: store.profiles, layers: RESOLUTION_ORDER, target: store.target.kind, rack, params: described }, null, 2)}\n`);
         return 0;
       }
 

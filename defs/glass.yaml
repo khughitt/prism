@@ -191,3 +191,49 @@
   default: 0.85
   ui: {group: Focus, control: slider, step: 0.05, label: Unfocused saturation, order: 331, state: unfocused, row: Saturation}
   description: Color saturation through the glass of unfocused terminals; below 1 lets the pane recede
+
+# Bypass: one per rack device, shared by both focus states. The niri sink
+# writes the device's dry value into both materials while the key is true; the
+# mix parameters keep their numbers, so switching the device back on restores
+# them exactly. The rack (defs/rack/devices.yaml) says which device each key
+# belongs to.
+- key: glass.bypass.backdrop
+  type: bool
+  default: false
+  ui: {group: Focus, control: toggle, label: Bypass backdrop, order: 400}
+  description: Silence the backdrop stage; both materials get blur 0 and no frosted backdrop while set, and the Blur and Frosted backdrop values keep their numbers
+- key: glass.bypass.distortion
+  type: bool
+  default: false
+  ui: {group: Focus, control: toggle, label: Bypass distortion, order: 410}
+  description: Silence the distortion stage; both materials get distortion 0 while set, and the Distortion and Distortion detail values keep their numbers
+- key: glass.bypass.refraction
+  type: bool
+  default: false
+  ui: {group: Focus, control: toggle, label: Bypass refraction, order: 420}
+  description: Silence the refraction stage; both materials get refraction 1, fringing 0, and directional blur 0 while set, because those two ride the refraction taps, and Blur flattens too since its strength scales with refraction above 1. Every value keeps its number
+- key: glass.bypass.fringing
+  type: bool
+  default: false
+  ui: {group: Focus, control: toggle, label: Bypass fringing, order: 430}
+  description: Silence the fringing stage; both materials get fringing 0 while set, and the Fringing values keep their numbers
+- key: glass.bypass.directionalBlur
+  type: bool
+  default: false
+  ui: {group: Focus, control: toggle, label: Bypass directional blur, order: 440}
+  description: Silence the directional blur stage; both materials get directional blur 0 while set, and the Directional blur values keep their numbers
+- key: glass.bypass.tint
+  type: bool
+  default: false
+  ui: {group: Focus, control: toggle, label: Bypass tint, order: 450}
+  description: Silence the tint stage; both materials get a white tint while set, which absorbs nothing at any distance, and the Tint and Tint distance values keep their numbers
+- key: glass.bypass.saturation
+  type: bool
+  default: false
+  ui: {group: Focus, control: toggle, label: Bypass saturation, order: 460}
+  description: Silence the saturation stage; both materials get saturation 1 while set, and the Saturation values keep their numbers
+- key: glass.bypass.noise
+  type: bool
+  default: false
+  ui: {group: Focus, control: toggle, label: Bypass noise, order: 470}
+  description: Silence the noise stage; both materials get noise 0 while set, since the grain type is shared, and the Noise values keep their numbers

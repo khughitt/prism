@@ -56,8 +56,32 @@ const OPTICS = [
   'anisotropicBlur', 'noise', 'saturation',
 ];
 
-const glassFor = (params, prefix) =>
-  Object.fromEntries(OPTICS.map((optic) => [optic, params[`${prefix}${optic}`]]));
+// What "off" means for each rack device, keyed by its bypass parameter. The
+// rack (defs/rack/devices.yaml) says where a device sits in the chain; this
+// table says what the material does without it, which is sink knowledge.
+// Refraction carries fringing and directional blur on its taps, so its bypass
+// zeroes both: at ior 1 the depth-jittered taps coincide, but fringing's green
+// and blue channels would keep an index above 1 and refract on their own.
+export const DRY = {
+  'glass.bypass.backdrop': { roughness: 0, backdropBlur: false },
+  'glass.bypass.distortion': { distortion: 0 },
+  'glass.bypass.refraction': { ior: 1, chromaticAberration: 0, anisotropicBlur: 0 },
+  'glass.bypass.fringing': { chromaticAberration: 0 },
+  'glass.bypass.directionalBlur': { anisotropicBlur: 0 },
+  'glass.bypass.tint': { attenuationColor: '#ffffff' },
+  'glass.bypass.saturation': { saturation: 1 },
+  'glass.bypass.noise': { noise: 0 },
+};
+
+// A bypass is shared by both focus states, so the override lands in whichever
+// material this is building. The resolved values on the bus are untouched.
+const glassFor = (params, prefix) => {
+  const glass = Object.fromEntries(OPTICS.map((optic) => [optic, params[`${prefix}${optic}`]]));
+  for (const [key, dry] of Object.entries(DRY)) {
+    if (params[key] === true) Object.assign(glass, dry);
+  }
+  return glass;
+};
 
 const activeGlass = (params) => glassFor(params, 'glass.');
 const inactiveGlass = (params) => glassFor(params, 'glass.inactive.');
