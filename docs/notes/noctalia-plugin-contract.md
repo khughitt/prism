@@ -92,9 +92,8 @@ The presentation module defines the panel's stable layout contract:
 - The rack is one card per device in `rack.devices` order. A card's head is a
   light, a chevron, and the device name, in the same fixed span as every other
   head cell; then the mix row's focused and unfocused cells. The name is a
-  ghost text button whose tooltip carries the mix description. Activating a
-  name by pointer or keyboard toggles the same description inline; only one
-  description is open at a time. The light is a glyph: `circle-filled` in the category color
+  ghost text button whose hover tooltip carries the mix description. Clicking
+  a name does nothing; the chevron is the expansion control. The light is a glyph: `circle-filled` in the category color
   while active, `circle` in `on_surface_variant` while the device's bypass key
   is true, `circle` in the category color while the device it `requires` is
   bypassed. Clicking the light sets the bypass key. The chevron expands the
@@ -120,7 +119,9 @@ The presentation module defines the panel's stable layout contract:
   remaining span evenly, and the `Focused` / `Unfocused` titles reserve the
   same leading span and horizontal inset as the rows they head. Value labels
   sit in fixed-width layout containers because the native label reconciler
-  ignores `width`; the value column stays present even for non-slider cells. Every reset stays in
+  ignores `width`; the value column stays present even for non-slider cells.
+  Sized spacers explicitly disable growth so indentation and header spacing
+  cannot consume the space reserved for names and controls. Every reset stays in
   the tree, dim when its parameter holds no override and full strength when it
   is overridden; nothing appears or disappears as a value crosses its default.
 - Toggle, select, slider, color, and reset actions update the local displayed

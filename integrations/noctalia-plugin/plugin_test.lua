@@ -395,8 +395,7 @@ assert(rackHeader, "rack column header missing")
 equal(rackHeader.props.paddingH, byKey(rendered, "backdrop:card")[1].props.paddingH,
   "rack header and card control columns must share their inset")
 
--- Names carry descriptions directly. Native button activation also exposes
--- the description in the panel, so keyboard users have the same help.
+-- Names expose hover help without adding a second, expandable help surface.
 local nameButton = byKey(rendered, "glass.roughness:name")[1]
 assert(nameButton and nameButton.kind == "button", "effect name must be an interactive tooltip target")
 equal(nameButton.props.text, "Backdrop")
@@ -405,17 +404,10 @@ equal(nameButton.props.glyph, nil, "effect help needs no separate info glyph")
 for _, button in ipairs(collect(rendered, "button")) do
   assert(button.props.glyph ~= "info-circle", "row help lives on names rather than info icons")
 end
-local commandsBeforeHelp = #commands
+local commandsBeforeHelp, treeBeforeHelp = #commands, rendered
 nameButton.props.onClick()
-equal(byKey(rendered, "glass.roughness:help")[1].props.text, nameButton.props.tooltip)
+assert(rendered == treeBeforeHelp, "name clicks must not expand help")
 equal(#commands, commandsBeforeHelp, "reading help must not write parameters")
-local otherName = byKey(rendered, "glass.saturation:name")[1]
-otherName.props.onClick()
-equal(#byKey(rendered, "glass.roughness:help"), 0, "opening another name closes the previous description")
-equal(byKey(rendered, "glass.saturation:help")[1].props.text, otherName.props.tooltip)
-byKey(rendered, "glass.saturation:name")[1].props.onClick()
-equal(#byKey(rendered, "glass.saturation:help"), 0, "activating the name again closes help")
-equal(#commands, commandsBeforeHelp, "switching and closing help must not write parameters")
 
 equal(#byKey(rendered, "backdrop:card"), 1)
 equal(#byKey(rendered, "saturation:card"), 1)
@@ -520,6 +512,14 @@ equal(selectValueColumn.props.width, valueWidth, "non-slider controls reserve th
 equal(collect(selectValueColumn, "label")[1].props.text, "")
 local selectName = byKey(noiseCard, "glass.noiseType:name")[1]
 equal(selectName.props.tooltip, "glass.noiseType", "missing descriptions fall back to the parameter key")
+-- A width alone does not make a native spacer fixed: Spacer defaults to grow=1.
+-- Fixed indentation must leave the rest of the head available for long names.
+for _, spacer in ipairs(collect(rendered, "spacer")) do
+  if spacer.props.width ~= nil then
+    equal(spacer.props.flexGrow, 0, "sized spacers must not compete with names or column titles")
+  end
+end
+
 local expandedToggles = collect(noiseCard, "toggle")
 equal(#expandedToggles, 1, "the bypass row's toggle")
 local detailRows = {}

@@ -168,7 +168,7 @@ test('row geometry is fixed, so nothing moves when a value crosses its default',
   // One reserved leading span, shared by the rows and the matrix header, so the
   // header reserves the same leading span as the name controls.
   assert.match(source, /local function headCell[\s\S]*ui\.row\(\{width = headColumnWidth/);
-  assert.match(source, /local function matrixHeader[\s\S]*ui\.spacer\(\{width = headColumnWidth\}\)/);
+  assert.match(source, /local function matrixHeader[\s\S]*ui\.spacer\(\{width = headColumnWidth, flexGrow = 0\}\)/);
   // The header mirrors matrixRow's children, so each title sits over its cell.
   assert.match(source, /local function matrixHeader[\s\S]*text = "Focused"[\s\S]*ui\.separator\(\{orientation = "vertical", spacing = 4\}\)[\s\S]*text = "Unfocused"/);
   // Sliders take the cell's slack, so both matrix halves end flush.

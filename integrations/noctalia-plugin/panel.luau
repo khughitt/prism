@@ -16,7 +16,6 @@ local state = {
   sampleElapsedMs = 0,
   renderedSliderCorrection = nil,
   expanded = {},
-  helpKey = nil,
 }
 
 local describeRunning = false
@@ -435,27 +434,15 @@ local function nativeControl(param, available)
   })
 end
 
--- Only buttons expose native tooltips. A ghost text button makes the name
--- the help target; activation also exposes the description for keyboard users.
+-- Only buttons expose native tooltips, and their hit area needs a handler.
+-- The name's click is deliberately inert: help stays in the hover tooltip.
 local function nameButton(text, param)
   return ui.button({
     key = param.key .. ":name", text = text,
     variant = "ghost", controlSize = "sm", contentAlign = "start", flexGrow = 1,
     tooltip = param.description or param.key,
-    onClick = function()
-      state.helpKey = state.helpKey ~= param.key and param.key or nil
-      render()
-    end,
+    onClick = function() end,
   })
-end
-
-local function appendDescription(children, param)
-  if state.helpKey == param.key then
-    children[#children + 1] = ui.label({
-      key = param.key .. ":help", text = param.description or param.key,
-      fontSize = 12, color = "on_surface_variant",
-    })
-  end
 end
 
 -- Only exceptions are marked. Writing on release is the norm here, so saying it
@@ -484,11 +471,12 @@ local function rowHint(params)
 end
 
 -- The leading column reserves one fixed span for the name and its help
--- target, shared by ordinary rows, cards, and the matrix header.
+-- target, shared by ordinary rows, cards, and the matrix header. Sized
+-- spacers need explicit zero growth: the native spacer defaults to grow=1.
 local function headCell(text, param, dimmed, indent)
   indent = indent or 0
   local children = {}
-  if indent > 0 then children[#children + 1] = ui.spacer({width = indent}) end
+  if indent > 0 then children[#children + 1] = ui.spacer({width = indent, flexGrow = 0}) end
   children[#children + 1] = nameButton(text, param)
   return ui.row({width = headColumnWidth, gap = 6, align = "center", opacity = dimmed and shadowedOpacity or 1.0}, children)
 end
@@ -516,10 +504,9 @@ local function controlCell(param, grow)
   }, children)
 end
 
-local function paramRow(key, cells, hint, param)
+local function paramRow(key, cells, hint)
   local children = {ui.row({gap = 8, align = "center"}, cells)}
   if hint then children[#children + 1] = ui.row({gap = 8, align = "center", justify = "end"}, {hint}) end
-  appendDescription(children, param)
   return ui.column({key = key, gap = 2, paddingV = 2}, children)
 end
 
@@ -527,7 +514,7 @@ local function singleRow(param, indent)
   return paramRow(param.key .. ":row", {
     headCell(param.ui.label or param.key, param, param.shadowed, indent),
     controlCell(param, 1),
-  }, rowHint({param}), param)
+  }, rowHint({param}))
 end
 
 -- The label heads both cells, so it only dims when the whole row is covered.
@@ -537,14 +524,14 @@ local function matrixRow(row, indent)
     controlCell(row.focused, 1),
     ui.separator({orientation = "vertical", spacing = 4}),
     controlCell(row.unfocused, 1),
-  }, rowHint({row.focused, row.unfocused}), row.focused)
+  }, rowHint({row.focused, row.unfocused}))
 end
 
 -- Mirrors matrixRow's children exactly - fixed head, grow, separator, grow - so
 -- each column title sits over the cell it names.
 local function matrixHeader(group, inset)
   return ui.row({key = group .. ":columns", gap = 8, align = "center", paddingH = inset or 0}, {
-    ui.spacer({width = headColumnWidth}),
+    ui.spacer({width = headColumnWidth, flexGrow = 0}),
     ui.label({text = "Focused", fontSize = 12, color = "on_surface_variant", textAlign = "center", flexGrow = 1}),
     ui.separator({orientation = "vertical", spacing = 4}),
     ui.label({text = "Unfocused", fontSize = 12, color = "on_surface_variant", textAlign = "center", flexGrow = 1}),
@@ -606,7 +593,6 @@ local function deviceCard(card)
   }
   local hint = rowHint({card.bypass, mix.focused, mix.unfocused})
   if hint then children[#children + 1] = ui.row({gap = 8, align = "center", justify = "end"}, {hint}) end
-  appendDescription(children, mix.focused)
   if expanded then
     children[#children + 1] = singleRow(card.bypass, detailIndent)
     for _, row in ipairs(card.rows) do children[#children + 1] = matrixRow(row, detailIndent) end
@@ -736,7 +722,7 @@ end
 
 local function nameRow()
   return ui.row({gap = 8, align = "center"}, {
-    ui.spacer({width = labelColumnWidth}),
+    ui.spacer({width = labelColumnWidth, flexGrow = 0}),
     ui.input({
       value = state.naming,
       placeholder = "Profile name",
