@@ -293,7 +293,7 @@ Node tests:
   bypassed in each category, two cases for Refraction bypassed with fringing
   and directional blur non-zero (both come out zeroed in both materials) and
   with them at zero (the output is the same as the first), and a cross-check that every bypass key in
-  `defs/rack.yaml` has a dry entry in the renderer and vice versa.
+  `defs/rack/devices.yaml` has a dry entry in the renderer and vice versa.
 - `test/glass-defs.test.js`: the matrix table gains no rows; the "shared
   glass" table gains the eight bypass keys; terminal opacity is in group
   Terminal.
