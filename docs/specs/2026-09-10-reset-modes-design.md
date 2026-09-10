@@ -334,6 +334,13 @@ shadow hint still says where the visible value comes from. That is a behaviour
 change to the per-row reset as well as the section one, and it gets its own
 test.
 
+`updateParam`'s companion guard goes with it. It currently marks a row
+overridden only when the row is not shadowed, on the reasoning that a write
+under a shadow lands somewhere nothing can see. Under `heldInTarget` that is
+simply false: the write does land in the target, and the target does now hold
+the key. A write marks the row overridden unconditionally, and the plugin
+contract note's sentence to the contrary is corrected with it.
+
 ### The three buttons
 
 Each section header carries them beside its existing controls; a panel-wide row
@@ -372,8 +379,11 @@ it keys `rowsByName` on `param.ui.row` alone and raises `row X spans sections A
 and B` on reuse ([`presentation.luau:179`](../../integrations/noctalia-plugin/presentation.luau)).
 Left alone, the defs would accept a model the panel then rejects, and a
 defs-only test would not catch it. `sections` keys rows on `(group, row)` to
-match, and keeps the spans-sections error for the case it was written for — the
-same label appearing twice inside one group. `M.rack` needs no change: it
+match. The `row X spans sections A and B` error then becomes unreachable — two
+groups sharing a label now build two independent rows — and goes, along with
+the `row.section` bookkeeping that fed it. The case it guarded against is still
+caught: each of those rows must carry both states or trip the existing `row X
+has no focused parameter`. `M.rack` needs no change: it
 filters to the rack's group before building its `rows` table, so it is already
 group-scoped. Section 5 covers this with a rendering and counting test, not a
 defs test.
