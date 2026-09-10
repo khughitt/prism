@@ -1,7 +1,7 @@
 # Neutral and symmetric reset modes
 
 **Date:** 2026-09-10
-**Status:** implementation in progress on `reset-modes`; desktop acceptance pending.
+**Status:** implemented on `reset-modes` (`06d568e`, `beff4e0`, `deb17e1`); automated gate passed; desktop acceptance and the provisional `paneLip` verdict pending.
 **Task:** `prism-91edc5`
 
 ## Context

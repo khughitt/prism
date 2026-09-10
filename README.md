@@ -60,6 +60,24 @@ contexts: `list`, `show`, `save` and `rename` (profiles), `activate`,
 what a Noctalia `wallpaper_changed` hook calls. Design:
 `docs/specs/2026-09-05-prism-context-layers-design.md`.
 
+## Reset modes
+
+```sh
+prism reset defaults|symmetric|neutral [--base] [--group <name>]
+```
+
+The panel offers the same actions per section and across all visible controls.
+`defaults` removes overrides held by the write target, including shadowed ones;
+the value revealed may come from another layer. `symmetric` copies each focused
+value onto its unfocused twin. `neutral` writes the curated quiet baseline,
+leaving `glass.focusSplit` unchanged. Effect dependencies still apply: raise
+Refraction above 1 before exploring Blur or Directional blur.
+
+Without `--base`, comparisons and symmetric's source use resolved values.
+With `--base`, they use base values over def defaults; active overlays may still
+hide the result. Each reset changes one target layer and invokes each affected
+sink at most once. A reset with no target changes writes nothing.
+
 ## Development prerequisites
 
 - Node.js 20 or newer

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** implementation in progress on `reset-modes`; desktop acceptance pending.
+**Status:** implemented through Task 5 (`06d568e`, `beff4e0`, `deb17e1`); automated gate passed; desktop acceptance pending.
 
 **Goal:** Give the panel two more reset modes beside reset-to-defaults — symmetric, which mirrors focused values onto unfocused, and neutral, which quiets every parameter to a curated baseline — and serve all three from one batched CLI verb.
 
@@ -78,7 +78,7 @@ The chain is mostly linear. Task 1 lands the contract and everything depends on 
 **Interfaces:**
 - Produces: `def.neutral` (any scalar) and `def.neutralize === false` on loaded defs. `loadDefs` throws on a def that declares both or neither, on a `neutral` that fails `validateValue`, and on a matrix row whose halves disagree.
 
-- [ ] **Step 1: Write the failing validator tests**
+- [x] **Step 1: Write the failing validator tests**
 
 Append to `test/defs.test.js`. `dirWith` already exists at the top of that file.
 
@@ -155,12 +155,12 @@ test('a matrix half may not be exempt', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npm install && node --test test/defs.test.js`
 Expected: the seven new tests FAIL (no rule rejects anything yet); the pre-existing tests in the file PASS.
 
-- [ ] **Step 3: Implement the validator rules**
+- [x] **Step 3: Implement the validator rules**
 
 In `src/defs.js`, add the import at the top:
 
@@ -217,12 +217,12 @@ and inside the per-def loop, after the `headers` block:
 
 with `import { isDeepStrictEqual } from 'node:util';` at the top of the file.
 
-- [ ] **Step 4: Run the tests to verify the new ones pass and the shipped defs now fail**
+- [x] **Step 4: Run the tests to verify the new ones pass and the shipped defs now fail**
 
 Run: `node --test test/defs.test.js`
 Expected: the seven new tests PASS. Every other test that loads a def with a visible control — the shipped defs via `loadDefs(defsDir())`, and this file's own fixtures — now FAILS with `a visible def declares exactly one of neutral and neutralize`. Both are expected; Steps 5 and 6 fix them in that order.
 
-- [ ] **Step 5: Migrate the existing fixtures**
+- [x] **Step 5: Migrate the existing fixtures**
 
 The rule applies to every def any test loads, not only the shipped ones. `test/defs.test.js` has about thirty fixture defs with a visible control and `test/rack.test.js` about twelve; each needs a `neutral:` in range for its type. Two things to watch:
 
@@ -231,7 +231,7 @@ The rule applies to every def any test loads, not only the shipped ones. `test/d
 
 Run `node --test test/defs.test.js test/rack.test.js test/plugin-presentation.test.js` after this step and read every failure message: each should name the rule its test is about.
 
-- [ ] **Step 6: Add the curated values to the shipped defs**
+- [x] **Step 6: Add the curated values to the shipped defs**
 
 Add a `neutral:` line to every visible def, between `default:` and `ui:`, using the values in Global Constraints. `defs/compositor.yaml` gets `neutral: 24` on `compositor.gaps`. `defs/terminal.yaml` gets `neutral: 0` on both opacity keys and nothing on `terminal.apps`. `defs/debug.yaml` is untouched (`debug.backdrop` is `control: none`).
 
@@ -258,12 +258,12 @@ Add this comment above `glass.thickness`, so the reason a survivor survives sits
 
 and the equivalent above `glass.attenuationDistance` ("at the 65535 ceiling tint absorbs nothing; at the floor of 1 it goes black at once") and `glass.distortionScale` ("at either end of its log range distortion reads as a slow warp or as noise").
 
-- [ ] **Step 7: Run the whole suite**
+- [x] **Step 7: Run the whole suite**
 
 Run: `just test`
 Expected: PASS.
 
-- [ ] **Step 8: Pin the curated table**
+- [x] **Step 8: Pin the curated table**
 
 Append to `test/glass-defs.test.js`:
 
@@ -317,7 +317,7 @@ test('neutral saturation and refraction are identities, not zeroes', () => {
 });
 ```
 
-- [ ] **Step 9: Cross-check the sink's dry table**
+- [x] **Step 9: Cross-check the sink's dry table**
 
 Append to `test/niri-render.test.js`. Import `DRY` from `../integrations/niri/render.js` if the file does not already; the module exports it.
 
@@ -342,7 +342,7 @@ test('the sink dry values agree with the defs neutrals', () => {
 });
 ```
 
-- [ ] **Step 10: Run the suite and commit**
+- [x] **Step 10: Run the suite and commit**
 
 Run: `just test`
 Expected: PASS.
@@ -378,7 +378,7 @@ because white absorbs nothing."
 - Consumes: `def.neutral` / `def.neutralize` from Task 1.
 - Produces: `loadStore(defs)` returns an added `heldInTarget` — an object keyed by param key, `true` when the write-target layer's own values hold that key. `describe --json` emits `neutral`, `neutralize`, and `heldInTarget` per parameter.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `test/cli.test.js`:
 
@@ -417,12 +417,12 @@ test('a base override hidden by a wallpaper is still held in the target', async 
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `node --test test/cli.test.js`
 Expected: FAIL — `undefined !== 0` on `neutral`, then `undefined !== true` on `heldInTarget`.
 
-- [ ] **Step 3: Expose target ownership from the store**
+- [x] **Step 3: Expose target ownership from the store**
 
 In `src/layers.js`, inside `loadStore`, after `const target = writeTarget(active);`:
 
@@ -444,7 +444,7 @@ and inside the existing `for (const key of Object.keys(params))` loop, beside th
 
 Add `heldInTarget` to the returned object.
 
-- [ ] **Step 4: Emit the three fields**
+- [x] **Step 4: Emit the three fields**
 
 In `src/cli.js`, in the `describe` case, add to the object pushed into `described`, beside `default`:
 
@@ -456,12 +456,12 @@ In `src/cli.js`, in the `describe` case, add to the object pushed into `describe
 
 `JSON.stringify` drops an `undefined` field, so an exempt def emits `neutralize: false` and no `neutral`, and a visible def emits `neutral` and no `neutralize` — which is exactly what the panel validates.
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `node --test test/cli.test.js`
 Expected: PASS.
 
-- [ ] **Step 6: Assert the contract against the real payload**
+- [x] **Step 6: Assert the contract against the real payload**
 
 In `integrations/noctalia-plugin/contract.test.mjs`, find the assertions over the parsed `describe` output and add:
 
@@ -474,7 +474,7 @@ for (const param of model.params) {
 }
 ```
 
-- [ ] **Step 7: Run the suite and commit**
+- [x] **Step 7: Run the suite and commit**
 
 Run: `just test`
 Expected: PASS.
@@ -506,7 +506,7 @@ counts against it in the next commit."
   - `visibleGroups(defs)` → `Set<string>` of `ui.group` names having at least one visible def.
   - `planReset({ defs, mode, group, held, effective, normalizeToDefault })` → `{ values, changedKeys }`. `group` is `null` for panel-wide. `held` is the target layer's current values object (not mutated). `effective` is the map a skip rule compares against and symmetric copies from. `normalizeToDefault` is true when the target is base. Throws when a symmetric copy fails the unfocused def's validation.
 
-- [ ] **Step 1: Write the failing planner tests**
+- [x] **Step 1: Write the failing planner tests**
 
 Create `test/reset.test.js`:
 
@@ -637,12 +637,12 @@ test('a write away from the def default is stored at base', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `node --test test/reset.test.js`
 Expected: FAIL with `Cannot find module '../src/reset.js'`.
 
-- [ ] **Step 3: Write the planner**
+- [x] **Step 3: Write the planner**
 
 Create `src/reset.js`:
 
@@ -718,12 +718,12 @@ export function planReset({ defs, mode, group, held, effective, normalizeToDefau
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `node --test test/reset.test.js`
 Expected: PASS.
 
-- [ ] **Step 5: Commit the planner**
+- [x] **Step 5: Commit the planner**
 
 ```bash
 git add src/reset.js test/reset.test.js
@@ -737,7 +737,7 @@ validates each copy against the unfocused def, because nothing forces a
 row's halves to share a range."
 ```
 
-- [ ] **Step 6: Write the failing CLI tests**
+- [x] **Step 6: Write the failing CLI tests**
 
 `values.yaml` is YAML, not JSON. Add the store's own reader beside the other dynamic imports at the top of `test/cli.test.js`:
 
@@ -870,12 +870,12 @@ test('reset --base writes beneath an overlay', async () => {
 
 Nothing here tests a rejection after a partial write, because the code has no such point: the write follows the plan.
 
-- [ ] **Step 7: Run to verify they fail**
+- [x] **Step 7: Run to verify they fail**
 
 Run: `node --test test/cli.test.js`
 Expected: FAIL — `prism reset` is not a verb, so `cli.run` hits the `default` branch and returns 2.
 
-- [ ] **Step 8: Wire the verb**
+- [x] **Step 8: Wire the verb**
 
 In `src/cli.js`, add the imports:
 
@@ -950,12 +950,12 @@ Update the `default` branch's usage line:
         eprint('usage: prism set|unset|get|list|describe|apply|doctor|context|reset\n');
 ```
 
-- [ ] **Step 9: Run the tests to verify they pass**
+- [x] **Step 9: Run the tests to verify they pass**
 
 Run: `node --test test/cli.test.js test/reset.test.js`
 Expected: PASS. If `reset --base writes beneath an overlay` fails, read its assertion message: `glass.paneLip` neutralizes to `0` while its default is `6`, so base must *hold* `0` rather than have the key removed. Correct the assertion to `assert.equal(JSON.parse(...)['glass.paneLip'], 0)` — the fixture, not the implementation, is what needs to agree with the shipped defaults.
 
-- [ ] **Step 10: Run the suite and commit**
+- [x] **Step 10: Run the suite and commit**
 
 Run: `just test`
 Expected: PASS.
@@ -987,7 +987,7 @@ name."
 - Consumes: `param.heldInTarget`, `param.neutral`, `param.neutralize` from Task 2.
 - Produces: `param.overridden` now means "the write target holds this key". `M.sections` keys rows on `(group, row)`.
 
-- [ ] **Step 1: Write the failing Lua tests**
+- [x] **Step 1: Write the failing Lua tests**
 
 In `integrations/noctalia-plugin/plugin_test.lua`, after the existing `M.sections` golden vectors, add:
 
@@ -1014,12 +1014,12 @@ local ok, err = pcall(Presentation.sections, halfRow)
 assert(not ok and tostring(err):find("Blur", 1, true), "a one-sided row must fail")
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
 Expected: FAIL with `row Blur spans sections One and Two`.
 
-- [ ] **Step 3: Update the existing spans-sections assertion**
+- [x] **Step 3: Update the existing spans-sections assertion**
 
 `plugin_test.lua:180-183` asserts the message `Blur spans sections` for a fixture whose `Blur` label is split between `Focus` and `Glass`. Once rows are group-keyed that fixture builds two one-sided rows instead, and the missing-half check catches it. Keep the case — it now pins that a label split across groups never silently pairs — but **do not pin which half is named**: the validation loop iterates `rowsByName` with `pairs`, which is unordered, so either incomplete row can fail first and the message alternates between runs.
 
@@ -1038,7 +1038,7 @@ end
 
 and convert that one case to `failsAny({...}, {"Blur has no unfocused", "Blur has no focused"})`. Leave the other `fails` calls alone: each of those has exactly one incomplete row, so its message is deterministic.
 
-- [ ] **Step 4: Key rows on group and label**
+- [x] **Step 4: Key rows on group and label**
 
 In `presentation.luau`, in `M.sections`, replace the row bookkeeping. The `spans sections` error and the `row.section` field both go: with a group in the key, a row can no longer be reached from two groups, and a label split across groups now yields two rows, each of which trips the existing "has no focused/unfocused parameter" check.
 
@@ -1067,12 +1067,12 @@ and drop the `row.section = nil` line from the trailing validation loop, which n
   end
 ```
 
-- [ ] **Step 5: Run to verify they pass**
+- [x] **Step 5: Run to verify they pass**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
 Expected: PASS, including the retitled spans-sections case.
 
-- [ ] **Step 6: Teach both panel harnesses the new fields, and write the failing ownership test**
+- [x] **Step 6: Teach both panel harnesses the new fields, and write the failing ownership test**
 
 `validateModel` is about to require `heldInTarget` on every parameter and exactly one of `neutral` / `neutralize` on every visible one. Two fixture models must gain them or every render test fails on the banner instead of on the behaviour under test:
 
@@ -1106,12 +1106,12 @@ equal(commands[#commands], Shell.command({"prism", "unset", shadowedKey}))
 
 The existing assertion `exactly the base-overridden roughness row offers a full-strength reset` counts one; the new fixture makes it two. Update the count and say which two, rather than loosening the assertion.
 
-- [ ] **Step 7: Run to verify it fails**
+- [x] **Step 7: Run to verify it fails**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
 Expected: FAIL — the shadowed row's reset is dim and reads `No override to remove`.
 
-- [ ] **Step 8: Count ownership**
+- [x] **Step 8: Count ownership**
 
 In `panel.luau`, `markLayers`:
 
@@ -1141,12 +1141,12 @@ In `validateModel`'s per-parameter loop (`visibleParamError`), add:
 
 Note `visibleParamError` is only called for visible params in the existing code; keep the `control ~= "none"` guard anyway so the function stays true standalone.
 
-- [ ] **Step 9: Run to verify it passes**
+- [x] **Step 9: Run to verify it passes**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua && just test`
 Expected: PASS. The Node contract test from Task 2 now exercises the new `validateModel` checks against real `describe` output.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add integrations/noctalia-plugin/presentation.luau integrations/noctalia-plugin/panel.luau \
@@ -1183,7 +1183,7 @@ are and the missing-half error already covers what it guarded."
   - `M.visibleParams(model)` → every param with a control, for the panel-wide row.
   - `Queue.argvFor({verb = "reset", mode = ..., group = ...})` → `{"prism", "reset", mode}` plus `{"--group", group}` when `group` is set.
 
-- [ ] **Step 1: Write the failing count and queue tests**
+- [x] **Step 1: Write the failing count and queue tests**
 
 Append to `plugin_test.lua`:
 
@@ -1221,12 +1221,12 @@ equal(Queue.argvFor({ verb = "reset", mode = "defaults", group = "Focus" }),
 assert(Queue.affectsParams({ verb = "reset", mode = "neutral" }), "a reset moves the model")
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
 Expected: FAIL — `attempt to call a nil value (field 'pairsOf')`.
 
-- [ ] **Step 3: Add the counts**
+- [x] **Step 3: Add the counts**
 
 Append to `presentation.luau`, before `return M`:
 
@@ -1284,7 +1284,7 @@ function M.visibleParams(model)
 end
 ```
 
-- [ ] **Step 4: Add the queue verb**
+- [x] **Step 4: Add the queue verb**
 
 In `queue.luau`, add `reset = true` to the `staleAfter` table, and in `M.argvFor`, before the final `error`:
 
@@ -1299,12 +1299,12 @@ In `queue.luau`, add `reset = true` to the `staleAfter` table, and in `M.argvFor
   end
 ```
 
-- [ ] **Step 5: Run to verify they pass**
+- [x] **Step 5: Run to verify they pass**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
 Expected: PASS.
 
-- [ ] **Step 6: Write the failing button tests**
+- [x] **Step 6: Write the failing button tests**
 
 Append to the panel-render block of `plugin_test.lua`:
 
@@ -1331,12 +1331,12 @@ equal(commands[#commands], "prism reset neutral", "the panel-wide neutral sends 
 
 The harness records commands as whole strings through `Shell.command`, so compare against `Shell.command({"prism", "reset", "neutral"})` if a raw string comparison fails.
 
-- [ ] **Step 7: Run to verify they fail**
+- [x] **Step 7: Run to verify they fail**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
 Expected: FAIL — no button carries glyph `baseline`.
 
-- [ ] **Step 8: Draw the buttons**
+- [x] **Step 8: Draw the buttons**
 
 In `panel.luau`, replace `resetGroup` with a single batched action, and add a shared button builder above `sectionHeader`:
 
@@ -1457,7 +1457,7 @@ end
 
 and insert `children[#children + 1] = allRow(state.model)` in the render body immediately after the wallpaper header row is appended.
 
-- [ ] **Step 9: Run to verify they pass**
+- [x] **Step 9: Run to verify they pass**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua && just test`
 Expected: PASS after two updates to existing assertions, neither of which is a loosening:
@@ -1465,7 +1465,7 @@ Expected: PASS after two updates to existing assertions, neither of which is a l
 - **Counts.** Every assertion counting buttons in the rendered tree goes up: two or three more per section, plus the panel-wide row.
 - **The section reset tooltip.** `the Focus rack counts its two overrides` matches the literal `Reset section (2)`; it is now `Reset section (2); values fall back to the layer beneath`. Update the literal.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add integrations/noctalia-plugin/
@@ -1491,7 +1491,7 @@ eligible keys away from their neutral."
 - Modify: `docs/specs/2026-09-10-reset-modes-design.md` (status header)
 - Modify: `docs/plans/2026-09-10-reset-modes.md` (status header)
 
-- [ ] **Step 1: Update the plugin contract note**
+- [x] **Step 1: Update the plugin contract note**
 
 Four edits:
 
@@ -1500,11 +1500,11 @@ Four edits:
 3. The describe shape — `neutral`, `neutralize`, and `heldInTarget` join `default`, `layer`, and `fallback`. **A parameter is overridden when `heldInTarget` is true**, replacing the note's current `layer == target`.
 4. The shadow paragraph — its sentence "Writing under a shadow does not mark the row overridden" is now wrong and is replaced: a write under a shadow lands in the target and does mark the row overridden; what the shadow still explains is that the value on screen comes from above.
 
-- [ ] **Step 2: Update the README**
+- [x] **Step 2: Update the README**
 
 Add `reset` to the CLI verb list with its one-line syntax.
 
-- [ ] **Step 3: Run the full gate**
+- [x] **Step 3: Run the full gate**
 
 Run: `just gate`
 Expected: PASS, zero warnings from `tasks check`.
@@ -1566,6 +1566,21 @@ git commit -m "docs: record the reset modes as shipped
 ```
 
 ---
+
+## Execution record
+
+- Tasks 1–5 landed in `06d568e` (defs), `beff4e0` (describe and reset CLI),
+  and `deb17e1` (panel). Task 2 and Task 3 share one backend commit.
+- `just gate` passed: 304 Node tests plus the Lua panel harness; `tasks check`
+  reported zero errors and warnings. Independent final review found no material
+  issues; its stale ownership comment was corrected.
+- Both installed symlinks now point at this worktree. Live `describe` reported
+  43 visible parameters, 42 eligible neutrals, and valid target ownership.
+  The running panel rendered the section and panel-wide controls without a
+  contract error. Original links and pre-acceptance settings are backed up in
+  the ignored session workspace.
+- The five desktop effect checks and the `paneLip` verdict still require user
+  observation. Task 6 remains open; no merge or task closure has occurred.
 
 ## Notes for the executor
 

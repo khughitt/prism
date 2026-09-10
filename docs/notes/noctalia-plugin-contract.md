@@ -47,12 +47,11 @@ open rather than greeting the next one behind a model that reconciles fine.
 
 All parameter writes go through the panel's shared FIFO. Each command is
 serialized through `noctalia.runAsync`, and the next item starts only after
-the current item completes. `set`, `unset`, `pin`, and the profile verbs
+the current item completes. `set`, `unset`, `reset`, `pin`, and the profile verbs
 `activate`, `deactivate`, `save`, `rename`, and `delete` are the only verbs; anything
-else fails loudly rather than reaching another backend. None but `set` and
-`unset` write a parameter, but each moves the write target or the resolved
-values, so each counts as affecting the model and forces the same refresh a
-write does. A queued item may name a follow-up (`activateAfter`), which is
+else fails loudly rather than reaching another backend. Only `set`, `unset`,
+and `reset` write parameters, but all these verbs can move the write target or
+resolved values, so each counts as affecting the model and forces a refresh. A queued item may name a follow-up (`activateAfter`), which is
 enqueued only once the item itself has landed: the FIFO continues after a
 failure, so an unconditional pair would enter a profile whose save never
 happened. Parameter batches refresh the model
@@ -87,8 +86,12 @@ The presentation module defines the panel's stable layout contract:
 - Every other `ui.group` is a section, ordered by first appearance in
   `ui.order`, except the group `describe` names in `rack.group`, which is
   drawn as the rack. Sections are always open; there is no Quick group.
-  Each section shows a reset that removes every override its parameters hold
-  in the write target, dim while the section holds no overrides.
+  Each section shows restore and neutral buttons, plus symmetric where it has
+  matrix rows. Restore counts keys held by the write target, symmetric counts
+  differing pairs, and neutral counts eligible keys away from their neutral.
+  The same actions appear in a panel-wide row under the wallpaper header.
+  Each action issues one `prism reset <mode> [--group <name>]` command. No-op
+  buttons stay in the tree, dimmed and guarded in their click handlers.
 - The rack is one card per device in `rack.devices` order. A card's head is a
   light, a chevron, and the device name, in the same fixed span as every other
   head cell; then the mix row's focused and unfocused cells. The name is a
@@ -110,7 +113,8 @@ The presentation module defines the panel's stable layout contract:
 - Sliders flagged `ui.state` (`focused` or `unfocused`) and `ui.row` pair into
   a matrix row: one label, the focused control on the left, the unfocused on
   the right, under `Focused` / `Unfocused` column labels. A row with a missing
-  or duplicated state, or one that spans sections, is a model error.
+  or duplicated state is a model error. Row identity includes the group, so
+  two sections may reuse a row label but cannot supply each other's halves.
 - Every other visible parameter is a single row: its name with the same help
   behavior, the formatted value, the native control, and a per-parameter reset
   that removes the override in the write target and shows the fallback value
@@ -140,9 +144,10 @@ The presentation module defines the panel's stable layout contract:
   dims only when both of its cells are shadowed. The hint names the covering
   layer and offers advice only where advice exists — `Overridden by wallpaper;
   pin to edit`, but a bare `Overridden by state`, since pinning the wallpaper
-  cannot lift it above a state layer. Writing under a shadow does not mark the
-  row overridden: the write lands in the target, which is not where the value
-  comes from, so there is still no override on that row to reset.
+  cannot lift it above a state layer. A held override under a shadow is still
+  resettable: removing it changes the target, while the higher layer keeps
+  supplying the visible value. Writes update the local override flag before
+  the next describe reconciles target ownership.
 - The panel draws a profile row above the sections, and above the wallpaper
   header because a profile outranks a wallpaper: a selector, a save button, a
   rename button, and a delete button. The selector doubles as the clear control — index 0 is
@@ -185,10 +190,16 @@ The presentation module defines the panel's stable layout contract:
 `layers` (the store's resolution order, low to high), `target` (the
 write-target layer), `rack` (the validated device order and ownership), and
 `params`, whose entries include `layer` (where the value comes from) and
-`fallback` (what `unset` would leave). A parameter is overridden when
-`layer == target`; the reset is always present and shows full strength exactly
-then. The panel ranks a layer against the target with `layers` rather than
-carrying its own copy of the order, so a layer added to the store reaches the
+`fallback` (what `unset` would leave). Each parameter also carries
+`heldInTarget`, a boolean reporting whether the write target owns the key;
+that is what makes a parameter overridden, even if its value is shadowed.
+The row reset is always present and shows full strength when overridden.
+Visible parameters declare exactly one of `neutral` or `neutralize: false`,
+next to `default`; `glass.focusSplit` is the exemption. Neutral counts ignore
+exempt parameters, and compare scalar values exactly (including color case).
+Matrix halves declare equal neutrals, validated at definition load. The panel
+ranks a layer against the target with `layers` rather than carrying its own
+copy of the order, so a layer added to the store reaches the
 panel without a second list to keep in step.
 
 The panel is installed into Noctalia separately from the `prism` command, so
