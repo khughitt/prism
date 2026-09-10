@@ -67,13 +67,19 @@ export function loadStore(defs) {
   const layers = loadLayers(active);
   const { params, layerOf } = resolveLayered(defs, base, layers);
   const target = writeTarget(active);
+  // Target ownership includes values hidden by a higher layer.
+  const heldValues = target.kind === 'base'
+    ? base
+    : layers.find((layer) => layer.kind === target.kind && layer.name === target.name).values;
+  const heldInTarget = {};
   // What unset would leave: the layers below the target. Below base sit the defaults.
   const below = target.kind === 'base'
     ? resolveLayered(defs, {}, []).params
     : resolveLayered(defs, base, layersBelow(layers, target)).params;
   const fallback = {};
   for (const key of Object.keys(params)) {
+    heldInTarget[key] = Object.hasOwn(heldValues, key);
     fallback[key] = layerOf[key] === target.kind ? below[key] : params[key];
   }
-  return { base, active, profiles, layers, target, params, layerOf, fallback };
+  return { base, active, profiles, layers, target, params, layerOf, fallback, heldInTarget };
 }
