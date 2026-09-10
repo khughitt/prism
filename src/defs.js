@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import { parse } from 'yaml';
+import { validateValue } from './values.js';
 
 export const TYPES = ['float', 'int', 'bool', 'color', 'enum', 'string', 'list'];
 export const CONTROLS = ['slider', 'toggle', 'color', 'select', 'none'];
@@ -15,6 +17,7 @@ export function loadDefs(dir) {
   const defs = new Map();
   const orders = new Map();
   const headers = new Map();
+  const rows = new Map();
   const files = fs.readdirSync(dir).filter((f) => f.endsWith('.yaml')).sort();
   if (files.length === 0) throw new Error(`no def files in ${dir}`);
   for (const f of files) {
@@ -32,6 +35,18 @@ export function loadDefs(dir) {
           throw new Error(`group ${def.ui.group} has two header toggles: ${headers.get(def.ui.group)} and ${def.key}`);
         }
         headers.set(def.ui.group, def.key);
+      }
+      if (def.ui.state !== undefined) {
+        if (def.neutralize === false) {
+          throw new Error(`invalid def ${def.key}: a matrix row's halves must declare a neutral`);
+        }
+        const id = `${def.ui.group}\u0000${def.ui.row}`;
+        const twin = rows.get(id);
+        if (twin === undefined) rows.set(id, def);
+        else if (!isDeepStrictEqual(twin.neutral, def.neutral)) {
+          throw new Error(`group ${def.ui.group} row ${def.ui.row}: ${twin.key} and ${def.key} `
+            + 'declare different neutrals; a row\'s halves must neutralize alike');
+        }
       }
       defs.set(def.key, def);
     }
@@ -105,4 +120,15 @@ export function validateDef(def, src) {
     }
   }
   if (def.default === undefined) fail('default required');
+  const declaresNeutral = Object.hasOwn(def, 'neutral');
+  const declaresNeutralize = Object.hasOwn(def, 'neutralize');
+  if (def.ui.control === 'none') {
+    if (declaresNeutral || declaresNeutralize) fail('control: none takes no neutral or neutralize');
+  } else {
+    if (declaresNeutral === declaresNeutralize) {
+      fail('a visible def declares exactly one of neutral and neutralize');
+    }
+    if (declaresNeutralize && def.neutralize !== false) fail('neutralize must be false when present');
+    if (declaresNeutral) validateValue(def, def.neutral);
+  }
 }

@@ -1,7 +1,7 @@
 # Neutral and symmetric reset modes
 
 **Date:** 2026-09-10
-**Status:** designed; not implemented.
+**Status:** implementation in progress on `reset-modes`; desktop acceptance pending.
 **Task:** `prism-91edc5`
 
 ## Context

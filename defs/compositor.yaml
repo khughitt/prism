@@ -2,5 +2,6 @@
   type: int
   range: [0, 128]
   default: 24
+  neutral: 24
   ui: {group: Glass, control: slider, step: 1, label: Window spacing, order: 10, unit: px}
   description: Gap in logical pixels between tiled windows

@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'yaml';
 import { renderNiriFragment, DRY } from '../integrations/niri/render.js';
+import { loadDefs } from '../src/defs.js';
 import { defsDir } from '../src/paths.js';
 
 const resolved = { params: {
@@ -399,4 +400,19 @@ test('every noise type is quoted and shared across glass materials', () => {
 
 test('fragment is stable', () => {
   assert.equal(renderNiriFragment(resolved), renderNiriFragment(resolved));
+});
+
+test('the sink dry values agree with the defs neutrals', () => {
+  const defs = loadDefs(defsDir());
+  for (const overrides of Object.values(DRY)) {
+    for (const [optic, value] of Object.entries(overrides)) {
+      for (const key of [`glass.${optic}`, `glass.inactive.${optic}`]) {
+        assert.deepEqual(defs.get(key).neutral, value, key);
+      }
+    }
+  }
+  const named = new Set(Object.values(DRY).flatMap((o) => Object.keys(o)));
+  for (const optic of ['thickness', 'attenuationDistance', 'distortionScale']) {
+    assert.equal(named.has(optic), false, optic);
+  }
 });

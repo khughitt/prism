@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** planned; not started.
+**Status:** implementation in progress on `reset-modes`; desktop acceptance pending.
 
 **Goal:** Give the panel two more reset modes beside reset-to-defaults — symmetric, which mirrors focused values onto unfocused, and neutral, which quiets every parameter to a curated baseline — and serve all three from one batched CLI verb.
 
