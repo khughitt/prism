@@ -1,12 +1,12 @@
 ---
 id: prism-91edc5
 title: Symmetric and near-zero reset modes alongside reset-to-defaults
-status: doing
+status: done
 priority: 2
 size: m
 owner: reset-modes
 created: 2026-09-10T09:11:19Z
-updated: 2026-09-10T11:45:14Z
+updated: 2026-09-10T11:48:17Z
 depends: []
 tags: [ui, noctalia, store]
 ---
@@ -22,3 +22,5 @@ Panel resets (row and section) unset overrides, so every parameter falls back to
 - 2026-09-10T11:29:42Z (reset-modes): parked (waiting on user): Implementation committed through 23fd4d1; gate passes 304 Node tests plus Lua, final review clean, live panel renders. Await user desktop acceptance: zero-bevel refraction/paneLip verdict, dependency behavior, symmetric parity, and one-reload restore. Both installed symlinks point at reset-modes; restore at merge.
 - 2026-09-10T11:44:33Z (reset-modes): Desktop acceptance: Neutralize All produced bevel 0 and niri rejected both materials because the inherited ring requires inset 5 + width 2.6 <= bevel and forbids zero width. Curated neutral lip changed to 8 (6 would also fail with zero offsets). Regression reproduced red at 0, passes at 8; installed niri validates full neutral with split on/off. Applied corrected lip to current profile: reload succeeded and doctor OK. Broader existing small-geometry validation tracked as prism-71b7d1; desktop effect observations still pending.
 - 2026-09-10T11:45:14Z (reset-modes): parked (waiting on user): Continue desktop effect acceptance with corrected neutral Edge bevel 8: raise Refraction, check blur dependencies, symmetric parity, and one-reload restore. Gate passes 305 Node tests plus Lua; actual niri validates split on/off and live doctor OK. Review clean. Both symlinks remain on reset-modes; restore at merge.
+- 2026-09-10T11:48:17Z (reset-modes): User confirms Neutralize All works after the 8px bevel correction and explicitly authorizes closure, merge, and worktree cleanup. Acceptance recorded without claiming separate observations for every suggested effect check; broader small-geometry validation remains prism-71b7d1.
+- 2026-09-10T11:48:17Z (reset-modes): Shipped batched defaults, symmetric, and neutral resets with panel controls; user accepted the corrected 8px neutral bevel.

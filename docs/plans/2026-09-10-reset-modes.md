@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** implemented through Task 5 (`06d568e`, `beff4e0`, `deb17e1`); automated gate passed; desktop acceptance pending.
+**Status:** complete (`06d568e`, `beff4e0`, `deb17e1`, `a97d397`); user accepted Neutralize All on 2026-09-10 and authorized task closure and merge.
 
 **Goal:** Give the panel two more reset modes beside reset-to-defaults — symmetric, which mirrors focused values onto unfocused, and neutral, which quiets every parameter to a curated baseline — and serve all three from one batched CLI verb.
 
@@ -1510,7 +1510,7 @@ Add `reset` to the CLI verb list with its one-line syntax.
 Run: `just gate`
 Expected: PASS, zero warnings from `tasks check`.
 
-- [ ] **Step 4: Desktop acceptance**
+- [x] **Step 4: Desktop acceptance**
 
 This cannot be automated: there is no pointer automation on this machine, so the user confirms it.
 
@@ -1552,7 +1552,7 @@ Also confirm the two new glyphs read at a glance. `equal` and `baseline` are ver
 
 **Restore both symlinks when the branch merges**, pointing them back at the main checkout (`git worktree list` names it first). A worktree deleted while `~/bin/prism` still names it leaves the CLI broken for every shell on the machine, not just this session.
 
-- [ ] **Step 5: Record the outcome and close**
+- [x] **Step 5: Record the outcome and close**
 
 Update both status headers to name the implementation commit and the acceptance date. Then:
 
@@ -1575,7 +1575,7 @@ git commit -m "docs: record the reset modes as shipped
 - `just gate` passed: 304 Node tests plus the Lua panel harness; `tasks check`
   reported zero errors and warnings. Independent final review found no material
   issues; its stale ownership comment was corrected.
-- Both installed symlinks now point at this worktree. Live `describe` reported
+- During acceptance both installed symlinks pointed at the worktree. Live `describe` reported
   43 visible parameters, 42 eligible neutrals, and valid target ownership.
   The running panel rendered the section and panel-wide controls without a
   contract error. Original links and pre-acceptance settings are backed up in
@@ -1588,12 +1588,14 @@ git commit -m "docs: record the reset modes as shipped
   The follow-up gate passed 305 Node tests plus Lua, with zero task errors or
   warnings. Independent review found no material defects; its doc typo was fixed.
   General validation of manually selected small geometry is `prism-71b7d1`.
-- Desktop effect observations remain pending. Task 6 remains open; no merge
-  or task closure has occurred.
+- On 2026-09-10 the user confirmed Neutralize All works and authorized task
+  closure, merge, and cleanup. This records that acceptance; it does not claim
+  separate user observations for every suggested effect check. The native ring
+  requirement settles the provisional lip choice at 8 pixels.
 
 ## Notes for the executor
 
-- **The main checkout holds untracked copies** of `tasks/prism-91edc5.md` and `tasks/prism-b315f9.md` that predate this branch. `prism-91edc5` differs: the branch copy carries the status, owner, and notes. The branch record is the one to keep; delete the untracked copies in the main checkout at merge time.
+- The obsolete untracked main task copies and the session acceptance backups were archived under `.superpowers/archive/2026-09-10-reset-modes/` in the main checkout before integration; the branch task records are authoritative.
 - **`glass.focusSplit` is the only exemption.** If a step tempts you to add a second, stop: the exemption exists because the split is panel structure rather than a value, and any other candidate is probably a curation decision that belongs in the spec's Section 2 table.
 - **Do not add a confirmation dialog.** It was considered and declined; undo is `prism-b25061`.
 - **Do not implement inherit-from-focused** (`prism-7e4766`) here. Symmetric writes real values and stays correct if that lands later.

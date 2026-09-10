@@ -1,7 +1,7 @@
 # Neutral and symmetric reset modes
 
 **Date:** 2026-09-10
-**Status:** implemented on `reset-modes` (`06d568e`, `beff4e0`, `deb17e1`); automated gate passed; desktop acceptance pending; neutral `paneLip` corrected to 8 after native validation rejected 0.
+**Status:** complete; implemented in `06d568e`, `beff4e0`, `deb17e1`, and `a97d397`; user accepted Neutralize All on 2026-09-10 and authorized merge. Neutral Edge bevel is 8 pixels.
 **Task:** `prism-91edc5`
 
 ## Context
