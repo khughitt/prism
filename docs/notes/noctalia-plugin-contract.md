@@ -127,10 +127,13 @@ The presentation module defines the panel's stable layout contract:
   until describe reconciles. Plain matrix rows use the same name/help control.
 - Row geometry is fixed and independent of parameter state. Names and
   formatted values occupy reserved widths, the two matrix cells divide the
-  remaining span evenly, and the `Focused` / `Unfocused` titles reserve the
+  remaining span evenly, and the `Unfocused` / `Focused` titles reserve the
   same leading span and horizontal inset as the rows they head. Value labels
   sit in fixed-width layout containers because the native label reconciler
   ignores `width`; the value column stays present even for non-slider cells.
+  A color cell has no text there, so its column carries a swatch of the
+  current value with a faint border that keeps a pale tint visible on a pale
+  surface.
   Sized spacers explicitly disable growth so indentation and header spacing
   cannot consume the space reserved for names and controls. Every reset stays in
   the tree, dim when its parameter holds no override and full strength when it

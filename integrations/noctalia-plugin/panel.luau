@@ -516,8 +516,15 @@ local function controlCell(param, grow)
   local children = {
     -- The native label ignores width. Its container reserves the value column,
     -- even when empty, so value length and control kind never shift the track.
+    -- A color cell has no text there: the swatch is the value, and its border
+    -- keeps a pale tint visible on a pale surface.
     ui.row({width = valueColumnWidth, justify = "end", align = "center"}, {
-      ui.label({text = formattedValue or "", fontSize = 12, color = "on_surface_variant", maxWidth = valueColumnWidth, maxLines = 1, textAlign = "end"}),
+      param.ui.control == "color" and ui.box({
+        width = 28, height = 16, radius = 4,
+        fill = tostring(param.value),
+        border = "on_surface_variant/0.4",
+        borderWidth = 1,
+      }) or ui.label({text = formattedValue or "", fontSize = 12, color = "on_surface_variant", maxWidth = valueColumnWidth, maxLines = 1, textAlign = "end"}),
     }),
     nativeControl(param, available),
   }

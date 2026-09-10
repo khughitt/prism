@@ -1036,6 +1036,21 @@ slider.props.onDragEnd()
 equal(gaps.shadowed, true, "writing under a shadow does not lift it")
 equal(gaps.overridden, true, "the write landed in the target even though a wallpaper covers it")
 
+-- A color control shows the chosen color: a swatch in the value column, which
+-- a color cell has no text for.
+local tintModel = layeredModel()
+tintModel.params[#tintModel.params + 1] = {
+  key = "glass.attenuationColor", value = "#3366cc", default = "#dfe8ff", layer = "base", fallback = "#dfe8ff",
+  effectiveDrag = "release", neutral = "#ffffff", heldInTarget = true,
+  ui = { control = "color", group = "Glass", order = 20, label = "Tint" },
+}
+local tintTree = renderModel(tintModel)
+local tintCell = cellFor(tintTree, "glass.attenuationColor")
+assert(tintCell, "the color row renders")
+local swatchColumn = tintCell.children[1]
+equal(swatchColumn.children[1].kind, "box", "a color cell's value column carries a swatch, not empty text")
+equal(swatchColumn.children[1].props.fill, "#3366cc", "the swatch shows the current color")
+
 -- A loaded profile holds the target, so the pin is greyed but still hoverable:
 -- a disabled Button's tooltip is unreachable, so the reason would vanish.
 local blockedTree = renderModel(layeredModel({
