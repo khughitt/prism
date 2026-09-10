@@ -776,7 +776,8 @@ end
 -- One selector loads and clears: index 0 is "no profile", which deactivates.
 -- Save, rename, and delete follow the reset idiom - always in the tree, state
 -- carried by opacity and tooltip, and the guard in the handler rather than
--- `enabled`.
+-- `enabled`. While a mode's field is open its icon turns into a plain cancel:
+-- a floppy that closes the field reads as a broken save.
 local function profileRow(section)
   local loaded = section.activeName ~= nil
   local mode = state.naming ~= nil and state.naming.mode or nil
@@ -811,20 +812,19 @@ local function profileRow(section)
       end,
     }),
     ui.button({
-      glyph = "device-floppy",
+      glyph = mode == "save" and "x" or "device-floppy",
       variant = "ghost",
       controlSize = "sm",
-      selected = mode == "save",
-      tooltip = "Save the current values as a profile",
+      tooltip = mode == "save" and "Cancel" or "Save the current values as a profile",
       onClick = function() toggleNaming("save", "") end,
     }),
     ui.button({
-      glyph = "pencil",
+      glyph = mode == "rename" and "x" or "pencil",
       variant = "ghost",
       controlSize = "sm",
-      selected = mode == "rename",
       opacity = loaded and 1.0 or inertOpacity,
-      tooltip = loaded and ("Rename profile " .. section.activeName) or "No profile loaded to rename",
+      tooltip = mode == "rename" and "Cancel"
+        or (loaded and ("Rename profile " .. section.activeName) or "No profile loaded to rename"),
       onClick = function()
         if section.activeName == nil then return end
         toggleNaming("rename", section.activeName)
@@ -844,11 +844,16 @@ local function profileRow(section)
   })
 end
 
+-- Noctalia's input is uncontrolled: value seeds the host buffer once per
+-- slot, so the key carries the mode and switching modes re-seeds. Enter is
+-- not the only submit, since it needs keyboard focus: the check submits what
+-- onChange tracked.
 local function nameRow()
   local renaming = state.naming.mode == "rename"
   return ui.row({gap = 8, align = "center"}, {
     ui.spacer({width = labelColumnWidth, flexGrow = 0}),
     ui.input({
+      key = "name-" .. state.naming.mode,
       value = state.naming.text,
       placeholder = renaming and "New name" or "Profile name",
       controlSize = "sm",
@@ -857,6 +862,13 @@ local function nameRow()
       submitOnEnter = true,
       onChange = function(text) state.naming.text = tostring(text or "") end,
       onSubmit = commitName,
+    }),
+    ui.button({
+      glyph = "check",
+      variant = "ghost",
+      controlSize = "sm",
+      tooltip = renaming and "Rename to this name" or "Save under this name",
+      onClick = function() commitName(state.naming.text) end,
     }),
   })
 end

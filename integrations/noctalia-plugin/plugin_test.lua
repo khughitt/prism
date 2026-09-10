@@ -1391,18 +1391,59 @@ collect(rendered, "input")[1].props.onSubmit("noon")
 equal(commands[#commands], Shell.command({ "prism", "context", "rename", "profile", "dusk", "noon" }))
 equal(#collect(rendered, "input"), 0, "a queued rename closes the field")
 
+-- Enter is not the only submit: it needs keyboard focus, so the check beside
+-- the field hands commitName the text onChange tracked.
+local clickSave = renderModel(profileModel())
+glyphButton(clickSave, "device-floppy").props.onClick()
+local clickSaveField = collect(rendered, "input")[1]
+clickSaveField.props.onChange("noon")
+local check = glyphButton(rendered, "check")
+assert(check, "the field has a submit button beside it")
+check.props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "context", "save", "profile", "noon" }),
+  "the check submits what onChange tracked")
+equal(#collect(rendered, "input"), 0, "a clicked save closes the field")
+
+local clickRename = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
+glyphButton(clickRename, "pencil").props.onClick()
+collect(rendered, "input")[1].props.onChange("noon")
+glyphButton(rendered, "check").props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "context", "rename", "profile", "dusk", "noon" }),
+  "the check submits a rename too")
+
+-- While a mode's field is open its icon stops offering that mode and is a
+-- plain cancel instead; the other mode's icon still switches.
+local cancelTree = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
+glyphButton(cancelTree, "device-floppy").props.onClick()
+local openCancel = glyphButton(rendered, "x")
+assert(openCancel, "the open mode's icon becomes a cancel")
+equal(openCancel.props.tooltip, "Cancel")
+assert(glyphButton(rendered, "device-floppy") == nil, "no save affordance while its field is open")
+assert(glyphButton(rendered, "pencil"), "the other mode still offers its switch")
+openCancel.props.onClick()
+equal(#collect(rendered, "input"), 0, "the cancel closes the field")
+glyphButton(rendered, "pencil").props.onClick()
+local renameCancel = glyphButton(rendered, "x")
+assert(renameCancel, "rename's icon becomes a cancel too")
+renameCancel.props.onClick()
+equal(#collect(rendered, "input"), 0, "and closes the rename field")
+
 -- The save and rename buttons share one field, so opening one closes the
--- other, and either closes a pending question.
+-- other, and either closes a pending question. The field's key carries the
+-- mode: Noctalia seeds an uncontrolled input once per slot, so the switch
+-- must create a fresh slot or rename would keep save's buffer.
 local switchTree = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
 glyphButton(switchTree, "trash").props.onClick()
 assert(labelSet(rendered)["Delete profile dusk?"])
 glyphButton(rendered, "device-floppy").props.onClick()
 equal(labelSet(rendered)["Delete profile dusk?"], nil, "opening the name field drops the question")
 equal(collect(rendered, "input")[1].props.value, "", "save starts from an empty name")
+equal(collect(rendered, "input")[1].props.key, "name-save", "save gets its own slot")
 glyphButton(rendered, "pencil").props.onClick()
-equal(collect(rendered, "input")[1].props.value, "dusk", "rename takes the field over with the current name")
-glyphButton(rendered, "pencil").props.onClick()
-equal(#collect(rendered, "input"), 0, "the same button again closes it")
+equal(collect(rendered, "input")[1].props.value, "dusk", "rename opens on a fresh slot seeded with the current name")
+equal(collect(rendered, "input")[1].props.key, "name-rename", "rename gets a fresh slot, so the seed applies")
+glyphButton(rendered, "x").props.onClick()
+equal(#collect(rendered, "input"), 0, "the open mode's icon, now a plain cancel, closes it")
 
 local noActive = layeredModel()
 noActive.active = nil

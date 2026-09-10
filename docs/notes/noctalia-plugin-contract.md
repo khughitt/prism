@@ -165,7 +165,16 @@ The presentation module defines the panel's stable layout contract:
   command reconciles either way. It is deliberately not "base values":
   deactivating leaves the wallpaper layer active, so what is on screen may
   still come from it, and only the write target returns to base. Save opens a
-  name field (`ui.input`, `submitOnEnter`), validates the name against the
+  name field (`ui.input`, `submitOnEnter`) with a check button beside it:
+  Enter submits only with keyboard focus, so the check submits the text the
+  panel tracks through `onChange`. The input is uncontrolled, its `value`
+  seeding the host buffer once per slot, so its key carries the mode
+  (`name-save`, `name-rename`) and switching modes re-seeds from a fresh slot.
+  `focus` does land keyboard focus, but only once, when the control is created
+  (the reconciler's focus sink is applied by the panel host after layout), so
+  opening the field and switching modes both re-arm it. While the field is
+  open its mode's icon turns into a plain cancel (an `x`): a floppy that
+  closes the field reads as a broken save. The name is validated against the
   store's rule locally rather than spending a failed command on it, then saves
   and enters the new profile. A name that already belongs to another profile
   is not replaced silently: the name field gives way to a question row
