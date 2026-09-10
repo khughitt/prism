@@ -10,7 +10,9 @@ The panel has one reset gesture, at two scopes. A row's reset issues `prism
 unset` for its parameter; a section header's reset issues one `unset` per
 parameter the section holds
 ([`2026-08-16-prism-noctalia-panel-design.md`](../superpowers/specs/2026-08-16-prism-noctalia-panel-design.md)).
-Both remove overrides, so every parameter falls back to its def default.
+Both remove overrides in the write target, so each parameter falls back to
+whatever the layer beneath supplies — often the def default, but a wallpaper
+or base value where one is set.
 
 Those defaults are not a level playing field. The focus matrix ships six pairs
 whose halves diverge on purpose — `glass.roughness` 0.08 against
@@ -49,19 +51,21 @@ up from zero. It is a good neighbour to this work, not a substitute for it.
   Neutral is then symmetric by construction — you never run one after the
   other — and the focus split stops being a confound while you explore.
 - **`glass.focusSplit` is exempt, and says so.** A visible def declares exactly
-  one of `neutral: <value>` or `neutralize: false`. Neither is a load error, so
-  a visible parameter added later cannot join without a decision.
+  one of `neutral: <value>` or `neutralize: false`. Declaring neither is a
+  load error, so a visible parameter added later cannot join without a
+  decision.
 - **Neutral quiets the pane; it does not promise independence.** Effect
   dependencies survive it, and this document records them rather than solving
   them. That is `prism-b315f9`'s subject.
-- **All three modes are one CLI verb.** `prism reset <mode>` computes the whole
-  mutation, validates it, then takes one store lock, writes once, resolves
-  once, and fans out once. The panel issues one command per click.
+- **All three modes are one CLI verb.** `prism reset <mode>` takes the store
+  lock, reads one snapshot, computes and validates the whole mutation against
+  it, writes the target and `resolved.json` once, releases, then fans out once.
+  The panel issues one command per click.
 - **The panel gains no new idiom.** Three ghost glyph buttons per scope, always
   in the tree, opacity carrying state, tooltip explaining, guard in the
   handler — the same bargain every reset in the panel already makes.
 - **`describe` gains `neutral` and `heldInTarget`.** The first lets the panel
-  count locally; the second fixes a counting bug the batched verb would
+  count locally; the second fixes a restore-counting bug the batched verb would
   otherwise disagree with (Section 4).
 - **No confirmation.** A neutral write lands like every other write in the
   panel. Getting back is undo's job, and undo should be one general mechanism
@@ -267,6 +271,19 @@ A mode's skip rule decides which keys are *already* where the mode wants them.
 - `symmetric` uses the pair rule stated above, with the same
   resolved-versus-base-effective split.
 
+A skip rule selects a key; it does not prove the write changes anything. The
+two are not the same, because the base rule normalizes a value equal to the def
+default into a *deletion*. Consider an unpinned wallpaper supplying terminal
+opacity `0.5` with base holding nothing and the neutral being the default `0`:
+the resolved comparison selects the key, and the base rule then deletes a key
+that was never there. Nothing changed, yet a naive implementation would rewrite
+`resolved.json` and reload the compositor.
+
+So the no-op test is on **contents, not selection**: build the proposed target
+layer in full and compare it with the layer's original contents. Write and fan
+out only for a real addition, change, or removal. Section 5 pins that case as a
+regression test.
+
 Comparison uses the `isDeepStrictEqual` the store already uses. One consequence
 worth naming: a color differing from its neutral only in hex case counts as
 differing and is rewritten to the canonical value. That is harmless — the
@@ -284,12 +301,16 @@ equal neutrals do not guarantee that a row's two halves share a type or a
 range. Any failure rejects the entire command with a message naming the key,
 and nothing is written: no partial batch.
 
-A no-op writes nothing, resolves nothing, and fans out to nothing; it exits 0.
-Otherwise: one mutation of the target layer, one `writeResolved`, and one
-`fanOut` over the union of keys written or removed, so each affected sink is
-invoked at most once. Today's section reset takes the store lock, resolves, and
+A no-op leaves the target untouched, does not write `resolved.json`, and fans
+out to nothing; it exits 0. It still reads the resolved values, since that is
+how it establishes there is nothing to do. Otherwise: one mutation of the
+target layer, one `writeResolved`, and one `fanOut` over the union of keys
+written or removed, so each affected sink runs at most once — several affected
+sinks mean several runner calls, one each. Today's section reset takes the store lock, resolves, and
 reloads the compositor once per overridden key — around twenty-five times for
-the Focus rack. Same button, same result, one reload.
+the Focus rack. Same button, one reload. The result is the same except where
+Section 4's counting fix applies: a hidden override in the target is now
+removed too, which is the point of that fix.
 
 Success prints nothing, like `set` and `unset`.
 
@@ -344,6 +365,19 @@ Glyph names for the two new buttons are checked against Noctalia's icon set
 before they are written. `restore` is known good; the other two are not
 guessed.
 
+### Row identity in the panel
+
+Section 1 lets two groups reuse a row label. `Presentation.sections` does not:
+it keys `rowsByName` on `param.ui.row` alone and raises `row X spans sections A
+and B` on reuse ([`presentation.luau:179`](../../integrations/noctalia-plugin/presentation.luau)).
+Left alone, the defs would accept a model the panel then rejects, and a
+defs-only test would not catch it. `sections` keys rows on `(group, row)` to
+match, and keeps the spans-sections error for the case it was written for — the
+same label appearing twice inside one group. `M.rack` needs no change: it
+filters to the rack's group before building its `rows` table, so it is already
+group-scoped. Section 5 covers this with a rendering and counting test, not a
+defs test.
+
 ### Plumbing
 
 `Queue.argvFor` gains `reset`, carrying `mode` and an optional `group`;
@@ -372,10 +406,12 @@ Node tests:
   absent from it and stay that way.
 - `test/cli.test.js` — the three modes; `--group` and its absence; `--base`
   beneath an overlay; an unknown group and a visible-parameter-free group; a
-  no-op writing nothing and fanning out to nothing; a symmetric copy rejected
+  no-op writing nothing and fanning out to nothing; the contents no-op from
+  Section 3 — an unpinned wallpaper at `0.5`, base empty, neutral `0` — leaving
+  `resolved.json` untouched and the runner uncalled; a symmetric copy rejected
   by the unfocused def's range leaving no partial write; a target that holds a
   shadowed override having it removed by `defaults`; and, via the injected
-  `runner`, exactly one sink invocation per non-empty invocation.
+  `runner`, each affected sink called at most once per invocation.
 - `integrations/noctalia-plugin/contract.test.mjs` — `describe` carries
   `neutral` or `neutralize` on every visible parameter and `heldInTarget` on
   all of them, and the real payload still renders.
@@ -386,7 +422,9 @@ Lua tests:
   and their units, including a shadowed held override counting toward restore;
   the symmetric button absent from a section with no matrix rows; the panel-wide
   counts spanning groups; `neutralize: false` excluded from the neutral count;
-  and `Queue.argvFor` for `reset` with and without a group.
+  `Queue.argvFor` for `reset` with and without a group; and a model reusing one
+  row label across two groups rendering and counting correctly, with the
+  duplicate-label-within-one-group error preserved.
 
 Docs: the plugin contract note
 ([`docs/notes/noctalia-plugin-contract.md`](../notes/noctalia-plugin-contract.md))
@@ -397,12 +435,18 @@ definition of "overridden".
 Desktop acceptance is manual, as it was for the rack: repoint the plugin
 symlink at the worktree, reload the plugin, then
 
-1. neutralize the Focus section and confirm the pane goes quiet with the
-   survivors intact;
-2. raise Refraction from that baseline and confirm it reads — this is the
-   `paneLip` decision in Section 2;
-3. raise Blur and Directional blur from the baseline and confirm they behave as
-   Section 2 predicts, since they ride the refraction taps;
+1. neutralize **panel-wide**, not just the Focus section, and confirm the pane
+   goes quiet with the survivors intact. Panel-wide is what takes the Glass
+   section's `paneLip` and offsets to zero, and therefore the bevel with them;
+   neutralizing Focus alone leaves the geometry tuned and cannot decide
+   anything about it;
+2. confirm the geometry did reach zero, then raise Refraction from that
+   baseline and confirm it reads. This is the `paneLip` decision in Section 2:
+   if refraction does not read against a zero bevel, `paneLip` moves to the
+   enablers at its shipped `6`;
+3. neutralize panel-wide again — step 2 has already raised refraction — then
+   raise Blur and Directional blur and confirm they behave as Section 2
+   predicts at `ior 1`, since they ride the refraction taps;
 4. mirror a section with divergent halves and confirm parity;
 5. reset a section to defaults with a wallpaper pinned and confirm one reload
    rather than a visible cascade.
