@@ -310,6 +310,14 @@ local function resetAction(mode, group, params)
         if row.focused.value ~= row.unfocused.value then updateParam(row.unfocused, row.focused.value) end
       end
     end
+    -- Neutralizing everything under a loaded profile would write the neutral
+    -- values into that profile's snapshot. Clear it first, in the same FIFO,
+    -- so they land beneath it and the profile keeps its values; the selector
+    -- clears optimistically the way a pick does.
+    if mode == "neutral" and group == nil and state.model.active.profile ~= nil then
+      state.model.active.profile = nil
+      enqueue({verb = "deactivate"})
+    end
     enqueue({verb = "reset", mode = mode, group = group})
     render()
   end

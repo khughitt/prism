@@ -90,7 +90,12 @@ The presentation module defines the panel's stable layout contract:
   matrix rows. Restore counts keys held by the write target, symmetric counts
   differing pairs, and neutral counts eligible keys away from their neutral.
   The same actions appear in a panel-wide row under the wallpaper header.
-  Each action issues one `prism reset <mode> [--group <name>]` command. No-op
+  Each action issues one `prism reset <mode> [--group <name>]` command, except
+  the panel-wide neutral under a loaded profile, which first issues `prism
+  context deactivate profile` in the same FIFO: a reset writes into the write
+  target, and neutralizing everything into a profile's snapshot would destroy
+  it, so the neutral values land beneath the profile and the selector clears
+  optimistically. A section's neutral still edits the loaded profile. No-op
   buttons stay in the tree, dimmed and guarded in their click handlers.
 - The rack is one card per device in `rack.devices` order. A card's head is a
   light, a chevron, and the device name, in the same fixed span as every other

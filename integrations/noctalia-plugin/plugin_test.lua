@@ -1216,6 +1216,36 @@ local clearTree = renderModel(profileModel({ active = { profile = "dawn" }, targ
 selectWithOption(clearTree, "No profile").props.onChange(0)
 equal(selectWithOption(rendered, "No profile").props.selectedIndex, 0, "clearing shows at once too")
 
+-- Neutralizing everything with a profile loaded would write the neutral values
+-- into that profile's snapshot, so the panel-wide button clears the profile
+-- first, in the same FIFO, and the neutral values land beneath it. A section's
+-- neutral button still edits the loaded profile: neutralizing one section of
+-- a profile is a plausible edit.
+local neutralTree = renderModel(profileModel({ active = { profile = "dawn" }, target = "profile" }))
+local wide = buttonsByGlyph(neutralTree, "baseline")[1]
+assert(wide.props.tooltip:find("everything", 1, true), "the first baseline button is panel-wide")
+local beforeWide = #commands
+wide.props.onClick()
+equal(commands[beforeWide + 1], Shell.command({ "prism", "context", "deactivate", "profile" }),
+  "the profile is cleared first")
+equal(selectWithOption(rendered, "No profile").props.selectedIndex, 0, "the selector clears at once")
+writeCallback({ exitCode = 0, stdout = "" })
+equal(commands[#commands], Shell.command({ "prism", "reset", "neutral" }), "then everything is neutralized beneath it")
+
+local sectionTree = renderModel(profileModel({ active = { profile = "dawn" }, target = "profile" }))
+local sectionNeutral = buttonsByGlyph(sectionTree, "baseline")[2]
+assert(sectionNeutral.props.tooltip:find("section", 1, true), "the second baseline button is a section's")
+local beforeSection = #commands
+sectionNeutral.props.onClick()
+equal(#commands, beforeSection + 1, "a section neutral is one command")
+assert(commands[#commands]:find("reset", 1, true), "a section neutral keeps editing the loaded profile")
+
+local bareNeutral = renderModel(profileModel())
+local beforeBare = #commands
+buttonsByGlyph(bareNeutral, "baseline")[1].props.onClick()
+equal(#commands, beforeBare + 1, "with nothing loaded there is nothing to clear")
+equal(commands[#commands], Shell.command({ "prism", "reset", "neutral" }))
+
 -- Saving names the profile first, and entering it is a second command that only
 -- runs once the save has actually landed.
 local saveTree = renderModel(profileModel())
