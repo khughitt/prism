@@ -129,8 +129,8 @@ test('presentation renders every section open with a header toggle, matrix rows,
   assert.match(source, /Presentation\.sections\(state\.model\.params, rack\.group\)/);
   assert.doesNotMatch(source, /expandedGroups|groupParams|Quick/);
   assert.match(source, /Presentation\.overriddenCount\(params\)/);
-  assert.match(source, /local function matrixRow\(row, indent\)[\s\S]*controlCell\(row\.focused, 1\)[\s\S]*controlCell\(row\.unfocused, 1\)/);
-  assert.match(source, /text = "Focused"[\s\S]*text = "Unfocused"/);
+  assert.match(source, /local function matrixRow\(row, indent\)[\s\S]*controlCell\(row\.unfocused, 1\)[\s\S]*controlCell\(row\.focused, 1\)/);
+  assert.match(source, /text = "Unfocused"[\s\S]*text = "Focused"/);
   assert.match(source, /local function resetAction[\s\S]*enqueue\(\{verb = "reset", mode = mode, group = group\}\)/);
   assert.match(source, /tooltip = param\.overridden and "Remove override"/);
   assert.match(source, /resetModeButtons\("section", name, sectionParams\)/);
@@ -170,7 +170,7 @@ test('row geometry is fixed, so nothing moves when a value crosses its default',
   assert.match(source, /local function headCell[\s\S]*ui\.row\(\{width = headColumnWidth/);
   assert.match(source, /local function matrixHeader[\s\S]*ui\.spacer\(\{width = headColumnWidth, flexGrow = 0\}\)/);
   // The header mirrors matrixRow's children, so each title sits over its cell.
-  assert.match(source, /local function matrixHeader[\s\S]*text = "Focused"[\s\S]*ui\.separator\(\{orientation = "vertical", spacing = 4\}\)[\s\S]*text = "Unfocused"/);
+  assert.match(source, /local function matrixHeader[\s\S]*text = "Unfocused"[\s\S]*ui\.separator\(\{orientation = "vertical", spacing = 4\}\)[\s\S]*text = "Focused"/);
   // Sliders take the cell's slack, so both matrix halves end flush.
   assert.match(source, /ui\.slider\(\{[\s\S]*flexGrow = 1/);
 });

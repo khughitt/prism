@@ -479,6 +479,29 @@ assert(rackHeader, "rack column header missing")
 equal(rackHeader.props.paddingH, byKey(rendered, "backdrop:card")[1].props.paddingH,
   "rack header and card control columns must share their inset")
 
+-- Matrix columns read unfocused left, focused right, and the header labels,
+-- the section rows, and the rack cards all agree.
+local function columnLabels(header)
+  local texts = {}
+  for _, node in ipairs(header.children) do
+    if node.kind == "label" then texts[#texts + 1] = node.props.text end
+  end
+  return texts
+end
+equal(columnLabels(rackHeader), { "Unfocused", "Focused" }, "rack headers read unfocused left, focused right")
+local terminalHeader
+for _, row in ipairs(collect(rendered, "row")) do
+  if row.props.key == "Terminal:columns" then terminalHeader = row end
+end
+assert(terminalHeader, "terminal column header missing")
+equal(columnLabels(terminalHeader), { "Unfocused", "Focused" }, "section headers read unfocused left, focused right")
+local terminalRow = byKey(rendered, "Terminal opacity:row")[1].children[1]
+equal(terminalRow.children[2].props.key, "terminal.background.opacity.inactive", "the left cell is unfocused")
+equal(terminalRow.children[4].props.key, "terminal.background.opacity.active", "the right cell is focused")
+local noiseCardRow = byKey(rendered, "noise:card")[1].children[1]
+equal(noiseCardRow.children[2].props.key, "glass.inactive.noise", "the left mix cell is unfocused")
+equal(noiseCardRow.children[4].props.key, "glass.noise", "the right mix cell is focused")
+
 -- Names expose hover help without adding a second, expandable help surface.
 local nameButton = byKey(rendered, "glass.roughness:name")[1]
 assert(nameButton and nameButton.kind == "button", "effect name must be an interactive tooltip target")

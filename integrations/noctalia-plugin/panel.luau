@@ -548,9 +548,9 @@ end
 local function matrixRow(row, indent)
   return paramRow(row.row .. ":row", {
     headCell(row.row, row.focused, row.focused.shadowed and row.unfocused.shadowed, indent),
-    controlCell(row.focused, 1),
-    ui.separator({orientation = "vertical", spacing = 4}),
     controlCell(row.unfocused, 1),
+    ui.separator({orientation = "vertical", spacing = 4}),
+    controlCell(row.focused, 1),
   }, rowHint({row.focused, row.unfocused}))
 end
 
@@ -559,9 +559,9 @@ end
 local function matrixHeader(group, inset)
   return ui.row({key = group .. ":columns", gap = 8, align = "center", paddingH = inset or 0}, {
     ui.spacer({width = headColumnWidth, flexGrow = 0}),
-    ui.label({text = "Focused", fontSize = 12, color = "on_surface_variant", textAlign = "center", flexGrow = 1}),
-    ui.separator({orientation = "vertical", spacing = 4}),
     ui.label({text = "Unfocused", fontSize = 12, color = "on_surface_variant", textAlign = "center", flexGrow = 1}),
+    ui.separator({orientation = "vertical", spacing = 4}),
+    ui.label({text = "Focused", fontSize = 12, color = "on_surface_variant", textAlign = "center", flexGrow = 1}),
   })
 end
 
@@ -614,9 +614,9 @@ local function deviceCard(card)
   local children = {
     ui.row({gap = 8, align = "center"}, {
       cardHead(card, expanded),
-      controlCell(mix.focused, 1),
-      ui.separator({orientation = "vertical", spacing = 4}),
       controlCell(mix.unfocused, 1),
+      ui.separator({orientation = "vertical", spacing = 4}),
+      controlCell(mix.focused, 1),
     }),
   }
   local hint = rowHint({card.bypass, mix.focused, mix.unfocused})

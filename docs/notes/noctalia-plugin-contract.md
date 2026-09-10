@@ -99,7 +99,8 @@ The presentation module defines the panel's stable layout contract:
   buttons stay in the tree, dimmed and guarded in their click handlers.
 - The rack is one card per device in `rack.devices` order. A card's head is a
   light, a chevron, and the device name, in the same fixed span as every other
-  head cell; then the mix row's focused and unfocused cells. The name is a
+  head cell; then the mix row's unfocused and focused cells, in the matrix's
+  column order. The name is a
   ghost text button whose hover tooltip carries the mix description. Clicking
   the card title or chevron toggles details; ordinary parameter names remain
   hover-only. The light is a glyph: `circle-filled` in the category color
@@ -116,8 +117,8 @@ The presentation module defines the panel's stable layout contract:
 - A toggle flagged `ui.header` is its section's header control (the Focus
   section's focus-state toggle). A group may carry at most one.
 - Sliders flagged `ui.state` (`focused` or `unfocused`) and `ui.row` pair into
-  a matrix row: one label, the focused control on the left, the unfocused on
-  the right, under `Focused` / `Unfocused` column labels. A row with a missing
+  a matrix row: one label, the unfocused control on the left, the focused on
+  the right, under `Unfocused` / `Focused` column labels. A row with a missing
   or duplicated state is a model error. Row identity includes the group, so
   two sections may reuse a row label but cannot supply each other's halves.
 - Every other visible parameter is a single row: its name with the same help
