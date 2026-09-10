@@ -156,7 +156,7 @@ The presentation module defines the panel's stable layout contract:
 - The panel draws a profile row above the sections, and above the wallpaper
   header because a profile outranks a wallpaper: a selector, a save button, a
   rename button, and a delete button. The selector doubles as the clear control — index 0 is
-  `No profile`, which deactivates. A pick is optimistic, like a slider edit:
+  `-`, which deactivates. A pick is optimistic, like a slider edit:
   the render that follows it already declares the picked index, because
   Noctalia re-applies `selectedIndex` on every render (the `options` prop
   resets its change memory) and a render that still declared the old model's

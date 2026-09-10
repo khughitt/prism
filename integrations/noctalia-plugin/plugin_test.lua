@@ -372,7 +372,7 @@ assert(labels["Noise type"] == nil, "details stay hidden until a card is expande
 -- by options rather than by position.
 local function paramSelect(tree)
   for _, node in ipairs(collect(tree, "select")) do
-    if (node.props.options or {})[1] ~= "No profile" then return node end
+    if (node.props.options or {})[1] ~= "-" then return node end
   end
   return nil
 end
@@ -1147,12 +1147,12 @@ equal(Presentation.validProfileName("a/b"), false)
 local section = Presentation.profileSection({
   active = { profile = "dusk" }, profiles = { "dawn", "dusk", "noon" },
 })
-equal(section.options, { "No profile", "dawn", "dusk", "noon" })
+equal(section.options, { "-", "dawn", "dusk", "noon" })
 equal(section.selectedIndex, 2)
 equal(section.activeName, "dusk")
 
 local none = Presentation.profileSection({ active = {}, profiles = { "dawn" } })
-equal(none.options, { "No profile", "dawn" })
+equal(none.options, { "-", "dawn" })
 equal(none.selectedIndex, 0)
 equal(none.activeName, nil)
 
@@ -1181,16 +1181,16 @@ end
 
 -- Loading and clearing both run through the one selector.
 local profileTree = renderModel(profileModel())
-local selector = selectWithOption(profileTree, "No profile")
+local selector = selectWithOption(profileTree, "-")
 assert(selector, "the panel offers a profile selector")
-equal(selector.props.options, { "No profile", "dawn", "dusk" })
+equal(selector.props.options, { "-", "dawn", "dusk" })
 equal(selector.props.selectedIndex, 0)
 selector.props.onChange(2)
 equal(commands[#commands], Shell.command({ "prism", "context", "activate", "profile", "dusk" }))
 
 local loadedTree = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
-equal(selectWithOption(loadedTree, "No profile").props.selectedIndex, 2)
-selectWithOption(loadedTree, "No profile").props.onChange(0)
+equal(selectWithOption(loadedTree, "-").props.selectedIndex, 2)
+selectWithOption(loadedTree, "-").props.onChange(0)
 equal(commands[#commands], Shell.command({ "prism", "context", "deactivate", "profile" }))
 
 -- A pick is optimistic, like a slider edit: the render that follows it already
@@ -1199,9 +1199,9 @@ equal(commands[#commands], Shell.command({ "prism", "context", "deactivate", "pr
 -- selector back to the old name for the whole activate round trip, compositor
 -- reload included. The describe that follows reconciles either way.
 local pickTree = renderModel(profileModel({ active = { profile = "dawn" }, target = "profile" }))
-equal(selectWithOption(pickTree, "No profile").props.selectedIndex, 1)
-selectWithOption(pickTree, "No profile").props.onChange(2)
-equal(selectWithOption(rendered, "No profile").props.selectedIndex, 2, "the pick shows at once")
+equal(selectWithOption(pickTree, "-").props.selectedIndex, 1)
+selectWithOption(pickTree, "-").props.onChange(2)
+equal(selectWithOption(rendered, "-").props.selectedIndex, 2, "the pick shows at once")
 equal(commands[#commands], Shell.command({ "prism", "context", "activate", "profile", "dusk" }))
 writeCallback({ exitCode = 1, stdout = "", stderr = "profile dusk: no such context" })
 assert(commands[#commands]:find("describe", 1, true), "a failed activate still re-reads the model")
@@ -1209,12 +1209,12 @@ assert(commands[#commands]:find("describe", 1, true), "a failed activate still r
 -- a fresh model the way the real describe would.
 model = profileModel({ active = { profile = "dawn" }, target = "profile" })
 described({ exitCode = 0, stdout = "{}" })
-equal(selectWithOption(rendered, "No profile").props.selectedIndex, 1,
+equal(selectWithOption(rendered, "-").props.selectedIndex, 1,
   "a failed activate is reconciled by the describe that follows")
 
 local clearTree = renderModel(profileModel({ active = { profile = "dawn" }, target = "profile" }))
-selectWithOption(clearTree, "No profile").props.onChange(0)
-equal(selectWithOption(rendered, "No profile").props.selectedIndex, 0, "clearing shows at once too")
+selectWithOption(clearTree, "-").props.onChange(0)
+equal(selectWithOption(rendered, "-").props.selectedIndex, 0, "clearing shows at once too")
 
 -- Neutralizing everything with a profile loaded would write the neutral values
 -- into that profile's snapshot, so the panel-wide button clears the profile
@@ -1228,7 +1228,7 @@ local beforeWide = #commands
 wide.props.onClick()
 equal(commands[beforeWide + 1], Shell.command({ "prism", "context", "deactivate", "profile" }),
   "the profile is cleared first")
-equal(selectWithOption(rendered, "No profile").props.selectedIndex, 0, "the selector clears at once")
+equal(selectWithOption(rendered, "-").props.selectedIndex, 0, "the selector clears at once")
 writeCallback({ exitCode = 0, stdout = "" })
 equal(commands[#commands], Shell.command({ "prism", "reset", "neutral" }), "then everything is neutralized beneath it")
 
