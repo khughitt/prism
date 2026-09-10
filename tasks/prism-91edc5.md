@@ -6,7 +6,7 @@ priority: 2
 size: m
 owner: reset-modes
 created: 2026-09-10T09:11:19Z
-updated: 2026-09-10T11:27:48Z
+updated: 2026-09-10T11:29:42Z
 depends: []
 tags: [ui, noctalia, store]
 ---
@@ -19,3 +19,4 @@ Panel resets (row and section) unset overrides, so every parameter falls back to
 - 2026-09-10T11:14:08Z (reset-modes): took over session 0d303e11-37da-4a7e-b12c-f1d4619bb172 (owner reset-modes, host titan, pid 2878284, worktree /mnt/ssd/Dropbox/prism/.worktrees/reset-modes, since 2026-09-10T10:11:18Z, age 3770s, stale: pid 2878284 is gone)
 - 2026-09-10T11:16:20Z (reset-modes): Implementation started from approved 5503adc in reset-modes: definitions and planner delegated with separate file ownership; describe and CLI integration in progress. Desktop acceptance remains pending.
 - 2026-09-10T11:27:48Z (reset-modes): Definitions, batched reset CLI, describe ownership, and panel controls implemented. Full gate passes 304 Node tests plus Lua; independent review found no material issues. Worktree CLI/plugin loaded together and live panel render verified; awaiting desktop effect acceptance.
+- 2026-09-10T11:29:42Z (reset-modes): parked (waiting on user): Implementation committed through 23fd4d1; gate passes 304 Node tests plus Lua, final review clean, live panel renders. Await user desktop acceptance: zero-bevel refraction/paneLip verdict, dependency behavior, symmetric parity, and one-reload restore. Both installed symlinks point at reset-modes; restore at merge.
