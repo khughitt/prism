@@ -45,7 +45,12 @@ Work on branch `reset-modes` in `.worktrees/reset-modes`; it already holds the s
 
 The worktree has no `node_modules`. Run `npm install` once before the first test run.
 
-Task 1 lands the contract and everything else depends on it. Tasks 2 and 4 are independent of each other and may run in parallel. Task 3 needs Task 1. Task 5 needs Tasks 2 and 4. Task 6 needs everything.
+The chain is mostly linear. Task 1 lands the contract and everything depends on it. **Task 4 needs Task 2**: it validates and counts fields `describe` only emits after Task 2, and its full-suite check runs the real payload through the panel. **Task 5 needs Tasks 3 and 4**: its buttons issue the verb Task 3 adds and count what Task 4 maps. Task 3 needs only Task 1, so `1 → 3` and `1 → 2 → 4` may run in parallel, joining at Task 5. Task 6 needs everything.
+
+```
+1 ─┬─> 2 ──> 4 ─┬─> 5 ──> 6
+   └─> 3 ───────┘
+```
 
 ## Files and responsibilities
 
@@ -129,19 +134,31 @@ test('both halves of a matrix row declare the same neutral', () => {
 });
 
 test('two groups may reuse one row label', () => {
-  const half = (group, state, order) => `- {key: ${group}.${state}, type: int, range: [0, 4], default: 0, neutral: 1, `
-    + `description: d, ui: {group: ${group}, control: slider, step: 1, label: L${order}, order: ${order}, state: ${state}, row: Blur}}`;
+  // Keys are lowercase-led dotted names; the group name is not part of the key.
+  const half = (group, state, order) => `- {key: ${group.toLowerCase()}.${state}, type: int, range: [0, 4], `
+    + `default: 0, neutral: 1, description: d, ui: {group: ${group}, control: slider, step: 1, `
+    + `label: L${order}, order: ${order}, state: ${state}, row: Blur}}`;
   const text = [half('One', 'focused', 1), half('One', 'unfocused', 2),
     half('Two', 'focused', 3), half('Two', 'unfocused', 4)].join('\n');
   const defs = loadDefs(dirWith(text));
   assert.equal(defs.size, 4);
+});
+
+test('a matrix half may not be exempt', () => {
+  const half = (state, order) => `- {key: a.${state}, type: int, range: [0, 4], default: 0, neutralize: false, `
+    + `description: d, ui: {group: G, control: slider, step: 1, label: L${order}, order: ${order}, `
+    + `state: ${state}, row: R}}`;
+  // Both halves absent a neutral would compare equal, pass the same-neutral
+  // rule, and let bulk neutral skip a pair that can diverge.
+  assert.throws(() => loadDefs(dirWith([half('focused', 1), half('unfocused', 2)].join('\n'))),
+    /a\.focused.*must declare a neutral/);
 });
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
 Run: `npm install && node --test test/defs.test.js`
-Expected: the six new tests FAIL (no rule rejects anything yet); the pre-existing tests in the file PASS.
+Expected: the seven new tests FAIL (no rule rejects anything yet); the pre-existing tests in the file PASS.
 
 - [ ] **Step 3: Implement the validator rules**
 
@@ -181,7 +198,14 @@ and inside the per-def loop, after the `headers` block:
 
 ```js
       if (def.ui.state !== undefined) {
-        const id = `${def.ui.group} ${def.ui.row}`;
+        // Exemption is for single parameters. Two exempt halves would compare
+        // equal on their absent neutrals and pass, and bulk neutral would then
+        // leave a divergent pair standing -- the exact thing the same-neutral
+        // rule exists to prevent.
+        if (def.neutralize === false) {
+          throw new Error(`invalid def ${def.key}: a matrix row's halves must declare a neutral`);
+        }
+        const id = `${def.ui.group}\u0000${def.ui.row}`;
         const twin = rows.get(id);
         if (twin === undefined) rows.set(id, def);
         else if (!isDeepStrictEqual(twin.neutral, def.neutral)) {
@@ -196,9 +220,18 @@ with `import { isDeepStrictEqual } from 'node:util';` at the top of the file.
 - [ ] **Step 4: Run the tests to verify the new ones pass and the shipped defs now fail**
 
 Run: `node --test test/defs.test.js`
-Expected: the six new tests PASS. `shipped defs load and default the opacity pair…` and every other test that calls `loadDefs(defsDir())` now FAILS with `a visible def declares exactly one of neutral and neutralize` — the shipped defs have no neutrals yet. That is the next step.
+Expected: the seven new tests PASS. Every other test that loads a def with a visible control — the shipped defs via `loadDefs(defsDir())`, and this file's own fixtures — now FAILS with `a visible def declares exactly one of neutral and neutralize`. Both are expected; Steps 5 and 6 fix them in that order.
 
-- [ ] **Step 5: Add the curated values to the shipped defs**
+- [ ] **Step 5: Migrate the existing fixtures**
+
+The rule applies to every def any test loads, not only the shipped ones. `test/defs.test.js` has about thirty fixture defs with a visible control and `test/rack.test.js` about twelve; each needs a `neutral:` in range for its type. Two things to watch:
+
+- A test that asserts a *different* failure will now throw the neutral error first and pass for the wrong reason — or fail with an unexpected message. Give those fixtures a valid `neutral` so the rule under test is still what trips.
+- `test/plugin-presentation.test.js` builds its params from the shipped defs, so it needs no fixture change; it must keep passing untouched.
+
+Run `node --test test/defs.test.js test/rack.test.js test/plugin-presentation.test.js` after this step and read every failure message: each should name the rule its test is about.
+
+- [ ] **Step 6: Add the curated values to the shipped defs**
 
 Add a `neutral:` line to every visible def, between `default:` and `ui:`, using the values in Global Constraints. `defs/compositor.yaml` gets `neutral: 24` on `compositor.gaps`. `defs/terminal.yaml` gets `neutral: 0` on both opacity keys and nothing on `terminal.apps`. `defs/debug.yaml` is untouched (`debug.backdrop` is `control: none`).
 
@@ -225,12 +258,12 @@ Add this comment above `glass.thickness`, so the reason a survivor survives sits
 
 and the equivalent above `glass.attenuationDistance` ("at the 65535 ceiling tint absorbs nothing; at the floor of 1 it goes black at once") and `glass.distortionScale` ("at either end of its log range distortion reads as a slow warp or as noise").
 
-- [ ] **Step 6: Run the whole suite**
+- [ ] **Step 7: Run the whole suite**
 
 Run: `just test`
 Expected: PASS.
 
-- [ ] **Step 7: Pin the curated table**
+- [ ] **Step 8: Pin the curated table**
 
 Append to `test/glass-defs.test.js`:
 
@@ -284,7 +317,7 @@ test('neutral saturation and refraction are identities, not zeroes', () => {
 });
 ```
 
-- [ ] **Step 8: Cross-check the sink's dry table**
+- [ ] **Step 9: Cross-check the sink's dry table**
 
 Append to `test/niri-render.test.js`. Import `DRY` from `../integrations/niri/render.js` if the file does not already; the module exports it.
 
@@ -309,13 +342,13 @@ test('the sink dry values agree with the defs neutrals', () => {
 });
 ```
 
-- [ ] **Step 9: Run the suite and commit**
+- [ ] **Step 10: Run the suite and commit**
 
 Run: `just test`
 Expected: PASS.
 
 ```bash
-git add src/defs.js defs/ test/defs.test.js test/glass-defs.test.js test/niri-render.test.js
+git add src/defs.js defs/ test/defs.test.js test/rack.test.js test/glass-defs.test.js test/niri-render.test.js
 git commit -m "feat(defs): give every visible parameter a neutral value
 
 A visible def now declares exactly one of neutral: <value> or
@@ -495,6 +528,8 @@ const YAML = `
    ui: {group: Focus, control: slider, step: 0.01, label: Blur, order: 3, state: focused, row: Blur}}
 - {key: a.blur.off, type: float, range: [0, 1], default: 0.5, neutral: 0, description: d,
    ui: {group: Focus, control: slider, step: 0.01, label: Unfocused blur, order: 4, state: unfocused, row: Blur}}
+- {key: a.opacity, type: float, range: [0, 1], default: 0, neutral: 0, description: d,
+   ui: {group: Terminal, control: slider, step: 0.01, label: Opacity, order: 5}}
 - {key: a.hidden, type: bool, default: false, description: d, ui: {group: Hidden, control: none}}
 `;
 
@@ -510,7 +545,7 @@ const plan = (over) => planReset({
 });
 
 test('visibleGroups skips a group with no visible parameter', () => {
-  assert.deepEqual([...visibleGroups(defs())].sort(), ['Focus', 'Glass']);
+  assert.deepEqual([...visibleGroups(defs())].sort(), ['Focus', 'Glass', 'Terminal']);
 });
 
 test('defaults removes every scoped key the target holds, shadowed or not', () => {
@@ -528,9 +563,9 @@ test('defaults honours the group scope', () => {
 });
 
 test('neutral writes each eligible key and skips the exempt one', () => {
-  const effective = { 'a.lip': 6, 'a.split': true, 'a.blur': 0.08, 'a.blur.off': 0.5 };
+  const effective = { 'a.lip': 6, 'a.split': true, 'a.blur': 0.08, 'a.blur.off': 0.5, 'a.opacity': 0.3 };
   const out = plan({ effective });
-  assert.deepEqual(out.values, { 'a.lip': 0, 'a.blur': 0, 'a.blur.off': 0 });
+  assert.deepEqual(out.values, { 'a.lip': 0, 'a.blur': 0, 'a.blur.off': 0, 'a.opacity': 0 });
   assert.equal('a.split' in out.values, false);
 });
 
@@ -554,8 +589,11 @@ test('symmetric skips a pair already equal', () => {
 
 test('symmetric validates the copy against the unfocused def', () => {
   // Nothing forces a row's halves to share a range, so a copy can overflow.
-  const narrow = YAML.replace('- {key: a.blur.off, type: float, range: [0, 1]',
-    '- {key: a.blur.off, type: float, range: [0, 0.2]');
+  // The default must stay inside the narrowed range, or the def fails to
+  // resolve and the throw would come from the wrong place.
+  const narrow = YAML.replace(
+    '- {key: a.blur.off, type: float, range: [0, 1], default: 0.5, neutral: 0, description: d,',
+    '- {key: a.blur.off, type: float, range: [0, 0.2], default: 0.1, neutral: 0, description: d,');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-reset-'));
   fs.writeFileSync(path.join(dir, 'a.yaml'), narrow);
   assert.throws(() => planReset({
@@ -564,20 +602,30 @@ test('symmetric validates the copy against the unfocused def', () => {
   }), /a\.blur\.off/);
 });
 
-test('a write equal to the def default is a deletion at base', () => {
-  // The trap the contents check exists for: an overlay supplies 0.4, base holds
-  // nothing, and the neutral is the default. The skip rule selects the key and
-  // the base rule then deletes one that was never there -- no change at all.
+test('a selected key can still be no change at all', () => {
+  // The trap the contents check exists for. a.opacity neutralizes to 0, which
+  // is also its default: an overlay supplies 0.5, base holds nothing, the skip
+  // rule selects the key, and the base rule then deletes one that was never
+  // there. Selection is not change.
   const out = planReset({
-    defs: defs(), mode: 'neutral', group: 'Focus', held: {},
-    effective: { 'a.blur': 0.4, 'a.blur.off': 0.4 }, normalizeToDefault: true,
+    defs: defs(), mode: 'neutral', group: 'Terminal', held: {},
+    effective: { 'a.opacity': 0.5 }, normalizeToDefault: true,
   });
-  assert.deepEqual(out.values, { 'a.blur.off': 0 });
-  assert.deepEqual(out.changedKeys, ['a.blur.off']);
+  assert.deepEqual(out.values, {});
+  assert.deepEqual(out.changedKeys, []);
+});
+
+test('a write away from the def default is stored at base', () => {
+  // The other half of the same rule: a.lip neutralizes to 0 against a default
+  // of 6, so base holds it.
+  const out = planReset({
+    defs: defs(), mode: 'neutral', group: 'Glass', held: {},
+    effective: { 'a.lip': 6 }, normalizeToDefault: true,
+  });
+  assert.deepEqual(out.values, { 'a.lip': 0 });
+  assert.deepEqual(out.changedKeys, ['a.lip']);
 });
 ```
-
-Note the last test: `a.blur`'s neutral `0` differs from its default `0.08`, so it is stored; `a.blur.off`'s neutral `0` also differs from its default `0.5`, so it is stored too. Adjust the fixture only if you change the defaults — the point of the case is that `normalizeToDefault` turns a selected key into a deletion, which the CLI test in Step 7 exercises end to end against the real defs.
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
@@ -613,7 +661,7 @@ function pairsOf(scoped) {
   const rows = new Map();
   for (const def of scoped) {
     if (def.ui.state === undefined) continue;
-    const id = `${def.ui.group} ${def.ui.row}`;
+    const id = `${def.ui.group}\u0000${def.ui.row}`;
     const row = rows.get(id) ?? {};
     row[def.ui.state] = def;
     rows.set(id, row);
@@ -681,7 +729,13 @@ row's halves to share a range."
 
 - [ ] **Step 6: Write the failing CLI tests**
 
-Append to `test/cli.test.js`:
+`values.yaml` is YAML, not JSON. Add the store's own reader beside the other dynamic imports at the top of `test/cli.test.js`:
+
+```js
+const { readValues } = await import('../src/values.js');
+```
+
+Then append:
 
 ```js
 test('reset neutral writes the curated values once and fans out once', async () => {
@@ -702,7 +756,7 @@ test('reset neutral writes the curated values once and fans out once', async () 
 test('reset neutral leaves the exempt parameter alone', async () => {
   await cli.run(['set', '--base', 'glass.focusSplit', 'false'], { runner: () => {} });
   await cli.run(['reset', 'neutral'], { runner: () => {} });
-  assert.equal(JSON.parse(fs.readFileSync(valuesPath(), 'utf8'))['glass.focusSplit'], false);
+  assert.equal(readValues()['glass.focusSplit'], false);
 });
 
 test('reset symmetric mirrors focused onto unfocused', async () => {
@@ -713,12 +767,34 @@ test('reset symmetric mirrors focused onto unfocused', async () => {
   assert.equal(values['glass.roughness'], 0.3);
 });
 
+test('symmetric copies what is on screen, or the base value under --base', async () => {
+  await cli.run(['set', '--base', 'glass.roughness', '0.3'], { runner: () => {} });
+  writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.roughness': 0.7 } });
+  writeActive({ wallpaper: { id: 'w1', path: '/w.png', pinned: false } });
+
+  // Unpinned, so the target is still base -- but the source differs.
+  await cli.run(['reset', 'symmetric', '--group', 'Focus'], { runner: () => {} });
+  assert.equal(readValues()['glass.inactive.roughness'], 0.7, 'mirrors the resolved value');
+
+  await cli.run(['reset', 'symmetric', '--base', '--group', 'Focus'], { runner: () => {} });
+  assert.equal(readValues()['glass.inactive.roughness'], 0.3, 'mirrors the base value alone');
+});
+
 test('reset defaults removes a base override hidden by a wallpaper', async () => {
   await cli.run(['set', '--base', 'glass.paneLip', '9'], { runner: () => {} });
   writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.paneLip': 30 } });
   writeActive({ wallpaper: { id: 'w1', path: '/w.png', pinned: false } });
   await cli.run(['reset', 'defaults', '--group', 'Glass'], { runner: () => {} });
-  assert.equal('glass.paneLip' in JSON.parse(fs.readFileSync(valuesPath(), 'utf8')), false);
+  assert.equal('glass.paneLip' in readValues(), false);
+});
+
+test('reset defaults deletes a pinned wallpaper context it empties', async () => {
+  writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.paneLip': 30 } });
+  writeActive({ wallpaper: { id: 'w1', path: '/w.png', pinned: true } });
+  await cli.run(['reset', 'defaults', '--group', 'Glass'], { runner: () => {} });
+  // Same rule unset follows: an emptied wallpaper context is not left behind.
+  assert.equal(readContext('wallpaper', 'w1'), null);
+  assert.equal(fs.existsSync(contextPath('wallpaper', 'w1')), false);
 });
 
 test('a reset that changes no contents writes nothing and calls no sink', async () => {
@@ -738,7 +814,20 @@ test('a reset that changes no contents writes nothing and calls no sink', async 
   assert.equal(code, 0);
   assert.deepEqual(calls, []);
   assert.equal(fs.existsSync(resolvedPath()), false, 'resolved.json is not rewritten');
-  assert.equal(JSON.parse(fs.readFileSync(valuesPath(), 'utf8'))['terminal.background.opacity.inactive'], undefined);
+  assert.equal('terminal.background.opacity.inactive' in readValues(), false);
+});
+
+test('reset refuses a store it cannot resolve, and writes nothing', async () => {
+  fs.writeFileSync(valuesPath(), 'glass.ior: 99\n');   // out of range
+  const before = fs.readFileSync(valuesPath(), 'utf8');
+  const calls = [];
+  const out = await runCaptured(['reset', 'neutral'], { runner: (m) => calls.push(m.sink) });
+  assert.equal(out.code, 1);
+  assert.match(out.stderr, /glass\.ior/);
+  // The whole mutation is computed before anything is written, so a refusal
+  // leaves no partial batch behind.
+  assert.equal(fs.readFileSync(valuesPath(), 'utf8'), before);
+  assert.deepEqual(calls, []);
 });
 
 test('reset rejects an unknown group and a bad mode', async () => {
@@ -758,10 +847,13 @@ test('reset --base writes beneath an overlay', async () => {
   await cli.run(['set', '--base', 'glass.paneLip', '30'], { runner: () => {} });
   // The overlay already sits at the neutral; --base must still act on base.
   await cli.run(['reset', 'neutral', '--base', '--group', 'Glass'], { runner: () => {} });
-  assert.equal('glass.paneLip' in JSON.parse(fs.readFileSync(valuesPath(), 'utf8')), false,
-    'neutral 0 equals the def default only for shifts; lip default is 6, so base holds 0');
+  // paneLip neutralizes to 0 against a default of 6, so base holds 0 rather
+  // than losing the key.
+  assert.equal(readValues()['glass.paneLip'], 0);
 });
 ```
+
+A symmetric copy rejected by a narrower twin range cannot be provoked end to end: every shipped matrix row's halves share a range. `test/reset.test.js` covers that rejection against a fixture, and the test above covers the store-level guarantee it depends on — a refusal writes nothing.
 
 - [ ] **Step 7: Run to verify they fail**
 
@@ -912,7 +1004,11 @@ assert(not ok and tostring(err):find("Blur", 1, true), "a one-sided row must fai
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
 Expected: FAIL with `row Blur spans sections One and Two`.
 
-- [ ] **Step 3: Key rows on group and label**
+- [ ] **Step 3: Update the existing spans-sections assertion**
+
+`plugin_test.lua:180-183` asserts the message `Blur spans sections` for a fixture whose `Blur` label is split between `Focus` and `Glass`. Once rows are group-keyed that fixture builds two one-sided rows instead, and the missing-half check catches it. Change the expected message to `Blur has no unfocused` and retitle the case: it now pins that a label split across groups never silently pairs. Do not delete it.
+
+- [ ] **Step 4: Key rows on group and label**
 
 In `presentation.luau`, in `M.sections`, replace the row bookkeeping. The `spans sections` error and the `row.section` field both go: with a group in the key, a row can no longer be reached from two groups, and a label split across groups now yields two rows, each of which trips the existing "has no focused/unfocused parameter" check.
 
@@ -941,19 +1037,21 @@ and drop the `row.section = nil` line from the trailing validation loop, which n
   end
 ```
 
-- [ ] **Step 4: Run to verify they pass**
+- [ ] **Step 5: Run to verify they pass**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
-Expected: PASS.
+Expected: PASS, including the retitled spans-sections case.
 
-- [ ] **Step 5: Teach both panel harnesses the new fields, and write the failing ownership test**
+- [ ] **Step 6: Teach both panel harnesses the new fields, and write the failing ownership test**
 
 `validateModel` is about to require `heldInTarget` on every parameter and exactly one of `neutral` / `neutralize` on every visible one. Two fixture models must gain them or every render test fails on the banner instead of on the behaviour under test:
 
 - `integrations/noctalia-plugin/plugin_test.lua`, the model at roughly lines 195-278 (groups `Title`, `Glass`, `Focus`, `Terminal`);
 - `test/plugin-panel-lifecycle.test.js`, the `newHost()` model inside each `String.raw` script.
 
-Give every param `heldInTarget = false` and a `neutral` matching its type (`0` for a slider, `false` for a toggle, the first option for a select, `"#ffffff"` for a color), except the Focus header toggle, which gets `neutralize = false`. Then, in `plugin_test.lua`, make one shadowed parameter held: set its `heldInTarget = true` while its `layer` stays above `target`. Then assert:
+Give every visible param a `neutral` matching its type (`0` for a slider, `false` for a toggle, the first option for a select, `"#ffffff"` for a color), except the Focus header toggle, which gets `neutralize = false`.
+
+**`heldInTarget` is not uniformly false.** These fixtures already encode which rows are overridden, through `layer == target`; blanket-falsing the new field would silently change what they assert. For each param, set `heldInTarget = (param.layer == model.target)` — the value that reproduces today's meaning — and only then add the new case: pick one param whose `layer` ranks *above* `target` and set its `heldInTarget = true`, so the fixture carries a held-but-shadowed row that no fixture had before. Then assert:
 
 ```lua
 -- Overridden means "the target holds this key", not "the value comes from
@@ -965,12 +1063,12 @@ end
 assert(hidden ~= nil, "a held-but-shadowed row must offer its reset at full strength")
 ```
 
-- [ ] **Step 6: Run to verify it fails**
+- [ ] **Step 7: Run to verify it fails**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
 Expected: FAIL — the shadowed row's reset is dim and reads `No override to remove`.
 
-- [ ] **Step 7: Count ownership**
+- [ ] **Step 8: Count ownership**
 
 In `panel.luau`, `markLayers`:
 
@@ -1000,15 +1098,16 @@ In `validateModel`'s per-parameter loop (`visibleParamError`), add:
 
 Note `visibleParamError` is only called for visible params in the existing code; keep the `control ~= "none"` guard anyway so the function stays true standalone.
 
-- [ ] **Step 8: Run to verify it passes**
+- [ ] **Step 9: Run to verify it passes**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua && just test`
 Expected: PASS. The Node contract test from Task 2 now exercises the new `validateModel` checks against real `describe` output.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
-git add integrations/noctalia-plugin/presentation.luau integrations/noctalia-plugin/panel.luau integrations/noctalia-plugin/plugin_test.lua
+git add integrations/noctalia-plugin/presentation.luau integrations/noctalia-plugin/panel.luau \
+  integrations/noctalia-plugin/plugin_test.lua test/plugin-panel-lifecycle.test.js
 git commit -m "fix(panel): count overrides by target ownership, not by source layer
 
 A base override hidden by a wallpaper was neither counted by the
@@ -1048,18 +1147,21 @@ Append to `plugin_test.lua`:
 ```lua
 -- The three counts and their units: restore counts keys the target holds,
 -- symmetric counts differing pairs, neutral counts differing eligible keys.
+-- `overriddenCount` reads `overridden`, the flag panel.luau derives from
+-- `heldInTarget` in markLayers. This is the presentation module's own contract,
+-- so the fixture supplies the derived flag; the mapping itself is Task 4's test.
 local counted = {
-  { key = "g.lip", value = 9, neutral = 0, heldInTarget = true,
+  { key = "g.lip", value = 9, neutral = 0, overridden = true,
     ui = { control = "slider", group = "Glass", order = 1 } },
-  { key = "f.split", value = false, neutralize = false, heldInTarget = true,
+  { key = "f.split", value = false, neutralize = false, overridden = true,
     ui = { control = "toggle", group = "Focus", order = 2, header = true } },
-  { key = "f.blur", value = 0.3, neutral = 0, heldInTarget = false,
+  { key = "f.blur", value = 0.3, neutral = 0, overridden = false,
     ui = { control = "slider", group = "Focus", order = 3, state = "focused", row = "Blur" } },
-  { key = "f.blur.off", value = 0.5, neutral = 0, heldInTarget = false,
+  { key = "f.blur.off", value = 0.5, neutral = 0, overridden = false,
     ui = { control = "slider", group = "Focus", order = 4, state = "unfocused", row = "Blur" } },
-  { key = "f.sat", value = 1, neutral = 1, heldInTarget = false,
+  { key = "f.sat", value = 1, neutral = 1, overridden = false,
     ui = { control = "slider", group = "Focus", order = 5, state = "focused", row = "Sat" } },
-  { key = "f.sat.off", value = 1, neutral = 1, heldInTarget = false,
+  { key = "f.sat.off", value = 1, neutral = 1, overridden = false,
     ui = { control = "slider", group = "Focus", order = 6, state = "unfocused", row = "Sat" } },
 }
 equal(#Presentation.pairsOf(counted), 2, "two matrix rows")
@@ -1357,7 +1459,28 @@ Expected: PASS, zero warnings from `tasks check`.
 
 - [ ] **Step 4: Desktop acceptance**
 
-This cannot be automated: there is no pointer automation on this machine, so the user confirms it. Repoint `~/.local/share/noctalia/plugins/prism` at this worktree's `integrations/noctalia-plugin/` (the `~/.config` copy is not what the shell loads), then reload:
+This cannot be automated: there is no pointer automation on this machine, so the user confirms it.
+
+**Two paths must move, not one.** The panel shells out to whatever `prism` is on `PATH`, and `~/bin/prism` is a symlink to the **main checkout's** `bin/prism`. Since `bin/prism` resolves `src/cli.js`, `defs/`, and `integrations/` relative to itself, leaving it alone would run the new panel against the old CLI: no `reset` verb, and a `describe` with no `neutral` or `heldInTarget`, so the panel would show its contract banner and nothing else. Switch both:
+
+```bash
+# 1. The CLI, its defs, and its sinks.
+ln -sfn /mnt/ssd/Dropbox/prism/.worktrees/reset-modes/bin/prism ~/bin/prism
+# 2. The plugin. The ~/.config copy is not what the shell loads.
+ln -sfn /mnt/ssd/Dropbox/prism/.worktrees/reset-modes/integrations/noctalia-plugin \
+  ~/.local/share/noctalia/plugins/prism
+```
+
+The worktree needs its own dependencies — `bin/prism` says so rather than throwing a module-resolution stack trace. Verify both switches before touching the panel:
+
+```bash
+npm install --prefix /mnt/ssd/Dropbox/prism/.worktrees/reset-modes
+readlink -f ~/bin/prism                     # must name the worktree
+prism reset --help 2>&1 | head -1           # must print the reset usage, not the verb list
+prism describe --json | head -40            # must show a neutral and a heldInTarget
+```
+
+The store (`~/.config/prism`, `~/.local/state/prism`) is shared and is not switched: acceptance runs against real values, which is the point. Then reload the shell:
 
 ```bash
 noctalia msg plugins disable khughitt/prism
@@ -1374,7 +1497,7 @@ noctalia msg plugins enable khughitt/prism
 
 Also confirm the two new glyphs read at a glance. `equal` and `baseline` are verified present in `~/software/noctalia/assets/fonts/tabler.json`; `ripple-off` and `circle-off` are verified fallbacks. Swapping one is a one-line change in `resetModeButtons`.
 
-Restore the `~/.local/share` symlink when the branch merges.
+**Restore both symlinks when the branch merges**, pointing them back at `/mnt/ssd/Dropbox/prism`. A worktree deleted while `~/bin/prism` still names it leaves the CLI broken for every shell on the machine, not just this session.
 
 - [ ] **Step 5: Record the outcome and close**
 
