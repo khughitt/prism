@@ -64,6 +64,13 @@ local function visibleParamError(param, index)
   if param.default == nil then return param.key .. " has no default" end
   if type(param.layer) ~= "string" then return param.key .. " has no layer" end
   if param.fallback == nil then return param.key .. " has no fallback" end
+  if type(param.heldInTarget) ~= "boolean" then return param.key .. " has no target ownership" end
+  if (param.neutral ~= nil) == (param.neutralize ~= nil) then
+    return param.key .. " must declare exactly one of neutral and neutralize"
+  end
+  if param.neutralize ~= nil and param.neutralize ~= false then
+    return param.key .. " has invalid neutralize value"
+  end
   if type(param.ui.group) ~= "string" or param.ui.group == "" then return param.key .. " has no UI group" end
   if type(param.ui.order) ~= "number" then return param.key .. " has no UI order" end
   if param.effectiveDrag ~= nil and param.effectiveDrag ~= "live" and param.effectiveDrag ~= "release" then
@@ -172,14 +179,13 @@ local function finishRefresh()
   end
 end
 
--- Overridden means "the value comes from where a write would land", so the row
--- has something to reset. Shadowed is the opposite end: the value comes from
--- above the target, so a write lands somewhere nothing can see.
+-- Overridden means the write target holds the key, even if a higher layer
+-- supplies its visible value. That higher layer also makes the row shadowed.
 local function markLayers(model)
   local ranks = Presentation.layerRanks(model.layers)
   for _, param in ipairs(model.params) do
     local visible = param.ui.control ~= "none"
-    param.overridden = visible and param.layer == model.target
+    param.overridden = visible and param.heldInTarget == true
     param.shadowed = visible and Presentation.isShadowed(param, ranks, model.target)
   end
 end
@@ -272,12 +278,9 @@ enqueue = function(item)
   if result.launch then launch(result.launch) end
 end
 
--- A shadowed row writes into the target as usual, but the target is not where
--- its value comes from, so `layer == target` stays false and there is still no
--- override on this row to remove.
 local function updateParam(param, value)
   param.value = value
-  if not param.shadowed then param.overridden = true end
+  param.overridden = true
 end
 
 local function writeParam(param, value)
@@ -293,9 +296,22 @@ local function unsetParam(param)
   render()
 end
 
-local function resetGroup(params)
-  for _, param in ipairs(params) do
-    if param.overridden then unsetParam(param) end
+local function resetAction(mode, group, params)
+  return function()
+    for _, param in ipairs(params) do
+      if mode == "defaults" then
+        if param.overridden then param.value, param.overridden = param.fallback, false end
+      elseif mode == "neutral" and param.neutralize ~= false and param.value ~= param.neutral then
+        updateParam(param, param.neutral)
+      end
+    end
+    if mode == "symmetric" then
+      for _, row in ipairs(Presentation.pairsOf(params)) do
+        if row.focused.value ~= row.unfocused.value then updateParam(row.unfocused, row.focused.value) end
+      end
+    end
+    enqueue({verb = "reset", mode = mode, group = group})
+    render()
   end
 end
 
@@ -609,9 +625,46 @@ local function deviceCard(card)
   }, children)
 end
 
+local function resetModeButton(spec)
+  return ui.button({
+    glyph = spec.glyph,
+    variant = "ghost",
+    controlSize = "sm",
+    opacity = spec.count > 0 and 1.0 or inertOpacity,
+    tooltip = spec.count > 0 and spec.active or spec.inert,
+    onClick = function() if spec.count > 0 then spec.act() end end,
+  })
+end
+
+local function resetModeButtons(scope, group, params)
+  local held = Presentation.overriddenCount(params)
+  local buttons = {resetModeButton({
+    glyph = "restore", count = held,
+    active = "Reset " .. scope .. " (" .. held .. "); values fall back to the layer beneath",
+    inert = "No overrides in this " .. scope,
+    act = resetAction("defaults", group, params),
+  })}
+  if #Presentation.pairsOf(params) > 0 then
+    local differing = Presentation.symmetricCount(params)
+    buttons[#buttons + 1] = resetModeButton({
+      glyph = "equal", count = differing,
+      active = "Mirror focused onto unfocused (" .. differing .. ")",
+      inert = "Focused and unfocused already match",
+      act = resetAction("symmetric", group, params),
+    })
+  end
+  local away = Presentation.neutralCount(params)
+  buttons[#buttons + 1] = resetModeButton({
+    glyph = "baseline", count = away,
+    active = "Neutralize " .. scope .. " (" .. away .. ")",
+    inert = scope == "everything" and "Everything is already neutral" or "Section is already neutral",
+    act = resetAction("neutral", group, params),
+  })
+  return buttons
+end
+
 local function sectionHeader(name, toggle, sectionParams)
-  local overriddenCount = Presentation.overriddenCount(sectionParams)
-  return ui.row({gap = 8, align = "center"}, {
+  local children = {
     ui.label({text = name, fontSize = 15, fontWeight = "bold", flexGrow = 1}),
     ui.label({text = toggle and (toggle.ui.label or toggle.key) or "", fontSize = 12, color = "on_surface_variant", visible = toggle ~= nil}),
     ui.label({
@@ -624,15 +677,17 @@ local function sectionHeader(name, toggle, sectionParams)
       opacity = toggle.shadowed and shadowedOpacity or 1.0,
       onChange = function(value) writeParam(toggle, value == true or value == "true") end,
     }) or ui.spacer({}),
-    ui.button({
-      glyph = "restore",
-      variant = "ghost",
-      controlSize = "sm",
-      opacity = overriddenCount > 0 and 1.0 or inertOpacity,
-      tooltip = overriddenCount > 0 and ("Reset section (" .. overriddenCount .. ")") or "No overrides in this section",
-      onClick = function() if overriddenCount > 0 then resetGroup(sectionParams) end end,
-    }),
-  })
+  }
+  for _, button in ipairs(resetModeButtons("section", name, sectionParams)) do children[#children + 1] = button end
+  return ui.row({gap = 8, align = "center"}, children)
+end
+
+local function allRow(model)
+  local children = {ui.label({text = "All", fontSize = 12, color = "on_surface_variant", flexGrow = 1})}
+  for _, button in ipairs(resetModeButtons("everything", nil, Presentation.visibleParams(model))) do
+    children[#children + 1] = button
+  end
+  return ui.row({gap = 8, align = "center"}, children)
 end
 
 local function appendSection(children, section)
@@ -892,6 +947,7 @@ render = function()
     if state.confirm ~= nil then children[#children + 1] = confirmRow() end
     local header = Presentation.wallpaperHeader(state.model)
     if header then children[#children + 1] = wallpaperHeaderRow(header) end
+    children[#children + 1] = allRow(state.model)
     local rack = Presentation.rack(state.model)
     local sections = Presentation.sections(state.model.params, rack.group)
     local rackPlaced = false

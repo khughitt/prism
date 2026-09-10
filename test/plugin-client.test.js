@@ -128,12 +128,12 @@ test('presentation renders every section open with a header toggle, matrix rows,
   assert.match(source, /Presentation\.titleParam\(state\.model\.params\)/);
   assert.match(source, /Presentation\.sections\(state\.model\.params, rack\.group\)/);
   assert.doesNotMatch(source, /expandedGroups|groupParams|Quick/);
-  assert.match(source, /Presentation\.overriddenCount\(sectionParams\)/);
+  assert.match(source, /Presentation\.overriddenCount\(params\)/);
   assert.match(source, /local function matrixRow\(row, indent\)[\s\S]*controlCell\(row\.focused, 1\)[\s\S]*controlCell\(row\.unfocused, 1\)/);
   assert.match(source, /text = "Focused"[\s\S]*text = "Unfocused"/);
-  assert.match(source, /local function resetGroup[\s\S]*if param\.overridden then[\s\S]*unsetParam\(param\)/);
+  assert.match(source, /local function resetAction[\s\S]*enqueue\(\{verb = "reset", mode = mode, group = group\}\)/);
   assert.match(source, /tooltip = param\.overridden and "Remove override"/);
-  assert.match(source, /tooltip = overriddenCount > 0 and \("Reset section \("/);
+  assert.match(source, /resetModeButtons\("section", name, sectionParams\)/);
   assert.match(source, /tooltip = param\.description or param\.key/);
 });
 
@@ -164,7 +164,7 @@ test('row geometry is fixed, so nothing moves when a value crosses its default',
   // Every reset stays in the tree; its state is opacity, not presence.
   assert.doesNotMatch(source, /visible = param\.overridden|visible = overriddenCount > 0/);
   assert.match(source, /opacity = param\.overridden and 1\.0 or inertOpacity/);
-  assert.match(source, /opacity = overriddenCount > 0 and 1\.0 or inertOpacity/);
+  assert.match(source, /opacity = spec\.count > 0 and 1\.0 or inertOpacity/);
   // One reserved leading span, shared by the rows and the matrix header, so the
   // header reserves the same leading span as the name controls.
   assert.match(source, /local function headCell[\s\S]*ui\.row\(\{width = headColumnWidth/);
@@ -185,7 +185,7 @@ test('the queue speaks only to prism', async () => {
   assert.doesNotMatch(source, /preview|niri-glass|prismGlass|"qs"/);
   // A pin and the profile verbs write no parameter but move the write target or
   // the resolved values, so each must leave the model stale and force a re-read.
-  assert.match(source, /local staleAfter = \{\n  set = true, unset = true, pin = true,\n  activate = true, deactivate = true, save = true, delete = true, rename = true,\n\}/);
+  assert.match(source, /local staleAfter = \{\n  set = true, unset = true, pin = true, reset = true,\n  activate = true, deactivate = true, save = true, delete = true, rename = true,\n\}/);
   assert.match(source, /function M\.affectsParams\(item\)\n  return staleAfter\[item\.verb\] == true\nend/);
 });
 
