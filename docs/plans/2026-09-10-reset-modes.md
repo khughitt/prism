@@ -587,19 +587,29 @@ test('symmetric skips a pair already equal', () => {
   assert.deepEqual(out.changedKeys, []);
 });
 
-test('symmetric validates the copy against the unfocused def', () => {
+test('a rejected copy leaves no partial batch behind', () => {
   // Nothing forces a row's halves to share a range, so a copy can overflow.
-  // The default must stay inside the narrowed range, or the def fails to
+  // Two rows, in file order: Blur copies cleanly, then Tint overflows its
+  // twin's narrower range. The clean copy must not survive the rejection.
+  // Tint's default stays inside its narrowed range, or the def would fail to
   // resolve and the throw would come from the wrong place.
-  const narrow = YAML.replace(
-    '- {key: a.blur.off, type: float, range: [0, 1], default: 0.5, neutral: 0, description: d,',
-    '- {key: a.blur.off, type: float, range: [0, 0.2], default: 0.1, neutral: 0, description: d,');
+  const twoRows = `${YAML}
+- {key: a.tint, type: float, range: [0, 1], default: 0, neutral: 0, description: d,
+   ui: {group: Focus, control: slider, step: 0.01, label: Tint, order: 6, state: focused, row: Tint}}
+- {key: a.tint.off, type: float, range: [0, 0.2], default: 0.1, neutral: 0, description: d,
+   ui: {group: Focus, control: slider, step: 0.01, label: Unfocused tint, order: 7, state: unfocused, row: Tint}}
+`;
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-reset-'));
-  fs.writeFileSync(path.join(dir, 'a.yaml'), narrow);
+  fs.writeFileSync(path.join(dir, 'a.yaml'), twoRows);
+  const held = { 'a.lip': 9 };
   assert.throws(() => planReset({
-    defs: loadDefs(dir), mode: 'symmetric', group: null, held: {},
-    effective: { 'a.blur': 0.9, 'a.blur.off': 0.1 }, normalizeToDefault: false,
-  }), /a\.blur\.off/);
+    defs: loadDefs(dir), mode: 'symmetric', group: 'Focus', held,
+    effective: { 'a.blur': 0.9, 'a.blur.off': 0.1, 'a.tint': 0.9, 'a.tint.off': 0.1 },
+    normalizeToDefault: false,
+  }), /a\.tint\.off/);
+  // The caller's map is untouched: planReset works on a copy and the copy is
+  // discarded with the throw, so a.blur.off's successful copy goes with it.
+  assert.deepEqual(held, { 'a.lip': 9 });
 });
 
 test('a selected key can still be no change at all', () => {
@@ -853,7 +863,12 @@ test('reset --base writes beneath an overlay', async () => {
 });
 ```
 
-A symmetric copy rejected by a narrower twin range cannot be provoked end to end: every shipped matrix row's halves share a range. `test/reset.test.js` covers that rejection against a fixture, and the test above covers the store-level guarantee it depends on — a refusal writes nothing.
+**A coverage limit, stated rather than implied.** The two refusals sit at different points in the sequence, and only one has a CLI test:
+
+- `reset refuses a store it cannot resolve` fails while `loadStore` reads the snapshot, *before* the mutation is computed. That is what the CLI test above exercises.
+- A rejection *during* batch construction — a symmetric copy that overflows its twin's range — cannot be provoked end to end, because every shipped matrix row's halves share a range. Only `test/reset.test.js` covers it, against a fixture, including that the caller's `held` map survives untouched.
+
+Nothing here tests a rejection after a partial write, because the code has no such point: the write follows the plan.
 
 - [ ] **Step 7: Run to verify they fail**
 
@@ -1006,7 +1021,22 @@ Expected: FAIL with `row Blur spans sections One and Two`.
 
 - [ ] **Step 3: Update the existing spans-sections assertion**
 
-`plugin_test.lua:180-183` asserts the message `Blur spans sections` for a fixture whose `Blur` label is split between `Focus` and `Glass`. Once rows are group-keyed that fixture builds two one-sided rows instead, and the missing-half check catches it. Change the expected message to `Blur has no unfocused` and retitle the case: it now pins that a label split across groups never silently pairs. Do not delete it.
+`plugin_test.lua:180-183` asserts the message `Blur spans sections` for a fixture whose `Blur` label is split between `Focus` and `Glass`. Once rows are group-keyed that fixture builds two one-sided rows instead, and the missing-half check catches it. Keep the case — it now pins that a label split across groups never silently pairs — but **do not pin which half is named**: the validation loop iterates `rowsByName` with `pairs`, which is unordered, so either incomplete row can fail first and the message alternates between runs.
+
+The existing `fails(candidate, pattern)` helper takes one literal substring. Add a sibling that takes several and accepts any:
+
+```lua
+local function failsAny(candidate, patterns)
+  local ok, err = pcall(Presentation.sections, candidate)
+  assert(not ok, "expected a failure, got none")
+  for _, pattern in ipairs(patterns) do
+    if tostring(err):find(pattern, 1, true) then return end
+  end
+  error("unexpected failure: " .. tostring(err))
+end
+```
+
+and convert that one case to `failsAny({...}, {"Blur has no unfocused", "Blur has no focused"})`. Leave the other `fails` calls alone: each of those has exactly one incomplete row, so its message is deterministic.
 
 - [ ] **Step 4: Key rows on group and label**
 
@@ -1053,15 +1083,28 @@ Give every visible param a `neutral` matching its type (`0` for a slider, `false
 
 **`heldInTarget` is not uniformly false.** These fixtures already encode which rows are overridden, through `layer == target`; blanket-falsing the new field would silently change what they assert. For each param, set `heldInTarget = (param.layer == model.target)` — the value that reproduces today's meaning — and only then add the new case: pick one param whose `layer` ranks *above* `target` and set its `heldInTarget = true`, so the fixture carries a held-but-shadowed row that no fixture had before. Then assert:
 
+Assert on the chosen parameter by key, not on "some button somewhere": an unrelated held row would satisfy a loose search while the ownership bug survived. `controlCell` sets `key = param.key` on the cell row, and the harness already has a `byKey` helper.
+
 ```lua
 -- Overridden means "the target holds this key", not "the value comes from
 -- there": a base override under a wallpaper is both shadowed and resettable.
-local hidden = nil
-for _, node in ipairs(collect(rendered, "button")) do
-  if node.props.glyph == "restore" and node.props.tooltip == "Remove override" then hidden = node end
+-- Name the row the fixture made held-but-shadowed; any other row passing this
+-- would hide the bug rather than catch it.
+local shadowedKey = "<the key you gave heldInTarget = true>"
+local cell = byKey(rendered, shadowedKey)[1]
+assert(cell ~= nil, "the held-but-shadowed cell must render")
+local reset = nil
+for _, button in ipairs(collect(cell, "button")) do
+  if button.props.glyph == "restore" then reset = button end
 end
-assert(hidden ~= nil, "a held-but-shadowed row must offer its reset at full strength")
+assert(reset ~= nil, shadowedKey .. " must carry a reset")
+equal(reset.props.tooltip, "Remove override")
+equal(reset.props.opacity, 1.0, "a held override resets at full strength even under a shadow")
+reset.props.onClick()
+equal(commands[#commands], Shell.command({"prism", "unset", shadowedKey}))
 ```
+
+The existing assertion `exactly the base-overridden roughness row offers a full-strength reset` counts one; the new fixture makes it two. Update the count and say which two, rather than loosening the assertion.
 
 - [ ] **Step 7: Run to verify it fails**
 
@@ -1334,32 +1377,38 @@ local function resetModeButton(spec)
     variant = "ghost",
     controlSize = "sm",
     opacity = spec.count > 0 and 1.0 or inertOpacity,
-    tooltip = spec.count > 0 and (spec.active .. " (" .. spec.count .. ")") or spec.inert,
+    tooltip = spec.count > 0 and spec.active or spec.inert,
     onClick = function() if spec.count > 0 then spec.act() end end,
   })
 end
 
 -- Section headers say "section"; the panel-wide row says "everything".
+-- The count sits beside the noun it counts, not after the clause that explains
+-- the consequence: "Reset section (2); values fall back ...", never
+-- "Reset section; values fall back ... (2)".
 local function resetModeButtons(scope, group, params)
+  local held = Presentation.overriddenCount(params)
   local buttons = {
     resetModeButton({
-      glyph = "restore", count = Presentation.overriddenCount(params),
-      active = "Reset " .. scope .. "; values fall back to the layer beneath",
+      glyph = "restore", count = held,
+      active = "Reset " .. scope .. " (" .. held .. "); values fall back to the layer beneath",
       inert = "No overrides in this " .. scope,
       act = resetAction("defaults", group, params),
     }),
   }
   if #Presentation.pairsOf(params) > 0 then
+    local differing = Presentation.symmetricCount(params)
     buttons[#buttons + 1] = resetModeButton({
-      glyph = "equal", count = Presentation.symmetricCount(params),
-      active = "Mirror focused onto unfocused",
+      glyph = "equal", count = differing,
+      active = "Mirror focused onto unfocused (" .. differing .. ")",
       inert = "Focused and unfocused already match",
       act = resetAction("symmetric", group, params),
     })
   end
+  local away = Presentation.neutralCount(params)
   buttons[#buttons + 1] = resetModeButton({
-    glyph = "baseline", count = Presentation.neutralCount(params),
-    active = "Neutralize " .. scope,
+    glyph = "baseline", count = away,
+    active = "Neutralize " .. scope .. " (" .. away .. ")",
     inert = scope == "everything" and "Everything is already neutral" or "Section is already neutral",
     act = resetAction("neutral", group, params),
   })
@@ -1411,7 +1460,10 @@ and insert `children[#children + 1] = allRow(state.model)` in the render body im
 - [ ] **Step 9: Run to verify they pass**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua && just test`
-Expected: PASS. Existing assertions that count buttons or toggles in the rendered tree will need their numbers updated — the panel now draws two or three more buttons per section plus the panel-wide row. Update the counts; do not delete the assertions.
+Expected: PASS after two updates to existing assertions, neither of which is a loosening:
+
+- **Counts.** Every assertion counting buttons in the rendered tree goes up: two or three more per section, plus the panel-wide row.
+- **The section reset tooltip.** `the Focus rack counts its two overrides` matches the literal `Reset section (2)`; it is now `Reset section (2); values fall back to the layer beneath`. Update the literal.
 
 - [ ] **Step 10: Commit**
 
@@ -1464,19 +1516,19 @@ This cannot be automated: there is no pointer automation on this machine, so the
 **Two paths must move, not one.** The panel shells out to whatever `prism` is on `PATH`, and `~/bin/prism` is a symlink to the **main checkout's** `bin/prism`. Since `bin/prism` resolves `src/cli.js`, `defs/`, and `integrations/` relative to itself, leaving it alone would run the new panel against the old CLI: no `reset` verb, and a `describe` with no `neutral` or `heldInTarget`, so the panel would show its contract banner and nothing else. Switch both:
 
 ```bash
+tree=$(git rev-parse --show-toplevel)        # this worktree, whatever it is called
 # 1. The CLI, its defs, and its sinks.
-ln -sfn /mnt/ssd/Dropbox/prism/.worktrees/reset-modes/bin/prism ~/bin/prism
+ln -sfn "$tree/bin/prism" ~/bin/prism
 # 2. The plugin. The ~/.config copy is not what the shell loads.
-ln -sfn /mnt/ssd/Dropbox/prism/.worktrees/reset-modes/integrations/noctalia-plugin \
-  ~/.local/share/noctalia/plugins/prism
+ln -sfn "$tree/integrations/noctalia-plugin" ~/.local/share/noctalia/plugins/prism
 ```
 
 The worktree needs its own dependencies — `bin/prism` says so rather than throwing a module-resolution stack trace. Verify both switches before touching the panel:
 
 ```bash
-npm install --prefix /mnt/ssd/Dropbox/prism/.worktrees/reset-modes
-readlink -f ~/bin/prism                     # must name the worktree
-prism reset --help 2>&1 | head -1           # must print the reset usage, not the verb list
+npm install --prefix "$tree"
+readlink -f ~/bin/prism                     # must name this worktree
+prism reset 2>&1 | head -1                  # must print the reset usage, not the verb list
 prism describe --json | head -40            # must show a neutral and a heldInTarget
 ```
 
@@ -1497,7 +1549,7 @@ noctalia msg plugins enable khughitt/prism
 
 Also confirm the two new glyphs read at a glance. `equal` and `baseline` are verified present in `~/software/noctalia/assets/fonts/tabler.json`; `ripple-off` and `circle-off` are verified fallbacks. Swapping one is a one-line change in `resetModeButtons`.
 
-**Restore both symlinks when the branch merges**, pointing them back at `/mnt/ssd/Dropbox/prism`. A worktree deleted while `~/bin/prism` still names it leaves the CLI broken for every shell on the machine, not just this session.
+**Restore both symlinks when the branch merges**, pointing them back at the main checkout (`git worktree list` names it first). A worktree deleted while `~/bin/prism` still names it leaves the CLI broken for every shell on the machine, not just this session.
 
 - [ ] **Step 5: Record the outcome and close**
 
