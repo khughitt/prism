@@ -1193,6 +1193,29 @@ equal(selectWithOption(loadedTree, "No profile").props.selectedIndex, 2)
 selectWithOption(loadedTree, "No profile").props.onChange(0)
 equal(commands[#commands], Shell.command({ "prism", "context", "deactivate", "profile" }))
 
+-- A pick is optimistic, like a slider edit: the render that follows it already
+-- declares the picked index. Noctalia re-applies selectedIndex on every render,
+-- so a render that still declared the old model's index would snap the
+-- selector back to the old name for the whole activate round trip, compositor
+-- reload included. The describe that follows reconciles either way.
+local pickTree = renderModel(profileModel({ active = { profile = "dawn" }, target = "profile" }))
+equal(selectWithOption(pickTree, "No profile").props.selectedIndex, 1)
+selectWithOption(pickTree, "No profile").props.onChange(2)
+equal(selectWithOption(rendered, "No profile").props.selectedIndex, 2, "the pick shows at once")
+equal(commands[#commands], Shell.command({ "prism", "context", "activate", "profile", "dusk" }))
+writeCallback({ exitCode = 1, stdout = "", stderr = "profile dusk: no such context" })
+assert(commands[#commands]:find("describe", 1, true), "a failed activate still re-reads the model")
+-- The harness decodes describe output to the fixture by reference, so hand it
+-- a fresh model the way the real describe would.
+model = profileModel({ active = { profile = "dawn" }, target = "profile" })
+described({ exitCode = 0, stdout = "{}" })
+equal(selectWithOption(rendered, "No profile").props.selectedIndex, 1,
+  "a failed activate is reconciled by the describe that follows")
+
+local clearTree = renderModel(profileModel({ active = { profile = "dawn" }, target = "profile" }))
+selectWithOption(clearTree, "No profile").props.onChange(0)
+equal(selectWithOption(rendered, "No profile").props.selectedIndex, 0, "clearing shows at once too")
+
 -- Saving names the profile first, and entering it is a second command that only
 -- runs once the save has actually landed.
 local saveTree = renderModel(profileModel())
