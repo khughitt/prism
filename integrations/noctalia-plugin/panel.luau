@@ -310,6 +310,14 @@ local function resetAction(mode, group, params)
         if row.focused.value ~= row.unfocused.value then updateParam(row.unfocused, row.focused.value) end
       end
     end
+    -- Neutralizing everything under a loaded profile would write the neutral
+    -- values into that profile's snapshot. Clear it first, in the same FIFO,
+    -- so they land beneath it and the profile keeps its values; the selector
+    -- clears optimistically the way a pick does.
+    if mode == "neutral" and group == nil and state.model.active.profile ~= nil then
+      state.model.active.profile = nil
+      enqueue({verb = "deactivate"})
+    end
     enqueue({verb = "reset", mode = mode, group = group})
     render()
   end
@@ -779,10 +787,15 @@ local function profileRow(section)
       selectedIndex = section.selectedIndex,
       controlSize = "sm",
       flexGrow = 1,
+      -- Optimistic, like a slider edit: Noctalia re-applies selectedIndex on
+      -- every render, so the render below must already declare the pick or
+      -- the selector snaps back to the old name for the whole round trip.
+      -- The describe that follows the command reconciles either way.
       onChange = function(index)
         index = tonumber(index) or -1
         if index == section.selectedIndex then return end
         if index == 0 then
+          state.model.active.profile = nil
           enqueue({verb = "deactivate"})
         else
           local name = section.options[index + 1]
@@ -791,6 +804,7 @@ local function profileRow(section)
             render()
             return
           end
+          state.model.active.profile = name
           enqueue({verb = "activate", name = name})
         end
         render()

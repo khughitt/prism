@@ -299,7 +299,7 @@ end
 -- layer active, so what is on screen may still come from it. Only the write
 -- target returns to base.
 function M.profileSection(model)
-  local options = { "No profile" }
+  local options = { "-" }
   local selectedIndex = 0
   for index, name in ipairs(model.profiles) do
     options[index + 1] = name

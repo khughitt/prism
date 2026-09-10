@@ -90,7 +90,12 @@ The presentation module defines the panel's stable layout contract:
   matrix rows. Restore counts keys held by the write target, symmetric counts
   differing pairs, and neutral counts eligible keys away from their neutral.
   The same actions appear in a panel-wide row under the wallpaper header.
-  Each action issues one `prism reset <mode> [--group <name>]` command. No-op
+  Each action issues one `prism reset <mode> [--group <name>]` command, except
+  the panel-wide neutral under a loaded profile, which first issues `prism
+  context deactivate profile` in the same FIFO: a reset writes into the write
+  target, and neutralizing everything into a profile's snapshot would destroy
+  it, so the neutral values land beneath the profile and the selector clears
+  optimistically. A section's neutral still edits the loaded profile. No-op
   buttons stay in the tree, dimmed and guarded in their click handlers.
 - The rack is one card per device in `rack.devices` order. A card's head is a
   light, a chevron, and the device name, in the same fixed span as every other
@@ -151,7 +156,13 @@ The presentation module defines the panel's stable layout contract:
 - The panel draws a profile row above the sections, and above the wallpaper
   header because a profile outranks a wallpaper: a selector, a save button, a
   rename button, and a delete button. The selector doubles as the clear control — index 0 is
-  `No profile`, which deactivates. It is deliberately not "base values":
+  `-`, which deactivates. A pick is optimistic, like a slider edit:
+  the render that follows it already declares the picked index, because
+  Noctalia re-applies `selectedIndex` on every render (the `options` prop
+  resets its change memory) and a render that still declared the old model's
+  index would snap the selector back to the old name for the whole activate
+  round trip, compositor reload included; the describe that follows the
+  command reconciles either way. It is deliberately not "base values":
   deactivating leaves the wallpaper layer active, so what is on screen may
   still come from it, and only the write target returns to base. Save opens a
   name field (`ui.input`, `submitOnEnter`), validates the name against the
