@@ -50,12 +50,12 @@ test('shipped presentation is a Glass section and a Focus matrix', () => {
   assert.ok(rows.filter((row) => !row.single).every((row) => row.focused && row.unfocused));
 
   const terminal = ordered.filter((def) => def.ui.group === 'Terminal').map((def) => def.key);
-  assert.deepEqual(terminal, ['terminal.background.opacity.active', 'terminal.background.opacity.inactive']);
+  assert.deepEqual(terminal, [], 'the terminal opacity pair is CLI-only');
 
   const groups = new Set(visible.map((def) => def.ui.group));
-  assert.deepEqual([...groups].sort(), ['Focus', 'Glass', 'Terminal', 'Title']);
+  assert.deepEqual([...groups].sort(), ['Focus', 'Glass', 'Title']);
   assert.equal(visible.length,
-    1 + glass.length + 1 + terminal.length + rows.reduce((n, row) => n + (row.single ? 1 : 2), 0));
+    1 + glass.length + 1 + rows.reduce((n, row) => n + (row.single ? 1 : 2), 0));
   assert.ok(ordered.filter((def) => def.ui.group === 'Glass').every((def) => def.ui.order < focus[0].ui.order),
     'the Glass section precedes the Focus section');
 });
@@ -63,7 +63,7 @@ test('shipped presentation is a Glass section and a Focus matrix', () => {
 test('shipped defs declare exact value presentation', () => {
   const defs = loadDefs(defsDir());
   assert.equal(defs.has('glass.transmission'), false);
-  assert.equal(defs.get('terminal.background.opacity.active').ui.display, 'percent');
+  assert.equal(defs.get('terminal.background.opacity.active').ui.control, 'none');
   assert.equal(defs.get('compositor.gaps').ui.unit, 'px');
   assert.deepEqual(
     [...defs.values()].filter((def) => Object.hasOwn(def.ui, 'affectsPreview'))

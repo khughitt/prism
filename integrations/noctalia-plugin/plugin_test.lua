@@ -297,14 +297,14 @@ local model = { active = {}, profiles = {}, layers = resolutionOrder, target = "
     ui = { control = "toggle", group = "Focus", order = 470, label = "Bypass noise" },
   },
   {
-    key = "terminal.background.opacity.active", value = 0, default = 0, layer = "default", fallback = 0,
+    key = "extra.dim", value = 0, default = 0, layer = "default", fallback = 0,
     effectiveDrag = "release", range = { 0, 1 },
-    ui = { control = "slider", group = "Terminal", order = 210, step = 0.01, label = "Terminal opacity", display = "percent", state = "focused", row = "Terminal opacity" },
+    ui = { control = "slider", group = "Extra", order = 210, step = 0.01, label = "Dim", display = "percent", state = "focused", row = "Dim" },
   },
   {
-    key = "terminal.background.opacity.inactive", value = 0, default = 0, layer = "default", fallback = 0,
+    key = "extra.inactive.dim", value = 0, default = 0, layer = "default", fallback = 0,
     effectiveDrag = "release", range = { 0, 1 },
-    ui = { control = "slider", group = "Terminal", order = 211, step = 0.01, label = "Unfocused terminal opacity", display = "percent", state = "unfocused", row = "Terminal opacity" },
+    ui = { control = "slider", group = "Extra", order = 211, step = 0.01, label = "Unfocused dim", display = "percent", state = "unfocused", row = "Dim" },
   },
 }, rack = { group = "Focus", devices = {
   { device = "backdrop", label = "Backdrop", category = "source", mix = "Blur", rows = {}, shared = {}, bypass = "glass.bypass.backdrop" },
@@ -374,16 +374,16 @@ for _, label in ipairs(collect(rendered, "label")) do
     headerColors[label.props.text] = label.props.color
   end
 end
-assert(headerColors["Glass"] and headerColors["Focus"] and headerColors["Terminal"],
+assert(headerColors["Glass"] and headerColors["Focus"] and headerColors["Extra"],
   "every section header is colored")
 assert(headerColors["Glass"] ~= headerColors["Focus"]
-  and headerColors["Focus"] ~= headerColors["Terminal"]
-  and headerColors["Glass"] ~= headerColors["Terminal"], "no two sections share a color")
+  and headerColors["Focus"] ~= headerColors["Extra"]
+  and headerColors["Glass"] ~= headerColors["Extra"], "no two sections share a color")
 local separatorColors = {}
 for _, separator in ipairs(collect(rendered, "separator")) do
   if separator.props.color ~= nil then separatorColors[#separatorColors + 1] = separator.props.color end
 end
-equal(separatorColors, { headerColors["Glass"], headerColors["Focus"], headerColors["Terminal"] },
+equal(separatorColors, { headerColors["Glass"], headerColors["Focus"], headerColors["Extra"] },
   "each section separator carries its section's color")
 equal(Presentation.sectionColor(1), Presentation.sectionColor(4), "the section palette cycles")
 assert(Presentation.sectionColor(1) ~= Presentation.sectionColor(2), "adjacent sections differ")
@@ -416,7 +416,7 @@ for _, button in ipairs(collect(rendered, "button")) do
     resetCandidates[#resetCandidates + 1] = button
   end
 end
-equal(#resetCandidates, 9, "a reset renders for every visible cell: gaps, three mix pairs, and the terminal pair")
+equal(#resetCandidates, 9, "a reset renders for every visible cell: gaps, three mix pairs, and the extra pair")
 local overriddenResets = {}
 for _, button in ipairs(resetCandidates) do
   if button.props.tooltip == "Remove override" and button.props.opacity == 1.0 then
@@ -434,7 +434,7 @@ for _, button in ipairs(collect(rendered, "button")) do
   if button.props.tooltip == "Reset section (2); values fall back to the layer beneath" and button.props.opacity == 1.0 then sectionResets = sectionResets + 1 end
 end
 equal(sectionResets, 1, "the Focus rack counts its two overrides")
-assert(labels["Terminal"], "terminal section header missing")
+assert(labels["Extra"], "extra section header missing")
 
 -- Cards: one per device in rack order, each with a light whose glyph and color
 -- say active, bypassed, or silenced by an upstream bypass.
@@ -484,7 +484,7 @@ described({exitCode = 0, stdout = "{}"})
 -- Labels do not honour width in the native host. Value columns must reserve
 -- their space with a layout container, including non-slider and empty values.
 local valueWidth
-for _, key in ipairs({"compositor.gaps", "glass.roughness", "glass.saturation", "terminal.background.opacity.active"}) do
+for _, key in ipairs({"compositor.gaps", "glass.roughness", "glass.saturation", "extra.dim"}) do
   local cell = byKey(rendered, key)[1]
   assert(cell, "missing control cell " .. key)
   local column = cell.children[1]
@@ -513,15 +513,15 @@ local function columnLabels(header)
   return texts
 end
 equal(columnLabels(rackHeader), { "Unfocused", "Focused" }, "rack headers read unfocused left, focused right")
-local terminalHeader
+local extraHeader
 for _, row in ipairs(collect(rendered, "row")) do
-  if row.props.key == "Terminal:columns" then terminalHeader = row end
+  if row.props.key == "Extra:columns" then extraHeader = row end
 end
-assert(terminalHeader, "terminal column header missing")
-equal(columnLabels(terminalHeader), { "Unfocused", "Focused" }, "section headers read unfocused left, focused right")
-local terminalRow = byKey(rendered, "Terminal opacity:row")[1].children[1]
-equal(terminalRow.children[2].props.key, "terminal.background.opacity.inactive", "the left cell is unfocused")
-equal(terminalRow.children[4].props.key, "terminal.background.opacity.active", "the right cell is focused")
+assert(extraHeader, "extra column header missing")
+equal(columnLabels(extraHeader), { "Unfocused", "Focused" }, "section headers read unfocused left, focused right")
+local extraRow = byKey(rendered, "Dim:row")[1].children[1]
+equal(extraRow.children[2].props.key, "extra.inactive.dim", "the left cell is unfocused")
+equal(extraRow.children[4].props.key, "extra.dim", "the right cell is focused")
 local noiseCardRow = byKey(rendered, "noise:card")[1].children[1]
 equal(noiseCardRow.children[2].props.key, "glass.inactive.noise", "the left mix cell is unfocused")
 equal(noiseCardRow.children[4].props.key, "glass.noise", "the right mix cell is focused")
@@ -687,11 +687,11 @@ equal(chevron("noise").props.tooltip, "Hide details")
 chevron("noise").props.onClick()
 equal(chevron("noise").props.tooltip, "Show details")
 
--- The terminal pair still renders as a plain matrix section.
-local terminalSliders = {}
-for _, node in ipairs(collect(rendered, "slider")) do terminalSliders[node.props.key] = true end
-assert(terminalSliders["terminal.background.opacity.active:slider"] and terminalSliders["terminal.background.opacity.inactive:slider"],
-  "terminal matrix sliders missing")
+-- A plain matrix section outside the rack still renders.
+local extraSliders = {}
+for _, node in ipairs(collect(rendered, "slider")) do extraSliders[node.props.key] = true end
+assert(extraSliders["extra.dim:slider"] and extraSliders["extra.inactive.dim:slider"],
+  "extra matrix sliders missing")
 
 -- A model without a rack is a contract error, named.
 local savedRack = model.rack

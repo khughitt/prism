@@ -160,7 +160,7 @@ test('describe emits only the public counter-free JSON shape', async () => {
   assert.deepEqual(described.profiles, [], 'no saved profiles is an empty list, not an absent field');
   assert.deepEqual(described.layers, ['default', 'base', 'wallpaper', 'state', 'profile']);
   assert.equal(described.target, 'base');
-  const p = described.params.find((item) => item.key === 'terminal.background.opacity.inactive');
+  const p = described.params.find((item) => item.key === 'glass.ior');
   assert.deepEqual(Object.keys(p), [
     'key', 'type', 'range', 'default', 'neutral', 'heldInTarget', 'value', 'layer', 'fallback', 'ui', 'description',
     'bindings', 'effectiveLiveness', 'effectiveDrag',
@@ -703,23 +703,25 @@ test('reset defaults deletes a pinned wallpaper context it empties', async () =>
 });
 
 test('a reset that changes no contents writes nothing and calls no sink', async () => {
-  // The trap: the wallpaper supplies 0.5, base holds nothing, and the neutral
-  // is the def default. The skip rule selects the key; the base rule then
-  // deletes one that was never there.
+  // The trap: the wallpaper supplies 30, base holds nothing, and defaults
+  // deletes base's overrides. The deletion selects the key; the base rule
+  // then deletes one that was never there.
   writeContext('wallpaper', 'w1', {
     source: '/w.png',
-    values: { 'terminal.background.opacity.inactive': 0.5 },
+    values: { 'glass.paneLip': 30 },
   });
   writeActive({ wallpaper: { id: 'w1', path: '/w.png', pinned: false } });
   fs.rmSync(resolvedPath(), { force: true });
 
   const calls = [];
-  const code = await cli.run(['reset', 'neutral', '--group', 'Terminal'],
+  const code = await cli.run(['reset', 'defaults', '--group', 'Glass'],
     { runner: (m) => calls.push(m.sink) });
   assert.equal(code, 0);
   assert.deepEqual(calls, []);
   assert.equal(fs.existsSync(resolvedPath()), false, 'resolved.json is not rewritten');
-  assert.equal('terminal.background.opacity.inactive' in readValues(), false);
+  assert.equal('glass.paneLip' in readValues(), false);
+  assert.equal(readContext('wallpaper', 'w1').values['glass.paneLip'], 30,
+    'a base reset leaves the overlay alone');
 });
 
 test('reset refuses a store it cannot resolve, and writes nothing', async () => {
@@ -758,22 +760,25 @@ test('reset --base writes beneath an overlay', async () => {
 });
 
 test('reset rejects a group with only hidden parameters', async () => {
-  const result = await runCaptured(['reset', 'neutral', '--group', 'Debug']);
+  const result = await runCaptured(['reset', 'neutral', '--group', 'Terminal']);
   assert.equal(result.code, 1);
-  assert.match(result.stderr, /unknown group Debug; groups with visible parameters:/);
-  assert.match(result.stderr, /Terminal/);
+  assert.match(result.stderr, /unknown group Terminal; groups with visible parameters:/);
+  assert.match(result.stderr, /Glass/);
 });
 
 test('reset visits each affected sink once and leaves hidden values alone', async () => {
-  fs.writeFileSync(valuesPath(), 'terminal.background.opacity.inactive: 0.5\ndebug.backdrop: true\n');
+  fs.writeFileSync(valuesPath(), 'glass.paneLip: 30\ndebug.backdrop: true\nterminal.background.opacity.inactive: 0.5\n');
   const calls = [];
   const result = await runCaptured(['reset', 'defaults'], {
     runner: (manifest, file, keys) => calls.push({ sink: manifest.sink, keys }),
   });
   assert.equal(result.code, 0, result.stderr);
-  assert.deepEqual(calls.map((call) => call.sink).sort(), ['fastsink', 'slowsink']);
-  for (const call of calls) assert.deepEqual(call.keys, ['terminal.background.opacity.inactive']);
-  assert.deepEqual(readValues(), { 'debug.backdrop': true });
+  assert.deepEqual(calls.map((call) => call.sink), ['gensink']);
+  for (const call of calls) assert.deepEqual(call.keys, ['glass.paneLip']);
+  assert.deepEqual(readValues(), {
+    'debug.backdrop': true,
+    'terminal.background.opacity.inactive': 0.5,
+  });
 });
 
 test('neutral writes the active profile while preserving its lower layers', async () => {

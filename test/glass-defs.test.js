@@ -218,9 +218,22 @@ const MATRIX = [
   ['Saturation', 'glass.saturation', 'glass.inactive.saturation'],
 ];
 
-// The terminal opacity pair is a kitty sink parameter, not a glass stage, so
-// it sits in its own matrix section rather than among the rack's devices.
-const TERMINAL = ['Terminal opacity', 'terminal.background.opacity.active', 'terminal.background.opacity.inactive'];
+// The terminal opacity pair is a kitty sink parameter, not a glass stage, and
+// its only panel effect was to reintroduce the terminal-versus-glass seam, so
+// it is CLI-only: no control, and no neutral, since resets scope to visible
+// parameters.
+const TERMINAL_PAIR = ['terminal.background.opacity.active', 'terminal.background.opacity.inactive'];
+
+test('the terminal opacity pair is hidden from the panel', () => {
+  const defs = loadDefs(defsDir());
+  for (const key of TERMINAL_PAIR) {
+    const def = defs.get(key);
+    assert.equal(def.ui.control, 'none', key);
+    assert.equal(Object.hasOwn(def, 'neutral'), false, `${key} stays out of resets`);
+    assert.equal(def.type, 'float', key);
+    assert.equal(def.default, 0, key);
+  }
+});
 
 // One bypass per rack device, shared by both focus states: the niri sink
 // writes the device's dry value while the key is true and the mix keeps its
@@ -271,7 +284,6 @@ test('the focus matrix pairs every focused optic with an unfocused twin', () => 
   const defs = loadDefs(defsDir());
 
   for (const pair of MATRIX) assertPair(defs, 'Focus', pair);
-  assertPair(defs, 'Terminal', TERMINAL);
   const split = defs.get('glass.focusSplit');
   assert.equal(split.ui.group, 'Focus');
   assert.equal(split.ui.control, 'toggle');
@@ -279,7 +291,7 @@ test('the focus matrix pairs every focused optic with an unfocused twin', () => 
   assert.equal(split.ui.state, undefined);
   assert.equal(defs.get('glass.backdropBlur').ui.header, undefined);
   const stateful = [...defs.values()].filter((def) => def.ui.state !== undefined).map((def) => def.key);
-  assert.deepEqual(stateful.sort(), [...MATRIX, TERMINAL].flatMap(([, a, b]) => [a, b]).sort());
+  assert.deepEqual(stateful.sort(), MATRIX.flatMap(([, a, b]) => [a, b]).sort());
 });
 
 test('every rack device has one shared bool bypass toggle in the Focus group', () => {
@@ -355,7 +367,7 @@ test('geometry and pane motion stay shared across focus states', () => {
   }
 });
 
-test('everything outside the matrix is shared glass or the terminal pair', () => {
+test('everything outside the matrix is shared glass', () => {
   const defs = loadDefs(defsDir());
   const shared = [...defs.values()]
     .filter((def) => def.ui.control !== 'none' && def.ui.group !== 'Focus' && def.ui.group !== 'Title')
@@ -364,10 +376,9 @@ test('everything outside the matrix is shared glass or the terminal pair', () =>
   assert.deepEqual(shared.sort(), [
     'compositor.gaps', 'glass.paneLip', 'glass.paneShiftX',
     'glass.paneShiftY', 'glass.jellyFlex', 'glass.jellyRipple',
-    'terminal.background.opacity.active', 'terminal.background.opacity.inactive',
   ].sort());
   for (const key of shared) {
-    assert.equal(defs.get(key).ui.group, key.startsWith('terminal.') ? 'Terminal' : 'Glass', key);
+    assert.equal(defs.get(key).ui.group, 'Glass', key);
   }
 });
 
@@ -391,7 +402,6 @@ const NEUTRAL = {
   'glass.bypass.refraction': false, 'glass.bypass.fringing': false,
   'glass.bypass.directionalBlur': false, 'glass.bypass.tint': false,
   'glass.bypass.saturation': false, 'glass.bypass.noise': false,
-  'terminal.background.opacity.active': 0, 'terminal.background.opacity.inactive': 0,
 };
 
 test('every visible parameter neutralizes to its curated value', () => {

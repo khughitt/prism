@@ -1,16 +1,16 @@
+# CLI-only: the glass owns terminal focus state, so the panel does not offer
+# these; the kitty sink still binds them and `prism set` still writes them.
 - key: terminal.background.opacity.active
   type: float
   range: [0.0, 1.0]
   default: 0
-  neutral: 0
-  ui: {group: Terminal, control: slider, step: 0.01, label: Terminal opacity, order: 210, display: percent, state: focused, row: Terminal opacity}
+  ui: {group: Terminal, control: none}
   description: Background opacity of the focused terminal window; zero leaves only the glass material behind the text
 - key: terminal.background.opacity.inactive
   type: float
   range: [0.0, 1.0]
   default: 0
-  neutral: 0
-  ui: {group: Terminal, control: slider, step: 0.01, label: Unfocused terminal opacity, order: 211, display: percent, state: unfocused, row: Terminal opacity}
+  ui: {group: Terminal, control: none}
   description: Background opacity of unfocused terminal windows
 - key: terminal.apps
   type: list

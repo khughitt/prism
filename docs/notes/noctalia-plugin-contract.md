@@ -269,12 +269,14 @@ fallback, and a null inside an array leaves a hole (`lua_rawseti` with nil),
 which would corrupt a length count; describe's arrays carry only strings and
 device ids, so neither edge can occur in practice.
 
-The shipped panel has a `Glass` section for parameters both focus states share,
-a `Focus` rack with eight device cards in shader order, and a `Terminal` matrix
-for the focused and unfocused opacity pair. Each rack card keeps its mix row
-visible and reveals its bypass, detail rows, and shared rows when expanded;
-Noise type is the Noise card's shared row and applies to both states.
-`debug.backdrop` is CLI-only and does not appear.
+The shipped panel has a `Glass` section for parameters both focus states share
+and a `Focus` rack with eight device cards in shader order. Each rack card
+keeps its mix row visible and reveals its bypass, detail rows, and shared rows
+when expanded; Noise type is the Noise card's shared row and applies to both
+states. The terminal opacity pair and `debug.backdrop` are CLI-only and do not
+appear: the glass owns terminal focus state, so the panel does not offer the
+sliders, while the kitty sink still binds them and `prism set` still writes
+them.
 
 The widget and panel use Noctalia's native v5 entries and controls. No
 additional runtime dependency or compatibility layer is part of this
