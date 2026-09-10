@@ -1,11 +1,12 @@
 ---
 id: prism-e140ef
 title: Color the main panel sections as a visual aid
-status: todo
+status: done
 priority: 2
 size: s
+owner: main
 created: 2026-09-06T00:32:53Z
-updated: 2026-09-06T09:26:09Z
+updated: 2026-09-10T23:33:17Z
 depends: []
 tags: [noctalia, ui]
 ---
@@ -15,3 +16,4 @@ Give each main section of the Prism panel (Title/Glass, Focus, ...) its own subt
 ## Notes
 
 - 2026-09-06T09:26:09Z (main): Scoped by prism-46ad16 (checked against v5.0.1 source and upstream docs): NO Noctalia contribution needed. ui.column/ui.row accept fill, radius, border, borderWidth, padding; ui.separator and ui.label accept color. Wrap each section in a column with fill = '<role>/<alpha>' (roles: primary, secondary, tertiary, error, surface, surface_variant, outline; alpha suffix resolves live against the theme) or color the header label and separator per section.
+- 2026-09-10T23:33:17Z (main): Each drawn section (rack slotted by its header's order) carries one cycling theme role, primary/secondary/tertiary, on its header label and separator; no Noctalia contribution needed.

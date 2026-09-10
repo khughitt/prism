@@ -364,6 +364,30 @@ for _, kind in ipairs({"label", "button"}) do
   for _, label in ipairs(collect(rendered, kind)) do labels[label.props.text or ""] = true end
 end
 assert(labels["Glass"] and labels["Focus"], "section headers missing")
+
+-- Each section announces itself in its own theme role, so a group is findable
+-- without reading: header label and separator share the section's color, and
+-- adjacent sections never match.
+local headerColors = {}
+for _, label in ipairs(collect(rendered, "label")) do
+  if label.props.fontWeight == "bold" and label.props.fontSize == 15 then
+    headerColors[label.props.text] = label.props.color
+  end
+end
+assert(headerColors["Glass"] and headerColors["Focus"] and headerColors["Terminal"],
+  "every section header is colored")
+assert(headerColors["Glass"] ~= headerColors["Focus"]
+  and headerColors["Focus"] ~= headerColors["Terminal"]
+  and headerColors["Glass"] ~= headerColors["Terminal"], "no two sections share a color")
+local separatorColors = {}
+for _, separator in ipairs(collect(rendered, "separator")) do
+  if separator.props.color ~= nil then separatorColors[#separatorColors + 1] = separator.props.color end
+end
+equal(separatorColors, { headerColors["Glass"], headerColors["Focus"], headerColors["Terminal"] },
+  "each section separator carries its section's color")
+equal(Presentation.sectionColor(1), Presentation.sectionColor(4), "the section palette cycles")
+assert(Presentation.sectionColor(1) ~= Presentation.sectionColor(2), "adjacent sections differ")
+
 assert(labels["Focused"] and labels["Unfocused"], "matrix column labels missing")
 assert(labels["Backdrop"] and labels["Gaps"], "row labels missing")
 assert(labels["Saturation"], "second matrix row label missing")

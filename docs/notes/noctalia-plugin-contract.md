@@ -86,6 +86,10 @@ The presentation module defines the panel's stable layout contract:
 - Every other `ui.group` is a section, ordered by first appearance in
   `ui.order`, except the group `describe` names in `rack.group`, which is
   drawn as the rack. Sections are always open; there is no Quick group.
+  Each drawn section (the rack slotted by its header's `ui.order`) carries
+  one theme role, cycling `primary`, `secondary`, `tertiary`, on its header
+  label and its separator, so a group is findable without reading. The cycle
+  outlasts the panel's section count, so no two sections share a color.
   Each section shows restore and neutral buttons, plus symmetric where it has
   matrix rows. Restore counts keys held by the write target, symmetric counts
   differing pairs, and neutral counts eligible keys away from their neutral.

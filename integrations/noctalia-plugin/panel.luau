@@ -678,9 +678,9 @@ local function resetModeButtons(scope, group, params)
   return buttons
 end
 
-local function sectionHeader(name, toggle, sectionParams)
+local function sectionHeader(name, toggle, sectionParams, color)
   local children = {
-    ui.label({text = name, fontSize = 15, fontWeight = "bold", flexGrow = 1}),
+    ui.label({text = name, fontSize = 15, fontWeight = "bold", flexGrow = 1, color = color}),
     ui.label({text = toggle and (toggle.ui.label or toggle.key) or "", fontSize = 12, color = "on_surface_variant", visible = toggle ~= nil}),
     ui.label({
       text = toggle and toggle.shadowed and Presentation.shadowHint(toggle) or "",
@@ -705,10 +705,10 @@ local function allRow(model)
   return ui.row({gap = 8, align = "center"}, children)
 end
 
-local function appendSection(children, section)
+local function appendSection(children, section, color)
   local sectionParams = Presentation.sectionParams(section)
-  children[#children + 1] = ui.separator({spacing = 6})
-  children[#children + 1] = sectionHeader(section.name, section.toggle, sectionParams)
+  children[#children + 1] = ui.separator({spacing = 6, color = color})
+  children[#children + 1] = sectionHeader(section.name, section.toggle, sectionParams, color)
   local hasMatrix = false
   for _, row in ipairs(section.rows) do
     if row.param == nil then hasMatrix = true end
@@ -719,9 +719,9 @@ local function appendSection(children, section)
   end
 end
 
-local function appendRack(children, rack)
-  children[#children + 1] = ui.separator({spacing = 6})
-  children[#children + 1] = sectionHeader(rack.group, rack.header, Presentation.rackParams(rack))
+local function appendRack(children, rack, color)
+  children[#children + 1] = ui.separator({spacing = 6, color = color})
+  children[#children + 1] = sectionHeader(rack.group, rack.header, Presentation.rackParams(rack), color)
   children[#children + 1] = matrixHeader(rack.group, cardPadding)
   for _, card in ipairs(rack.cards) do children[#children + 1] = deviceCard(card) end
 end
@@ -984,17 +984,23 @@ render = function()
     local rack = Presentation.rack(state.model)
     local sections = Presentation.sections(state.model.params, rack.group)
     local rackPlaced = false
+    local sectionIndex = 0
     for _, section in ipairs(sections) do
       if not rackPlaced and rack.header ~= nil and section.rows[1] ~= nil then
         local first = section.rows[1].param or section.rows[1].focused
         if first.ui.order > rack.header.ui.order then
-          appendRack(children, rack)
+          sectionIndex = sectionIndex + 1
+          appendRack(children, rack, Presentation.sectionColor(sectionIndex))
           rackPlaced = true
         end
       end
-      appendSection(children, section)
+      sectionIndex = sectionIndex + 1
+      appendSection(children, section, Presentation.sectionColor(sectionIndex))
     end
-    if not rackPlaced then appendRack(children, rack) end
+    if not rackPlaced then
+      sectionIndex = sectionIndex + 1
+      appendRack(children, rack, Presentation.sectionColor(sectionIndex))
+    end
   end
   panel.render(ui.scroll({flexGrow = 1, gap = 6, padding = 16}, children))
 end

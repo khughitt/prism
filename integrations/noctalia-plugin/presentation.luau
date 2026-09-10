@@ -312,6 +312,15 @@ end
 -- these are constants; a card's fill is the same color at hex alpha 1f.
 M.categoryColors = { source = "#5b9cf6", geometry = "#c78bfa", optic = "#4fd1c5", post = "#f6ad55" }
 
+-- One theme role per section, so a group is findable without reading its
+-- header. Roles resolve against the live theme; the cycle is longer than the
+-- panel's section count, so no two sections ever share a color.
+M.sectionColors = { "primary", "secondary", "tertiary" }
+
+function M.sectionColor(index)
+  return M.sectionColors[(index - 1) % #M.sectionColors + 1]
+end
+
 -- The rack: the group describe names, as an ordered list of device cards. Each
 -- card owns one mix row (always shown), detail rows and shared keys (shown
 -- when expanded), and its bypass key. The panel resolves row labels and keys
