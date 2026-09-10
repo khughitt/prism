@@ -13,7 +13,7 @@
   type: int
   range: [0, 64]
   default: 6
-  neutral: 0
+  neutral: 8
   ui: {group: Glass, control: slider, step: 1, label: Edge bevel, order: 70, unit: px}
   description: Width the glass slab is inflated beyond the window on each edge
 - key: glass.paneShiftX

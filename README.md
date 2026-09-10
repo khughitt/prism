@@ -70,7 +70,8 @@ The panel offers the same actions per section and across all visible controls.
 `defaults` removes overrides held by the write target, including shadowed ones;
 the value revealed may come from another layer. `symmetric` copies each focused
 value onto its unfocused twin. `neutral` writes the curated quiet baseline,
-leaving `glass.focusSplit` unchanged. Effect dependencies still apply: raise
+leaving `glass.focusSplit` unchanged. Edge bevel stays at 8 pixels so the
+native material ring fits with zero pane offsets. Effect dependencies still apply: raise
 Refraction above 1 before exploring Blur or Directional blur.
 
 Without `--base`, comparisons and symmetric's source use resolved values.

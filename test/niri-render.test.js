@@ -256,6 +256,18 @@ test('the extreme supported geometry stays inside the native bevel maximum', () 
   assert.match(kdl, /offset-y 64\n/);
 });
 
+test('the neutral geometry fits the native material ring in both focus states', () => {
+  const params = Object.fromEntries([...loadDefs(defsDir())].map(([key, def]) =>
+    [key, Object.hasOwn(def, 'neutral') ? def.neutral : def.default]));
+  const kdl = renderNiriFragment({ params: { ...params, 'glass.focusSplit': true } });
+  const bevels = [...kdl.matchAll(/bevel (\S+)\n/g)].map((match) => Number(match[1]));
+
+  assert.equal(bevels.length, 2);
+  // niri-material's default response uses inset 5 and width 2.6; its parser
+  // requires their sum to fit within the bevel, even with neutral optics.
+  for (const bevel of bevels) assert.ok(bevel >= 5 + 2.6, `ring does not fit bevel ${bevel}`);
+});
+
 test('terminals match by exact anchored app id, not by substring', () => {
   const kdl = renderNiriFragment(resolved);
 

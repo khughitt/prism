@@ -21,11 +21,12 @@
 - The one exemption is `glass.focusSplit`. Nothing else uses `neutralize`.
 - Both halves of a matrix row declare the **same** `neutral`. Rows are identified by `(ui.group, ui.row)` — never by `ui.row` alone — in `src/defs.js`, `src/reset.js`, and `presentation.luau` alike.
 - The curated neutral values, verbatim (Section 2 of the spec):
-  - `0`: `glass.roughness`, `glass.inactive.roughness`, `glass.chromaticAberration`, `glass.inactive.chromaticAberration`, `glass.anisotropicBlur`, `glass.inactive.anisotropicBlur`, `glass.distortion`, `glass.inactive.distortion`, `glass.noise`, `glass.inactive.noise`, `glass.paneLip`, `glass.paneShiftX`, `glass.paneShiftY`, `glass.jellyFlex`, `glass.jellyRipple`, `terminal.background.opacity.active`, `terminal.background.opacity.inactive`
+  - `0`: `glass.roughness`, `glass.inactive.roughness`, `glass.chromaticAberration`, `glass.inactive.chromaticAberration`, `glass.anisotropicBlur`, `glass.inactive.anisotropicBlur`, `glass.distortion`, `glass.inactive.distortion`, `glass.noise`, `glass.inactive.noise`, `glass.paneShiftX`, `glass.paneShiftY`, `glass.jellyFlex`, `glass.jellyRipple`, `terminal.background.opacity.active`, `terminal.background.opacity.inactive`
   - `false`: `glass.backdropBlur`, `glass.inactive.backdropBlur`, and all eight `glass.bypass.*`
   - `1`: `glass.ior`, `glass.inactive.ior`, `glass.saturation`, `glass.inactive.saturation`
   - `'#ffffff'`: `glass.attenuationColor`, `glass.inactive.attenuationColor`
   - `true`: `glass.enabled`
+  - `8`: `glass.paneLip` (native ring needs 7.6 pixels of bevel)
   - `24`: `compositor.gaps`
   - `20`: `glass.thickness`, `glass.inactive.thickness`
   - `60`: `glass.attenuationDistance`, `glass.inactive.attenuationDistance`
@@ -273,7 +274,7 @@ Append to `test/glass-defs.test.js`:
 const NEUTRAL = {
   'glass.enabled': true,
   'compositor.gaps': 24,
-  'glass.paneLip': 0, 'glass.paneShiftX': 0, 'glass.paneShiftY': 0,
+  'glass.paneLip': 8, 'glass.paneShiftX': 0, 'glass.paneShiftY': 0,
   'glass.jellyFlex': 0, 'glass.jellyRipple': 0,
   'glass.backdropBlur': false, 'glass.inactive.backdropBlur': false,
   'glass.roughness': 0, 'glass.inactive.roughness': 0,
@@ -391,7 +392,7 @@ test('describe carries the neutral contract and target ownership', async () => {
   const model = JSON.parse(out);
   const byKey = Object.fromEntries(model.params.map((param) => [param.key, param]));
 
-  assert.equal(byKey['glass.paneLip'].neutral, 0);
+  assert.equal(byKey['glass.paneLip'].neutral, 8);
   assert.equal(byKey['glass.paneLip'].neutralize, undefined);
   assert.equal(byKey['glass.focusSplit'].neutralize, false);
   assert.equal(byKey['glass.focusSplit'].neutral, undefined);
@@ -755,7 +756,7 @@ test('reset neutral writes the curated values once and fans out once', async () 
     { runner: (m, f, keys) => calls.push([m.sink, keys]) });
   assert.equal(code, 0);
   const values = JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params;
-  assert.equal(values['glass.paneLip'], 0);
+  assert.equal(values['glass.paneLip'], 8);
   assert.equal(values['glass.jellyRipple'], 0);
   assert.equal(values['compositor.gaps'], 24);
   // gensink binds glass.paneLip; each affected sink is called at most once.
@@ -852,14 +853,14 @@ test('reset rejects an unknown group and a bad mode', async () => {
 });
 
 test('reset --base writes beneath an overlay', async () => {
-  writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.paneLip': 0 } });
+  writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.paneLip': 8 } });
   writeActive({ wallpaper: { id: 'w1', path: '/w.png', pinned: false } });
   await cli.run(['set', '--base', 'glass.paneLip', '30'], { runner: () => {} });
   // The overlay already sits at the neutral; --base must still act on base.
   await cli.run(['reset', 'neutral', '--base', '--group', 'Glass'], { runner: () => {} });
-  // paneLip neutralizes to 0 against a default of 6, so base holds 0 rather
+  // paneLip neutralizes to 8 against a default of 6, so base holds 8 rather
   // than losing the key.
-  assert.equal(readValues()['glass.paneLip'], 0);
+  assert.equal(readValues()['glass.paneLip'], 8);
 });
 ```
 
@@ -953,7 +954,7 @@ Update the `default` branch's usage line:
 - [x] **Step 9: Run the tests to verify they pass**
 
 Run: `node --test test/cli.test.js test/reset.test.js`
-Expected: PASS. If `reset --base writes beneath an overlay` fails, read its assertion message: `glass.paneLip` neutralizes to `0` while its default is `6`, so base must *hold* `0` rather than have the key removed. Correct the assertion to `assert.equal(JSON.parse(...)['glass.paneLip'], 0)` — the fixture, not the implementation, is what needs to agree with the shipped defaults.
+Expected: PASS. If `reset --base writes beneath an overlay` fails, read its assertion message: `glass.paneLip` neutralizes to `8` while its default is `6`, so base must *hold* `8` rather than have the key removed. Correct the assertion to `assert.equal(JSON.parse(...)['glass.paneLip'], 8)` — the fixture, not the implementation, is what needs to agree with the shipped defaults.
 
 - [x] **Step 10: Run the suite and commit**
 
@@ -1542,7 +1543,7 @@ noctalia msg plugins enable khughitt/prism
 `enable` finishes asynchronously; wait a beat before `noctalia msg panel-open khughitt/prism:panel`. Then walk the five steps in the spec's Section 5, in order:
 
 1. neutralize **panel-wide** and confirm the pane goes quiet with the survivors intact;
-2. confirm the geometry reached zero, then raise Refraction and confirm it reads — **this decides `paneLip`**. If refraction does not read against a zero bevel, move `glass.paneLip` to the enablers at `6`, update the spec's Section 2 table and `test/glass-defs.test.js`, and re-run `just test`;
+2. confirm Edge bevel is 8 and both offsets are 0, then raise Refraction and confirm it reads. Native validation rejected the provisional zero bevel; the spec now records 8 as the smallest whole-pixel setting that fits the default ring;
 3. neutralize panel-wide again, then raise Blur and Directional blur and confirm they behave as the spec predicts at `ior 1`;
 4. mirror a section with divergent halves and confirm parity;
 5. reset a section to defaults with a wallpaper pinned and confirm one reload rather than a visible cascade.
@@ -1579,8 +1580,16 @@ git commit -m "docs: record the reset modes as shipped
   The running panel rendered the section and panel-wide controls without a
   contract error. Original links and pre-acceptance settings are backed up in
   the ignored session workspace.
-- The five desktop effect checks and the `paneLip` verdict still require user
-  observation. Task 6 remains open; no merge or task closure has occurred.
+- Desktop acceptance found that neutral bevel 0 fails niri validation: the
+  default ring needs 7.6 pixels. Neutral Edge bevel is now 8; a renderer
+  regression test pins ring fit, and the full neutral fragment passes the
+  installed niri with focus split both on and off. Applying the corrected lip
+  to the current profile reloaded niri successfully; `prism doctor` reports OK.
+  The follow-up gate passed 305 Node tests plus Lua, with zero task errors or
+  warnings. Independent review found no material defects; its doc typo was fixed.
+  General validation of manually selected small geometry is `prism-71b7d1`.
+- Desktop effect observations remain pending. Task 6 remains open; no merge
+  or task closure has occurred.
 
 ## Notes for the executor
 

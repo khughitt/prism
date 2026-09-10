@@ -1,7 +1,7 @@
 # Neutral and symmetric reset modes
 
 **Date:** 2026-09-10
-**Status:** implemented on `reset-modes` (`06d568e`, `beff4e0`, `deb17e1`); automated gate passed; desktop acceptance and the provisional `paneLip` verdict pending.
+**Status:** implemented on `reset-modes` (`06d568e`, `beff4e0`, `deb17e1`); automated gate passed; desktop acceptance pending; neutral `paneLip` corrected to 8 after native validation rejected 0.
 **Task:** `prism-91edc5`
 
 ## Context
@@ -160,7 +160,6 @@ explains itself.
 
 | Parameter | neutral |
 |---|---|
-| `glass.paneLip` (Edge bevel) | `0` |
 | `glass.paneShiftX` / `glass.paneShiftY` (Pane offset) | `0` |
 | `glass.jellyFlex` (Flex) | `0` |
 | `glass.jellyRipple` (Ripple) | `0` |
@@ -179,6 +178,7 @@ choice.
 | Parameter | neutral | why it survives |
 |---|---|---|
 | `glass.enabled` | `true` | off means there is no glass to explore |
+| `glass.paneLip` (Edge bevel) | `8` | the native material ring needs 7.6 pixels of bevel; 8 is the smallest whole-pixel setting that fits with zero offsets |
 | `compositor.gaps` (Window spacing) | `24` | with no gaps there is no wallpaper between windows for the glass to refract |
 | `glass.thickness` / `glass.inactive.thickness` (Depth) | `20` | at 0 there is no volume, so refraction and tint have nothing to act through |
 | `glass.attenuationDistance` / `glass.inactive.attenuationDistance` (Tint distance) | `60` | at the 65535 ceiling tint absorbs nothing; at the floor of 1 it goes black at once |
@@ -202,14 +202,15 @@ recorded at [`integrations/niri/render.js:61`](../../integrations/niri/render.js
 Surfacing those couplings in the panel is `prism-b315f9`. This design states
 them and stops there.
 
-### Provisional: `paneLip`
+### Acceptance correction: `paneLip`
 
-`paneLip 0` with both offsets at 0 produces a bevel of exactly 0, so the slab
-stops extending past the window edge. It sits in the zeroable group because it
-is directly visible rather than a scaler of something else, but that is a
-judgment call. Desktop acceptance (Section 5) raises refraction from the
-neutral baseline and confirms it reads; if it does not, `paneLip` moves to the
-enablers at its shipped `6`.
+Desktop acceptance rejected the provisional `paneLip 0`: niri requires
+`ring-inset + ring-width <= bevel`. Its default response uses an inset of 5
+and width of 2.6, and forbids a zero-width ring. With zero offsets, neither
+0 nor the shipped lip default of 6 can accommodate that ring. Neutral therefore
+keeps `paneLip 8` as an enabler. The renderer's geometry formula stays unchanged.
+The full neutral fragment passes the installed niri's validation with either
+focus-split setting. Visual acceptance still checks refraction from this baseline.
 
 ## Section 3: `prism reset`
 
@@ -446,14 +447,10 @@ Desktop acceptance is manual, as it was for the rack: repoint the plugin
 symlink at the worktree, reload the plugin, then
 
 1. neutralize **panel-wide**, not just the Focus section, and confirm the pane
-   goes quiet with the survivors intact. Panel-wide is what takes the Glass
-   section's `paneLip` and offsets to zero, and therefore the bevel with them;
-   neutralizing Focus alone leaves the geometry tuned and cannot decide
-   anything about it;
-2. confirm the geometry did reach zero, then raise Refraction from that
-   baseline and confirm it reads. This is the `paneLip` decision in Section 2:
-   if refraction does not read against a zero bevel, `paneLip` moves to the
-   enablers at its shipped `6`;
+   goes quiet with the survivors intact. Panel-wide sets Edge bevel to 8 and
+   both pane offsets to 0; neutralizing Focus alone leaves the geometry tuned;
+2. confirm those geometry values, then raise Refraction from that baseline
+   and confirm it reads;
 3. neutralize panel-wide again — step 2 has already raised refraction — then
    raise Blur and Directional blur and confirm they behave as Section 2
    predicts at `ior 1`, since they ride the refraction taps;

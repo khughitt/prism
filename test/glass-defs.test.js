@@ -373,7 +373,7 @@ test('everything outside the matrix is shared glass or the terminal pair', () =>
 
 const NEUTRAL = {
   'glass.enabled': true, 'compositor.gaps': 24,
-  'glass.paneLip': 0, 'glass.paneShiftX': 0, 'glass.paneShiftY': 0,
+  'glass.paneLip': 8, 'glass.paneShiftX': 0, 'glass.paneShiftY': 0,
   'glass.jellyFlex': 0, 'glass.jellyRipple': 0,
   'glass.backdropBlur': false, 'glass.inactive.backdropBlur': false,
   'glass.roughness': 0, 'glass.inactive.roughness': 0,

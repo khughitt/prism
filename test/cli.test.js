@@ -618,7 +618,7 @@ test('describe carries the neutral contract and target ownership', async () => {
   const model = JSON.parse(out);
   const byKey = Object.fromEntries(model.params.map((param) => [param.key, param]));
 
-  assert.equal(byKey['glass.paneLip'].neutral, 0);
+  assert.equal(byKey['glass.paneLip'].neutral, 8);
   assert.equal(byKey['glass.paneLip'].neutralize, undefined);
   assert.equal(byKey['glass.focusSplit'].neutralize, false);
   assert.equal(byKey['glass.focusSplit'].neutral, undefined);
@@ -650,7 +650,7 @@ test('reset neutral writes the curated values once and fans out once', async () 
     { runner: (m, f, keys) => calls.push([m.sink, keys]) });
   assert.equal(code, 0);
   const values = JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params;
-  assert.equal(values['glass.paneLip'], 0);
+  assert.equal(values['glass.paneLip'], 8);
   assert.equal(values['glass.jellyRipple'], 0);
   assert.equal(values['compositor.gaps'], 24);
   // gensink binds glass.paneLip; each affected sink is called at most once.
@@ -747,14 +747,14 @@ test('reset rejects an unknown group and a bad mode', async () => {
 });
 
 test('reset --base writes beneath an overlay', async () => {
-  writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.paneLip': 0 } });
+  writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.paneLip': 8 } });
   writeActive({ wallpaper: { id: 'w1', path: '/w.png', pinned: false } });
   await cli.run(['set', '--base', 'glass.paneLip', '30'], { runner: () => {} });
   // The overlay already sits at the neutral; --base must still act on base.
   await cli.run(['reset', 'neutral', '--base', '--group', 'Glass'], { runner: () => {} });
-  // paneLip neutralizes to 0 against a default of 6, so base holds 0 rather
+  // paneLip neutralizes to 8 against a default of 6, so base holds 8 rather
   // than losing the key.
-  assert.equal(readValues()['glass.paneLip'], 0);
+  assert.equal(readValues()['glass.paneLip'], 8);
 });
 
 test('reset rejects a group with only hidden parameters', async () => {
