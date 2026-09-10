@@ -1,11 +1,11 @@
 ---
 id: prism-3b1ac7
 title: "Live acceptance pass: profiles, wallpaper pin, and shadowed rows in the running shell"
-status: todo
+status: done
 priority: 1
 size: s
 created: 2026-09-09T01:14:52Z
-updated: 2026-09-09T23:51:58Z
+updated: 2026-09-10T17:04:59Z
 depends: []
 parent: prism-2f0b4b
 tags: [noctalia, ui, profiles]
@@ -16,3 +16,4 @@ Everything in the profiles goal is verified by tests and by driving the real pan
 ## Notes
 
 - 2026-09-09T23:51:58Z (profile-ux): 2026-09-09: the rename button and the question rows (Replace profile <name>? / Delete profile <name>?) landed on branch profile-ux (e9c82d7). Add to this pass: save under an existing name shows the question and Cancel drops it; Replace saves and enters the profile; delete asks first; rename opens the field seeded with the current name, refuses a taken name with a banner, and a same-name submit just closes it; the pencil is dim with no profile loaded. Screenshot of the rendered row confirmed; clicks need a person.
+- 2026-09-10T17:04:59Z (profile-selector): Covered by hand on 2026-09-10 against the merged build: profile load and clear, save, the replace and delete questions, the rename button, the pin and shadowed rows, and the wallpaper header following the rotation. Findings filed as prism-b553da (fixed), prism-0f4922, prism-b8e44c, prism-b8b589, prism-920f31.
