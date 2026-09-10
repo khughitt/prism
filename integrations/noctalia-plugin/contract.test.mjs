@@ -90,7 +90,15 @@ function describeStore(contexts) {
     env: { ...process.env, PRISM_CONFIG_DIR: configDir, PRISM_STATE_DIR: stateDir },
   });
   assert.equal(result.status, 0, result.stderr);
-  return JSON.parse(result.stdout);
+  const model = JSON.parse(result.stdout);
+  for (const param of model.params) {
+    assert.equal(typeof param.heldInTarget, 'boolean', `${param.key} heldInTarget`);
+    if (param.ui.control === 'none') continue;
+    assert.notEqual(Object.hasOwn(param, 'neutral'), Object.hasOwn(param, 'neutralize'),
+      `${param.key} declares exactly one of neutral and neutralize`);
+    if (Object.hasOwn(param, 'neutralize')) assert.equal(param.neutralize, false);
+  }
+  return model;
 }
 
 // Loads panel.luau against a model and reports what it did with it: the error

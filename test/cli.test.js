@@ -26,6 +26,7 @@ fs.writeFileSync(path.join(integ, 'gensink', 'manifest.yaml'),
 process.env.PRISM_INTEGRATIONS_DIR = integ;
 
 const cli = await import('../src/cli.js');
+const { readValues } = await import('../src/values.js');
 const { lockPath, resolvedPath, valuesPath, generatedPath } = await import('../src/paths.js');
 const { writeActive, writeContext, contextPath, readContext } = await import('../src/contexts.js');
 const prismBin = fileURLToPath(new URL('../bin/prism', import.meta.url));
@@ -161,7 +162,7 @@ test('describe emits only the public counter-free JSON shape', async () => {
   assert.equal(described.target, 'base');
   const p = described.params.find((item) => item.key === 'terminal.background.opacity.inactive');
   assert.deepEqual(Object.keys(p), [
-    'key', 'type', 'range', 'default', 'value', 'layer', 'fallback', 'ui', 'description',
+    'key', 'type', 'range', 'default', 'neutral', 'heldInTarget', 'value', 'layer', 'fallback', 'ui', 'description',
     'bindings', 'effectiveLiveness', 'effectiveDrag',
   ]);
   assert.equal(p.layer, 'default');
@@ -608,3 +609,198 @@ test('entrypoint names the dependency install when node_modules is absent', () =
   assert.match(child.stderr, /npm ci --prefix/);
   assert.doesNotMatch(child.stderr, /ERR_MODULE_NOT_FOUND/);
 });
+
+test('describe carries the neutral contract and target ownership', async () => {
+  let out = '';
+  await cli.run(['set', '--base', 'glass.paneLip', '9'], { runner: () => {} });
+  const code = await cli.run(['describe', '--json'], { print: (t) => { out += t; }, runner: () => {} });
+  assert.equal(code, 0);
+  const model = JSON.parse(out);
+  const byKey = Object.fromEntries(model.params.map((param) => [param.key, param]));
+
+  assert.equal(byKey['glass.paneLip'].neutral, 8);
+  assert.equal(byKey['glass.paneLip'].neutralize, undefined);
+  assert.equal(byKey['glass.focusSplit'].neutralize, false);
+  assert.equal(byKey['glass.focusSplit'].neutral, undefined);
+  assert.equal(byKey['terminal.apps'].neutral, undefined);
+
+  assert.equal(byKey['glass.paneLip'].heldInTarget, true);
+  assert.equal(byKey['glass.paneShiftX'].heldInTarget, false);
+});
+
+test('a base override hidden by a wallpaper is still held in the target', async () => {
+  await cli.run(['set', '--base', 'glass.paneLip', '9'], { runner: () => {} });
+  writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.paneLip': 30 } });
+  writeActive({ wallpaper: { id: 'w1', path: '/w.png', pinned: false } });
+
+  let out = '';
+  await cli.run(['describe', '--json'], { print: (t) => { out += t; }, runner: () => {} });
+  const param = JSON.parse(out).params.find((p) => p.key === 'glass.paneLip');
+  // The value comes from the wallpaper, so the row is shadowed; but base -- the
+  // write target -- does hold the key, so there is something there to reset.
+  assert.equal(param.layer, 'wallpaper');
+  assert.equal(param.value, 30);
+  assert.equal(param.heldInTarget, true);
+});
+
+test('reset neutral writes the curated values once and fans out once', async () => {
+  const calls = [];
+  await cli.run(['set', '--base', 'glass.paneLip', '30'], { runner: () => {} });
+  const code = await cli.run(['reset', 'neutral', '--group', 'Glass'],
+    { runner: (m, f, keys) => calls.push([m.sink, keys]) });
+  assert.equal(code, 0);
+  const values = JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params;
+  assert.equal(values['glass.paneLip'], 8);
+  assert.equal(values['glass.jellyRipple'], 0);
+  assert.equal(values['compositor.gaps'], 24);
+  // gensink binds glass.paneLip; each affected sink is called at most once.
+  assert.deepEqual(calls.map(([sink]) => sink), ['gensink']);
+  assert.equal(calls[0][1].includes('glass.paneLip'), true);
+});
+
+test('reset neutral leaves the exempt parameter alone', async () => {
+  await cli.run(['set', '--base', 'glass.focusSplit', 'false'], { runner: () => {} });
+  await cli.run(['reset', 'neutral'], { runner: () => {} });
+  assert.equal(readValues()['glass.focusSplit'], false);
+});
+
+test('reset symmetric mirrors focused onto unfocused', async () => {
+  await cli.run(['set', '--base', 'glass.roughness', '0.3'], { runner: () => {} });
+  await cli.run(['reset', 'symmetric', '--group', 'Focus'], { runner: () => {} });
+  const values = JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params;
+  assert.equal(values['glass.inactive.roughness'], 0.3);
+  assert.equal(values['glass.roughness'], 0.3);
+});
+
+test('symmetric copies what is on screen, or the base value under --base', async () => {
+  await cli.run(['set', '--base', 'glass.roughness', '0.3'], { runner: () => {} });
+  writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.roughness': 0.7 } });
+  writeActive({ wallpaper: { id: 'w1', path: '/w.png', pinned: false } });
+
+  // Unpinned, so the target is still base -- but the source differs.
+  await cli.run(['reset', 'symmetric', '--group', 'Focus'], { runner: () => {} });
+  assert.equal(readValues()['glass.inactive.roughness'], 0.7, 'mirrors the resolved value');
+
+  await cli.run(['reset', 'symmetric', '--base', '--group', 'Focus'], { runner: () => {} });
+  assert.equal(readValues()['glass.inactive.roughness'], 0.3, 'mirrors the base value alone');
+});
+
+test('reset defaults removes a base override hidden by a wallpaper', async () => {
+  await cli.run(['set', '--base', 'glass.paneLip', '9'], { runner: () => {} });
+  writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.paneLip': 30 } });
+  writeActive({ wallpaper: { id: 'w1', path: '/w.png', pinned: false } });
+  await cli.run(['reset', 'defaults', '--group', 'Glass'], { runner: () => {} });
+  assert.equal('glass.paneLip' in readValues(), false);
+});
+
+test('reset defaults deletes a pinned wallpaper context it empties', async () => {
+  writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.paneLip': 30 } });
+  writeActive({ wallpaper: { id: 'w1', path: '/w.png', pinned: true } });
+  await cli.run(['reset', 'defaults', '--group', 'Glass'], { runner: () => {} });
+  // Same rule unset follows: an emptied wallpaper context is not left behind.
+  assert.equal(readContext('wallpaper', 'w1'), null);
+  assert.equal(fs.existsSync(contextPath('wallpaper', 'w1')), false);
+});
+
+test('a reset that changes no contents writes nothing and calls no sink', async () => {
+  // The trap: the wallpaper supplies 0.5, base holds nothing, and the neutral
+  // is the def default. The skip rule selects the key; the base rule then
+  // deletes one that was never there.
+  writeContext('wallpaper', 'w1', {
+    source: '/w.png',
+    values: { 'terminal.background.opacity.inactive': 0.5 },
+  });
+  writeActive({ wallpaper: { id: 'w1', path: '/w.png', pinned: false } });
+  fs.rmSync(resolvedPath(), { force: true });
+
+  const calls = [];
+  const code = await cli.run(['reset', 'neutral', '--group', 'Terminal'],
+    { runner: (m) => calls.push(m.sink) });
+  assert.equal(code, 0);
+  assert.deepEqual(calls, []);
+  assert.equal(fs.existsSync(resolvedPath()), false, 'resolved.json is not rewritten');
+  assert.equal('terminal.background.opacity.inactive' in readValues(), false);
+});
+
+test('reset refuses a store it cannot resolve, and writes nothing', async () => {
+  fs.writeFileSync(valuesPath(), 'glass.ior: 99\n');   // out of range
+  const before = fs.readFileSync(valuesPath(), 'utf8');
+  const calls = [];
+  const out = await runCaptured(['reset', 'neutral'], { runner: (m) => calls.push(m.sink) });
+  assert.equal(out.code, 1);
+  assert.match(out.stderr, /glass\.ior/);
+  // The whole mutation is computed before anything is written, so a refusal
+  // leaves no partial batch behind.
+  assert.equal(fs.readFileSync(valuesPath(), 'utf8'), before);
+  assert.deepEqual(calls, []);
+});
+
+test('reset rejects an unknown group and a bad mode', async () => {
+  const bad = await runCaptured(['reset', 'neutral', '--group', 'Nope'], { runner: () => {} });
+  assert.equal(bad.code, 1);
+  assert.match(bad.stderr, /unknown group Nope/);
+  assert.match(bad.stderr, /Focus/);
+
+  const mode = await runCaptured(['reset', 'sideways'], { runner: () => {} });
+  assert.equal(mode.code, 1);
+  assert.match(mode.stderr, /usage: prism reset/);
+});
+
+test('reset --base writes beneath an overlay', async () => {
+  writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.paneLip': 8 } });
+  writeActive({ wallpaper: { id: 'w1', path: '/w.png', pinned: false } });
+  await cli.run(['set', '--base', 'glass.paneLip', '30'], { runner: () => {} });
+  // The overlay already sits at the neutral; --base must still act on base.
+  await cli.run(['reset', 'neutral', '--base', '--group', 'Glass'], { runner: () => {} });
+  // paneLip neutralizes to 8 against a default of 6, so base holds 8 rather
+  // than losing the key.
+  assert.equal(readValues()['glass.paneLip'], 8);
+});
+
+test('reset rejects a group with only hidden parameters', async () => {
+  const result = await runCaptured(['reset', 'neutral', '--group', 'Debug']);
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /unknown group Debug; groups with visible parameters:/);
+  assert.match(result.stderr, /Terminal/);
+});
+
+test('reset visits each affected sink once and leaves hidden values alone', async () => {
+  fs.writeFileSync(valuesPath(), 'terminal.background.opacity.inactive: 0.5\ndebug.backdrop: true\n');
+  const calls = [];
+  const result = await runCaptured(['reset', 'defaults'], {
+    runner: (manifest, file, keys) => calls.push({ sink: manifest.sink, keys }),
+  });
+  assert.equal(result.code, 0, result.stderr);
+  assert.deepEqual(calls.map((call) => call.sink).sort(), ['fastsink', 'slowsink']);
+  for (const call of calls) assert.deepEqual(call.keys, ['terminal.background.opacity.inactive']);
+  assert.deepEqual(readValues(), { 'debug.backdrop': true });
+});
+
+test('neutral writes the active profile while preserving its lower layers', async () => {
+  fs.writeFileSync(valuesPath(), 'glass.roughness: 0.3\n');
+  writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.roughness': 0.7 } });
+  writeContext('profile', 'p1', { source: null, values: {} });
+  writeActive({ profile: 'p1', wallpaper: { id: 'w1', path: '/w.png', pinned: true } });
+  const result = await runCaptured(['reset', 'neutral', '--group', 'Focus'], { runner: () => {} });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(readContext('profile', 'p1').values['glass.roughness'], 0);
+  assert.equal(readContext('wallpaper', 'w1').values['glass.roughness'], 0.7);
+  assert.equal(readValues()['glass.roughness'], 0.3);
+});
+
+for (const mode of ['neutral', 'symmetric']) {
+  test(`an already-${mode} reset leaves both files and sinks untouched`, async () => {
+    const first = await runCaptured(['reset', mode], { runner: () => {} });
+    assert.equal(first.code, 0, first.stderr);
+    const before = [valuesPath(), resolvedPath()].map((file) => ({
+      text: fs.readFileSync(file, 'utf8'), inode: fs.statSync(file).ino,
+    }));
+    const calls = [];
+    const result = await runCaptured(['reset', mode], { runner: (manifest) => calls.push(manifest.sink) });
+    assert.equal(result.code, 0, result.stderr);
+    assert.deepEqual(calls, []);
+    assert.deepEqual([valuesPath(), resolvedPath()].map((file) => ({
+      text: fs.readFileSync(file, 'utf8'), inode: fs.statSync(file).ino,
+    })), before);
+  });
+}

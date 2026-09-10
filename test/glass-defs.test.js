@@ -370,3 +370,41 @@ test('everything outside the matrix is shared glass or the terminal pair', () =>
     assert.equal(defs.get(key).ui.group, key.startsWith('terminal.') ? 'Terminal' : 'Glass', key);
   }
 });
+
+const NEUTRAL = {
+  'glass.enabled': true, 'compositor.gaps': 24,
+  'glass.paneLip': 8, 'glass.paneShiftX': 0, 'glass.paneShiftY': 0,
+  'glass.jellyFlex': 0, 'glass.jellyRipple': 0,
+  'glass.backdropBlur': false, 'glass.inactive.backdropBlur': false,
+  'glass.roughness': 0, 'glass.inactive.roughness': 0,
+  'glass.attenuationColor': '#ffffff', 'glass.inactive.attenuationColor': '#ffffff',
+  'glass.attenuationDistance': 60, 'glass.inactive.attenuationDistance': 60,
+  'glass.ior': 1, 'glass.inactive.ior': 1,
+  'glass.thickness': 20, 'glass.inactive.thickness': 20,
+  'glass.chromaticAberration': 0, 'glass.inactive.chromaticAberration': 0,
+  'glass.distortion': 0, 'glass.inactive.distortion': 0,
+  'glass.distortionScale': 0.5, 'glass.inactive.distortionScale': 0.5,
+  'glass.anisotropicBlur': 0, 'glass.inactive.anisotropicBlur': 0,
+  'glass.noise': 0, 'glass.inactive.noise': 0, 'glass.noiseType': 'fine',
+  'glass.saturation': 1, 'glass.inactive.saturation': 1,
+  'glass.bypass.backdrop': false, 'glass.bypass.distortion': false,
+  'glass.bypass.refraction': false, 'glass.bypass.fringing': false,
+  'glass.bypass.directionalBlur': false, 'glass.bypass.tint': false,
+  'glass.bypass.saturation': false, 'glass.bypass.noise': false,
+  'terminal.background.opacity.active': 0, 'terminal.background.opacity.inactive': 0,
+};
+
+test('every visible parameter neutralizes to its curated value', () => {
+  const defs = loadDefs(defsDir());
+  for (const [key, neutral] of Object.entries(NEUTRAL)) assert.deepEqual(defs.get(key).neutral, neutral, key);
+  assert.deepEqual([...defs.values()].filter((d) => d.neutralize === false).map((d) => d.key), ['glass.focusSplit']);
+  const visible = [...defs.values()].filter((d) => d.ui.control !== 'none' && d.neutralize !== false);
+  assert.deepEqual(visible.map((d) => d.key).sort(), Object.keys(NEUTRAL).sort());
+});
+
+test('neutral saturation and refraction are identities, not zeroes', () => {
+  const defs = loadDefs(defsDir());
+  assert.equal(defs.get('glass.saturation').neutral, 1);
+  assert.equal(defs.get('glass.ior').neutral, 1);
+  assert.equal(defs.get('glass.ior').range[0], 1);
+});

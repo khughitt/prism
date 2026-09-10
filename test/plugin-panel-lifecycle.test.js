@@ -54,6 +54,13 @@ local function newHost()
     },
   }}
 
+  for _, param in ipairs(model.params) do
+    param.heldInTarget = param.layer == model.target
+    if param.key == "glass.focusSplit" then param.neutralize = false
+    elseif param.ui.control == "toggle" then param.neutral = false
+    else param.neutral = 0 end
+  end
+
   local function node(kind, props, children)
     return {kind = kind, props = props or {}, children = children or {}}
   end

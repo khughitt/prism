@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'yaml';
 import { renderNiriFragment, DRY } from '../integrations/niri/render.js';
+import { loadDefs } from '../src/defs.js';
 import { defsDir } from '../src/paths.js';
 
 const resolved = { params: {
@@ -255,6 +256,18 @@ test('the extreme supported geometry stays inside the native bevel maximum', () 
   assert.match(kdl, /offset-y 64\n/);
 });
 
+test('the neutral geometry fits the native material ring in both focus states', () => {
+  const params = Object.fromEntries([...loadDefs(defsDir())].map(([key, def]) =>
+    [key, Object.hasOwn(def, 'neutral') ? def.neutral : def.default]));
+  const kdl = renderNiriFragment({ params: { ...params, 'glass.focusSplit': true } });
+  const bevels = [...kdl.matchAll(/bevel (\S+)\n/g)].map((match) => Number(match[1]));
+
+  assert.equal(bevels.length, 2);
+  // niri-material's default response uses inset 5 and width 2.6; its parser
+  // requires their sum to fit within the bevel, even with neutral optics.
+  for (const bevel of bevels) assert.ok(bevel >= 5 + 2.6, `ring does not fit bevel ${bevel}`);
+});
+
 test('terminals match by exact anchored app id, not by substring', () => {
   const kdl = renderNiriFragment(resolved);
 
@@ -399,4 +412,19 @@ test('every noise type is quoted and shared across glass materials', () => {
 
 test('fragment is stable', () => {
   assert.equal(renderNiriFragment(resolved), renderNiriFragment(resolved));
+});
+
+test('the sink dry values agree with the defs neutrals', () => {
+  const defs = loadDefs(defsDir());
+  for (const overrides of Object.values(DRY)) {
+    for (const [optic, value] of Object.entries(overrides)) {
+      for (const key of [`glass.${optic}`, `glass.inactive.${optic}`]) {
+        assert.deepEqual(defs.get(key).neutral, value, key);
+      }
+    }
+  }
+  const named = new Set(Object.values(DRY).flatMap((o) => Object.keys(o)));
+  for (const optic of ['thickness', 'attenuationDistance', 'distortionScale']) {
+    assert.equal(named.has(optic), false, optic);
+  }
 });

@@ -169,6 +169,14 @@ local function fails(candidate, pattern)
   local ok, err = pcall(Presentation.sections, candidate)
   assert(not ok and tostring(err):find(pattern, 1, true), "expected failure containing " .. pattern .. ", got " .. tostring(err))
 end
+local function failsAny(candidate, patterns)
+  local ok, err = pcall(Presentation.sections, candidate)
+  assert(not ok, "expected a failure, got none")
+  for _, pattern in ipairs(patterns) do
+    if tostring(err):find(pattern, 1, true) then return end
+  end
+  error("unexpected failure: " .. tostring(err))
+end
 fails({
   { key = "t", ui = { control = "toggle", group = "Title", order = 0 } },
   { key = "a", ui = { control = "slider", group = "Focus", order = 1, state = "focused", row = "Blur" } },
@@ -177,14 +185,43 @@ fails({
   { key = "a", ui = { control = "slider", group = "Focus", order = 1, state = "focused", row = "Blur" } },
   { key = "b", ui = { control = "slider", group = "Focus", order = 2, state = "focused", row = "Blur" } },
 }, "Blur has two focused")
-fails({
+failsAny({
   { key = "a", ui = { control = "slider", group = "Focus", order = 1, state = "focused", row = "Blur" } },
   { key = "b", ui = { control = "slider", group = "Glass", order = 2, state = "unfocused", row = "Blur" } },
-}, "Blur spans sections")
+}, {"Blur has no unfocused", "Blur has no focused"})
 fails({
   { key = "a", ui = { control = "toggle", group = "Focus", order = 1, header = true } },
   { key = "b", ui = { control = "toggle", group = "Focus", order = 2, header = true } },
 }, "Focus has two header toggles")
+
+local reusedLabel = {
+  { key = "one.f", ui = { control = "slider", group = "One", order = 1, state = "focused", row = "Blur" } },
+  { key = "one.u", ui = { control = "slider", group = "One", order = 2, state = "unfocused", row = "Blur" } },
+  { key = "two.f", ui = { control = "slider", group = "Two", order = 3, state = "focused", row = "Blur" } },
+  { key = "two.u", ui = { control = "slider", group = "Two", order = 4, state = "unfocused", row = "Blur" } },
+}
+local reused = Presentation.sections(reusedLabel)
+equal(#reused, 2, "one section per group")
+equal(reused[1].rows[1].focused.key, "one.f")
+equal(reused[2].rows[1].focused.key, "two.f")
+
+local counted = {
+  { key = "g.lip", value = 9, neutral = 0, overridden = true, ui = { control = "slider", group = "Glass", order = 1 } },
+  { key = "f.split", value = false, neutralize = false, overridden = true, ui = { control = "toggle", group = "Focus", order = 2, header = true } },
+  { key = "f.blur", value = 0.3, neutral = 0, overridden = false, ui = { control = "slider", group = "Focus", order = 3, state = "focused", row = "Blur" } },
+  { key = "f.blur.off", value = 0.5, neutral = 0, overridden = false, ui = { control = "slider", group = "Focus", order = 4, state = "unfocused", row = "Blur" } },
+  { key = "f.sat", value = 1, neutral = 1, overridden = false, ui = { control = "slider", group = "Focus", order = 5, state = "focused", row = "Sat" } },
+  { key = "f.sat.off", value = 1, neutral = 1, overridden = false, ui = { control = "slider", group = "Focus", order = 6, state = "unfocused", row = "Sat" } },
+}
+equal(#Presentation.pairsOf(counted), 2, "two matrix rows")
+equal(Presentation.symmetricCount(counted), 1, "only Blur differs")
+equal(Presentation.neutralCount(counted), 3, "three eligible keys differ")
+equal(Presentation.overriddenCount(counted), 2, "two keys held in target")
+equal(Presentation.neutralCount({counted[2]}), 0, "an exempt parameter never counts")
+equal(Queue.argvFor({verb = "reset", mode = "neutral"}), {"prism", "reset", "neutral"})
+equal(Queue.argvFor({verb = "reset", mode = "defaults", group = "Focus"}),
+  {"prism", "reset", "defaults", "--group", "Focus"})
+assert(Queue.affectsParams({verb = "reset", mode = "neutral"}), "a reset moves the model")
 
 -- The panel must give its scroll root the host-owned viewport height both
 -- before and after the asynchronous model arrives.
@@ -275,6 +312,16 @@ local model = { active = {}, profiles = {}, layers = resolutionOrder, target = "
   { device = "noise", label = "Noise", category = "post", mix = "Noise", rows = {}, shared = { "glass.noiseType" }, bypass = "glass.bypass.noise" },
 } } }
 
+for _, param in ipairs(model.params) do
+  param.heldInTarget = param.layer == model.target
+  if param.key == "glass.focusSplit" then param.neutralize = false
+  elseif param.ui.control == "select" then param.neutral = param.values[1]
+  elseif param.ui.control == "toggle" then param.neutral = false
+  else param.neutral = 0 end
+end
+model.params[2].layer = "wallpaper"
+model.params[2].heldInTarget = true
+
 ui = setmetatable({}, { __index = function(_, kind)
   return function(props, children) return { kind = kind, props = props or {}, children = children or {} } end
 end })
@@ -283,10 +330,11 @@ panel = {
   setNeedsFrameTick = function() end,
 }
 local commands = {}
+local commandCallback
 noctalia = {
   runAsync = function(cmd, callback)
     commands[#commands + 1] = cmd
-    if cmd:find("describe", 1, true) then described = callback end
+    if cmd:find("describe", 1, true) then described = callback else commandCallback = callback end
     return true
   end,
   json = { decode = function() return model end },
@@ -351,15 +399,15 @@ for _, button in ipairs(resetCandidates) do
     overriddenResets[#overriddenResets + 1] = button
   end
 end
-equal(#overriddenResets, 1, "exactly the base-overridden roughness row offers a full-strength reset")
+equal(#overriddenResets, 2, "roughness and held-but-shadowed gaps offer full-strength resets")
 for _, button in ipairs(resetCandidates) do
-  if button ~= overriddenResets[1] then
+  if button ~= overriddenResets[1] and button ~= overriddenResets[2] then
     assert(button.props.opacity < 1.0, "resets without an override to remove stay dim")
   end
 end
 local sectionResets = 0
 for _, button in ipairs(collect(rendered, "button")) do
-  if button.props.tooltip == "Reset section (2)" and button.props.opacity == 1.0 then sectionResets = sectionResets + 1 end
+  if button.props.tooltip == "Reset section (2); values fall back to the layer beneath" and button.props.opacity == 1.0 then sectionResets = sectionResets + 1 end
 end
 equal(sectionResets, 1, "the Focus rack counts its two overrides")
 assert(labels["Terminal"], "terminal section header missing")
@@ -373,6 +421,42 @@ local function byKey(tree, key, found)
   for _, child in ipairs(tree.children or {}) do byKey(child, key, found) end
   return found
 end
+local shadowedCell = byKey(rendered, "compositor.gaps")[1]
+local shadowedReset
+for _, button in ipairs(collect(shadowedCell, "button")) do
+  if button.props.glyph == "restore" then shadowedReset = button end
+end
+local roughnessReset
+for _, button in ipairs(collect(byKey(rendered, "glass.roughness")[1], "button")) do
+  if button.props.glyph == "restore" then roughnessReset = button end
+end
+assert(shadowedReset, "held-but-shadowed gaps must carry a reset")
+equal(shadowedReset.props.tooltip, "Remove override")
+equal(shadowedReset.props.opacity, 1.0)
+shadowedReset.props.onClick()
+equal(commands[#commands], Shell.command({"prism", "unset", "compositor.gaps"}))
+commandCallback({exitCode = 0, stdout = ""})
+described({exitCode = 0, stdout = "{}"})
+
+local function buttonsByGlyph(tree, glyph)
+  local found = {}
+  for _, node in ipairs(collect(tree, "button")) do
+    if node.props.glyph == glyph then found[#found + 1] = node end
+  end
+  return found
+end
+equal(#buttonsByGlyph(rendered, "baseline"), 4, "three sections and panel-wide")
+equal(#buttonsByGlyph(rendered, "equal"), 3, "matrix sections and panel-wide")
+local panelWide = buttonsByGlyph(rendered, "baseline")[1]
+assert(panelWide.props.tooltip:find("everything", 1, true), "panel-wide tooltip names scope")
+local beforeNeutral = {}
+for index, param in ipairs(model.params) do beforeNeutral[index] = {param.value, param.overridden} end
+panelWide.props.onClick()
+equal(commands[#commands], Shell.command({"prism", "reset", "neutral"}))
+commandCallback({exitCode = 0, stdout = ""})
+described({exitCode = 0, stdout = "{}"})
+for index, param in ipairs(model.params) do param.value, param.overridden = beforeNeutral[index][1], beforeNeutral[index][2] end
+described({exitCode = 0, stdout = "{}"})
 -- Labels do not honour width in the native host. Value columns must reserve
 -- their space with a layout container, including non-slider and empty values.
 local valueWidth
@@ -576,13 +660,13 @@ model.rack = savedRack
 -- checks the live param, not just whether the button is drawn dim.
 local nonOverriddenReset
 for _, button in ipairs(resetCandidates) do
-  if button ~= overriddenResets[1] then nonOverriddenReset = button break end
+  if button ~= overriddenResets[1] and button ~= overriddenResets[2] then nonOverriddenReset = button break end
 end
 local commandCountBeforeGuard = #commands
 nonOverriddenReset.props.onClick()
 equal(#commands, commandCountBeforeGuard, "clicking a non-overridden reset enqueues nothing")
 
-overriddenResets[1].props.onClick()
+roughnessReset.props.onClick()
 equal(model.params[4].value, 0.1, "reset shows the fallback, not the default, before describe reconciles")
 equal(model.params[4].overridden, false)
 assert(commands[#commands]:find("unset", 1, true) and commands[#commands]:find("glass.roughness", 1, true),
@@ -878,6 +962,14 @@ local function layeredModel(overrides)
     } },
   }
   for key, value in pairs(overrides or {}) do m[key] = value end
+  for _, param in ipairs(m.params) do
+    param.heldInTarget = param.layer == m.target
+    if param.ui.control ~= "none" then
+      if param.key == "glass.focusSplit" then param.neutralize = false
+      elseif param.ui.control == "toggle" then param.neutral = false
+      else param.neutral = 0 end
+    end
+  end
   return m
 end
 
@@ -909,8 +1001,8 @@ for _, toggle in ipairs(toggles) do
   assert(toggle.props.opacity < 1.0, "a shadowed header toggle dims like any other shadowed control")
 end
 
--- Editing base beneath a wallpaper still writes, but the value it writes stays
--- covered: the row keeps its shadow and offers no reset to remove.
+-- Editing base beneath a wallpaper still writes and marks the target-owned
+-- override, while the value remains covered.
 local gaps = model.params[2]
 local slider = nil
 for _, node in ipairs(collect(tree, "slider")) do
@@ -919,7 +1011,7 @@ end
 slider.props.onChange(64)
 slider.props.onDragEnd()
 equal(gaps.shadowed, true, "writing under a shadow does not lift it")
-equal(gaps.overridden, false, "the write landed in base, which is not where the value comes from")
+equal(gaps.overridden, true, "the write landed in the target even though a wallpaper covers it")
 
 -- A loaded profile holds the target, so the pin is greyed but still hoverable:
 -- a disabled Button's tooltip is unreachable, so the reason would vanish.
@@ -1003,6 +1095,20 @@ assert((panelError(hiddenUnrankable) or ""):find("debug.backdrop", 1, true),
 local visibleNoLayer = layeredModel()
 visibleNoLayer.params[2].layer = nil
 equal(panelError(visibleNoLayer), "compositor.gaps has no layer")
+
+local noOwnership = layeredModel()
+noOwnership.params[2].heldInTarget = nil
+equal(panelError(noOwnership), "compositor.gaps has no target ownership")
+local noNeutral = layeredModel()
+noNeutral.params[2].neutral = nil
+equal(panelError(noNeutral), "compositor.gaps must declare exactly one of neutral and neutralize")
+local badNeutralize = layeredModel()
+badNeutralize.params[4].neutralize = true
+equal(panelError(badNeutralize), "glass.focusSplit has invalid neutralize value")
+local missingDataFirst = layeredModel()
+missingDataFirst.params[2].default, missingDataFirst.params[2].heldInTarget = nil, nil
+equal(panelError(missingDataFirst), "compositor.gaps has no default",
+  "core parameter data is checked before reset metadata")
 
 local hiddenNoLayer = layeredModel()
 hiddenNoLayer.params[8].layer = nil

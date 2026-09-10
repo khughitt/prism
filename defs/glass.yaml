@@ -2,6 +2,7 @@
 - key: glass.enabled
   type: bool
   default: true
+  neutral: true
   ui: {group: Title, control: toggle, label: Glass, order: 0}
   description: Assign the native niri glass material to terminal windows
 
@@ -12,183 +13,223 @@
   type: int
   range: [0, 64]
   default: 6
+  neutral: 8
   ui: {group: Glass, control: slider, step: 1, label: Edge bevel, order: 70, unit: px}
   description: Width the glass slab is inflated beyond the window on each edge
 - key: glass.paneShiftX
   type: int
   range: [-64, 64]
   default: 6
+  neutral: 0
   ui: {group: Glass, control: slider, step: 1, label: Pane offset X, order: 80, unit: px}
   description: Horizontal shift of the glass slab
 - key: glass.paneShiftY
   type: int
   range: [-64, 64]
   default: 6
+  neutral: 0
   ui: {group: Glass, control: slider, step: 1, label: Pane offset Y, order: 90, unit: px}
   description: Vertical shift of the glass slab
 - key: glass.jellyFlex
   type: float
   range: [0, 0.02]
   default: 0.004
+  neutral: 0
   ui: {group: Glass, control: slider, step: 0.0002, label: Flex, order: 100, display: normalized}
   description: Maximum flex of the jelly pane motion
 - key: glass.jellyRipple
   type: float
   range: [0, 0.5]
   default: 0.06
+  neutral: 0
   ui: {group: Glass, control: slider, step: 0.005, label: Ripple, order: 110, display: normalized}
   description: Ripple strength of the jelly pane motion
 
 # Focus: one row per optic, a focused and an unfocused value each
+# The one parameter bulk neutral leaves alone: the split is panel structure, not
+# a value to quiet, and a row's halves neutralize alike, so neutral is already
+# symmetric with the split on.
 - key: glass.focusSplit
   type: bool
   default: true
+  neutralize: false
   ui: {group: Focus, control: toggle, label: Focus-state glass, order: 200, header: true}
   description: Give unfocused terminals their own glass material; off keeps one material and never resets the pane motion on focus
 - key: glass.backdropBlur
   type: bool
   default: false
+  neutral: false
   ui: {group: Focus, control: toggle, label: Frosted backdrop, order: 220, state: focused, row: Frosted backdrop}
   description: Refract the blurred backdrop for a frosted look; niri's global blur block supplies the blur strength
 - key: glass.inactive.backdropBlur
   type: bool
   default: false
+  neutral: false
   ui: {group: Focus, control: toggle, label: Unfocused frosted backdrop, order: 221, state: unfocused, row: Frosted backdrop}
   description: Refract the blurred backdrop through unfocused terminals; niri's global blur block supplies the blur strength
 - key: glass.roughness
   type: float
   range: [0, 1]
   default: 0.08
+  neutral: 0
   ui: {group: Focus, control: slider, step: 0.01, label: Blur, order: 230, display: percent, scale: power, exponent: 2, state: focused, row: Blur}
   description: Glass surface roughness
 - key: glass.inactive.roughness
   type: float
   range: [0, 1]
   default: 0.5
+  neutral: 0
   ui: {group: Focus, control: slider, step: 0.01, label: Unfocused blur, order: 231, display: percent, scale: power, exponent: 2, state: unfocused, row: Blur}
   description: Glass surface roughness of unfocused terminals
 - key: glass.attenuationColor
   type: color
   default: '#dfe8ff'
+  neutral: '#ffffff'
   ui: {group: Focus, control: color, label: Tint, order: 240, state: focused, row: Tint}
   description: Color absorbed by the glass volume
 - key: glass.inactive.attenuationColor
   type: color
   default: '#dfe8ff'
+  neutral: '#ffffff'
   ui: {group: Focus, control: color, label: Unfocused tint, order: 241, state: unfocused, row: Tint}
   description: Color absorbed by the glass volume of unfocused terminals
+# An enabler: at the 65535 ceiling tint absorbs nothing; at the floor of 1 it
+# goes black at once.
 - key: glass.attenuationDistance
   type: float
   range: [1, 65535]
   default: 60
+  neutral: 60
   ui: {group: Focus, control: slider, step: 1, label: Tint distance, order: 250, scale: logarithmic, unit: px, state: focused, row: Tint distance}
   description: Absorption distance; higher values preserve the wallpaper color farther through the glass
 - key: glass.inactive.attenuationDistance
   type: float
   range: [1, 65535]
   default: 70
+  neutral: 60
   ui: {group: Focus, control: slider, step: 1, label: Unfocused tint distance, order: 251, scale: logarithmic, unit: px, state: unfocused, row: Tint distance}
   description: Absorption distance of unfocused terminals; higher values preserve the wallpaper color farther through the glass
 - key: glass.ior
   type: float
   range: [1, 2]
   default: 1.5
+  neutral: 1
   ui: {group: Focus, control: slider, step: 0.02, label: Refraction, order: 260, state: focused, row: Refraction}
   description: Glass index of refraction; real glass sits at 1.4 to 1.7, and edge change fades above that
 - key: glass.inactive.ior
   type: float
   range: [1, 2]
   default: 1.5
+  neutral: 1
   ui: {group: Focus, control: slider, step: 0.02, label: Unfocused refraction, order: 261, state: unfocused, row: Refraction}
   description: Index of refraction of unfocused terminals; real glass sits at 1.4 to 1.7, and edge change fades above that
+# An enabler: at thickness 0 the slab has no volume, so refraction and tint have
+# nothing to act through and a neutral pane could never be explored back out of.
 - key: glass.thickness
   type: float
   range: [0, 100]
   default: 20
+  neutral: 20
   ui: {group: Focus, control: slider, step: 0.1, label: Depth, order: 270, unit: px, scale: power, exponent: 2, state: focused, row: Depth}
   description: Depth of the glass slab; higher values bend and tint farther, with most of the visible change below 40
 - key: glass.inactive.thickness
   type: float
   range: [0, 100]
   default: 20
+  neutral: 20
   ui: {group: Focus, control: slider, step: 0.1, label: Unfocused depth, order: 271, unit: px, scale: power, exponent: 2, state: unfocused, row: Depth}
   description: Depth of the glass slab of unfocused terminals; higher values bend and tint farther, with most of the visible change below 40
 - key: glass.chromaticAberration
   type: float
   range: [0, 1]
   default: 0
+  neutral: 0
   ui: {group: Focus, control: slider, step: 0.02, label: Fringing, order: 280, state: focused, row: Fringing}
   description: Color-channel separation at refracted edges
 - key: glass.inactive.chromaticAberration
   type: float
   range: [0, 1]
   default: 0.08
+  neutral: 0
   ui: {group: Focus, control: slider, step: 0.02, label: Unfocused fringing, order: 281, state: unfocused, row: Fringing}
   description: Color-channel separation at refracted edges of unfocused terminals
 - key: glass.distortion
   type: float
   range: [0, 1]
   default: 0
+  neutral: 0
   ui: {group: Focus, control: slider, step: 0.02, label: Distortion, order: 290, state: focused, row: Distortion}
   description: Strength of the glass distortion effect
 - key: glass.inactive.distortion
   type: float
   range: [0, 1]
   default: 0.1
+  neutral: 0
   ui: {group: Focus, control: slider, step: 0.02, label: Unfocused distortion, order: 291, state: unfocused, row: Distortion}
   description: Strength of the glass distortion effect on unfocused terminals
+# An enabler: at either end of its log range distortion reads as a slow warp or
+# as noise.
 - key: glass.distortionScale
   type: float
   range: [0.01, 2]
   default: 0.5
+  neutral: 0.5
   ui: {group: Focus, control: slider, step: 0.01, label: Distortion detail, order: 300, scale: logarithmic, state: focused, row: Distortion detail}
   description: Distortion frequency; higher values create finer variation
 - key: glass.inactive.distortionScale
   type: float
   range: [0.01, 2]
   default: 0.5
+  neutral: 0.5
   ui: {group: Focus, control: slider, step: 0.01, label: Unfocused distortion detail, order: 301, scale: logarithmic, state: unfocused, row: Distortion detail}
   description: Distortion frequency of unfocused terminals; higher values create finer variation
 - key: glass.anisotropicBlur
   type: float
   range: [0, 1]
   default: 0
+  neutral: 0
   ui: {group: Focus, control: slider, step: 0.01, label: Directional blur, order: 310, display: percent, state: focused, row: Directional blur}
   description: Directional blur applied through the glass
 - key: glass.inactive.anisotropicBlur
   type: float
   range: [0, 1]
   default: 0
+  neutral: 0
   ui: {group: Focus, control: slider, step: 0.01, label: Unfocused directional blur, order: 311, display: percent, state: unfocused, row: Directional blur}
   description: Directional blur applied through the glass of unfocused terminals
 - key: glass.noise
   type: float
   range: [0, 1]
   default: 0
+  neutral: 0
   ui: {group: Focus, control: slider, step: 0.01, label: Noise, order: 320, display: percent, state: focused, row: Noise}
   description: Film grain added to the glass after its optics
 - key: glass.inactive.noise
   type: float
   range: [0, 1]
   default: 0.02
+  neutral: 0
   ui: {group: Focus, control: slider, step: 0.01, label: Unfocused noise, order: 321, display: percent, state: unfocused, row: Noise}
   description: Film grain added to the glass of unfocused terminals
 - key: glass.noiseType
   type: enum
   values: [white, fine]
   default: fine
+  neutral: fine
   ui: {group: Focus, control: select, label: Noise type, order: 325}
   description: "Grain pattern shared by both focus states: white is coarse uniform grain, fine removes the clumps"
 - key: glass.saturation
   type: float
   range: [0, 3]
   default: 1
+  neutral: 1
   ui: {group: Focus, control: slider, step: 0.05, label: Saturation, order: 330, state: focused, row: Saturation}
   description: Color saturation of what shows through the glass; 1 leaves it unchanged
 - key: glass.inactive.saturation
   type: float
   range: [0, 3]
   default: 0.85
+  neutral: 1
   ui: {group: Focus, control: slider, step: 0.05, label: Unfocused saturation, order: 331, state: unfocused, row: Saturation}
   description: Color saturation through the glass of unfocused terminals; below 1 lets the pane recede
 
@@ -200,40 +241,48 @@
 - key: glass.bypass.backdrop
   type: bool
   default: false
+  neutral: false
   ui: {group: Focus, control: toggle, label: Bypass backdrop, order: 400}
   description: Silence the backdrop stage; both materials get blur 0 and no frosted backdrop while set, and the Blur and Frosted backdrop values keep their numbers
 - key: glass.bypass.distortion
   type: bool
   default: false
+  neutral: false
   ui: {group: Focus, control: toggle, label: Bypass distortion, order: 410}
   description: Silence the distortion stage; both materials get distortion 0 while set, and the Distortion and Distortion detail values keep their numbers
 - key: glass.bypass.refraction
   type: bool
   default: false
+  neutral: false
   ui: {group: Focus, control: toggle, label: Bypass refraction, order: 420}
   description: Silence the refraction stage; both materials get refraction 1, fringing 0, and directional blur 0 while set, because those two ride the refraction taps, and Blur flattens too since its strength scales with refraction above 1. Every value keeps its number
 - key: glass.bypass.fringing
   type: bool
   default: false
+  neutral: false
   ui: {group: Focus, control: toggle, label: Bypass fringing, order: 430}
   description: Silence the fringing stage; both materials get fringing 0 while set, and the Fringing values keep their numbers
 - key: glass.bypass.directionalBlur
   type: bool
   default: false
+  neutral: false
   ui: {group: Focus, control: toggle, label: Bypass directional blur, order: 440}
   description: Silence the directional blur stage; both materials get directional blur 0 while set, and the Directional blur values keep their numbers
 - key: glass.bypass.tint
   type: bool
   default: false
+  neutral: false
   ui: {group: Focus, control: toggle, label: Bypass tint, order: 450}
   description: Silence the tint stage; both materials get a white tint while set, which absorbs nothing at any distance, and the Tint and Tint distance values keep their numbers
 - key: glass.bypass.saturation
   type: bool
   default: false
+  neutral: false
   ui: {group: Focus, control: toggle, label: Bypass saturation, order: 460}
   description: Silence the saturation stage; both materials get saturation 1 while set, and the Saturation values keep their numbers
 - key: glass.bypass.noise
   type: bool
   default: false
+  neutral: false
   ui: {group: Focus, control: toggle, label: Bypass noise, order: 470}
   description: Silence the noise stage; both materials get noise 0 while set, since the grain type is shared, and the Noise values keep their numbers

@@ -156,7 +156,7 @@ end
 
 -- Sections are the panel's body: one per ui.group in order of first
 -- appearance by ui.order. A toggle flagged ui.header is the section's header
--- control. Parameters with ui.state pair into matrix rows keyed by ui.row
+-- control. Parameters with ui.state pair into matrix rows keyed by group and ui.row
 -- (focused left, unfocused right); everything else is a single-parameter row.
 function M.sections(params, skipGroup)
   local visible = {}
@@ -176,13 +176,12 @@ function M.sections(params, skipGroup)
       sections[#sections + 1] = section
     end
     if param.ui.state ~= nil then
-      local row = rowsByName[param.ui.row]
+      local id = param.ui.group .. "\0" .. param.ui.row
+      local row = rowsByName[id]
       if not row then
-        row = { row = param.ui.row, section = section.name }
-        rowsByName[param.ui.row] = row
+        row = { row = param.ui.row }
+        rowsByName[id] = row
         section.rows[#section.rows + 1] = row
-      elseif row.section ~= section.name then
-        error("row " .. param.ui.row .. " spans sections " .. row.section .. " and " .. section.name)
       end
       if row[param.ui.state] ~= nil then
         error("row " .. param.ui.row .. " has two " .. param.ui.state .. " parameters")
@@ -199,7 +198,6 @@ function M.sections(params, skipGroup)
     for _, state in ipairs({ "focused", "unfocused" }) do
       if row[state] == nil then error("row " .. row.row .. " has no " .. state .. " parameter") end
     end
-    row.section = nil
   end
   return sections
 end
@@ -405,6 +403,47 @@ function M.rackParams(rack)
   if rack.header then list[#list + 1] = rack.header end
   for _, card in ipairs(rack.cards) do
     for _, param in ipairs(M.cardParams(card)) do list[#list + 1] = param end
+  end
+  return list
+end
+
+function M.pairsOf(params)
+  local rows, order = {}, {}
+  for _, param in ipairs(params) do
+    if param.ui.control ~= "none" and param.ui.state ~= nil then
+      local id = param.ui.group .. "\0" .. param.ui.row
+      if rows[id] == nil then rows[id], order[#order + 1] = {}, id end
+      rows[id][param.ui.state] = param
+    end
+  end
+  local list = {}
+  for _, id in ipairs(order) do
+    local row = rows[id]
+    if row.focused ~= nil and row.unfocused ~= nil then list[#list + 1] = row end
+  end
+  return list
+end
+
+function M.symmetricCount(params)
+  local count = 0
+  for _, row in ipairs(M.pairsOf(params)) do
+    if row.focused.value ~= row.unfocused.value then count = count + 1 end
+  end
+  return count
+end
+
+function M.neutralCount(params)
+  local count = 0
+  for _, param in ipairs(params) do
+    if param.ui.control ~= "none" and param.neutralize ~= false and param.value ~= param.neutral then count = count + 1 end
+  end
+  return count
+end
+
+function M.visibleParams(model)
+  local list = {}
+  for _, param in ipairs(model.params) do
+    if param.ui.control ~= "none" then list[#list + 1] = param end
   end
   return list
 end

@@ -11,6 +11,7 @@ import { loadStore, loadLayers, writeTarget, activeJson, RESOLUTION_ORDER } from
 import { listContexts, readContext, readActive, writeContext, deleteContext, contextPath, VERB_KINDS } from './contexts.js';
 import { runContext } from './context-cli.js';
 import { loadRack } from './rack.js';
+import { MODES, planReset, visibleGroups } from './reset.js';
 import {
   defsDir,
   generatedPath,
@@ -117,6 +118,62 @@ export async function run(argv, opts = {}) {
         return report(await fanOut({ manifests, resolved, changedKeys: [key], runner: opts.runner }), eprint);
       }
 
+      case 'reset': {
+        const usage = 'usage: prism reset defaults|symmetric|neutral [--base] [--group <name>]';
+        let mode = null;
+        let group = null;
+        let toBase = false;
+        for (let index = 0; index < rest.length; index += 1) {
+          const arg = rest[index];
+          if (arg === '--base') toBase = true;
+          else if (arg === '--group') {
+            index += 1;
+            group = rest[index];
+            if (group === undefined) throw new Error(usage);
+          } else if (mode === null) mode = arg;
+          else throw new Error(usage);
+        }
+        if (!MODES.includes(mode)) throw new Error(usage);
+
+        const { defs, manifests } = load();
+        const groups = visibleGroups(defs);
+        if (group !== null && !groups.has(group)) {
+          throw new Error(`unknown group ${group}; groups with visible parameters: ${[...groups].sort().join(', ')}`);
+        }
+
+        let resolved = null;
+        let changedKeys = [];
+        await withLock(lockPath(), async () => {
+          const store = loadStore(defs);
+          const target = toBase ? { kind: 'base', name: null } : store.target;
+          const held = target.kind === 'base'
+            ? store.base
+            : store.layers.find((layer) => layer.kind === target.kind && layer.name === target.name).values;
+          // --base compares against, and copies from, the base layer alone: an
+          // overlay that happens to sit at the neutral must not block a base
+          // change the user asked for by name.
+          const effective = toBase ? resolveLayered(defs, store.base, []).params : store.params;
+          const plan = planReset({
+            defs, mode, group, held, effective, normalizeToDefault: target.kind === 'base',
+          });
+          changedKeys = plan.changedKeys;
+          if (changedKeys.length === 0) return;
+          if (target.kind === 'base') writeValues(plan.values);
+          else if (target.kind === 'wallpaper' && Object.keys(plan.values).length === 0) {
+            deleteContext(target.kind, target.name);
+          } else {
+            writeContext(target.kind, target.name, {
+              source: contextSource(store.active, target),
+              values: plan.values,
+            });
+          }
+          resolved = writeResolved(loadStore(defs).params);
+        });
+
+        if (changedKeys.length === 0) return 0;
+        return report(await fanOut({ manifests, resolved, changedKeys, runner: opts.runner }), eprint);
+      }
+
       case 'get': {
         if (rest.length !== 1) throw new Error('usage: prism get <key>');
         const [key] = rest;
@@ -165,6 +222,9 @@ export async function run(argv, opts = {}) {
             range: def.range,
             values: def.values,
             default: def.default,
+            neutral: def.neutral,
+            neutralize: def.neutralize,
+            heldInTarget: store.heldInTarget[key],
             value: store.params[key],
             layer: store.layerOf[key],
             fallback: store.fallback[key],
@@ -308,7 +368,7 @@ export async function run(argv, opts = {}) {
       }
 
       default:
-        eprint('usage: prism set|unset|get|list|describe|apply|doctor|context\n');
+        eprint('usage: prism set|unset|get|list|describe|apply|doctor|context|reset\n');
         return 2;
     }
   } catch (error) {

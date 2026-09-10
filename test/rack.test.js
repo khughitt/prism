@@ -10,17 +10,17 @@ import { defsDir } from '../src/paths.js';
 // A small group with one matrix row, one shared select, one header toggle,
 // and one bypass toggle, so every validation rule has something to bite.
 const DEFS = `
-- {key: t.on, type: bool, default: true, ui: {group: Title, control: toggle, label: On, order: 0}, description: d}
-- {key: r.split, type: bool, default: true, ui: {group: R, control: toggle, label: Split, order: 1, header: true}, description: d}
-- {key: r.blur, type: float, range: [0, 1], default: 0, ui: {group: R, control: slider, step: 0.1, label: Blur, order: 2, state: focused, row: Blur}, description: d}
-- {key: r.inactive.blur, type: float, range: [0, 1], default: 0, ui: {group: R, control: slider, step: 0.1, label: Unfocused blur, order: 3, state: unfocused, row: Blur}, description: d}
-- {key: r.depth, type: float, range: [0, 1], default: 0, ui: {group: R, control: slider, step: 0.1, label: Depth, order: 4, state: focused, row: Depth}, description: d}
-- {key: r.inactive.depth, type: float, range: [0, 1], default: 0, ui: {group: R, control: slider, step: 0.1, label: Unfocused depth, order: 5, state: unfocused, row: Depth}, description: d}
-- {key: r.kind, type: enum, values: [a, b], default: a, ui: {group: R, control: select, label: Kind, order: 6}, description: d}
-- {key: r.bypass.one, type: bool, default: false, ui: {group: R, control: toggle, label: Bypass one, order: 7}, description: d}
-- {key: r.bypass.two, type: bool, default: false, ui: {group: R, control: toggle, label: Bypass two, order: 8}, description: d}
-- {key: r.amount, type: float, range: [0, 1], default: 0, ui: {group: R, control: slider, step: 0.1, label: Amount, order: 9}, description: d}
-- {key: g.gap, type: int, range: [0, 9], default: 1, ui: {group: G, control: slider, step: 1, label: Gap, order: 10}, description: d}
+- {key: t.on, type: bool, default: true, neutral: true, ui: {group: Title, control: toggle, label: On, order: 0}, description: d}
+- {key: r.split, type: bool, default: true, neutral: true, ui: {group: R, control: toggle, label: Split, order: 1, header: true}, description: d}
+- {key: r.blur, type: float, range: [0, 1], default: 0, neutral: 0, ui: {group: R, control: slider, step: 0.1, label: Blur, order: 2, state: focused, row: Blur}, description: d}
+- {key: r.inactive.blur, type: float, range: [0, 1], default: 0, neutral: 0, ui: {group: R, control: slider, step: 0.1, label: Unfocused blur, order: 3, state: unfocused, row: Blur}, description: d}
+- {key: r.depth, type: float, range: [0, 1], default: 0, neutral: 0, ui: {group: R, control: slider, step: 0.1, label: Depth, order: 4, state: focused, row: Depth}, description: d}
+- {key: r.inactive.depth, type: float, range: [0, 1], default: 0, neutral: 0, ui: {group: R, control: slider, step: 0.1, label: Unfocused depth, order: 5, state: unfocused, row: Depth}, description: d}
+- {key: r.kind, type: enum, values: [a, b], default: a, neutral: a, ui: {group: R, control: select, label: Kind, order: 6}, description: d}
+- {key: r.bypass.one, type: bool, default: false, neutral: false, ui: {group: R, control: toggle, label: Bypass one, order: 7}, description: d}
+- {key: r.bypass.two, type: bool, default: false, neutral: false, ui: {group: R, control: toggle, label: Bypass two, order: 8}, description: d}
+- {key: r.amount, type: float, range: [0, 1], default: 0, neutral: 0, ui: {group: R, control: slider, step: 0.1, label: Amount, order: 9}, description: d}
+- {key: g.gap, type: int, range: [0, 9], default: 1, neutral: 1, ui: {group: G, control: slider, step: 1, label: Gap, order: 10}, description: d}
 `;
 
 function defsFrom(yamlText) {
@@ -59,7 +59,7 @@ test('loadDefs still loads with the rack directory beside the def files', () => 
 });
 
 test('a row with two parameters of one state is rejected before a device can claim it', () => {
-  const doubled = defsFrom(DEFS + `- {key: r.blur2, type: float, range: [0, 1], default: 0, ui: {group: R, control: slider, step: 0.1, label: Blur again, order: 11, state: focused, row: Blur}, description: d}\n`);
+  const doubled = defsFrom(DEFS + `- {key: r.blur2, type: float, range: [0, 1], default: 0, neutral: 0, ui: {group: R, control: slider, step: 0.1, label: Blur again, order: 11, state: focused, row: Blur}, description: d}\n`);
   assert.throws(() => validateRack(complete, doubled), /row Blur in group R has two focused parameters/);
 });
 
