@@ -34,6 +34,12 @@ function definition(name, params, glass) {
     `        distortion ${glass.distortion} scale=${glass.distortionScale}`,
     `        anisotropic-blur ${glass.anisotropicBlur}`,
     `        roughness ${glass.roughness}`,
+    `        iridescence ${glass.iridescence}`,
+    `        aurora ${glass.aurora} {`,
+    `            drift-hz ${glass.auroraDriftHz}`,
+    `            color ${JSON.stringify(glass.auroraColorA)}`,
+    `            color ${JSON.stringify(glass.auroraColorB)}`,
+    '        }',
     `        noise ${glass.noise} type=${JSON.stringify(params['glass.noiseType'])}`,
     `        saturation ${glass.saturation}`,
     `        backdrop-blur ${glass.backdropBlur}`,
@@ -54,6 +60,7 @@ const OPTICS = [
   'backdropBlur', 'roughness', 'attenuationColor', 'attenuationDistance',
   'ior', 'thickness', 'chromaticAberration', 'distortion', 'distortionScale',
   'anisotropicBlur', 'noise', 'saturation',
+  'iridescence', 'aurora', 'auroraDriftHz', 'auroraColorA', 'auroraColorB',
 ];
 
 // What "off" means for each rack device, keyed by its bypass parameter. The
@@ -67,8 +74,10 @@ export const DRY = {
   'glass.bypass.distortion': { distortion: 0 },
   'glass.bypass.refraction': { ior: 1, chromaticAberration: 0, anisotropicBlur: 0 },
   'glass.bypass.fringing': { chromaticAberration: 0 },
+  'glass.bypass.iridescence': { iridescence: 0 },
   'glass.bypass.directionalBlur': { anisotropicBlur: 0 },
   'glass.bypass.tint': { attenuationColor: '#ffffff' },
+  'glass.bypass.aurora': { aurora: 0 },
   'glass.bypass.saturation': { saturation: 1 },
   'glass.bypass.noise': { noise: 0 },
 };

@@ -1,13 +1,13 @@
 ---
 id: prism-08c1de
-title: "Starter profiles Ice, Aurora, and Rainbow matching the niri-material presets"
+title: Starter profiles Aurora and Rainbow matching the niri-material presets
 status: todo
 priority: 2
 size: m
 created: 2026-09-10T09:33:47Z
-updated: 2026-09-10T09:33:47Z
+updated: 2026-09-11T07:50:56Z
 depends: [prism-763054]
 tags: [profiles, niri]
 ---
 
-niri-material docs/specs/2026-09-10-material-optics-design.md sections 8 and 9. Ship three profiles carrying the tuned preset values of resources/materials/{ice,aurora,rainbow}.kdl so loading a profile is the material choice. How Prism ships a profile it did not save is the design question here; contexts are per-host files under the config directory today.
+Ship ordinary Prism profile YAML files for Aurora and Rainbow matching the tuned niri-material presets. Reuse the existing context loader and profile picker, document non-overwriting installation into the profile directory, and validate the profiles and emitted niri config. Ice is tracked separately; no new profile subsystem. Depends on prism-763054.

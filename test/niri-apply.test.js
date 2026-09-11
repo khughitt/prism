@@ -36,6 +36,12 @@ const PARAMS = {
   'glass.noise': 0,
   'glass.noiseType': 'fine',
   'glass.saturation': 1,
+  'glass.iridescence': 0,
+  'glass.aurora': 0,
+  'glass.auroraDriftHz': 4,
+  'glass.auroraColorA': "#3dffb0",
+  'glass.auroraColorB': "#7a5cff",
+
 };
 
 // A fake niri whose two subcommands fail independently, and which records the
@@ -230,7 +236,7 @@ test('probe-material names niri-material and what is installed', (t) => {
 // The case three shipped packages were in: they knew `material`, and predated the
 // type= prism emits on noise. A probe of a minimal block says yes and apply then
 // fails, so the probe is the fragment the sink writes, rendered from the same code.
-test('probe-material rejects a build too old for a property prism emits', (t) => {
+for (const property of ['type=', 'iridescence', 'aurora']) test(`probe-material rejects a build too old for ${property}`, (t) => {
   const { dir } = fixture(t);
   const probe = fileURLToPath(new URL('../integrations/niri/probe-material', import.meta.url));
 
@@ -238,13 +244,13 @@ test('probe-material rejects a build too old for a property prism emits', (t) =>
     encoding: 'utf8',
     env: { ...process.env, PATH: `${path.join(dir, 'bin')}:${process.env.PATH}`,
            NIRI_FAKE_LOG: path.join(dir, 'niri.log'),
-           NIRI_FAKE_REJECT_PATTERN: 'type=' },
+           NIRI_FAKE_REJECT_PATTERN: property },
   });
 
   assert.equal(result.status, 1);
   assert.deepEqual(result.stderr.trim().split('\n'), [
     'this niri does not accept the config prism emits (installed: niri 26.04 (fake))',
-    "niri: error: unknown property 'type='",
+    `niri: error: unknown property '${property}'`,
   ]);
 });
 

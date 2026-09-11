@@ -233,6 +233,73 @@
   ui: {group: Focus, control: slider, step: 0.05, label: Unfocused saturation, order: 331, state: unfocused, row: Saturation}
   description: Color saturation through the glass of unfocused terminals; below 1 lets the pane recede
 
+- key: glass.iridescence
+  type: float
+  range: [0, 1]
+  default: 0
+  neutral: 0
+  ui: {group: Focus, control: slider, step: 0.01, label: Iridescence, order: 340, display: percent, state: focused, row: Iridescence}
+  description: Thin-film color on the glass edge light
+- key: glass.inactive.iridescence
+  type: float
+  range: [0, 1]
+  default: 0
+  neutral: 0
+  ui: {group: Focus, control: slider, step: 0.01, label: Unfocused Iridescence, order: 341, display: percent, state: unfocused, row: Iridescence}
+  description: Thin-film color on the glass edge light on unfocused terminals
+- key: glass.aurora
+  type: float
+  range: [0, 1]
+  default: 0
+  neutral: 0
+  ui: {group: Focus, control: slider, step: 0.01, label: Aurora, order: 350, display: percent, state: focused, row: Aurora}
+  description: Strength of the slow color field inside the glass
+- key: glass.inactive.aurora
+  type: float
+  range: [0, 1]
+  default: 0
+  neutral: 0
+  ui: {group: Focus, control: slider, step: 0.01, label: Unfocused Aurora, order: 351, display: percent, state: unfocused, row: Aurora}
+  description: Strength of the slow color field inside the glass on unfocused terminals
+- key: glass.auroraDriftHz
+  type: int
+  range: [0, 30]
+  default: 4
+  neutral: 4
+  ui: {group: Focus, control: slider, step: 1, label: Drift rate, order: 360, unit: Hz, state: focused, row: Drift rate}
+  description: Aurora updates per second; 0 pins the field, and reduced motion halves this rate
+- key: glass.inactive.auroraDriftHz
+  type: int
+  range: [0, 30]
+  default: 4
+  neutral: 4
+  ui: {group: Focus, control: slider, step: 1, label: Unfocused Drift rate, order: 361, unit: Hz, state: unfocused, row: Drift rate}
+  description: Aurora updates per second; 0 pins the field, and reduced motion halves this rate on unfocused terminals
+- key: glass.auroraColorA
+  type: color
+  default: '#3dffb0'
+  neutral: '#3dffb0'
+  ui: {group: Focus, control: color, label: Color A, order: 370, state: focused, row: Color A}
+  description: First color of the aurora field
+- key: glass.inactive.auroraColorA
+  type: color
+  default: '#3dffb0'
+  neutral: '#3dffb0'
+  ui: {group: Focus, control: color, label: Unfocused Color A, order: 371, state: unfocused, row: Color A}
+  description: First color of the aurora field on unfocused terminals
+- key: glass.auroraColorB
+  type: color
+  default: '#7a5cff'
+  neutral: '#7a5cff'
+  ui: {group: Focus, control: color, label: Color B, order: 380, state: focused, row: Color B}
+  description: Second color of the aurora field
+- key: glass.inactive.auroraColorB
+  type: color
+  default: '#7a5cff'
+  neutral: '#7a5cff'
+  ui: {group: Focus, control: color, label: Unfocused Color B, order: 381, state: unfocused, row: Color B}
+  description: Second color of the aurora field on unfocused terminals
+
 # Bypass: one per rack device, shared by both focus states. The niri sink
 # writes the device's dry value into both materials while the key is true; the
 # mix parameters keep their numbers, so switching the device back on restores
@@ -286,3 +353,15 @@
   neutral: false
   ui: {group: Focus, control: toggle, label: Bypass noise, order: 470}
   description: Silence the noise stage; both materials get noise 0 while set, since the grain type is shared, and the Noise values keep their numbers
+- key: glass.bypass.iridescence
+  type: bool
+  default: false
+  neutral: false
+  ui: {group: Focus, control: toggle, label: Bypass iridescence, order: 435}
+  description: Silence iridescence in both materials while retaining all its controls
+- key: glass.bypass.aurora
+  type: bool
+  default: false
+  neutral: false
+  ui: {group: Focus, control: toggle, label: Bypass aurora, order: 455}
+  description: Silence aurora in both materials while retaining all its controls

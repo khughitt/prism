@@ -42,6 +42,17 @@ const resolved = { params: {
   'glass.saturation': 1,
   'glass.inactive.noise': 0.02,
   'glass.inactive.saturation': 0.85,
+  'glass.iridescence': 0,
+  'glass.aurora': 0,
+  'glass.auroraDriftHz': 4,
+  'glass.auroraColorA': "#3dffb0",
+  'glass.auroraColorB': "#7a5cff",
+  'glass.inactive.iridescence': 0,
+  'glass.inactive.aurora': 0,
+  'glass.inactive.auroraDriftHz': 4,
+  'glass.inactive.auroraColorA': "#3dffb0",
+  'glass.inactive.auroraColorB': "#7a5cff",
+  'glass.bypass.iridescence': false, 'glass.bypass.aurora': false,
   'glass.bypass.backdrop': false,
   'glass.bypass.distortion': false,
   'glass.bypass.refraction': false,
@@ -71,6 +82,12 @@ material "terminal-glass" {
         distortion 0.32 scale=0.05
         anisotropic-blur 0
         roughness 0.08
+        iridescence 0
+        aurora 0 {
+            drift-hz 4
+            color "#3dffb0"
+            color "#7a5cff"
+        }
         noise 0 type="fine"
         saturation 1
         backdrop-blur true
@@ -91,6 +108,12 @@ material "terminal-glass-inactive" {
         distortion 0.1 scale=0.4
         anisotropic-blur 0.02
         roughness 0.5
+        iridescence 0
+        aurora 0 {
+            drift-hz 4
+            color "#3dffb0"
+            color "#7a5cff"
+        }
         noise 0.02 type="fine"
         saturation 0.85
         backdrop-blur false
@@ -137,6 +160,12 @@ material "terminal-glass" {
         distortion 0.32 scale=0.05
         anisotropic-blur 0
         roughness 0.08
+        iridescence 0
+        aurora 0 {
+            drift-hz 4
+            color "#3dffb0"
+            color "#7a5cff"
+        }
         noise 0 type="fine"
         saturation 1
         backdrop-blur true
@@ -392,7 +421,7 @@ test('noise and saturation are written even when they are neutral', () => {
 
   // Prism owns both values; it never relies on niri's inheritance from the
   // global blur block, so the neutral pair is written, not omitted.
-  assert.match(kdl, /        roughness 0.08\n        noise 0 type="fine"\n        saturation 1\n        backdrop-blur true\n/);
+  assert.match(kdl, /        roughness 0.08\n[^]*        noise 0 type="fine"\n        saturation 1\n        backdrop-blur true\n/);
 });
 
 test('every noise type is quoted and shared across glass materials', () => {
@@ -427,4 +456,36 @@ test('the sink dry values agree with the defs neutrals', () => {
   for (const optic of ['thickness', 'attenuationDistance', 'distortionScale']) {
     assert.equal(named.has(optic), false, optic);
   }
+});
+
+test('iridescence and aurora values are independent across focus states', () => {
+  const kdl = renderNiriFragment(with_({
+    'glass.iridescence': 0.8, 'glass.inactive.iridescence': 0.2,
+    'glass.aurora': 0.5, 'glass.inactive.aurora': 0.1,
+    'glass.auroraDriftHz': 4, 'glass.inactive.auroraDriftHz': 0,
+    'glass.auroraColorA': '#112233', 'glass.auroraColorB': '#445566',
+    'glass.inactive.auroraColorA': '#778899', 'glass.inactive.auroraColorB': '#aabbcc',
+  }));
+  const [active, inactive] = kdl.match(/^material [^]*?^\}/gm);
+  assert.match(active, /iridescence 0.8/);
+  assert.match(active, /aurora 0.5 \{\n            drift-hz 4\n            color "#112233"\n            color "#445566"/);
+  assert.match(inactive, /iridescence 0.2/);
+  assert.match(inactive, /aurora 0.1 \{\n            drift-hz 0\n            color "#778899"\n            color "#aabbcc"/);
+});
+
+test('optic bypasses silence both states while retaining their settings', () => {
+  const params = with_({
+    'glass.iridescence': 0.8, 'glass.inactive.iridescence': 0.3,
+    'glass.aurora': 0.5, 'glass.inactive.aurora': 0.2,
+    'glass.bypass.iridescence': true, 'glass.bypass.aurora': true,
+  });
+  const before = structuredClone(params);
+  const dry = renderNiriFragment(params);
+  assert.equal((dry.match(/iridescence 0\n/g) ?? []).length, 2);
+  assert.equal((dry.match(/aurora 0 \{/g) ?? []).length, 2);
+  assert.deepEqual(params, before);
+  const wet = renderNiriFragment({ params: { ...params.params,
+    'glass.bypass.iridescence': false, 'glass.bypass.aurora': false } });
+  assert.match(wet, /iridescence 0.8/);
+  assert.match(wet, /aurora 0.5 \{/);
 });

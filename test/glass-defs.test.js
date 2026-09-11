@@ -7,6 +7,18 @@ import { defsDir } from '../src/paths.js';
 // package's docs/materials/material-config.md. Prism may narrow a range but
 // must never offer a value the compositor rejects.
 const NATIVE = {
+  'glass.iridescence': { range: [0, 1], default: 0 },
+  'glass.aurora': { range: [0, 1], default: 0 },
+  'glass.auroraDriftHz': { range: [0, 30], default: 4 },
+  'glass.auroraColorA': { default: "#3dffb0" },
+  'glass.auroraColorB': { default: "#7a5cff" },
+  'glass.inactive.iridescence': { range: [0, 1], default: 0 },
+  'glass.inactive.aurora': { range: [0, 1], default: 0 },
+  'glass.inactive.auroraDriftHz': { range: [0, 30], default: 4 },
+  'glass.inactive.auroraColorA': { default: "#3dffb0" },
+  'glass.inactive.auroraColorB': { default: "#7a5cff" },
+  'glass.bypass.iridescence': { default: false },
+  'glass.bypass.aurora': { default: false },
   'glass.ior': { range: [1, 3], default: 1.5 },
   'glass.inactive.ior': { range: [1, 3], default: 1.5 },
   'glass.thickness': { range: [0, 200], default: 20 },
@@ -204,6 +216,11 @@ test('visible numeric defaults lie on their slider grids', () => {
 });
 
 const MATRIX = [
+  ['Iridescence', 'glass.iridescence', 'glass.inactive.iridescence'],
+  ['Aurora', 'glass.aurora', 'glass.inactive.aurora'],
+  ['Drift rate', 'glass.auroraDriftHz', 'glass.inactive.auroraDriftHz'],
+  ['Color A', 'glass.auroraColorA', 'glass.inactive.auroraColorA'],
+  ['Color B', 'glass.auroraColorB', 'glass.inactive.auroraColorB'],
   ['Frosted backdrop', 'glass.backdropBlur', 'glass.inactive.backdropBlur'],
   ['Blur', 'glass.roughness', 'glass.inactive.roughness'],
   ['Tint', 'glass.attenuationColor', 'glass.inactive.attenuationColor'],
@@ -239,6 +256,8 @@ test('the terminal opacity pair is hidden from the panel', () => {
 // writes the device's dry value while the key is true and the mix keeps its
 // number (docs/specs/2026-09-08-device-chain-rack-design.md).
 const BYPASS = [
+  ['glass.bypass.iridescence', 'Bypass iridescence', 435],
+  ['glass.bypass.aurora', 'Bypass aurora', 455],
   ['glass.bypass.backdrop', 'Bypass backdrop', 400],
   ['glass.bypass.distortion', 'Bypass distortion', 410],
   ['glass.bypass.refraction', 'Bypass refraction', 420],
@@ -383,6 +402,17 @@ test('everything outside the matrix is shared glass', () => {
 });
 
 const NEUTRAL = {
+  'glass.iridescence': 0,
+  'glass.aurora': 0,
+  'glass.auroraDriftHz': 4,
+  'glass.auroraColorA': "#3dffb0",
+  'glass.auroraColorB': "#7a5cff",
+  'glass.inactive.iridescence': 0,
+  'glass.inactive.aurora': 0,
+  'glass.inactive.auroraDriftHz': 4,
+  'glass.inactive.auroraColorA': "#3dffb0",
+  'glass.inactive.auroraColorB': "#7a5cff",
+  'glass.bypass.iridescence': false, 'glass.bypass.aurora': false,
   'glass.enabled': true, 'compositor.gaps': 24,
   'glass.paneLip': 8, 'glass.paneShiftX': 0, 'glass.paneShiftY': 0,
   'glass.jellyFlex': 0, 'glass.jellyRipple': 0,
@@ -417,4 +447,15 @@ test('neutral saturation and refraction are identities, not zeroes', () => {
   assert.equal(defs.get('glass.saturation').neutral, 1);
   assert.equal(defs.get('glass.ior').neutral, 1);
   assert.equal(defs.get('glass.ior').range[0], 1);
+});
+
+test('aurora drift controls use whole Hz so every offered rate parses in niri', () => {
+  const defs = loadDefs(defsDir());
+  for (const key of ['glass.auroraDriftHz', 'glass.inactive.auroraDriftHz']) {
+    const def = defs.get(key);
+    assert.equal(def.type, 'int');
+    assert.deepEqual(def.range, [0, 30]);
+    assert.equal(def.ui.step, 1);
+    assert.equal(def.ui.unit, 'Hz');
+  }
 });

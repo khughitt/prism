@@ -10,9 +10,11 @@ zero so the glass is the only surface behind the text; with the focus split on,
 unfocused terminals get a second material whose optics are the `glass.inactive.*`
 overrides: frosted backdrop, blur, tint, tint distance, refraction, depth,
 fringing, distortion, distortion detail, directional blur, noise, and
-saturation. Blur, tint distance, fringing, distortion, noise, and saturation
-ship already receded; the other six pairs start level, so the split only shows
-where you tune it.
+saturation, iridescence, aurora amount, drift rate, and two aurora colors. Blur,
+tint distance, fringing, distortion, noise, and saturation ship already receded;
+the remaining pairs start level. Iridescence and aurora start at zero. Aurora
+drift uses whole Hz from 0 to 30; 0 pins the field, and niri halves the rate
+under reduced motion.
 
 Every `glass.inactive.*` default is fixed, not inherited: tuning `glass.ior`
 leaves `glass.inactive.ior` at 1.5. Set both halves of a row, or the unfocused
@@ -31,7 +33,7 @@ The Noctalia integration is a native
 v5 plugin under `integrations/noctalia-plugin/`; its panel is a shared `Glass`
 section for the frame and pane motion and a `Focus` rack with one card per glass
 stage in the shader's order (Backdrop, Distortion, Refraction, Fringing,
-Directional blur, Tint, Saturation, Noise). The rack's mix columns place the
+Iridescence, Directional blur, Tint, Aurora, Saturation, Noise). The rack's mix columns place the
 unfocused state on the left and the focused on the right. Each card shows its
 mix for both focus states, a light
 colored by category that bypasses the stage when clicked, and a chevron that
