@@ -33,7 +33,7 @@ The Noctalia integration is a native
 v5 plugin under `integrations/noctalia-plugin/`; its panel is a shared `Glass`
 section for the frame and pane motion and a `Focus` rack with one card per glass
 stage in the shader's order (Backdrop, Distortion, Refraction, Fringing,
-Iridescence, Directional blur, Tint, Aurora, Saturation, Noise). The rack's mix columns place the
+Directional blur, Tint, Iridescence, Aurora, Saturation, Noise). The rack's mix columns place the
 unfocused state on the left and the focused on the right. Each card shows its
 mix for both focus states, a light
 colored by category that bypasses the stage when clicked, and a chevron that
@@ -62,6 +62,31 @@ contexts: `list`, `show`, `save` and `rename` (profiles), `activate`,
 `deactivate`, `delete`, `pin` and `unpin wallpaper`, and `wallpaper <path>`, the last being
 what a Noctalia `wallpaper_changed` hook calls. Design:
 `docs/specs/2026-09-05-prism-context-layers-design.md`.
+
+## Starter profiles
+
+`resources/profiles/Aurora.yaml` and `resources/profiles/Rainbow.yaml` are ordinary full snapshots
+for the existing profile picker. They use the native niri-material presets' optics
+in both focus states: Aurora adds a green/violet field at 4 Hz; Rainbow combines
+refraction, fringing, and iridescence. Noise is explicitly off and saturation is
+1 so host blur settings cannot change the look. Other Prism settings use the
+shipped defaults, including terminal app ids and gaps; loading a starter replaces
+the effective values of those settings too.
+
+From the Prism checkout, install without overwriting profiles you have edited:
+
+```sh
+profile_dir="${PRISM_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/prism}/contexts/profile"
+mkdir -p "$profile_dir"
+cp --update=none resources/profiles/{Aurora,Rainbow}.yaml "$profile_dir/"
+prism context list
+prism context activate profile Aurora
+```
+
+Choose `Rainbow` instead for the rainbow preset, or select either in the panel's
+profile picker. `prism context deactivate profile` restores the lower layers.
+The installed niri must accept `iridescence` and `aurora`; the material capability
+probe checks this before applying glass.
 
 ## Reset modes
 

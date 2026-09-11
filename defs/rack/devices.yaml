@@ -35,13 +35,6 @@ devices:
     shared: []
     bypass: glass.bypass.fringing
     requires: refraction
-  - device: iridescence
-    label: Iridescence
-    category: optic
-    mix: Iridescence
-    rows: []
-    shared: []
-    bypass: glass.bypass.iridescence
   - device: directionalBlur
     label: Directional blur
     category: optic
@@ -57,6 +50,13 @@ devices:
     rows: [Tint distance]
     shared: []
     bypass: glass.bypass.tint
+  - device: iridescence
+    label: Iridescence
+    category: optic
+    mix: Iridescence
+    rows: []
+    shared: []
+    bypass: glass.bypass.iridescence
   - device: aurora
     label: Aurora
     category: optic

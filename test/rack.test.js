@@ -45,7 +45,7 @@ test('the shipped rack loads against the shipped defs in shader order', () => {
   const rack = loadRack(defsDir(), loadDefs(defsDir()));
   assert.equal(rack.group, 'Focus');
   assert.deepEqual(rack.devices.map((d) => d.device), [
-    'backdrop', 'distortion', 'refraction', 'fringing', 'iridescence', 'directionalBlur', 'tint', 'aurora', 'saturation', 'noise',
+    'backdrop', 'distortion', 'refraction', 'fringing', 'directionalBlur', 'tint', 'iridescence', 'aurora', 'saturation', 'noise',
   ]);
   assert.deepEqual(rack.devices.filter((d) => d.requires).map((d) => [d.device, d.requires]),
     [['fringing', 'refraction'], ['directionalBlur', 'refraction']]);
