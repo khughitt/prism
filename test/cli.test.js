@@ -369,6 +369,45 @@ test('doctor: a sink whose apply failed reports its error', async () => {
   assert.doesNotMatch(out, /gensink/);
 });
 
+// requirements is doctor's requirement pass on its own: dotfiles' setup preflight
+// runs it before ~/.config/prism is linked or any sink has applied, when doctor
+// would stop at missing generated files first. A missing store resolves to the
+// defaults, so `when` still evaluates on a fresh machine.
+test('requirements reports only unmet declared requirements and exits 1 on any', async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-req-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(dir, 'reqsink'));
+  fs.writeFileSync(path.join(dir, 'reqsink', 'manifest.yaml'), [
+    'sink: reqsink',
+    'requires:',
+    '  - {command: definitely-not-installed, when: debug.backdrop, fix: install it}',
+    'binds:',
+    '  - {param: debug.backdrop, liveness: live}',
+    '',
+  ].join('\n'));
+
+  const restore = process.env.PRISM_INTEGRATIONS_DIR;
+  process.env.PRISM_INTEGRATIONS_DIR = dir;
+  t.after(() => { process.env.PRISM_INTEGRATIONS_DIR = restore; });
+
+  const requirements = async () => {
+    let out = '';
+    const code = await cli.run(['requirements'], { runner: () => {}, print: (text) => { out += text; } });
+    return { code, out };
+  };
+
+  // No store yet: debug.backdrop takes its default, false, so nothing applies.
+  let result = await requirements();
+  assert.equal(result.code, 0);
+  assert.equal(result.out, 'requirements: ok\n');
+
+  await cli.run(['set', 'debug.backdrop', 'true'], { runner: () => {} });
+  result = await requirements();
+  assert.equal(result.code, 1);
+  assert.equal(result.out, 'requirements: reqsink: definitely-not-installed is not installed — install it\n');
+  assert.doesNotMatch(result.out, /generated file missing/);
+});
+
 // doctor exists so a machine learns what it is missing without first
 // provoking a failed apply.
 test('doctor reports an unmet requirement, and says nothing when its when is false', async (t) => {
@@ -498,6 +537,7 @@ test('every public verb enforces its required and stray arguments', async () => 
     ['list', 'extra'],
     ['describe'], ['describe', '--json', 'extra'], ['describe', '--yaml'],
     ['doctor', 'extra'],
+    ['requirements', 'extra'],
     ['set', '--base'], ['set', '--base', 'glass.ior'], ['unset', '--base'],
   ];
   for (const argv of invalid) {

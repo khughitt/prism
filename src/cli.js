@@ -263,6 +263,25 @@ export async function run(argv, opts = {}) {
         }), eprint);
       }
 
+      // doctor's requirement pass alone, for a machine that has not applied
+      // anything yet: dotfiles' setup preflight runs it before doctor could get
+      // past the generated files setup is about to create. A missing store
+      // resolves to the defaults, so `when` evaluates on a fresh machine.
+      case 'requirements': {
+        if (rest.length !== 0) throw new Error('usage: prism requirements');
+        const { defs, manifests } = load();
+        const { params } = loadStore(defs);
+        let unmetCount = 0;
+        for (const manifest of manifests) {
+          const unmet = unmetRequirement(manifest, { params });
+          if (!unmet) continue;
+          print(`requirements: ${manifest.sink}: ${unmet}\n`);
+          unmetCount++;
+        }
+        if (unmetCount === 0) print('requirements: ok\n');
+        return unmetCount === 0 ? 0 : 1;
+      }
+
       case 'doctor': {
         if (rest.length !== 0) throw new Error('usage: prism doctor');
         const { defs, manifests } = load();
@@ -368,7 +387,7 @@ export async function run(argv, opts = {}) {
       }
 
       default:
-        eprint('usage: prism set|unset|get|list|describe|apply|doctor|context|reset\n');
+        eprint('usage: prism set|unset|get|list|describe|apply|requirements|doctor|context|reset\n');
         return 2;
     }
   } catch (error) {
