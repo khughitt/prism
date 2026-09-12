@@ -4,8 +4,9 @@ title: "Context-specific glass profiles: named, per-wallpaper, and per-state"
 status: todo
 priority: 2
 size: l
+complexity: high
 created: 2026-09-05T18:50:21Z
-updated: 2026-09-08T23:16:00Z
+updated: 2026-09-12T16:46:10Z
 depends: [dots-88dc34]
 tags: [profiles, noctalia, store]
 ---

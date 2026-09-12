@@ -4,8 +4,9 @@ title: Decide what panel-wide restore does under a loaded profile or a pinned wa
 status: todo
 priority: 2
 size: s
+complexity: high
 created: 2026-09-10T17:00:50Z
-updated: 2026-09-11T01:13:09Z
+updated: 2026-09-12T16:46:10Z
 depends: []
 parent: prism-2f0b4b
 tags: [ui, profiles, noctalia]

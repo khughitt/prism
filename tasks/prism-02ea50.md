@@ -4,8 +4,9 @@ title: Pin the untested context-CLI edges
 status: todo
 priority: 3
 size: xs
+complexity: low
 created: 2026-09-05T22:55:53Z
-updated: 2026-09-05T22:55:53Z
+updated: 2026-09-12T16:46:10Z
 depends: []
 tags: [cli, testing]
 ---

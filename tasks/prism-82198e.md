@@ -4,8 +4,9 @@ title: Add a Ghostty background-opacity sink
 status: todo
 priority: 2
 size: m
+complexity: mid
 created: 2026-09-01T15:48:11Z
-updated: 2026-09-07T08:21:16Z
+updated: 2026-09-12T16:46:10Z
 depends: []
 tags: [migration, integration, terminal]
 ---

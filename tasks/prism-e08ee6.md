@@ -4,8 +4,9 @@ title: "Wallpaper header: edited indicator and a reset-wallpaper-layer button in
 status: todo
 priority: 2
 size: s
+complexity: mid
 created: 2026-09-11T01:13:09Z
-updated: 2026-09-11T01:13:09Z
+updated: 2026-09-12T16:46:10Z
 depends: []
 parent: prism-46035b
 tags: [quick-add, profiles, ui, noctalia]

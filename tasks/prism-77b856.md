@@ -4,8 +4,9 @@ title: Simplify rack bypass controls while preserving individual reset
 status: todo
 priority: 2
 size: s
+complexity: mid
 created: 2026-09-09T13:08:43Z
-updated: 2026-09-09T13:08:43Z
+updated: 2026-09-12T16:46:10Z
 depends: []
 parent: prism-a03862
 tags: [ui, noctalia]

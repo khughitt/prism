@@ -4,8 +4,9 @@ title: Expose the ring of light in the palette
 status: todo
 priority: 2
 size: m
+complexity: low
 created: 2026-09-05T20:56:45Z
-updated: 2026-09-05T20:56:45Z
+updated: 2026-09-12T16:46:10Z
 depends: [material-8c69c9]
 tags: [niri]
 ---

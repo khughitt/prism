@@ -4,8 +4,9 @@ title: File the sink-requirements follow-ups
 status: todo
 priority: 3
 size: xs
+complexity: low
 created: 2026-09-08T23:30:44Z
-updated: 2026-09-08T23:30:44Z
+updated: 2026-09-12T16:46:10Z
 depends: []
 tags: [errors]
 plan: docs/plans/2026-09-08-sink-requirements.md

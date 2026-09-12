@@ -4,8 +4,9 @@ title: Rack device and niri sink nodes for the cracks optic
 status: todo
 priority: 2
 size: m
+complexity: mid
 created: 2026-09-11T07:50:56Z
-updated: 2026-09-11T07:50:56Z
+updated: 2026-09-12T16:46:10Z
 depends: [material-bb3fe5]
 tags: [niri, rack]
 ---

@@ -4,8 +4,9 @@ title: Let an unset glass.inactive.* follow its focused value instead of a fixed
 status: todo
 priority: 2
 size: m
+complexity: high
 created: 2026-09-08T22:56:48Z
-updated: 2026-09-08T22:56:48Z
+updated: 2026-09-12T16:46:10Z
 depends: []
 tags: [defs, store, material]
 ---

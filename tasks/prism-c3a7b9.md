@@ -4,8 +4,9 @@ title: "Visual acceptance for the widened focus split, and whether its new rows 
 status: todo
 priority: 2
 size: m
+complexity: mid
 created: 2026-09-09T01:19:33Z
-updated: 2026-09-09T01:19:33Z
+updated: 2026-09-12T16:46:10Z
 depends: []
 tags: [material, niri, acceptance]
 ---

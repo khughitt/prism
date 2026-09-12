@@ -4,8 +4,9 @@ title: Investigate intermittent slow material GPU draws
 status: todo
 priority: 2
 size: m
+complexity: high
 created: 2026-09-08T20:15:43Z
-updated: 2026-09-08T20:29:51Z
+updated: 2026-09-12T16:46:10Z
 depends: []
 tags: [performance, material, investigation]
 source: "docs/notes/2026-09-07-glass-noise-dulling-spike-results.md#completed-actual-output-resolution-check"

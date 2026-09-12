@@ -4,9 +4,10 @@ title: Test + CI iteration cost audit
 status: doing
 priority: 2
 size: m
+complexity: low
 owner: main
 created: 2026-09-04T21:44:54Z
-updated: 2026-09-09T01:55:28Z
+updated: 2026-09-12T16:46:10Z
 depends: [ops-31f038]
 tags: [testing]
 ---

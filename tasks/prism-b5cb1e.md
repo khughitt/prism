@@ -4,8 +4,9 @@ title: Derive glass attenuation color and terminal palette from the Noctalia col
 status: todo
 priority: 1
 size: m
+complexity: high
 created: 2026-09-05T01:10:50Z
-updated: 2026-09-08T22:56:56Z
+updated: 2026-09-12T16:46:10Z
 depends: []
 tags: [integration, noctalia, colors]
 ---

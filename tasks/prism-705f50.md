@@ -4,8 +4,9 @@ title: "Panel acceptance: the first Focus rows that are not sliders"
 status: todo
 priority: 2
 size: s
+complexity: low
 created: 2026-09-09T01:19:27Z
-updated: 2026-09-09T01:19:27Z
+updated: 2026-09-12T16:46:10Z
 depends: []
 tags: [noctalia, ui, material]
 ---

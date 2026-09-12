@@ -4,8 +4,9 @@ title: "Stacked noise: several grain generators with their own gain, type, and s
 status: todo
 priority: 2
 size: l
+complexity: high
 created: 2026-09-09T03:03:30Z
-updated: 2026-09-09T03:03:30Z
+updated: 2026-09-12T16:46:10Z
 depends: [material-3fcba2]
 parent: prism-a03862
 tags: [material, bus, noctalia]

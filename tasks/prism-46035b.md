@@ -4,8 +4,9 @@ title: "Wallpaper autosave: the wallpaper layer captures edits without a pin"
 status: todo
 priority: 2
 size: m
+complexity: high
 created: 2026-09-11T01:13:09Z
-updated: 2026-09-11T01:13:09Z
+updated: 2026-09-12T16:46:10Z
 depends: []
 parent: prism-2f0b4b
 tags: [quick-add, profiles, store, noctalia]

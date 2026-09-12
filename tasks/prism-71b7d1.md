@@ -4,8 +4,9 @@ title: Make small pane geometry respect the native material ring constraint
 status: todo
 priority: 2
 size: m
+complexity: high
 created: 2026-09-10T11:44:10Z
-updated: 2026-09-10T11:44:10Z
+updated: 2026-09-12T16:46:10Z
 depends: []
 tags: [niri]
 ---

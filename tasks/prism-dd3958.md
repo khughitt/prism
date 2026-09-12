@@ -4,8 +4,9 @@ title: "Contract test: every queue argv is accepted by the CLI parser"
 status: todo
 priority: 2
 size: s
+complexity: low
 created: 2026-09-10T17:00:50Z
-updated: 2026-09-10T17:00:50Z
+updated: 2026-09-12T16:46:10Z
 depends: []
 tags: [testing, noctalia]
 ---

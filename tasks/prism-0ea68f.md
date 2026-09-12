@@ -4,8 +4,9 @@ title: Emit light-ior in the niri glass block
 status: todo
 priority: 2
 size: s
+complexity: low
 created: 2026-09-05T17:14:03Z
-updated: 2026-09-05T17:47:59Z
+updated: 2026-09-12T16:46:10Z
 depends: []
 tags: [niri]
 ---

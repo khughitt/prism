@@ -4,8 +4,9 @@ title: "Device chain: frame the glass bus as an ordered rack of effects with a m
 status: todo
 priority: 2
 size: xl
+complexity: high
 created: 2026-09-09T00:48:50Z
-updated: 2026-09-09T03:03:38Z
+updated: 2026-09-12T16:46:10Z
 depends: []
 tags: [ui, material, noctalia, bus]
 spec: docs/specs/2026-09-08-device-chain-rack-design.md

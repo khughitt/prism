@@ -4,8 +4,9 @@ title: One Lua harness for the three panel test files
 status: todo
 priority: 3
 size: s
+complexity: low
 created: 2026-09-09T01:55:20Z
-updated: 2026-09-10T17:00:50Z
+updated: 2026-09-12T16:46:10Z
 depends: []
 tags: [testing, noctalia, dx]
 ---
