@@ -4,7 +4,7 @@ title: "Per-parameter GPU cost estimates: guide exposed ranges and warn on deman
 status: idea
 priority: 2
 created: 2026-09-07T21:18:05Z
-updated: 2026-09-09T01:19:45Z
+updated: 2026-09-11T23:34:15Z
 depends: []
 tags: [material, performance, ui]
 ---
@@ -14,3 +14,4 @@ Cross-project idea (material x prism). For each material parameter a user can co
 ## Notes
 
 - 2026-09-09T01:19:45Z (main): Weight the estimates by focus state: unfocused windows are the majority on screen, so glass.inactive.roughness 1, glass.inactive.anisotropicBlur, or glass.inactive.backdropBlur cost far more than the same value on the single focused window. prism-a4ef9a widened the split to 12 optics, so most demanding parameters now have an unfocused half. Relevant to prism-ed6be0.
+- 2026-09-11T23:34:15Z (main): material-31074f (material) is the measurement side of these estimates: per-pass/per-parameter cost under a consistent capture protocol. Source: mindful:thought:a476e6bcd1fd4297b70824758235d821
