@@ -1,11 +1,12 @@
 ---
 id: prism-49a068
 title: "Present the base layer as the default profile, with a visible reset to the shipped defaults"
-status: idea
+status: shelved
 priority: 2
 created: 2026-09-11T01:13:09Z
-updated: 2026-09-11T01:15:26Z
+updated: 2026-09-13T11:09:26Z
 depends: []
+parent: prism-3415ef
 tags: [quick-add, profiles, ui, noctalia]
 source: "mindful:thought:1e2513d2f5ea48609022559f3c687d01"
 ---
@@ -21,3 +22,5 @@ Revisit 2026-11-10: is the gap naming and discoverability, or did tuning under '
 ## Notes
 
 - 2026-09-11T01:15:26Z (main): Revisit date lives in prose until tasks-be6fcc (one-shot defer date in tasks) lands; move it onto the field then.
+- 2026-09-13T11:09:26Z (scope-acceptance): shelved: After prism-bf3ae9 settles reset semantics and prism-46035b settles wallpaper autosave, revisit the recorded 2026-11-10 review to choose New/default behavior.
+- 2026-09-13T11:09:26Z (scope-acceptance): scope: shelved; retained the existing deferred reset/autosave decision and 2026-11-10 review; brief: docs/notes/2026-09-13-profile-editing-brief.md
