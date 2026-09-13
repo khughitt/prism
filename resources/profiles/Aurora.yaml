@@ -54,6 +54,12 @@ glass.bypass.saturation: false
 glass.bypass.noise: false
 glass.bypass.iridescence: false
 glass.bypass.aurora: false
+# familiar keeps the native accent channel on; the resting color is the
+# native filament default.
+glass.ring.focus: true
+glass.ring.colorSource: familiar
+glass.ring.color: "#ccccff"
+glass.ring.driftHz: 15
 terminal.background.opacity.active: 0
 terminal.background.opacity.inactive: 0
 terminal.apps:

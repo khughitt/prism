@@ -44,6 +44,9 @@ const NATIVE = {
   'glass.bypass.noise': { default: false },
   'glass.jellyFlex': { range: [0, 0.02], default: 0.004 },
   'glass.jellyRipple': { range: [0, 0.5], default: 0.06 },
+  'glass.ring.focus': { default: true },
+  'glass.ring.color': { default: '#ccccff' },
+  'glass.ring.driftHz': { range: [0, 30], default: 15 },
   'glass.paneLip': { range: [0, 64], default: 6 },
   'glass.paneShiftX': { range: [-64, 64], default: 6 },
   'glass.paneShiftY': { range: [-64, 64], default: 6 },
@@ -84,7 +87,8 @@ test('the glass surface is exactly the parameters native niri consumes', () => {
   const defs = loadDefs(defsDir());
   const glass = [...defs.keys()].filter((key) => key.startsWith('glass.'));
 
-  assert.deepEqual(glass.slice().sort(), [...Object.keys(NATIVE), 'glass.noiseType'].sort());
+  assert.deepEqual(glass.slice().sort(),
+    [...Object.keys(NATIVE), 'glass.noiseType', 'glass.ring.colorSource'].sort());
 });
 
 test('noise type is a shared Focus select with an explicit Prism default', () => {
@@ -395,10 +399,21 @@ test('everything outside the matrix is shared glass', () => {
   assert.deepEqual(shared.sort(), [
     'compositor.gaps', 'glass.paneLip', 'glass.paneShiftX',
     'glass.paneShiftY', 'glass.jellyFlex', 'glass.jellyRipple',
+    'glass.ring.focus', 'glass.ring.colorSource', 'glass.ring.color', 'glass.ring.driftHz',
   ].sort());
-  for (const key of shared) {
-    assert.equal(defs.get(key).ui.group, 'Glass', key);
-  }
+  const groups = Object.fromEntries(shared.map((key) => [key, defs.get(key).ui.group]));
+  assert.deepEqual(groups, {
+    'compositor.gaps': 'Glass',
+    'glass.paneLip': 'Glass',
+    'glass.paneShiftX': 'Glass',
+    'glass.paneShiftY': 'Glass',
+    'glass.jellyFlex': 'Glass',
+    'glass.jellyRipple': 'Glass',
+    'glass.ring.focus': 'Ring',
+    'glass.ring.colorSource': 'Ring',
+    'glass.ring.color': 'Ring',
+    'glass.ring.driftHz': 'Ring',
+  });
 });
 
 const NEUTRAL = {
@@ -432,6 +447,8 @@ const NEUTRAL = {
   'glass.bypass.refraction': false, 'glass.bypass.fringing': false,
   'glass.bypass.directionalBlur': false, 'glass.bypass.tint': false,
   'glass.bypass.saturation': false, 'glass.bypass.noise': false,
+  'glass.ring.focus': true, 'glass.ring.colorSource': 'noctalia',
+  'glass.ring.color': '#ccccff', 'glass.ring.driftHz': 15,
 };
 
 test('every visible parameter neutralizes to its curated value', () => {
@@ -449,9 +466,9 @@ test('neutral saturation and refraction are identities, not zeroes', () => {
   assert.equal(defs.get('glass.ior').range[0], 1);
 });
 
-test('aurora drift controls use whole Hz so every offered rate parses in niri', () => {
+test('drift controls use whole Hz so every offered rate parses in niri', () => {
   const defs = loadDefs(defsDir());
-  for (const key of ['glass.auroraDriftHz', 'glass.inactive.auroraDriftHz']) {
+  for (const key of ['glass.auroraDriftHz', 'glass.inactive.auroraDriftHz', 'glass.ring.driftHz']) {
     const def = defs.get(key);
     assert.equal(def.type, 'int');
     assert.deepEqual(def.range, [0, 30]);

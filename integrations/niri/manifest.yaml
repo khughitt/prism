@@ -59,3 +59,7 @@ binds:
   - {param: glass.inactive.auroraColorB, liveness: reload}
   - {param: glass.bypass.iridescence, liveness: reload}
   - {param: glass.bypass.aurora, liveness: reload}
+  - {param: glass.ring.focus, liveness: reload}
+  - {param: glass.ring.colorSource, liveness: reload}
+  - {param: glass.ring.color, liveness: reload}
+  - {param: glass.ring.driftHz, liveness: reload}

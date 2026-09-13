@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { parse } from 'yaml';
 import { renderNiriFragment, DRY } from '../integrations/niri/render.js';
+import { readNoctaliaAccent } from '../integrations/niri/palette.js';
 import { loadDefs } from '../src/defs.js';
 import { defsDir } from '../src/paths.js';
 
@@ -61,6 +63,10 @@ const resolved = { params: {
   'glass.bypass.tint': false,
   'glass.bypass.saturation': false,
   'glass.bypass.noise': false,
+  'glass.ring.focus': true,
+  'glass.ring.colorSource': 'manual',
+  'glass.ring.color': '#f2c14e',
+  'glass.ring.driftHz': 12,
 } };
 
 const with_ = (overrides) => ({ params: { ...resolved.params, ...overrides } });
@@ -97,6 +103,12 @@ material "terminal-glass" {
         offset-x 4
         offset-y 4
     }
+    response "default" {
+        accent "none"
+        focus "ring-light"
+        ring-color "#f2c14e"
+        ring-drift-hz 12
+    }
 }
 material "terminal-glass-inactive" {
     glass {
@@ -122,6 +134,12 @@ material "terminal-glass-inactive" {
         bevel 9
         offset-x 4
         offset-y 4
+    }
+    response "default" {
+        accent "none"
+        focus "ring-light"
+        ring-color "#f2c14e"
+        ring-drift-hz 12
     }
 }
 window-rule {
@@ -174,6 +192,12 @@ material "terminal-glass" {
         bevel 9
         offset-x 4
         offset-y 4
+    }
+    response "default" {
+        accent "none"
+        focus "ring-light"
+        ring-color "#f2c14e"
+        ring-drift-hz 12
     }
 }
 window-rule {
@@ -488,4 +512,78 @@ test('optic bypasses silence both states while retaining their settings', () => 
     'glass.bypass.iridescence': false, 'glass.bypass.aurora': false } });
   assert.match(wet, /iridescence 0.8/);
   assert.match(wet, /aurora 0.5 \{/);
+});
+
+// The ring response is one block, emitted identically into every material the
+// split defines: the filament lights only where the window is focused, and a
+// signal accent lights any of them.
+test('both materials carry the same response block', () => {
+  const kdl = renderNiriFragment(resolved);
+  const block = '    response "default" {\n        accent "none"\n        focus "ring-light"\n'
+    + '        ring-color "#f2c14e"\n        ring-drift-hz 12\n    }';
+
+  assert.equal(count(kdl, block), 2, kdl);
+  const [active, inactive] = kdl.match(/^material [^]*?^\}/gm);
+  assert.ok(active.includes(block));
+  assert.ok(inactive.includes(block));
+});
+
+test('the focus light switches off without touching the rest of the response', () => {
+  const kdl = renderNiriFragment(with_({ 'glass.ring.focus': false }));
+
+  assert.equal(count(kdl, 'focus "none"'), 2);
+  assert.equal(count(kdl, 'ring-color "#f2c14e"'), 2);
+  assert.match(kdl, /focus-ring \{ off; \}/, 'the gradient ring stays off for material windows');
+});
+
+test('the familiar source leaves the accent channel on and rests on the manual color', () => {
+  const kdl = renderNiriFragment(with_({ 'glass.ring.colorSource': 'familiar' }));
+
+  assert.equal(count(kdl, 'accent "ring"'), 2);
+  assert.equal(count(kdl, 'ring-color "#f2c14e"'), 2);
+});
+
+test('the noctalia source lights the ring in the palette accent the apply read', () => {
+  const kdl = renderNiriFragment(with_({ 'glass.ring.colorSource': 'noctalia' }),
+    { noctaliaAccent: '#bad065' });
+
+  assert.equal(count(kdl, 'ring-color "#bad065"'), 2);
+  assert.equal(count(kdl, 'accent "none"'), 2, 'no second driver may tint the ring');
+});
+
+test('the noctalia source rests on the manual color until a palette exists', () => {
+  const kdl = renderNiriFragment(with_({ 'glass.ring.colorSource': 'noctalia' }),
+    { noctaliaAccent: null });
+
+  assert.equal(count(kdl, 'ring-color "#f2c14e"'), 2);
+});
+
+test('the manual source ignores a palette accent', () => {
+  const kdl = renderNiriFragment(resolved, { noctaliaAccent: '#bad065' });
+
+  assert.equal(count(kdl, 'ring-color "#f2c14e"'), 2);
+  assert.equal(count(kdl, '#bad065'), 0);
+});
+
+test('a zero drift pins the ring light', () => {
+  const kdl = renderNiriFragment(with_({ 'glass.ring.driftHz': 0 }));
+
+  assert.equal(count(kdl, 'ring-drift-hz 0'), 2);
+});
+
+test('the palette reader rests on absence and fails on a broken file', (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-palette-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const file = path.join(dir, 'colors.json');
+
+  assert.equal(readNoctaliaAccent(file), null, 'a fresh machine has no palette');
+
+  fs.writeFileSync(file, JSON.stringify({ mPrimary: '#BAD065' }));
+  assert.equal(readNoctaliaAccent(file), '#BAD065', 'uppercase hex is a color');
+
+  fs.writeFileSync(file, '{ not json');
+  assert.throws(() => readNoctaliaAccent(file), /not valid JSON/);
+
+  fs.writeFileSync(file, JSON.stringify({ mPrimary: 'blue' }));
+  assert.throws(() => readNoctaliaAccent(file), /mPrimary missing or not a #rrggbb color/);
 });

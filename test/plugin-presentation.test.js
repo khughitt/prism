@@ -5,7 +5,7 @@ import test from 'node:test';
 import { loadDefs } from '../src/defs.js';
 import { defsDir } from '../src/paths.js';
 
-test('shipped presentation is a Glass section and a Focus matrix', () => {
+test('shipped presentation is a Glass section, a Focus matrix, and a Ring section', () => {
   const defs = [...loadDefs(defsDir()).values()];
   const visible = defs.filter((def) => def.ui.control !== 'none');
   const ordered = visible.slice().sort((a, b) => a.ui.order - b.ui.order);
@@ -52,12 +52,25 @@ test('shipped presentation is a Glass section and a Focus matrix', () => {
   const terminal = ordered.filter((def) => def.ui.group === 'Terminal').map((def) => def.key);
   assert.deepEqual(terminal, [], 'the terminal opacity pair is CLI-only');
 
+  const ring = ordered.filter((def) => def.ui.group === 'Ring').map((def) => def.key);
+  assert.deepEqual(ring, [
+    'glass.ring.focus',
+    'glass.ring.colorSource',
+    'glass.ring.color',
+    'glass.ring.driftHz',
+  ]);
+  assert.equal(defs.find((def) => def.ui.group === 'Ring' && def.ui.header === true).key,
+    'glass.ring.focus', 'the light switch heads the section');
+
   const groups = new Set(visible.map((def) => def.ui.group));
-  assert.deepEqual([...groups].sort(), ['Focus', 'Glass', 'Title']);
+  assert.deepEqual([...groups].sort(), ['Focus', 'Glass', 'Ring', 'Title']);
   assert.equal(visible.length,
-    1 + glass.length + 1 + rows.reduce((n, row) => n + (row.single ? 1 : 2), 0));
+    1 + glass.length + 1 + rows.reduce((n, row) => n + (row.single ? 1 : 2), 0) + ring.length);
   assert.ok(ordered.filter((def) => def.ui.group === 'Glass').every((def) => def.ui.order < focus[0].ui.order),
     'the Glass section precedes the Focus section');
+  const ringDefs = ordered.filter((def) => def.ui.group === 'Ring');
+  assert.ok(focus.every((def) => def.ui.order < ringDefs[0].ui.order),
+    'the Focus section precedes the Ring section');
 });
 
 test('shipped defs declare exact value presentation', () => {

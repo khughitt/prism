@@ -18,7 +18,27 @@ function appMatcher(apps) {
     : rawKdl(`^(${apps.map(escapeRegex).join('|')})$`);
 }
 
-function definition(name, params, glass) {
+// The one filament is shared by the focus light and signal accents, so the
+// ring's color has one driver at a time. familiar tints it live through its
+// per-window signal (accent stays on only then); noctalia hands over the
+// colorscheme accent the apply read; manual pins the palette's own color.
+// ring-inset and ring-width stay at the native defaults.
+function responseBlock(params, sources) {
+  const source = params['glass.ring.colorSource'];
+  const color = source === 'noctalia' && typeof sources.noctaliaAccent === 'string'
+    ? sources.noctaliaAccent
+    : params['glass.ring.color'];
+  return [
+    '    response "default" {',
+    `        accent ${JSON.stringify(source === 'familiar' ? 'ring' : 'none')}`,
+    `        focus ${JSON.stringify(params['glass.ring.focus'] ? 'ring-light' : 'none')}`,
+    `        ring-color ${JSON.stringify(color)}`,
+    `        ring-drift-hz ${params['glass.ring.driftHz']}`,
+    '    }',
+  ];
+}
+
+function definition(name, params, glass, sources) {
   const bevel = params['glass.paneLip'] + Math.max(
     Math.abs(params['glass.paneShiftX']),
     Math.abs(params['glass.paneShiftY']),
@@ -49,6 +69,7 @@ function definition(name, params, glass) {
     `        offset-x ${params['glass.paneShiftX']}`,
     `        offset-y ${params['glass.paneShiftY']}`,
     '    }',
+    ...responseBlock(params, sources),
     '}',
   ].join('\n');
 }
@@ -126,7 +147,7 @@ function layoutBlock(params) {
   ].join('\n');
 }
 
-export function renderNiriFragment(resolved) {
+export function renderNiriFragment(resolved, sources = {}) {
   const params = resolved.params;
   const matcher = appMatcher(params['terminal.apps']);
   const glass = params['glass.enabled'];
@@ -137,8 +158,8 @@ export function renderNiriFragment(resolved) {
     // Glass off leaves no material node behind: the node is niri-material's
     // own, and a niri without it rejects the whole config over one it does not
     // know. Everything that remains is upstream vocabulary.
-    ...(glass ? [definition(MATERIAL, params, activeGlass(params))] : []),
-    ...(split ? [definition(INACTIVE_MATERIAL, params, inactiveGlass(params))] : []),
+    ...(glass ? [definition(MATERIAL, params, activeGlass(params), sources)] : []),
+    ...(split ? [definition(INACTIVE_MATERIAL, params, inactiveGlass(params), sources)] : []),
     ...(matcher === null ? []
       : split ? [
         assignmentRule(matcher, MATERIAL, true),

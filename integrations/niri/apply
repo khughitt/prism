@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { generatedPath } from '../../src/paths.js';
 import { sinkMain } from '../../src/sink.js';
 import { renderNiriFragment } from './render.js';
+import { noctaliaColorsPath, readNoctaliaAccent } from './palette.js';
 
 sinkMain(() => {
   const resolved = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
@@ -18,8 +19,17 @@ sinkMain(() => {
     if (error.code !== 'ENOENT') throw error;
   }
 
+  // Read the palette only when it drives the ring: a broken colors.json must
+  // fail the apply of a user who chose it, and go unread for anyone else —
+  // with the glass off no ring is emitted, so it must not block that apply.
+  const sources = {};
+  if (resolved.params['glass.enabled'] === true
+      && resolved.params['glass.ring.colorSource'] === 'noctalia') {
+    sources.noctaliaAccent = readNoctaliaAccent(noctaliaColorsPath());
+  }
+
   const tmp = `${target}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, renderNiriFragment(resolved));
+  fs.writeFileSync(tmp, renderNiriFragment(resolved, sources));
   fs.renameSync(tmp, target);
 
   // The candidate has to be in place for niri to compose it with the surrounding

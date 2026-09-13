@@ -365,3 +365,34 @@
   neutral: false
   ui: {group: Focus, control: toggle, label: Bypass aurora, order: 455}
   description: Silence aurora in both materials while retaining all its controls
+
+# Ring: the lit filament in the slab's edge band, shared by the focus light
+# and signal accents (niri-material's response block). Inset and width stay at
+# the native defaults; the focus split carries the same block in both
+# materials, so the unfocused band stays dark until a signal lights it.
+- key: glass.ring.focus
+  type: bool
+  default: true
+  neutral: true
+  ui: {group: Ring, control: toggle, label: Ring of light, order: 500, header: true}
+  description: Light the ring filament on the focused window; off leaves focus to the glass split alone
+- key: glass.ring.colorSource
+  type: enum
+  values: [familiar, noctalia, manual]
+  default: noctalia
+  neutral: noctalia
+  ui: {group: Ring, control: select, label: Color source, order: 510}
+  description: "Who drives the ring color: familiar's per-window signal tint, the Noctalia colorscheme accent, or the manual Color below"
+- key: glass.ring.color
+  type: color
+  default: '#ccccff'
+  neutral: '#ccccff'
+  ui: {group: Ring, control: color, label: Color, order: 520}
+  description: Ring color under the manual source; the resting color under familiar until its signal arrives, and the fallback under noctalia until a colorscheme exists
+- key: glass.ring.driftHz
+  type: int
+  range: [0, 30]
+  default: 15
+  neutral: 15
+  ui: {group: Ring, control: slider, step: 1, label: Drift rate, order: 530, unit: Hz}
+  description: Steps per second the ring light travels around the band; 0 pins it still, and reduced motion halves the rate

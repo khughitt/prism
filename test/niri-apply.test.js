@@ -41,6 +41,10 @@ const PARAMS = {
   'glass.auroraDriftHz': 4,
   'glass.auroraColorA': "#3dffb0",
   'glass.auroraColorB': "#7a5cff",
+  'glass.ring.focus': true,
+  'glass.ring.colorSource': 'manual',
+  'glass.ring.color': '#f2c14e',
+  'glass.ring.driftHz': 12,
 
 };
 
@@ -82,6 +86,8 @@ exit 0
 
   const resolvedFile = path.join(dir, 'resolved.json');
   fs.writeFileSync(resolvedFile, JSON.stringify({ params: PARAMS }));
+  const writeParams = (overrides) =>
+    fs.writeFileSync(resolvedFile, JSON.stringify({ params: { ...PARAMS, ...overrides } }));
 
   const target = path.join(state, 'generated', 'prism.kdl');
   const run = (extra = {}) => {
@@ -102,7 +108,7 @@ exit 0
     : []);
   const inode = () => fs.statSync(target).ino;
 
-  return { dir, state, target, run, calls, inode };
+  return { dir, state, target, run, calls, inode, writeParams };
 }
 
 test('an invalid composed config restores the previous target exactly', (t) => {
@@ -303,4 +309,83 @@ exec sleep 60
     'the probe must not leave the command it was waiting on running');
   assert.deepEqual(fs.readdirSync(tmp), [],
     'the probe must remove the config it wrote');
+});
+
+test('a noctalia-driven ring lights in the palette accent the apply reads', (t) => {
+  const { dir, target, run, calls, writeParams } = fixture(t);
+  writeParams({ 'glass.ring.colorSource': 'noctalia' });
+  const colors = path.join(dir, 'colors.json');
+  fs.writeFileSync(colors, JSON.stringify({ mPrimary: '#a1b2c3' }));
+
+  const result = run({ PRISM_NOCTALIA_COLORS: colors });
+
+  assert.equal(result.status, 0, result.stderr);
+  const kdl = fs.readFileSync(target, 'utf8');
+  assert.match(kdl, /ring-color "#a1b2c3"/);
+  assert.match(kdl, /accent "none"/, 'no second driver may tint the ring');
+  assert.deepEqual(calls(), ['validate', 'msg action load-config-file']);
+});
+
+test('a noctalia-driven ring rests on the manual color while no palette exists', (t) => {
+  const { dir, target, run, writeParams } = fixture(t);
+  writeParams({ 'glass.ring.colorSource': 'noctalia' });
+
+  const result = run({ PRISM_NOCTALIA_COLORS: path.join(dir, 'absent.json') });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(fs.readFileSync(target, 'utf8'), /ring-color "#f2c14e"/);
+});
+
+test('a palette that does not parse fails the apply before anything is written', (t) => {
+  const { dir, target, run, calls, writeParams } = fixture(t);
+  writeParams({ 'glass.ring.colorSource': 'noctalia' });
+  const colors = path.join(dir, 'colors.json');
+  fs.writeFileSync(colors, '{ not json');
+
+  const result = run({ PRISM_NOCTALIA_COLORS: colors });
+
+  assert.notEqual(result.status, 0, 'a broken palette must fail the sink');
+  assert.match(result.stderr, /colors\.json: not valid JSON/);
+  assert.equal(fs.existsSync(target), false, 'the failed render must leave no target');
+  assert.deepEqual(calls(), [], 'niri is never asked to validate');
+});
+
+test('a palette without a primary fails the apply', (t) => {
+  const { dir, run, writeParams } = fixture(t);
+  writeParams({ 'glass.ring.colorSource': 'noctalia' });
+  const colors = path.join(dir, 'colors.json');
+  fs.writeFileSync(colors, JSON.stringify({ mSurface: '#13140f' }));
+
+  const result = run({ PRISM_NOCTALIA_COLORS: colors });
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /mPrimary missing or not a #rrggbb color/);
+});
+
+test('a familiar-driven ring never reads the palette file', (t) => {
+  const { dir, target, run, writeParams } = fixture(t);
+  writeParams({ 'glass.ring.colorSource': 'familiar' });
+  const colors = path.join(dir, 'colors.json');
+  fs.writeFileSync(colors, '{ not json');
+
+  const result = run({ PRISM_NOCTALIA_COLORS: colors });
+
+  assert.equal(result.status, 0, result.stderr);
+  const kdl = fs.readFileSync(target, 'utf8');
+  assert.match(kdl, /accent "ring"/);
+  assert.match(kdl, /ring-color "#f2c14e"/);
+});
+
+test('a broken palette does not block an apply with the glass off', (t) => {
+  const { dir, target, run, calls, writeParams } = fixture(t);
+  writeParams({ 'glass.enabled': false, 'glass.ring.colorSource': 'noctalia' });
+  const colors = path.join(dir, 'colors.json');
+  fs.writeFileSync(colors, '{ not json');
+
+  const result = run({ PRISM_NOCTALIA_COLORS: colors });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(fs.readFileSync(target, 'utf8'), /material/,
+    'no ring is emitted for the palette to drive');
+  assert.deepEqual(calls(), ['validate', 'msg action load-config-file']);
 });
