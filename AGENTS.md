@@ -5,6 +5,8 @@
   `docs/specs/2026-09-04-test-ci-audit-design.md`). `just check` is the pre-commit gate
   and `just gate` the pre-push one; install the hooks in a fresh clone with
   `git config core.hooksPath .githooks`.
+- Design specs live under `docs/specs/` and implementation plans under `docs/plans/`;
+  they are committed. `docs/superpowers/` holds the earlier ones and takes no new docs.
 
 ## Tasks workflow
 
