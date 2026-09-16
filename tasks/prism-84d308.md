@@ -1,13 +1,15 @@
 ---
 id: prism-84d308
 title: "Prism panel keys from the shared vocabulary: ctrl+s, j/k focus, h/l nudge, r random, 1-9 profiles, ? help"
-status: todo
+status: doing
 priority: 2
 size: l
 complexity: mid
 process: direct
+owner: main
 created: 2026-09-09T02:28:45Z
-updated: 2026-09-16T09:36:27Z
+updated: 2026-09-16T14:24:55Z
+started: 2026-09-16T14:24:55Z
 depends: []
 tags: [quick-add, noctalia, keyboard, cross-project]
 source: "mindful:thought:1784d44106a5411bb28a90796f46acf4"
