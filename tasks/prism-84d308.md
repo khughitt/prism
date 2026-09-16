@@ -1,10 +1,13 @@
 ---
 id: prism-84d308
-title: "Prism panel: key capture for the shared vocabulary and prism-specific keys"
-status: idea
+title: "Prism panel keys from the shared vocabulary: ctrl+s, j/k focus, h/l nudge, r random, 1-9 profiles, ? help"
+status: todo
 priority: 2
+size: l
+complexity: mid
+process: direct
 created: 2026-09-09T02:28:45Z
-updated: 2026-09-09T02:47:54Z
+updated: 2026-09-16T09:36:27Z
 depends: []
 tags: [quick-add, noctalia, keyboard, cross-project]
 source: "mindful:thought:1784d44106a5411bb28a90796f46acf4"
@@ -17,3 +20,7 @@ Implement the shared vocabulary (navigation, copy, random, save) in integrations
 - Digits 1-9 load named profiles; s saves the current one; ? overlays the bindings.
 - Set keyboard_focus = "exclusive" so keys work on open. Escape already dismisses.
 - Beyond the shared set, consider j/k to move parameter focus and h/l to nudge the focused slider.
+
+## Notes
+
+- 2026-09-16T09:36:27Z (main): Rescoped 2026-09-16 to the ops plan docs/plans/2026-09-16-key-vocabulary.md Task 5 (spec docs/specs/2026-09-15-key-vocabulary-design.md in ops). First step is the live ctrl+s check; blocked until ops keys.toml (Task 1) is on ops main.
