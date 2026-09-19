@@ -232,18 +232,14 @@ entry point the hook calls. The wallpaper kind is the first instance:
 - kind `wallpaper`, key `sha256(canonical path)[0:8]`, entry
   `prism context wallpaper <path>`.
 
-The slot records three things about the active wallpaper: `id`, `path` (the
-canonical path the id hashes), and **`given`**, the path string exactly as
-the entry point received it. `given` exists so that a client which observes
-the wallpaper through the shell's own report, which need not be canonical,
-can tell by string equality whether the store has followed it. When the
-entry point receives a different string for the id already active, it
-rewrites `given` alone: no resolve, no fan-out, only `describe` sees it.
-`activate wallpaper <id>` sets `given` to the canonical path.
+The hook is the only automatic writer of the wallpaper slot. A second
+writer that acts on an observation of the shell, such as a panel, cannot
+know whether its observation is older than the hook's, and a stale one would
+move the store back to a wallpaper that has already left, taking the edits
+that follow with it. Clients therefore read the slot and never set it.
 
 The entry point, under the store lock: canonicalise, derive the id; if it
-equals the active id, rewrite the slot's `given` when the string differs
-(below) and otherwise do nothing. Otherwise there are two branches, and the
+equals the active id, do nothing. Otherwise there are two branches, and the
 next state is computed in full before anything is written in either.
 
 **A wallpaper is leaving.** The next state is the leaving wallpaper's delta
@@ -280,9 +276,15 @@ panel cannot delete another wallpaper's tuning. It is refused with no active
 wallpaper, and refused as `wallpaper <id>: untuned` when there is no delta,
 the way `unset` refuses a key it would not remove.
 
-`pin` and `unpin` are removed, with the `pinned` field of the slot. Since the
-slot file is runtime state and no host holds a pinned entry, `readActive`
-rejects the field like any other unknown one and nothing migrates.
+`pin` and `unpin` are removed, with the `pinned` field of the slot. A slot
+written by today's `prism` can carry `pinned: false`, because the profile
+verbs rewrite the field rather than drop it, and the hook cannot repair a
+slot it fails to read. So the field gets a one-time repair rather than a
+rejection: when `readActive` finds `pinned` on the wallpaper entry, it drops
+it, rewrites the slot at once under the lock the caller already holds, and
+prints `prism: dropped the retired pinned field from active.json` on stderr.
+Every other unknown field still fails. The repair runs once per host and is
+then unreachable, which is what makes it a migration and not a tolerance.
 
 The `state` kind stays reserved. When `prism-9298b9` scopes it, it adds a
 kind whose key is the reported value (`theme/dark`, `power/battery`) and an
@@ -346,8 +348,7 @@ when it is non-empty and drops the `(pinned)` suffix.
 `prism describe --json` changes shape as follows.
 
 Top level: `layers` is the new `RESOLUTION_ORDER`. `target` is removed; the
-target is always scratch. `active.wallpaper` carries `id`, `path`, and
-`given`.
+target is always scratch. `active.wallpaper` carries `id` and `path` only.
 `active`, `profiles`, and `rack` are otherwise unchanged.
 
 Per parameter: `heldInTarget` is replaced by **`held`**, the list of layers
@@ -361,7 +362,7 @@ otherwise.
 
 ```json
 {
-  "active": { "wallpaper": { "id": "3f9a1c2e", "path": "/mnt/walls/wall.jpg", "given": "/home/me/walls/wall.jpg" }, "profile": "dark" },
+  "active": { "wallpaper": { "id": "3f9a1c2e", "path": "/path/to/wall.jpg" }, "profile": "dark" },
   "profiles": ["dark", "dusk"],
   "layers": ["default", "base", "profile", "wallpaper", "state", "scratch"],
   "params": [
@@ -428,32 +429,22 @@ The panel runs describe on open and after its own writes, so a rotation while
 it is open would leave the header naming wallpaper A while the store has moved
 to B, the edits row advertising edits the hook has already folded, and a clear
 aimed at A. The id on the wallpaper verbs makes the last of those a loud
-refusal; the first two need the panel to notice, and to know *which*
-wallpaper the store should be showing rather than merely that it changed.
+refusal; the first two need the panel to re-read the store.
 
-Noctalia has no plugin-side wallpaper event, so while the panel is open it
-reads `noctalia.wallpaperPath(output)` for the widget's output on a
-one-second tick, separate from the drag tick, and once on open. The observed
-string is compared with the model's `active.wallpaper.given` by equality,
-which is what `given` is for. When they match, the store has followed the
-shell and nothing happens. When they differ, or the model has no wallpaper,
-the panel enqueues `prism context wallpaper <observed>`, the hook's own
-verb, through its FIFO: if the hook has already landed the command rewrites
-`given` at most and the describe that follows reconciles; if it has not, the
-panel performs the switch itself, fold included, and the hook's later call is
-the no-op. The correspondence is therefore established by the command, not
-inferred from a change: under a rapid A, B, C rotation a describe returning
-B while C is observed is a mismatch that enqueues C, and the panel is
-consistent once a describe returns `given` equal to what it observes.
-
-The panel enqueues at most once per distinct observed value until the
-model's `given` matches it, so a path prism refuses (one that does not exist)
-shows once in the error banner and is not retried every second; the next
-distinct observation retries. The observed value is a string the panel passes
-through unchanged, quoted by the shell module like every other argument.
-Closing the panel stops the tick. The API's name and the output argument are
-checked against the installed Noctalia before they are written, as every host
-prop is. This absorbs `prism-b6d7ee`.
+The store is the only authority on which wallpaper is active, and the hook is
+its only writer, so the panel does not observe the shell and does not try to
+tell the store what it saw. Instead it **refreshes describe periodically
+while open**, every two seconds, through the existing stale-and-replay path:
+a refresh that lands during a drag or while the write queue is busy is
+discarded and replayed once the panel is idle, and the tick sets one
+"refresh wanted" flag rather than queuing a describe per tick, so a long drag
+replays one refresh, not several. The header, the edits row, and every
+provenance marker follow the store within one period plus the hook's own
+latency; a clear or a commit aimed at a wallpaper that left inside that
+window is refused by id and the refusal shows in the banner. Closing the
+panel stops the tick. Describe reads the store and runs no sink, so the cost
+while the panel is open is one short process every two seconds. This absorbs
+`prism-b6d7ee`.
 
 ### Provenance instead of shadow
 
@@ -466,8 +457,8 @@ carries none: the reset at full strength already says it.
 
 ### Plumbing
 
-`Queue.argvFor` gains `commit` (destination, optional name), `clear`, and
-`wallpaper` (the observed path), and drops `pin` and `save`; `activateAfter` goes with `save`, since `commit
+`Queue.argvFor` gains `commit` (destination, optional name) and `clear`, and
+drops `pin` and `save`; `activateAfter` goes with `save`, since `commit
 profile <name>` activates in the same command. Every one of these affects the
 model and forces a refresh. The keyboard vocabulary (`prism-84d308`) is
 untouched: digits still activate profiles, and doing so with edits pending
@@ -482,8 +473,8 @@ Errors, one line each, no partial writes:
   wallpaper` with no active wallpaper or with an id that is not the active
   one; `clear wallpaper` with no delta;
 - `unset` of a key scratch does not hold;
-- an unknown field in the wallpaper slot, `pinned` included, or a slot
-  without `given`;
+- an unknown field in the wallpaper slot, other than the one-time `pinned`
+  repair;
 - an invalid or orphan key in `scratch.yaml`, reported by every verb that
   resolves, with `doctor` naming the file.
 
@@ -520,7 +511,8 @@ interruption finishes it.
 
 Migration: `values.yaml` and every profile file are unchanged. An existing
 wallpaper delta file stays valid and simply ranks above the profile now.
-`scratch.yaml` appears on the first edit. The dotfiles note that names the pin
+`scratch.yaml` appears on the first edit. A slot carrying `pinned` is repaired
+on first read, as Section 3 states. The dotfiles note that names the pin
 (`noctalia/noctalia.md`) needs one paragraph rewritten; that is a `dots` task
 filed from the plan.
 
@@ -546,11 +538,12 @@ Node, through the existing harnesses:
   `deactivate wallpaper`; the hook refusing an invalid incoming delta with
   scratch, the leaving delta, and the slot byte-identical; the first
   activation with pending edits keeping scratch, and the next rotation
-  folding it; `given` recorded as received, rewritten alone for the active
-  id, and set canonical by `activate wallpaper`; scratch surviving
+  folding it; a slot carrying `pinned` repaired on first read with the
+  profile and wallpaper preserved and the message printed once, and any
+  other unknown field still rejected; scratch surviving
   profile activate and deactivate; delete of the active wallpaper leaving
   scratch; `clear wallpaper` fan-out and its refusals; `pin` rejected as an
-  unknown verb and `pinned` rejected in the slot; and, with an injected
+  unknown verb; and, with an injected
   failure after each write of every multi-file verb, the store resolving to
   the same effective values and a re-run completing the verb.
 - `test/reset.test.js`: the `revert` mode name.
@@ -565,10 +558,9 @@ Lua (`plugin_test.lua`, `test/plugin-presentation.test.js`,
   without a delta; the provenance marker's precedence; `argvFor` for `commit`
   with each destination and for `clear`, both carrying the model's wallpaper
   id; the validator requiring `held` and accepting a model without `target`;
-  no shadow state anywhere; the rotation check enqueuing `wallpaper` on
-  open and on a tick when the observed path differs from `given`, doing
-  nothing when they match, enqueuing once per distinct observation until
-  `given` catches up, and `argvFor` for it.
+  no shadow state anywhere; the periodic refresh requesting one describe per
+  period while idle, setting a single flag during a drag or a busy queue,
+  replaying once when idle, and stopping on close.
 
 Desktop acceptance, manual, on the worktree's plugin symlink:
 
