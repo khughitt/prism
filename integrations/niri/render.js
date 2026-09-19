@@ -33,7 +33,7 @@ function responseBlock(params, sources) {
     `        accent ${JSON.stringify(source === 'familiar' ? 'ring' : 'none')}`,
     `        focus ${JSON.stringify(params['glass.ring.focus'] ? 'ring-light' : 'none')}`,
     `        ring-color ${JSON.stringify(color)}`,
-    `        ring-drift-hz ${params['glass.ring.driftHz']}`,
+    `        ring-sweep-ms ${params['glass.ring.sweepMs']}`,
     '    }',
   ];
 }

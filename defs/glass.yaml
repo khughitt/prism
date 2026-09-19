@@ -389,10 +389,11 @@
   neutral: '#ccccff'
   ui: {group: Ring, control: color, label: Color, order: 520}
   description: Ring color under the manual source; the resting color under familiar until its signal arrives, and the fallback under noctalia until a colorscheme exists
-- key: glass.ring.driftHz
+- key: glass.ring.sweepMs
   type: int
-  range: [0, 30]
-  default: 15
-  neutral: 15
-  ui: {group: Ring, control: slider, step: 1, label: Drift rate, order: 530, unit: Hz}
-  description: Steps per second the ring light travels around the band; 0 pins it still, and reduced motion halves the rate
+  range: [0, 10000]
+  default: 1500
+  neutral: 1500
+  replaces: glass.ring.driftHz
+  ui: {group: Ring, control: slider, step: 100, label: Sweep, order: 530, unit: ms}
+  description: How long the ring light takes for its one lap when a window gains focus, easing out to rest; 0 skips the lap, as do reduced motion and animations off

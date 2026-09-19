@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: prism-eff23a
 created: 2026-09-19T02:49:26Z
-updated: 2026-09-19T23:23:09Z
+updated: 2026-09-19T23:55:00Z
 started: 2026-09-19T22:56:32Z
 depends: [material-7fd09c]
 tags: [niri, material]
@@ -26,3 +26,6 @@ Native ring-drift-hz is retired for ring-sweep-ms (niri-material docs/specs/2026
   provenance: {"harness_session":"claude-code:49261570-0755-4b4b-ac00-f6343337242c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
 - 2026-09-19T23:03:34Z (prism-eff23a): Plan: docs/plans/2026-09-19-ring-sweep-migration.md (4 tasks: def+sink, migrate.js, CLI verb + doctor hint, docs/close). Awaiting review.
 - 2026-09-19T23:23:09Z (prism-eff23a): Plan review 2026-09-19: three P2 findings applied — glass-defs Hz test at :471 added to Task 1; backup dir created exclusively with COPYFILE_EXCL copies plus a collision test; migrate reports the backup before the first write, each file as it lands, and a failed write names what landed and the undo, tested with a failure on the third file.
+- 2026-09-19T23:55:00Z (prism-eff23a): resumed
+  provenance: {"harness_session":"codex:01a0bc06-ea0c-7423-baec-fb8f1b8ef747","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-09-19T23:55:00Z (prism-eff23a): took over session sid:3432998 (owner main, host titan, pid 3432998, worktree /mnt/ssd/Dropbox/prism, since 2026-09-19T23:54:41Z, age 19s, stale: pid 3432998 is gone)
