@@ -232,19 +232,41 @@ entry point the hook calls. The wallpaper kind is the first instance:
 - kind `wallpaper`, key `sha256(canonical path)[0:8]`, entry
   `prism context wallpaper <path>`.
 
+The slot records three things about the active wallpaper: `id`, `path` (the
+canonical path the id hashes), and **`given`**, the path string exactly as
+the entry point received it. `given` exists so that a client which observes
+the wallpaper through the shell's own report, which need not be canonical,
+can tell by string equality whether the store has followed it. When the
+entry point receives a different string for the id already active, it
+rewrites `given` alone: no resolve, no fan-out, only `describe` sees it.
+`activate wallpaper <id>` sets `given` to the canonical path.
+
 The entry point, under the store lock: canonicalise, derive the id; if it
-equals the active id, do nothing. Otherwise compute the whole next state
-first: the leaving wallpaper's delta merged with scratch, an empty scratch,
-and the new slot. Validate the merged delta as a layer, and resolve the next
-state, which validates the incoming wallpaper's delta if it has one. Only
-then write, in the order Section 8 fixes: the merged delta, the cleared
-scratch, the slot, `resolved.json`; then diff against the previous effective
-values and fan out the changed keys. An invalid incoming delta therefore
-fails before anything is written, edits stay in scratch, and the old
-wallpaper stays active, exactly as `changeSlots` refuses today. The fold and
-the switch are one locked step, so a panel drag interleaving with a rotation
-lands either in the leaving wallpaper's delta or in fresh scratch under the
-new one, never between.
+equals the active id, rewrite the slot's `given` when the string differs
+(below) and otherwise do nothing. Otherwise there are two branches, and the
+next state is computed in full before anything is written in either.
+
+**A wallpaper is leaving.** The next state is the leaving wallpaper's delta
+merged with scratch, an empty scratch, and the new slot. Validate the merged
+delta as a layer, and resolve the next state, which validates the incoming
+wallpaper's delta if it has one. Only then write, in the order Section 8
+fixes: the merged delta, the cleared scratch, the slot, `resolved.json`; then
+diff against the previous effective values and fan out the changed keys. With
+empty scratch the delta and scratch writes are skipped.
+
+**No wallpaper is active.** There is no delta to receive the edits, so the
+next state is the current scratch and the new slot; scratch is neither folded
+nor cleared, keeping Section 2's promise that an edit made under no wallpaper
+persists. Resolve the next state, then write the slot and `resolved.json`.
+The first rotation after that folds as usual.
+
+An invalid incoming delta therefore fails before anything is written, edits
+stay in scratch, and the old wallpaper, or none, stays active, exactly as
+`changeSlots` refuses today. The fold and the switch are one locked step, so
+a panel drag interleaving with a rotation lands either in the leaving
+wallpaper's delta or in fresh scratch under the new one, never between.
+`activate wallpaper <id>` takes the same two branches; `deactivate wallpaper`
+requires an active wallpaper and takes the first.
 
 ```
 prism context clear wallpaper <id>    # remove the on-screen wallpaper's delta; the slot stays
@@ -324,7 +346,8 @@ when it is non-empty and drops the `(pinned)` suffix.
 `prism describe --json` changes shape as follows.
 
 Top level: `layers` is the new `RESOLUTION_ORDER`. `target` is removed; the
-target is always scratch. `active.wallpaper` carries `id` and `path` only.
+target is always scratch. `active.wallpaper` carries `id`, `path`, and
+`given`.
 `active`, `profiles`, and `rack` are otherwise unchanged.
 
 Per parameter: `heldInTarget` is replaced by **`held`**, the list of layers
@@ -338,7 +361,7 @@ otherwise.
 
 ```json
 {
-  "active": { "wallpaper": { "id": "3f9a1c2e", "path": "/path/to/wall.jpg" }, "profile": "dark" },
+  "active": { "wallpaper": { "id": "3f9a1c2e", "path": "/mnt/walls/wall.jpg", "given": "/home/me/walls/wall.jpg" }, "profile": "dark" },
   "profiles": ["dark", "dusk"],
   "layers": ["default", "base", "profile", "wallpaper", "state", "scratch"],
   "params": [
@@ -405,19 +428,32 @@ The panel runs describe on open and after its own writes, so a rotation while
 it is open would leave the header naming wallpaper A while the store has moved
 to B, the edits row advertising edits the hook has already folded, and a clear
 aimed at A. The id on the wallpaper verbs makes the last of those a loud
-refusal; the first two need the panel to notice. Noctalia has no plugin-side
-wallpaper event, so while the panel is open it polls
-`noctalia.wallpaperPath(output)` for the widget's output on a one-second tick,
-separate from the drag tick, and compares it with the value it read at its
-last describe. On a change it requests a describe through the existing
-stale-and-replay path, so a drag or a queued write is never interrupted, and
-keeps the change pending until a describe comes back whose active wallpaper
-differs from the one before. If ten ticks pass without that, the panel shows
-`the wallpaper changed but prism did not follow; check the wallpaper_changed
-hook` in its error banner, since the two are then out of step. Closing the
-panel stops the tick. The API's name and the output argument are checked
-against the installed Noctalia before they are written, as every host prop
-is. This absorbs `prism-b6d7ee`.
+refusal; the first two need the panel to notice, and to know *which*
+wallpaper the store should be showing rather than merely that it changed.
+
+Noctalia has no plugin-side wallpaper event, so while the panel is open it
+reads `noctalia.wallpaperPath(output)` for the widget's output on a
+one-second tick, separate from the drag tick, and once on open. The observed
+string is compared with the model's `active.wallpaper.given` by equality,
+which is what `given` is for. When they match, the store has followed the
+shell and nothing happens. When they differ, or the model has no wallpaper,
+the panel enqueues `prism context wallpaper <observed>`, the hook's own
+verb, through its FIFO: if the hook has already landed the command rewrites
+`given` at most and the describe that follows reconciles; if it has not, the
+panel performs the switch itself, fold included, and the hook's later call is
+the no-op. The correspondence is therefore established by the command, not
+inferred from a change: under a rapid A, B, C rotation a describe returning
+B while C is observed is a mismatch that enqueues C, and the panel is
+consistent once a describe returns `given` equal to what it observes.
+
+The panel enqueues at most once per distinct observed value until the
+model's `given` matches it, so a path prism refuses (one that does not exist)
+shows once in the error banner and is not retried every second; the next
+distinct observation retries. The observed value is a string the panel passes
+through unchanged, quoted by the shell module like every other argument.
+Closing the panel stops the tick. The API's name and the output argument are
+checked against the installed Noctalia before they are written, as every host
+prop is. This absorbs `prism-b6d7ee`.
 
 ### Provenance instead of shadow
 
@@ -430,8 +466,8 @@ carries none: the reset at full strength already says it.
 
 ### Plumbing
 
-`Queue.argvFor` gains `commit` (destination, optional name) and `clear`, and
-drops `pin` and `save`; `activateAfter` goes with `save`, since `commit
+`Queue.argvFor` gains `commit` (destination, optional name), `clear`, and
+`wallpaper` (the observed path), and drops `pin` and `save`; `activateAfter` goes with `save`, since `commit
 profile <name>` activates in the same command. Every one of these affects the
 model and forces a refresh. The keyboard vocabulary (`prism-84d308`) is
 untouched: digits still activate profiles, and doing so with edits pending
@@ -446,7 +482,8 @@ Errors, one line each, no partial writes:
   wallpaper` with no active wallpaper or with an id that is not the active
   one; `clear wallpaper` with no delta;
 - `unset` of a key scratch does not hold;
-- an unknown field in the wallpaper slot, `pinned` included;
+- an unknown field in the wallpaper slot, `pinned` included, or a slot
+  without `given`;
 - an invalid or orphan key in `scratch.yaml`, reported by every verb that
   resolves, with `doctor` naming the file.
 
@@ -467,9 +504,10 @@ the verb completes an interrupted one because each step is idempotent.
 
 | verb | write order | why each prefix holds |
 |---|---|---|
-| hook, `activate wallpaper`, `deactivate wallpaper` | merged delta, cleared scratch, slot, `resolved.json` | scratch still supplies the values after step 1; the delta supplies the same ones after step 2; step 3 is the visible switch |
+| hook, `activate wallpaper`, `deactivate wallpaper`, with a wallpaper leaving | merged delta, cleared scratch, slot, `resolved.json` | scratch still supplies the values after step 1; the delta supplies the same ones after step 2; step 3 is the visible switch |
+| hook, `activate wallpaper`, with none active | slot, `resolved.json` | scratch is untouched; step 1 is the visible switch |
 | `commit base`, `commit profile` | destination, stripped deltas, cleared scratch | scratch stays on top until the last step |
-| `commit profile <name>` | snapshot, stripped deltas, cleared scratch, slot | as above; the snapshot equals the screen, so activating it is invisible |
+| `commit profile <name>` | snapshot, slot, stripped deltas, cleared scratch | the snapshot equals the screen, so activating it under the unchanged deltas and scratch is invisible; scratch stays on top until the last step. Clearing scratch before the slot would expose the old profile's values, and a re-run would then snapshot those, losing the edit |
 | `commit wallpaper <id>` | merged delta, stripped state delta, cleared scratch | as above |
 | `clear wallpaper <id>` | delta file, `resolved.json` | one file, then the bus |
 
@@ -506,7 +544,10 @@ Node, through the existing harnesses:
   delta of `0`, neutral then save-as yielding a profile at `0`; each refusal,
   the wrong-id refusals included; the fold on hook, `activate wallpaper`, and
   `deactivate wallpaper`; the hook refusing an invalid incoming delta with
-  scratch, the leaving delta, and the slot byte-identical; scratch surviving
+  scratch, the leaving delta, and the slot byte-identical; the first
+  activation with pending edits keeping scratch, and the next rotation
+  folding it; `given` recorded as received, rewritten alone for the active
+  id, and set canonical by `activate wallpaper`; scratch surviving
   profile activate and deactivate; delete of the active wallpaper leaving
   scratch; `clear wallpaper` fan-out and its refusals; `pin` rejected as an
   unknown verb and `pinned` rejected in the slot; and, with an injected
@@ -524,9 +565,10 @@ Lua (`plugin_test.lua`, `test/plugin-presentation.test.js`,
   without a delta; the provenance marker's precedence; `argvFor` for `commit`
   with each destination and for `clear`, both carrying the model's wallpaper
   id; the validator requiring `held` and accepting a model without `target`;
-  no shadow state anywhere; the rotation tick requesting a describe on a
-  path change, holding the request through a drag, keeping it pending until
-  the active wallpaper changes, and raising the banner at the bound.
+  no shadow state anywhere; the rotation check enqueuing `wallpaper` on
+  open and on a tick when the observed path differs from `given`, doing
+  nothing when they match, enqueuing once per distinct observation until
+  `given` catches up, and `argvFor` for it.
 
 Desktop acceptance, manual, on the worktree's plugin symlink:
 
