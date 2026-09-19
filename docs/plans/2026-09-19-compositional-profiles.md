@@ -20,6 +20,21 @@
 - No AI attribution in commit messages. Conventional commits, scoped as the log already does (`feat(store)`, `feat(context)`, `feat(cli)`, `feat(panel)`, `test(…)`, `docs(…)`).
 - Run `just test` (the full suite) before every commit; a task's commit lands only on a green suite.
 - Paths in this plan are relative to the repository root inside the task worktree `.worktrees/prism-aec90f/`.
+- Shipped defaults the fixtures lean on (read from `defs/`): `glass.ior` 1.5, `glass.paneLip` 6, `glass.roughness` 0.08, `glass.noise` 0, `compositor.gaps` 24, `terminal.background.opacity.inactive` 0. `set` normalizes a value the fold beneath already shows into no edit, so a fixture's edit uses a value no layer beneath supplies: `glass.ior` 1.7 for an edit, 1.24 for base, 1.3 for a profile, 1.35 or 1.4 for a delta. A fixture that expects the default names it as such.
+
+## Commit boundaries
+
+The contract test (`integrations/noctalia-plugin/contract.test.mjs`) hands real `describe` output to the panel's validator, so the store's shape and the panel's model contract cannot change in separate green commits. The tasks therefore group into five commits, each of which passes `just test`:
+
+| commit | tasks | message |
+|---|---|---|
+| 1 | 1, 2 | `feat(store): add the scratch layer, repair the retired pinned field, lock the requirements read` (Task 1 commits its half; Task 2 amends nothing and commits its own) |
+| 2 | 3, 4, 5, 6, 7, 9, 10 | `feat: move every edit into the scratch layer with typed commits` |
+| 3 | 8 | `test(store): prove every multi-file verb survives an interruption after any write` |
+| 4 | 11 | `feat(panel): re-read the store every two seconds while open` |
+| 5 | 12 | `docs: describe the scratch layer, commits, and the panel's edits row` |
+
+Inside commit 2, each task ends by running the tests it touched and says so; only Task 10 runs the full suite and commits. A task in that group is still reviewed on its own diff (`git diff` against the commit-1 tip), which is what makes it a task.
 
 ## File structure
 
@@ -42,19 +57,20 @@
 
 ---
 
-### Task 1: Scratch file and the new layer order
+### Task 1: Scratch file, and the store reads it
+
+Additive only: the layer order, the write target, and every existing export stay, so the suite stays green. Task 3 performs the switch.
 
 **Files:**
 - Modify: `src/paths.js`
 - Create: `src/scratch.js`
-- Modify: `src/contexts.js:9-11` (`LAYER_ORDER`, add `DELTA_KINDS`)
-- Modify: `src/layers.js` (whole file)
+- Modify: `src/contexts.js:11` (add `DELTA_KINDS`)
+- Modify: `src/layers.js` (`loadStore`, new `withScratch`)
 - Modify: `src/resolve.js:6` (export `checkLayer`)
-- Test: `test/scratch.test.js` (new), `test/layers.test.js`
+- Test: `test/scratch.test.js` (new), `test/layers.test.js` (append)
 
 **Interfaces:**
-- Produces: `readScratch(): object`, `writeScratch(values)`, `scratchPath()`, `LAYER_ORDER = ['profile','wallpaper','state']`, `DELTA_KINDS = ['wallpaper','state']`, `RESOLUTION_ORDER = ['default','base','profile','wallpaper','state','scratch']`, `withScratch(layers, scratch)`, `loadStore(defs) -> { base, active, profiles, layers, scratch, params, layerOf, beneath, held, fallback }`, `checkLayer(defs, values, where)`.
-- Removes: `writeTarget`, `layersBelow`, `store.target`, `store.heldInTarget`.
+- Produces: `readScratch(): object`, `writeScratch(values)`, `scratchPath()`, `DELTA_KINDS = ['wallpaper','state']`, `withScratch(layers, scratch)`, `checkLayer(defs, values, where)`; `loadStore(defs)` gains `scratch`, `beneath`, and `held` beside its existing fields.
 
 - [ ] **Step 1: Write the failing scratch test**
 
@@ -157,84 +173,105 @@ export function writeScratch(values) {
 Run: `node --test test/scratch.test.js`
 Expected: PASS, 4 tests.
 
-- [ ] **Step 5: Rewrite the layers test for the new order and `held`**
+- [ ] **Step 5: Append the scratch tests to the layers test**
 
-Replace `test/layers.test.js` from the `writeTarget` test to the end of the file with:
+Append to `test/layers.test.js`, with `const { writeScratch } = await import('../src/scratch.js');` added beside the other imports:
 
 ```js
-test('the resolution order puts the profile under the deltas and scratch on top', () => {
-  assert.deepEqual(layers.RESOLUTION_ORDER, ['default', 'base', 'profile', 'wallpaper', 'state', 'scratch']);
-});
-
-test('loadLayers lists the profile before the wallpaper', () => {
-  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'a.x': 0.7 } });
-  writeContext('profile', 'dusk', { source: null, values: { 'a.y': false } });
-  assert.deepEqual(layers.loadLayers({ profile: 'dusk', wallpaper: { id: 'abc12345', path: '/w' } }), [
-    { kind: 'profile', name: 'dusk', values: { 'a.y': false } },
-    { kind: 'wallpaper', name: 'abc12345', values: { 'a.x': 0.7 } },
-  ]);
-});
-
-test('loadStore: a wallpaper delta shows through under a full profile, and scratch shows over both', () => {
+test('loadStore reads scratch as the topmost layer and reports beneath and held', () => {
   writeValues({ 'a.x': 0.2 });
   writeContext('profile', 'dusk', { source: null, values: { 'a.x': 0.9, 'a.y': true } });
-  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'a.x': 0.7 } });
-  writeActive({ wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' });
+  writeActive({ profile: 'dusk' });
   writeScratch({ 'a.y': false });
 
   const store = layers.loadStore(defs);
-  assert.deepEqual(store.params, { 'a.x': 0.7, 'a.y': false });
-  assert.deepEqual(store.layerOf, { 'a.x': 'wallpaper', 'a.y': 'scratch' });
-  assert.deepEqual(store.beneath, { 'a.x': 0.7, 'a.y': true }, 'the fold without scratch');
-  assert.deepEqual(store.held, { 'a.x': ['base', 'profile', 'wallpaper'], 'a.y': ['profile', 'scratch'] });
-  // fallback is what revert reveals: the fold beneath scratch for an edited key, the value itself otherwise
-  assert.deepEqual(store.fallback, { 'a.x': 0.7, 'a.y': true });
+  assert.deepEqual(store.params, { 'a.x': 0.9, 'a.y': false });
+  assert.deepEqual(store.layerOf, { 'a.x': 'profile', 'a.y': 'scratch' });
+  assert.deepEqual(store.beneath, { 'a.x': 0.9, 'a.y': true }, 'the fold without scratch');
+  assert.deepEqual(store.held, { 'a.x': ['base', 'profile'], 'a.y': ['profile', 'scratch'] });
   assert.deepEqual(store.scratch, { 'a.y': false });
-  assert.deepEqual(store.layers.map((layer) => layer.kind), ['profile', 'wallpaper'], 'context layers only');
-  assert.deepEqual(layers.activeJson(store.active),
-    { wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' });
+  assert.deepEqual(store.layers.map((layer) => layer.kind), ['profile'], 'context layers only');
 });
 
 test('loadStore with nothing active: held is empty for a default and names base for an override', () => {
   writeValues({ 'a.x': 0.2 });
   const store = layers.loadStore(defs);
-  assert.deepEqual(store.params, { 'a.x': 0.2, 'a.y': true });
   assert.deepEqual(store.held, { 'a.x': ['base'], 'a.y': [] });
-  assert.deepEqual(store.fallback, { 'a.x': 0.2, 'a.y': true }, 'nothing is edited, so revert reveals nothing');
-  assert.deepEqual(layers.activeJson(store.active), { wallpaper: null, profile: null });
+  assert.deepEqual(store.beneath, store.params);
 });
 
 test('loadStore validates scratch like every other layer', () => {
   writeScratch({ 'a.x': 7 });
   assert.throws(() => layers.loadStore(defs), /scratch null: a\.x: 7 outside range/);
 });
-```
 
-Add `const { writeScratch } = await import('../src/scratch.js');` beside the other imports at the top of the file, and delete the old `writeTarget`, `loadStore derives params…`, `loadStore under an unpinned wallpaper…`, `loadStore with a profile over a pinned wallpaper…`, and `loadStore with nothing active…` tests, which the block above replaces.
+test('withScratch appends scratch as the last layer', () => {
+  assert.deepEqual(layers.withScratch([{ kind: 'profile', name: 'p', values: {} }], { 'a.x': 0.1 }), [
+    { kind: 'profile', name: 'p', values: {} },
+    { kind: 'scratch', name: null, values: { 'a.x': 0.1 } },
+  ]);
+});
+```
 
 - [ ] **Step 6: Run the layers test to verify it fails**
 
 Run: `node --test test/layers.test.js`
-Expected: FAIL on `RESOLUTION_ORDER` and on `held` being undefined.
+Expected: FAIL, `store.held` is undefined and `withScratch` is not a function.
 
-- [ ] **Step 7: Reorder the kinds and export `checkLayer`**
+- [ ] **Step 7: Add `DELTA_KINDS` and export `checkLayer`**
 
-In `src/contexts.js` replace lines 9-10 with:
+In `src/contexts.js` after `LAYER_ORDER` add:
 
 ```js
-// Resolution order of the context kinds, lowest first. Base sits below all of
-// them and scratch above; the look is base then profile, and the deltas ride
-// on top of the look (2026-09-19 compositional profiles design, Section 1).
-export const LAYER_ORDER = ['profile', 'wallpaper', 'state'];
 // The kinds that are sparse, hook-activated deltas over the look.
 export const DELTA_KINDS = ['wallpaper', 'state'];
 ```
 
 In `src/resolve.js` change `function checkLayer(` to `export function checkLayer(`.
 
-- [ ] **Step 8: Rewrite `src/layers.js`**
+- [ ] **Step 8: Extend `loadStore`**
 
-Replace the whole file with:
+In `src/layers.js` add `import { readScratch } from './scratch.js';`, add after `loadLayers`:
+
+```js
+// Scratch is always the topmost layer. Until the switch that makes it the
+// write target, nothing writes it, so it is empty on every host.
+export function withScratch(layers, scratch) {
+  return [...layers, { kind: 'scratch', name: null, values: scratch }];
+}
+```
+
+and in `loadStore` replace `const { params, layerOf } = resolveLayered(defs, base, layers);` with:
+
+```js
+  const scratch = readScratch();
+  const { params, layerOf } = resolveLayered(defs, base, withScratch(layers, scratch));
+  // The fold beneath scratch: what a revert reveals, and what a set normalizes against.
+  const beneath = resolveLayered(defs, base, layers).params;
+  const held = {};
+  for (const key of Object.keys(params)) {
+    held[key] = [];
+    if (Object.hasOwn(base, key)) held[key].push('base');
+    for (const layer of layers) if (Object.hasOwn(layer.values, key)) held[key].push(layer.kind);
+    if (Object.hasOwn(scratch, key)) held[key].push('scratch');
+  }
+```
+
+and add `scratch, beneath, held` to the returned object. Everything else in the file stays as it is.
+
+- [ ] **Step 9: Run the scratch and layers tests, then the suite**
+
+Run: `node --test test/scratch.test.js test/layers.test.js && just test`
+Expected: PASS throughout; the additions change no behaviour while scratch is empty.
+
+- [ ] **Step 10: Commit**
+
+```bash
+git add src/paths.js src/scratch.js src/contexts.js src/layers.js src/resolve.js test/scratch.test.js test/layers.test.js
+git commit -m "feat(store): add the scratch layer and read it above every context"
+```
+
+The final `src/layers.js`, which Task 3 installs, is:
 
 ```js
 import { readValues } from './values.js';
@@ -306,17 +343,7 @@ export function loadStore(defs) {
 }
 ```
 
-- [ ] **Step 9: Run the scratch and layers tests**
-
-Run: `node --test test/scratch.test.js test/layers.test.js`
-Expected: PASS. (`test/cli.test.js` and `test/context-cli.test.js` now fail on `store.target`; Tasks 3 to 6 repair them. Do not run the full suite yet.)
-
-- [ ] **Step 10: Commit**
-
-```bash
-git add src/paths.js src/scratch.js src/contexts.js src/layers.js src/resolve.js test/scratch.test.js test/layers.test.js
-git commit -m "feat(store): add the scratch layer and put the deltas above the look"
-```
+(Reproduced here so Task 3 has it in full; Task 1 installs only the additions above.)
 
 ---
 
@@ -441,7 +468,10 @@ In `src/cli.js` inside `case 'requirements'` replace `const { params } = loadSto
 Run: `node --test test/cli.test.js --test-name-pattern "requirements takes the store lock"`
 Expected: PASS.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 9: Run the suite and commit**
+
+Run: `just test`
+Expected: PASS.
 
 ```bash
 git add src/contexts.js src/cli.js test/contexts.test.js test/cli.test.js
@@ -450,17 +480,91 @@ git commit -m "feat(store): repair the retired pinned slot field once and lock t
 
 ---
 
-### Task 3: `set` and `unset` write scratch
+### Task 3: The switch: the new order, and `set` and `unset` write scratch
+
+First task of commit 2. From here to Task 10 the suite is red between tasks; each task runs the tests it touched.
 
 **Files:**
+- Modify: `src/contexts.js:9-10` (`LAYER_ORDER`)
+- Modify: `src/layers.js` (whole file, to the version printed at the end of Task 1)
 - Modify: `src/cli.js:58-119` (`set`, `unset`), imports at `src/cli.js:9-11`
-- Test: `test/cli.test.js:551-632`
+- Test: `test/layers.test.js`, `test/cli.test.js:551-632`
 
 **Interfaces:**
-- Consumes: `loadStore().scratch`, `.beneath`, `readScratch`, `writeScratch`, `withScratch`, `loadLayers`.
-- Produces: `prism set [--base] <key> <value>` normalizes into scratch; `prism unset [--base] <key>` removes from scratch or base; errors `<key>: not edited` and `<key>: not set in base`.
+- Consumes: `readScratch`, `writeScratch`, `checkLayer`.
+- Produces: `LAYER_ORDER = ['profile','wallpaper','state']`, `RESOLUTION_ORDER = ['default','base','profile','wallpaper','state','scratch']`, `loadStore(defs) -> { base, active, profiles, layers, scratch, params, layerOf, beneath, held, fallback }` with `fallback` meaning what revert reveals; `prism set [--base] <key> <value>` normalizes into scratch; `prism unset [--base] <key>` removes from scratch or base; errors `<key>: not edited` and `<key>: not set in base`.
+- Removes: `writeTarget`, `layersBelow`, `store.target`, `store.heldInTarget`, `activeJson`'s `pinned`.
 
-- [ ] **Step 1: Rewrite the write-target tests**
+- [ ] **Step 1: The order and the store**
+
+In `src/contexts.js` replace the `LAYER_ORDER` line and its comment with:
+
+```js
+// Resolution order of the context kinds, lowest first. Base sits below all of
+// them and scratch above; the look is base then profile, and the deltas ride
+// on top of the look (2026-09-19 compositional profiles design, Section 1).
+export const LAYER_ORDER = ['profile', 'wallpaper', 'state'];
+```
+
+Replace `src/layers.js` with the full version printed at the end of Task 1. Then rewrite `test/layers.test.js` from the `writeTarget` test to the end of the file with:
+
+```js
+test('the resolution order puts the profile under the deltas and scratch on top', () => {
+  assert.deepEqual(layers.RESOLUTION_ORDER, ['default', 'base', 'profile', 'wallpaper', 'state', 'scratch']);
+});
+
+test('loadLayers lists the profile before the wallpaper', () => {
+  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'a.x': 0.7 } });
+  writeContext('profile', 'dusk', { source: null, values: { 'a.y': false } });
+  assert.deepEqual(layers.loadLayers({ profile: 'dusk', wallpaper: { id: 'abc12345', path: '/w' } }), [
+    { kind: 'profile', name: 'dusk', values: { 'a.y': false } },
+    { kind: 'wallpaper', name: 'abc12345', values: { 'a.x': 0.7 } },
+  ]);
+});
+
+test('loadStore: a wallpaper delta shows through under a full profile, and scratch shows over both', () => {
+  writeValues({ 'a.x': 0.2 });
+  writeContext('profile', 'dusk', { source: null, values: { 'a.x': 0.9, 'a.y': true } });
+  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'a.x': 0.7 } });
+  writeActive({ wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' });
+  writeScratch({ 'a.y': false });
+
+  const store = layers.loadStore(defs);
+  assert.deepEqual(store.params, { 'a.x': 0.7, 'a.y': false });
+  assert.deepEqual(store.layerOf, { 'a.x': 'wallpaper', 'a.y': 'scratch' });
+  assert.deepEqual(store.beneath, { 'a.x': 0.7, 'a.y': true }, 'the fold without scratch');
+  assert.deepEqual(store.held, { 'a.x': ['base', 'profile', 'wallpaper'], 'a.y': ['profile', 'scratch'] });
+  // fallback is what revert reveals: the fold beneath scratch for an edited key, the value itself otherwise
+  assert.deepEqual(store.fallback, { 'a.x': 0.7, 'a.y': true });
+  assert.deepEqual(layers.activeJson(store.active),
+    { wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' });
+});
+
+test('loadStore with nothing active: held is empty for a default and names base for an override', () => {
+  writeValues({ 'a.x': 0.2 });
+  const store = layers.loadStore(defs);
+  assert.deepEqual(store.params, { 'a.x': 0.2, 'a.y': true });
+  assert.deepEqual(store.held, { 'a.x': ['base'], 'a.y': [] });
+  assert.deepEqual(store.fallback, { 'a.x': 0.2, 'a.y': true }, 'nothing is edited, so revert reveals nothing');
+  assert.deepEqual(layers.activeJson(store.active), { wallpaper: null, profile: null });
+});
+
+test('loadStore validates scratch like every other layer', () => {
+  writeScratch({ 'a.x': 7 });
+  assert.throws(() => layers.loadStore(defs), /scratch null: a\.x: 7 outside range/);
+});
+
+test('withScratch appends scratch as the last layer', () => {
+  assert.deepEqual(layers.withScratch([{ kind: 'profile', name: 'p', values: {} }], { 'a.x': 0.1 }), [
+    { kind: 'profile', name: 'p', values: {} },
+    { kind: 'scratch', name: null, values: { 'a.x': 0.1 } },
+  ]);
+});
+```
+
+(This replaces the `writeTarget`, the four old `loadStore …` tests, and Task 1's three appended tests.) Run `node --test test/layers.test.js`: PASS.
+
+- [ ] **Step 2: Rewrite the write-target tests**
 
 In `test/cli.test.js` replace the six tests from `set under an unpinned wallpaper writes base…` through `unset of the last key in a profile context still leaves an empty file…` with:
 
@@ -470,12 +574,12 @@ test('set writes scratch above every layer, and a wallpaper on screen never capt
   writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.3 } });
   writeActive({ wallpaper: { id: 'abc12345', path: '/walls/a.jpg' }, profile: 'dusk' });
   const calls = [];
-  assert.equal(await cli.run(['set', 'glass.ior', '1.5'], { runner: (m, f, keys) => calls.push(keys) }), 0);
-  assert.deepEqual(readScratch(), { 'glass.ior': 1.5 });
+  assert.equal(await cli.run(['set', 'glass.ior', '1.7'], { runner: (m, f, keys) => calls.push(keys) }), 0);
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.7 });
   assert.equal(readContext('wallpaper', 'abc12345'), null, 'no wallpaper file appears');
   assert.deepEqual(readContext('profile', 'dusk').values, { 'glass.ior': 1.3 }, 'the profile is untouched');
   assert.equal(fs.readFileSync(valuesPath(), 'utf8'), 'glass.ior: 1.24\n', 'base untouched');
-  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.5);
+  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.7);
   assert.deepEqual(calls, [], 'no fixture sink binds glass.ior');
 });
 
@@ -488,7 +592,7 @@ test('set normalizes: a value the fold beneath already shows is no edit', async 
   assert.equal(await cli.run(['set', 'glass.ior', '1.3'], { runner: () => {} }), 0);
   assert.deepEqual(readScratch(), {});
   assert.equal(fs.existsSync(scratchPath()), false);
-  // a default-valued key is still an edit when the fold beneath differs
+  // 1.5 is the shipped default, and still an edit when the fold beneath differs
   assert.equal(await cli.run(['set', 'glass.ior', '1.5'], { runner: () => {} }), 0);
   writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.ior': 1.4 } });
   assert.equal(await cli.run(['set', 'glass.ior', '1.5'], { runner: () => {} }), 0);
@@ -506,15 +610,15 @@ test('set --base writes through to values.yaml, bypassing scratch', async () => 
 
 test('unset removes the edit from scratch and refuses a key that is not edited', async () => {
   fs.writeFileSync(valuesPath(), 'glass.ior: 1.24\n');
-  writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.5 } });
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.3 } });
   writeActive({ profile: 'dusk' });
   await cli.run(['set', 'glass.ior', '1.7'], { runner: () => {} });
 
   const calls = [];
   assert.equal(await cli.run(['unset', 'glass.ior'], { runner: (m, f, keys) => calls.push(keys) }), 0);
   assert.deepEqual(readScratch(), {});
-  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.5, 'the profile shows through');
-  assert.deepEqual(readContext('profile', 'dusk').values, { 'glass.ior': 1.5 }, 'a revert never touches the profile');
+  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.3, 'the profile shows through');
+  assert.deepEqual(readContext('profile', 'dusk').values, { 'glass.ior': 1.3 }, 'a revert never touches the profile');
 
   const absent = await runCaptured(['unset', 'glass.ior'], { runner: () => {} });
   assert.notEqual(absent.code, 0);
@@ -544,12 +648,12 @@ const { readScratch, writeScratch } = await import('../src/scratch.js');
 
 and add `scratchPath` to the `paths.js` import list.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [ ] **Step 3: Run them to verify they fail**
 
 Run: `node --test test/cli.test.js --test-name-pattern "scratch|normalizes|not edited|orphan out of scratch|bypassing scratch"`
 Expected: FAIL, `Cannot read properties of undefined (reading 'kind')` from the old `store.target`.
 
-- [ ] **Step 3: Rewrite `set` and `unset`**
+- [ ] **Step 4: Rewrite `set` and `unset`**
 
 In `src/cli.js` change the imports:
 
@@ -624,12 +728,12 @@ import { readScratch, writeScratch } from './scratch.js';
       }
 ```
 
-- [ ] **Step 4: Run the CLI set and unset tests**
+- [ ] **Step 5: Run the CLI set and unset tests**
 
 Run: `node --test test/cli.test.js --test-name-pattern "^set|^unset|scratch"`
 Expected: PASS for the rewritten tests. Tests named `describe carries the neutral contract…`, `a base override hidden…`, and the `reset` tests still fail; Tasks 4 and 5 own them.
 
-- [ ] **Step 5: Teach doctor to screen scratch**
+- [ ] **Step 6: Teach doctor to screen scratch**
 
 Spec Section 1: doctor reports an orphan or invalid key in scratch the way it does for any layer, naming the file. Add to `test/cli.test.js` after `doctor screens values.yaml for invalid values…`:
 
@@ -668,12 +772,9 @@ Run it to see it fail (doctor throws on the orphan instead of reporting it), the
 Run: `node --test test/cli.test.js --test-name-pattern "doctor screens scratch"`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: No commit**
 
-```bash
-git add src/cli.js test/cli.test.js
-git commit -m "feat(cli): write every edit into the scratch layer"
-```
+This task is part of commit 2 (see Commit boundaries). Leave the work staged and continue with Task 4.
 
 ---
 
@@ -898,12 +999,9 @@ Expected: FAIL on `store.target`.
 Run: `node --test test/cli.test.js --test-name-pattern "reset|neutral|symmetric"`
 Expected: PASS.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 9: No commit**
 
-```bash
-git add src/reset.js src/cli.js test/reset.test.js test/cli.test.js
-git commit -m "feat(reset): write every mode into scratch and rename defaults to revert"
-```
+Part of commit 2. Continue with Task 5.
 
 ---
 
@@ -988,14 +1086,11 @@ In `src/cli.js` `case 'describe'` replace `heldInTarget: store.heldInTarget[key]
 
 - [ ] **Step 4: Run them to verify they pass**
 
-Run: the Step 2 command. Expected: PASS for the Node tests. The contract test's Lua half still fails until Task 10 teaches the panel `held`; note it and move on.
+Run: the Step 2 command. Expected: PASS for the Node tests. The contract test's Lua half still fails until Task 10 teaches the panel `held`; that is why Tasks 3 to 10 share a commit.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: No commit**
 
-```bash
-git add src/cli.js test/cli.test.js test/context-cli.test.js integrations/noctalia-plugin/contract.test.mjs
-git commit -m "feat(cli): describe every layer holding a key instead of a write target"
-```
+Part of commit 2. Continue with Task 6.
 
 ---
 
@@ -1007,7 +1102,7 @@ git commit -m "feat(cli): describe every layer holding a key instead of a write 
 
 **Interfaces:**
 - Consumes: `checkLayer`, `withScratch`, `readScratch`, `writeScratch`.
-- Produces: `prism context clear wallpaper <id>`; `changeSlots(deps, mutate, { commit, fold })` where `commit()` returns `true` when it changed a context file and `fold` enables the wallpaper fold; verbs `save`, `pin`, `unpin` gone; usage `list|show|rename|activate|deactivate|delete|clear|wallpaper`.
+- Produces: `prism context clear wallpaper <id>`; `changeSlots(deps, mutate, { commit, fold, without })` where `commit()` performs a context-file deletion after validation and returns `true` when it changed something effective, `fold` enables the wallpaper fold, and `without` names a context whose file the next state is computed as if it were already gone; verbs `save`, `pin`, `unpin` gone; usage `list|show|rename|activate|deactivate|delete|clear|wallpaper`.
 
 - [ ] **Step 1: Rewrite the context tests**
 
@@ -1033,35 +1128,35 @@ test('the hook folds scratch into the wallpaper that leaves, in one locked step'
   const { wallpaperId } = await import('../src/contexts.js');
   writeContext('wallpaper', wallpaperId(a), { source: a, values: { 'glass.paneLip': 9 } });
   assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
-  await cli.run(['set', 'glass.ior', '1.5'], { runner: () => {} });
+  await cli.run(['set', 'glass.ior', '1.7'], { runner: () => {} });
   await cli.run(['set', 'glass.paneLip', '12'], { runner: () => {} });
 
   const calls = [];
   assert.equal(await cli.run(['context', 'wallpaper', b], { runner: (m, f, keys) => calls.push(keys) }), 0);
   assert.deepEqual(readContext('wallpaper', wallpaperId(a)),
-    { source: a, values: { 'glass.paneLip': 12, 'glass.ior': 1.5 } }, 'the leaving delta absorbs scratch');
+    { source: a, values: { 'glass.paneLip': 12, 'glass.ior': 1.7 } }, 'the leaving delta absorbs scratch');
   assert.deepEqual(readScratch(), {});
   assert.deepEqual(readActive(), { wallpaper: { id: wallpaperId(b), path: b } });
   const params = JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params;
-  assert.equal(params['glass.ior'], 1.24, 'the edit left with its wallpaper');
-  assert.equal(params['glass.paneLip'], 6);
+  assert.equal(params['glass.ior'], 1.5, 'the edit left with its wallpaper; the shipped default shows');
+  assert.equal(params['glass.paneLip'], 6, 'the shipped default');
 
   // rotating back brings the nudges back
   assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
-  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.5);
+  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.7);
 });
 
 test('the first activation keeps scratch: there is no wallpaper to receive it; the next rotation folds it', async () => {
   const a = wallpaperFile('a.jpg');
   const b = wallpaperFile('b.jpg');
   const { wallpaperId } = await import('../src/contexts.js');
-  await cli.run(['set', 'glass.ior', '1.5'], { runner: () => {} });
+  await cli.run(['set', 'glass.ior', '1.7'], { runner: () => {} });
   assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
-  assert.deepEqual(readScratch(), { 'glass.ior': 1.5 });
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.7 });
   assert.equal(readContext('wallpaper', wallpaperId(a)), null);
-  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.5);
+  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.7);
   assert.equal(await cli.run(['context', 'wallpaper', b], { runner: () => {} }), 0);
-  assert.deepEqual(readContext('wallpaper', wallpaperId(a)), { source: a, values: { 'glass.ior': 1.5 } });
+  assert.deepEqual(readContext('wallpaper', wallpaperId(a)), { source: a, values: { 'glass.ior': 1.7 } });
   assert.deepEqual(readScratch(), {});
 });
 
@@ -1070,12 +1165,12 @@ test('activate and deactivate wallpaper fold like the hook; the same wallpaper a
   const { wallpaperId } = await import('../src/contexts.js');
   writeContext('wallpaper', 'other001', { source: '/o.jpg', values: {} });
   assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
-  await cli.run(['set', 'glass.ior', '1.5'], { runner: () => {} });
+  await cli.run(['set', 'glass.ior', '1.7'], { runner: () => {} });
   assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
-  assert.deepEqual(readScratch(), { 'glass.ior': 1.5 }, 'a repeat is a no-op, fold included');
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.7 }, 'a repeat is a no-op, fold included');
 
   assert.equal(await cli.run(['context', 'activate', 'wallpaper', 'other001'], { runner: () => {} }), 0);
-  assert.deepEqual(readContext('wallpaper', wallpaperId(a)).values, { 'glass.ior': 1.5 });
+  assert.deepEqual(readContext('wallpaper', wallpaperId(a)).values, { 'glass.ior': 1.7 });
   assert.deepEqual(readScratch(), {});
 
   await cli.run(['set', 'glass.ior', '1.6'], { runner: () => {} });
@@ -1091,7 +1186,7 @@ test('an invalid incoming delta is refused before anything is written', async ()
   const { wallpaperId } = await import('../src/contexts.js');
   writeContext('wallpaper', wallpaperId(b), { source: b, values: { 'glass.ior': 99 } });
   assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
-  await cli.run(['set', 'glass.ior', '1.5'], { runner: () => {} });
+  await cli.run(['set', 'glass.ior', '1.7'], { runner: () => {} });
   const before = {
     scratch: fs.readFileSync(scratchPath(), 'utf8'),
     active: fs.readFileSync(activePath(), 'utf8'),
@@ -1113,20 +1208,20 @@ test('deleting the active wallpaper clears the slot and leaves scratch: the fold
   const { wallpaperId } = await import('../src/contexts.js');
   writeContext('wallpaper', wallpaperId(a), { source: a, values: { 'glass.paneLip': 9 } });
   assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
-  await cli.run(['set', 'glass.ior', '1.5'], { runner: () => {} });
+  await cli.run(['set', 'glass.ior', '1.7'], { runner: () => {} });
   assert.equal(await cli.run(['context', 'delete', 'wallpaper', wallpaperId(a)], { runner: () => {} }), 0);
   assert.deepEqual(readActive(), {});
-  assert.deepEqual(readScratch(), { 'glass.ior': 1.5 });
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.7 });
 });
 
 test('profile activate and deactivate leave scratch alone', async () => {
   writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.3 } });
-  await cli.run(['set', 'glass.ior', '1.5'], { runner: () => {} });
+  await cli.run(['set', 'glass.ior', '1.7'], { runner: () => {} });
   assert.equal(await cli.run(['context', 'activate', 'profile', 'dusk'], { runner: () => {} }), 0);
-  assert.deepEqual(readScratch(), { 'glass.ior': 1.5 });
-  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.5, 'the edit rides on top');
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.7 });
+  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.7, 'the edit rides on top');
   assert.equal(await cli.run(['context', 'deactivate', 'profile'], { runner: () => {} }), 0);
-  assert.deepEqual(readScratch(), { 'glass.ior': 1.5 });
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.7 });
 });
 
 test('clear wallpaper removes the on-screen delta, resolves, fans out, and refuses a stale or untuned id', async () => {
@@ -1142,8 +1237,12 @@ test('clear wallpaper removes the on-screen delta, resolves, fans out, and refus
   assert.equal(await cli.run(['context', 'clear', 'wallpaper', id], { runner: (m, f, keys) => calls.push(keys) }), 0);
   assert.equal(readContext('wallpaper', id), null);
   assert.deepEqual(readActive(), { wallpaper: { id, path: a } }, 'the slot stays');
+  // The bus and the fan-out reflect the delta's removal, not the values it
+  // held: the next state is computed with the file already gone.
   assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['terminal.background.opacity.inactive'], 0);
   assert.deepEqual(calls, [['terminal.background.opacity.inactive'], ['terminal.background.opacity.inactive']]);
+  assert.deepEqual(loadStore(defs).params, JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params,
+    'the store and the bus agree after a clear');
   assert.match((await runCaptured(['context', 'clear', 'wallpaper', id])).stderr, new RegExp(`wallpaper ${id}: untuned`));
 });
 ```
@@ -1215,13 +1314,16 @@ function planFold(leaving, scratch) {
 
 // Apply a slot change. `mutate(active)` computes the next slots and may throw,
 // but writes nothing itself; `commit()` performs a context-file change (a
-// delete) and reports whether it changed anything effective. The whole next
-// state is validated before the first write, and the writes follow the
-// Section 8 order: the merged delta, the cleared scratch, the slot, the bus.
-// The previous state is allowed not to resolve, in which case every bound
-// key fans out (the apply contract): that is how a broken active context is
-// recovered from.
-async function changeSlots({ defs, manifests, runner }, mutate, { commit = () => false, fold = false } = {}) {
+// delete) and reports whether it changed anything effective, and `without`
+// names the context that delete removes so the next state is computed and
+// validated as if the file were already gone. The whole next state is
+// validated before the first write, and the writes follow the Section 8
+// order: the merged delta, the cleared scratch, the context delete, the
+// slot, the bus. The previous state is allowed not to resolve, in which case
+// every bound key fans out (the apply contract): that is how a broken active
+// context is recovered from.
+async function changeSlots({ defs, manifests, runner }, mutate,
+  { commit = () => false, fold = false, without = null } = {}) {
   let outcome = null;
   await withLock(lockPath(), async () => {
     const active = readActive();
@@ -1237,7 +1339,11 @@ async function changeSlots({ defs, manifests, runner }, mutate, { commit = () =>
     const folded = fold ? planFold(wallpaperLeaving(active, next), scratch) : null;
     if (folded !== null) checkLayer(defs, folded.values, `wallpaper ${folded.name}`);
     const scratchAfter = folded === null ? scratch : {};
-    const { params } = resolveLayered(defs, base, withScratch(loadLayers(next), scratchAfter));
+    const nextLayers = loadLayers(next).map((layer) => (
+      without !== null && layer.kind === without.kind && layer.name === without.name
+        ? { ...layer, values: {} }
+        : layer));
+    const { params } = resolveLayered(defs, base, withScratch(nextLayers, scratchAfter));
     if (folded !== null) {
       writeContext('wallpaper', folded.name, { source: folded.source, values: folded.values });
       writeScratch({});
@@ -1360,7 +1466,10 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
         requireOnScreen(active, id);
         if (readContextText('wallpaper', id) === null) throw new Error(`wallpaper ${id}: untuned`);
         return active;
-      }, { commit: () => { deleteContext('wallpaper', id); return true; } });
+      }, {
+        commit: () => { deleteContext('wallpaper', id); return true; },
+        without: { kind: 'wallpaper', name: id },
+      });
     }
 
     // A profile keeps its identity under a new name: the file moves and, when
@@ -1404,12 +1513,9 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
 Run: `node --test test/context-cli.test.js`
 Expected: PASS. Then run `node --test test/cli.test.js` and fix any test still naming `save`, `pin`, or `pinned` in a fixture (`writeActive` calls with `pinned:` lose that field).
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: No commit**
 
-```bash
-git add src/context-cli.js test/context-cli.test.js test/cli.test.js
-git commit -m "feat(context): fold scratch into the leaving wallpaper, add clear, retire the pin and save"
-```
+Part of commit 2. Continue with Task 7.
 
 ---
 
@@ -1482,19 +1588,19 @@ async function commitKeepsScreen(argv) {
 }
 
 test('commit base folds scratch into values.yaml under the default rule and clears scratch', async () => {
-  writeScratch({ 'glass.ior': 1.5, 'glass.paneLip': 6 });
+  writeScratch({ 'glass.ior': 1.7, 'glass.paneLip': 6 });
   await commitKeepsScreen(['commit', 'base']);
-  assert.deepEqual(readValues(), { 'glass.ior': 1.5 }, 'a value equal to the def default is dropped');
+  assert.deepEqual(readValues(), { 'glass.ior': 1.7 }, 'paneLip 6 equals the def default and is dropped');
   assert.deepEqual(readScratch(), {});
 });
 
 test('commit base is refused under a loaded profile, and a merging commit refuses empty scratch', async () => {
   writeContext('profile', 'dusk', { source: null, values: {} });
   writeActive({ profile: 'dusk' });
-  writeScratch({ 'glass.ior': 1.5 });
+  writeScratch({ 'glass.ior': 1.7 });
   const refused = await runCaptured(['commit', 'base']);
   assert.match(refused.stderr, /profile dusk is loaded; commit profile, or deactivate it first/);
-  assert.deepEqual(readScratch(), { 'glass.ior': 1.5 });
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.7 });
   writeActive({});
   writeScratch({});
   for (const argv of [['commit', 'base'], ['commit', 'profile'], ['commit', 'wallpaper', 'abc12345']]) {
@@ -1509,25 +1615,25 @@ test('commit profile merges scratch into the loaded profile and strips those key
   writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.3, 'glass.paneLip': 9 } });
   writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.ior': 1.35, 'glass.noise': 0.2 } });
   writeActive({ profile: 'dusk', wallpaper: { id: 'w1', path: '/w.png' } });
-  writeScratch({ 'glass.ior': 1.5 });
+  writeScratch({ 'glass.ior': 1.7 });
   await commitKeepsScreen(['commit', 'profile']);
-  assert.deepEqual(readContext('profile', 'dusk').values, { 'glass.ior': 1.5, 'glass.paneLip': 9 }, 'a merge keeps the rest');
+  assert.deepEqual(readContext('profile', 'dusk').values, { 'glass.ior': 1.7, 'glass.paneLip': 9 }, 'a merge keeps the rest');
   assert.deepEqual(readContext('wallpaper', 'w1').values, { 'glass.noise': 0.2 }, 'the committed key leaves the delta');
   assert.deepEqual(readScratch(), {});
-  assert.equal(loadStore(defs).params['glass.ior'], 1.5);
+  assert.equal(loadStore(defs).params['glass.ior'], 1.7);
 });
 
 test('a commit to the look deletes a delta it empties', async () => {
   writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.ior': 1.35 } });
   writeActive({ wallpaper: { id: 'w1', path: '/w.png' } });
-  writeScratch({ 'glass.ior': 1.5 });
+  writeScratch({ 'glass.ior': 1.7 });
   await commitKeepsScreen(['commit', 'base']);
   assert.equal(readContext('wallpaper', 'w1'), null);
   assert.equal(fs.existsSync(contextPath('wallpaper', 'w1')), false);
 });
 
 test('commit profile with none loaded is refused', async () => {
-  writeScratch({ 'glass.ior': 1.5 });
+  writeScratch({ 'glass.ior': 1.7 });
   assert.match((await runCaptured(['commit', 'profile'])).stderr, /no profile is loaded; commit profile <name> to save one/);
 });
 
@@ -1536,11 +1642,11 @@ test('save-as snapshots the screen, deltas included, strips only scratch keys fr
   writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.3 } });
   writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.ior': 1.35, 'glass.noise': 0.2 } });
   writeActive({ profile: 'dusk', wallpaper: { id: 'w1', path: '/w.png' } });
-  writeScratch({ 'glass.ior': 1.5 });
+  writeScratch({ 'glass.ior': 1.7 });
   await commitKeepsScreen(['commit', 'profile', 'noon']);
   const noon = readContext('profile', 'noon').values;
   assert.equal(Object.keys(noon).length, defs.size, 'a full snapshot');
-  assert.equal(noon['glass.ior'], 1.5, "scratch's value");
+  assert.equal(noon['glass.ior'], 1.7, "scratch's value");
   assert.equal(noon['glass.noise'], 0.2, "the delta's value, because it is what was on screen");
   assert.equal(noon['glass.paneLip'], 9, 'base shows through the sparse profile');
   assert.deepEqual(readContext('wallpaper', 'w1').values, { 'glass.noise': 0.2 }, 'an untouched nudge stays');
@@ -1558,7 +1664,7 @@ test('save-as needs no edit, and saving the loaded profile under its own name is
   assert.match((await runCaptured(['commit', 'profile', 'copy'])).stderr, /nothing to commit/);
   writeActive({});
   await commitKeepsScreen(['commit', 'profile', 'Default-copy']);
-  assert.equal(readContext('profile', 'Default-copy').values['glass.ior'], 1.24, 'naming the Default look');
+  assert.equal(readContext('profile', 'Default-copy').values['glass.ior'], 1.5, 'naming the Default look: the shipped default, since base is empty');
 });
 
 test('neutral then save-as makes a neutral profile even when the wallpaper already quiets a key', async () => {
@@ -1572,16 +1678,16 @@ test('neutral then save-as makes a neutral profile even when the wallpaper alrea
 });
 
 test('commit wallpaper merges scratch into the on-screen delta and refuses a stale id or no wallpaper', async () => {
-  writeScratch({ 'glass.ior': 1.5 });
+  writeScratch({ 'glass.ior': 1.7 });
   assert.match((await runCaptured(['commit', 'wallpaper', 'w1'])).stderr, /no active wallpaper/);
   writeActive({ wallpaper: { id: 'w1', path: '/w.png' } });
   assert.match((await runCaptured(['commit', 'wallpaper', 'w2'])).stderr, /wallpaper w2 is not on screen/);
   await commitKeepsScreen(['commit', 'wallpaper', 'w1']);
-  assert.deepEqual(readContext('wallpaper', 'w1'), { source: '/w.png', values: { 'glass.ior': 1.5 } }, 'created with _source');
+  assert.deepEqual(readContext('wallpaper', 'w1'), { source: '/w.png', values: { 'glass.ior': 1.7 } }, 'created with _source');
   assert.deepEqual(readScratch(), {});
   writeScratch({ 'glass.noise': 0.3 });
   await commitKeepsScreen(['commit', 'wallpaper', 'w1']);
-  assert.deepEqual(readContext('wallpaper', 'w1').values, { 'glass.ior': 1.5, 'glass.noise': 0.3 });
+  assert.deepEqual(readContext('wallpaper', 'w1').values, { 'glass.ior': 1.7, 'glass.noise': 0.3 });
 });
 
 test('commit rejects a bad destination, a bad name, and stray arguments', async () => {
@@ -1714,7 +1820,9 @@ In `src/cli.js` add `import { runCommit } from './commit.js';` and, before `case
 ```js
       case 'commit': {
         const { defs } = load();
-        return runCommit(rest, { defs });
+        // Awaited inside the try, so a refusal becomes the one-line error and
+        // exit 1 like every other verb rather than an unhandled rejection.
+        return await runCommit(rest, { defs });
       }
 ```
 
@@ -1725,16 +1833,15 @@ Change the usage line in `default:` to `usage: prism set|unset|get|list|describe
 Run: `node --test test/commit.test.js test/cli.test.js`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: No commit**
 
-```bash
-git add src/commit.js src/cli.js test/commit.test.js test/cli.test.js
-git commit -m "feat(cli): add typed commits from scratch into base, a profile, or the wallpaper"
-```
+Part of commit 2. Continue with Task 9 (Task 8 runs after commit 2 lands).
 
 ---
 
 ### Task 8: Every multi-file verb survives an interruption after any write
+
+Runs after commit 2 has landed (Task 10), because it exercises the finished verbs.
 
 **Files:**
 - Test: `test/write-order.test.js` (new)
@@ -1816,7 +1923,7 @@ const cases = [
       const b = wallpaperFile('b.jpg');
       writeContext('wallpaper', wallpaperId(a), { source: a, values: { 'glass.paneLip': 9 } });
       writeActive({ wallpaper: { id: wallpaperId(a), path: a } });
-      writeScratch({ 'glass.ior': 1.5 });
+      writeScratch({ 'glass.ior': 1.7 });
       return ['context', 'wallpaper', b];
     },
     visible: true,
@@ -1826,7 +1933,7 @@ const cases = [
     setup: () => {
       writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.ior': 1.35, 'glass.noise': 0.2 } });
       writeActive({ wallpaper: { id: 'w1', path: '/w.png' } });
-      writeScratch({ 'glass.ior': 1.5 });
+      writeScratch({ 'glass.ior': 1.7 });
       return ['commit', 'base'];
     },
   },
@@ -1836,7 +1943,7 @@ const cases = [
       writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.3 } });
       writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.ior': 1.35 } });
       writeActive({ profile: 'dusk', wallpaper: { id: 'w1', path: '/w.png' } });
-      writeScratch({ 'glass.ior': 1.5 });
+      writeScratch({ 'glass.ior': 1.7 });
       return ['commit', 'profile'];
     },
   },
@@ -1855,7 +1962,7 @@ const cases = [
     setup: () => {
       writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.noise': 0.2 } });
       writeActive({ wallpaper: { id: 'w1', path: '/w.png' } });
-      writeScratch({ 'glass.ior': 1.5 });
+      writeScratch({ 'glass.ior': 1.7 });
       return ['commit', 'wallpaper', 'w1'];
     },
   },
@@ -2128,12 +2235,9 @@ end
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
 Expected: the module assertions above pass and the first failure is a panel-rendering assertion below them, which Task 10 owns. The file runs top to bottom, so read the failing line number: inside the blocks edited here it is a Task 9 failure, past them it is Task 10's.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: No commit**
 
-```bash
-git add integrations/noctalia-plugin/queue.luau integrations/noctalia-plugin/presentation.luau integrations/noctalia-plugin/plugin_test.lua test/plugin-client.test.js
-git commit -m "feat(panel): derive counts from held layers and queue commit and clear"
-```
+Part of commit 2. Continue with Task 10.
 
 ---
 
@@ -2499,7 +2603,16 @@ end
 local function commitAction(item, params)
   return function()
     for _, param in ipairs(params) do param.edited = false end
-    if item.destination == "profile" and item.target ~= nil then state.model.active.profile = item.target end
+    -- Save-as loads the new profile in the same command, so the selector
+    -- shows it at once: the name joins the list the selector is drawn from
+    -- as well as the slot, or profileSection would select Default.
+    if item.destination == "profile" and item.target ~= nil then
+      if not Presentation.profileExists(state.model, item.target) then
+        state.model.profiles[#state.model.profiles + 1] = item.target
+        table.sort(state.model.profiles)
+      end
+      state.model.active.profile = item.target
+    end
     enqueue(item)
     render()
   end
@@ -2641,11 +2754,15 @@ In `confirmRow`, the replace branch becomes `commitAction({verb = "commit", dest
 Run: `lua integrations/noctalia-plugin/plugin_test.lua && node --test test/plugin-client.test.js test/plugin-panel-lifecycle.test.js integrations/noctalia-plugin/contract.test.mjs`
 Expected: PASS. Then `just test` for the whole suite.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 9: Commit 2**
+
+Run: `just test`
+Expected: PASS, the whole suite.
 
 ```bash
-git add integrations/noctalia-plugin/panel.luau integrations/noctalia-plugin/plugin_test.lua integrations/noctalia-plugin/contract.test.mjs test/plugin-client.test.js test/plugin-panel-lifecycle.test.js
-git commit -m "feat(panel): edits row, wallpaper clear, provenance marker, and commits instead of shadows"
+git add -A src test integrations
+git status --short   # only files this plan names, no stray fixtures
+git commit -m "feat: move every edit into the scratch layer with typed commits"
 ```
 
 ---
@@ -2660,7 +2777,7 @@ git commit -m "feat(panel): edits row, wallpaper clear, provenance marker, and c
 - Consumes: the host's `panel.setWantsSecondTicks(bool)`, which makes Noctalia call the plugin's global `update()` once per second while the panel is open (`~/software/noctalia/src/shell/panel/plugin_panel.cpp`, `kTickIntervalMs = 1000`, dispatching `update` through `ScriptRuntime::enqueueUpdate`). Verified against the installed tree at `v5.0.1-31-g019f16079` on 2026-09-19.
 - Produces: `update()` requesting one refresh every second tick through the existing stale-and-replay path.
 
-- [ ] **Step 1: Write the failing refresh test**
+- [ ] **Step 1: Write the failing refresh tests**
 
 Append to `plugin_test.lua`:
 
@@ -2699,6 +2816,26 @@ described({ exitCode = 0, stdout = "{}" })
 
 onClose()
 equal(ticksWanted, false, "closing the panel stops the tick")
+
+-- A describe the tick launched must not land over a write that started after
+-- it: a periodic describe now races every optimistic edit, not only drags.
+-- The write invalidates the outstanding describe, whose result is dropped and
+-- replayed once the queue drains.
+local raceTree = renderModel(profileModel({ active = { profile = "dawn" } }))
+update() update()
+assert(commands[#commands]:find("describe", 1, true), "the tick launched a describe")
+local staleDescribe = described
+selectWithOption(raceTree, "Default").props.onChange(2)
+equal(commands[#commands], Shell.command({ "prism", "context", "activate", "profile", "dusk" }))
+model = profileModel({ active = { profile = "dawn" } })
+staleDescribe({ exitCode = 0, stdout = "{}" })
+equal(selectWithOption(rendered, "Default").props.selectedIndex, 2,
+  "an older describe must not overwrite the pick made after it launched")
+writeCallback({ exitCode = 0, stdout = "" })
+assert(commands[#commands]:find("describe", 1, true), "the invalidated describe is replayed once the write lands")
+model = profileModel({ active = { profile = "dusk" } })
+described({ exitCode = 0, stdout = "{}" })
+equal(selectWithOption(rendered, "Default").props.selectedIndex, 2)
 ```
 
 - [ ] **Step 2: Run it to verify it fails**
@@ -2706,7 +2843,20 @@ equal(ticksWanted, false, "closing the panel stops the tick")
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
 Expected: FAIL, `ticksWanted` is nil.
 
-- [ ] **Step 3: Implement the tick**
+- [ ] **Step 3: Invalidate an outstanding describe when a write enqueues**
+
+In `panel.luau`, in `enqueue`, add before the `Queue.enqueue` call:
+
+```lua
+  -- A describe already in flight would land over this write's optimistic
+  -- change. Mark it stale the way beginDrag does; described() then keeps the
+  -- current model and finishRefresh replays once the queue drains.
+  if describeRunning then state.describeInvalidated = true end
+```
+
+`described` already treats `state.describeInvalidated` as "drop this result and set `refreshAfterDrag`", so no further change is needed there.
+
+- [ ] **Step 4: Implement the tick**
 
 In `panel.luau` add `ticks = 0,` to the `state` table and replace `onOpen` and `onClose` with:
 
@@ -2744,12 +2894,12 @@ function update()
 end
 ```
 
-- [ ] **Step 4: Run it to verify it passes**
+- [ ] **Step 5: Run it to verify it passes**
 
-Run: `lua integrations/noctalia-plugin/plugin_test.lua && node --test test/plugin-client.test.js test/plugin-panel-lifecycle.test.js`
+Run: `lua integrations/noctalia-plugin/plugin_test.lua && node --test test/plugin-client.test.js test/plugin-panel-lifecycle.test.js && just test`
 Expected: PASS. If `plugin-client.test.js`'s lifecycle test greps `onClose` for exact text, extend its regex to allow the new `setWantsSecondTicks(false)` line.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add integrations/noctalia-plugin/panel.luau integrations/noctalia-plugin/plugin_test.lua test/plugin-client.test.js

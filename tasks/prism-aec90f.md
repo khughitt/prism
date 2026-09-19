@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: main
 created: 2026-09-19T20:01:06Z
-updated: 2026-09-19T21:15:52Z
+updated: 2026-09-19T21:29:24Z
 started: 2026-09-19T20:01:22Z
 depends: []
 parent: prism-2f0b4b
@@ -32,3 +32,4 @@ Design the profile system as a fold over layers: defaults, base, profile (the lo
 - 2026-09-19T21:15:37Z (prism-aec90f): Plan docs/plans/2026-09-19-compositional-profiles.md written 2026-09-19 with 13 steps filed as children; superseded tasks dropped and reframed ideas noted per spec Section 12
 - 2026-09-19T21:15:52Z (prism-aec90f): parked (waiting on user, review): Plan review: the user reviews docs/plans/2026-09-19-compositional-profiles.md, then execution starts at Task 1 (prism-0dc242) in this worktree
   provenance: {"harness_session":"claude-code:1f37680c-20bd-40a3-9a1e-849bd9e3e3f7","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-09-19T21:29:24Z (prism-aec90f): Plan review round 1: clear computes its next state with the delta removed; commit awaited inside the CLI try; writes invalidate an in-flight describe; save-as adds the name to the selector list; fixtures avoid shipped defaults; tasks grouped into five green commits
