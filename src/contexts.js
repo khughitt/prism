@@ -7,6 +7,8 @@ import { readJson, writeJsonAtomic } from './store.js';
 
 // Resolution order of the context kinds, lowest first. Base sits below all of them.
 export const LAYER_ORDER = ['wallpaper', 'state', 'profile'];
+// The kinds that are sparse, hook-activated deltas over the look.
+export const DELTA_KINDS = ['wallpaper', 'state'];
 // Kinds a verb may name. `state` is reserved until its activation sources are designed.
 export const VERB_KINDS = ['profile', 'wallpaper'];
 

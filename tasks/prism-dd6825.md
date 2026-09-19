@@ -7,8 +7,8 @@ size: s
 complexity: mid
 process: direct
 created: 2026-09-19T21:15:15Z
-updated: 2026-09-19T21:15:37Z
-depends: [prism-9ecbe8]
+updated: 2026-09-19T22:50:54Z
+depends: [prism-9ecbe8, prism-d4488f]
 parent: prism-aec90f
 tags: [profiles]
 agent: claude-code/claude-fable-5-1

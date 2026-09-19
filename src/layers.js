@@ -1,5 +1,6 @@
 import { readValues } from './values.js';
 import { LAYER_ORDER, listContexts, readActive, readContext } from './contexts.js';
+import { readScratch } from './scratch.js';
 import { resolveLayered } from './resolve.js';
 
 export function activeName(active, kind) {
@@ -37,6 +38,12 @@ export function loadLayers(active) {
   return layers;
 }
 
+// Scratch is always the topmost layer. Until the switch that makes it the
+// write target, nothing writes it, so it is empty on every host.
+export function withScratch(layers, scratch) {
+  return [...layers, { kind: 'scratch', name: null, values: scratch }];
+}
+
 // The write target is the topmost *explicit* layer. A profile is loaded by
 // hand, so it is always a target while active. A wallpaper is activated by the
 // shell's wallpaper hook without the user asking; it is an overlay that never
@@ -65,7 +72,17 @@ export function loadStore(defs) {
   // whose file is broken stays listed and fails when it is activated.
   const profiles = listContexts().profile;
   const layers = loadLayers(active);
-  const { params, layerOf } = resolveLayered(defs, base, layers);
+  const scratch = readScratch();
+  const { params, layerOf } = resolveLayered(defs, base, withScratch(layers, scratch));
+  // The fold beneath scratch: what a revert reveals, and what a set normalizes against.
+  const beneath = resolveLayered(defs, base, layers).params;
+  const held = {};
+  for (const key of Object.keys(params)) {
+    held[key] = [];
+    if (Object.hasOwn(base, key)) held[key].push('base');
+    for (const layer of layers) if (Object.hasOwn(layer.values, key)) held[key].push(layer.kind);
+    if (Object.hasOwn(scratch, key)) held[key].push('scratch');
+  }
   const target = writeTarget(active);
   // Target ownership includes values hidden by a higher layer.
   const heldValues = target.kind === 'base'
@@ -81,5 +98,6 @@ export function loadStore(defs) {
     heldInTarget[key] = Object.hasOwn(heldValues, key);
     fallback[key] = layerOf[key] === target.kind ? below[key] : params[key];
   }
-  return { base, active, profiles, layers, target, params, layerOf, fallback, heldInTarget };
+  return { base, active, profiles, layers, target, params, layerOf, fallback, heldInTarget,
+    scratch, beneath, held };
 }

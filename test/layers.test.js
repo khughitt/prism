@@ -9,6 +9,7 @@ process.env.PRISM_STATE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-state
 
 const { writeActive, writeContext } = await import('../src/contexts.js');
 const { writeValues } = await import('../src/values.js');
+const { writeScratch } = await import('../src/scratch.js');
 const layers = await import('../src/layers.js');
 
 const defs = new Map([
@@ -102,4 +103,38 @@ test('loadStore with nothing active: target is base and fallback is the default 
   assert.deepEqual(store.params, { 'a.x': 0.2, 'a.y': true });
   assert.deepEqual(store.fallback, { 'a.x': 0.5, 'a.y': true }, 'unset from base reveals the default');
   assert.deepEqual(layers.activeJson(store.active), { wallpaper: null, profile: null });
+});
+
+test('loadStore reads scratch as the topmost layer and reports beneath and held', () => {
+  writeValues({ 'a.x': 0.2 });
+  writeContext('profile', 'dusk', { source: null, values: { 'a.x': 0.9, 'a.y': true } });
+  writeActive({ profile: 'dusk' });
+  writeScratch({ 'a.y': false });
+
+  const store = layers.loadStore(defs);
+  assert.deepEqual(store.params, { 'a.x': 0.9, 'a.y': false });
+  assert.deepEqual(store.layerOf, { 'a.x': 'profile', 'a.y': 'scratch' });
+  assert.deepEqual(store.beneath, { 'a.x': 0.9, 'a.y': true }, 'the fold without scratch');
+  assert.deepEqual(store.held, { 'a.x': ['base', 'profile'], 'a.y': ['profile', 'scratch'] });
+  assert.deepEqual(store.scratch, { 'a.y': false });
+  assert.deepEqual(store.layers.map((layer) => layer.kind), ['profile'], 'context layers only');
+});
+
+test('loadStore with nothing active: held is empty for a default and names base for an override', () => {
+  writeValues({ 'a.x': 0.2 });
+  const store = layers.loadStore(defs);
+  assert.deepEqual(store.held, { 'a.x': ['base'], 'a.y': [] });
+  assert.deepEqual(store.beneath, store.params);
+});
+
+test('loadStore validates scratch like every other layer', () => {
+  writeScratch({ 'a.x': 7 });
+  assert.throws(() => layers.loadStore(defs), /scratch null: a\.x: 7 outside range/);
+});
+
+test('withScratch appends scratch as the last layer', () => {
+  assert.deepEqual(layers.withScratch([{ kind: 'profile', name: 'p', values: {} }], { 'a.x': 0.1 }), [
+    { kind: 'profile', name: 'p', values: {} },
+    { kind: 'scratch', name: null, values: { 'a.x': 0.1 } },
+  ]);
 });
