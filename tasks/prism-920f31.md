@@ -4,7 +4,7 @@ title: Rename or delete a profile without loading it
 status: idea
 priority: 2
 created: 2026-09-10T17:00:50Z
-updated: 2026-09-13T11:09:26Z
+updated: 2026-09-19T21:15:37Z
 depends: []
 parent: prism-2f0b4b
 tags: [noctalia, ui, profiles]
@@ -15,3 +15,4 @@ Both act only on the loaded profile, so touching another one means selecting it,
 ## Notes
 
 - 2026-09-13T11:09:26Z (scope-acceptance): scope: briefed; inactive rename/delete already supported and tested; panel target selection awaits prism-e37618; brief: docs/notes/2026-09-13-profile-editing-brief.md
+- 2026-09-19T21:15:37Z (prism-aec90f): Reframed 2026-09-19: loading a profile to manage it now costs a compositor reload and no lost edits (compositional profiles, Section 11); a picker waits for that reload to prove worth removing

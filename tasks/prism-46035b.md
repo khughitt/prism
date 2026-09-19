@@ -1,12 +1,12 @@
 ---
 id: prism-46035b
 title: "Wallpaper autosave: the wallpaper layer captures edits without a pin"
-status: todo
+status: dropped
 priority: 2
 size: m
 complexity: high
 created: 2026-09-11T01:13:09Z
-updated: 2026-09-12T16:46:10Z
+updated: 2026-09-19T21:15:37Z
 depends: []
 parent: prism-2f0b4b
 tags: [quick-add, profiles, store, noctalia]
@@ -20,3 +20,10 @@ This reverses that decision, so the brainstorm must settle what the write target
 Layers are already stored separately and composed at resolve (prism-6fd864), so clearing the wallpaper layer alone is a real operation. Affects prism-bf3ae9 (panel-wide restore under a pinned wallpaper).
 
 Pieces: the store rule and pin removal; the panel header (edited indicator and reset-wallpaper-layer button replacing the filename).
+
+## Notes
+
+- 2026-09-19T21:15:37Z (prism-aec90f): dropped
+  provenance: {"harness_session":"claude-code:1f37680c-20bd-40a3-9a1e-849bd9e3e3f7","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-09-19T21:15:37Z (prism-aec90f): superseded by the fold rule in the compositional profiles design (prism-aec90f)
+  provenance: {"harness_session":"claude-code:1f37680c-20bd-40a3-9a1e-849bd9e3e3f7","harness_session_source":"CLAUDE_CODE_SESSION_ID"}

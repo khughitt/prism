@@ -4,7 +4,7 @@ title: "State profiles: activate contexts from theme mode and other Noctalia hoo
 status: idea
 priority: 2
 created: 2026-09-05T18:50:49Z
-updated: 2026-09-09T01:15:11Z
+updated: 2026-09-19T21:15:37Z
 depends: [prism-6fd864]
 parent: prism-2f0b4b
 tags: [profiles, noctalia]
@@ -15,3 +15,4 @@ Generalise the wallpaper activation to other states Noctalia already reports thr
 ## Notes
 
 - 2026-09-09T01:15:11Z (panel-error-lifecycle): The panel side of this is already free: prism-3b7c07 made describe state the resolution order as 'layers' and the panel ranks against what it is told, and LAYER_ORDER already reserves 'state' between wallpaper and profile. A state layer will shadow rows and rank correctly with no panel change; what remains here is the activation sources and the composition rules.
+- 2026-09-19T21:15:37Z (prism-aec90f): Reframed 2026-09-19: a state context is a delta kind per compositional profiles Section 3 (a kind in LAYER_ORDER, a key source, an entry verb); the fold rule comes free
