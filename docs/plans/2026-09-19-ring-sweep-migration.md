@@ -6,7 +6,7 @@
 
 **Goal:** Replace `glass.ring.driftHz` with `glass.ring.sweepMs` so the niri sink emits the new compositor's `ring-sweep-ms`, and give Prism one explicit, backed-up `prism migrate` that rewrites every stored occurrence of a replaced key, with `doctor` pointing at it.
 
-**Architecture:** A definition may declare `replaces: <old key>`; `loadDefs` validates the declaration and refuses a replacement whose target is still defined. A new `src/migrate.js` turns that declaration into a pure per-store rewrite (`migrateValues`), a whole-store plan over base and every context file, active or not (`planMigration`), and a locked run that copies each touched file byte for byte under the state dir before writing (`runMigration`). `prism migrate` prints the plan's report; `doctor` recognises an orphan key that a definition replaces and names the command. The niri renderer and manifest switch to the new key; the old key never reaches generated config.
+**Architecture:** A definition may declare `replaces: <old key>`; `loadDefs` validates the declaration and refuses a replacement whose target is still defined. A new `src/migrate.js` turns that declaration into a pure per-store rewrite (`migrateValues`), a whole-store plan over base and every context file, active or not (`planMigration`), an exclusive byte-for-byte backup of every file the plan touches (`writeBackup`), and a single-file rewrite (`writeMigrated`). `prism migrate` sequences them under the store lock, reporting the backup before the first write and each file as it lands; `doctor` recognises an orphan key that a definition replaces and names the command. The niri renderer and manifest switch to the new key; the old key never reaches generated config.
 
 **Tech Stack:** Node.js 20+, the existing `yaml` dependency, `node:test` with `node:assert/strict`. No new dependencies.
 
@@ -32,7 +32,7 @@
 | --- | --- |
 | `defs/glass.yaml` | The one definition change: `glass.ring.sweepMs` replaces `glass.ring.driftHz` in the Ring group. |
 | `src/defs.js` | Validates `replaces` on a def and, after all files load, that no def replaces a still-defined key and no key is replaced twice. |
-| `src/migrate.js` (new) | `replacements(defs)`, `convertValue`, `migrateValues` (pure), `planMigration` (reads the store), `backupDir`, `runMigration` (copies, then writes; caller holds the lock). |
+| `src/migrate.js` (new) | `replacements(defs)`, `convertValue`, `migrateValues` (pure), `planMigration` (reads the store), `backupDir`, `writeBackup` (exclusive directory, byte-for-byte copies), `writeMigrated` (one file). The verb sequences them under the lock. |
 | `src/cli.js` | The `migrate` verb; `doctor`'s pending-migration line in both the base and context orphan loops; usage string. |
 | `integrations/niri/render.js`, `integrations/niri/manifest.yaml` | Emit and bind `glass.ring.sweepMs` as `ring-sweep-ms`. |
 | `resources/profiles/Aurora.yaml`, `resources/profiles/Rainbow.yaml` | Starter snapshots carry `glass.ring.sweepMs: 1500`; repository resources are edited, not migrated. |
@@ -51,7 +51,7 @@ The definition and the sink change together: a renderer reading a key that no lo
 - Modify: `src/defs.js` (`loadDefs` after the file loop; `validateDef`)
 - Modify: `integrations/niri/render.js:36`, `integrations/niri/manifest.yaml:65`
 - Modify: `resources/profiles/Aurora.yaml:62`, `resources/profiles/Rainbow.yaml:62`
-- Test: `test/defs.test.js`, `test/glass-defs.test.js:49,402,415,451`, `test/plugin-presentation.test.js:60`, `test/niri-render.test.js:69,110,142,200,523,568-572`, `test/niri-apply.test.js:47`
+- Test: `test/defs.test.js`, `test/glass-defs.test.js:49,402,415,451,471`, `test/plugin-presentation.test.js:60`, `test/niri-render.test.js:69,110,142,200,523,568-572`, `test/niri-apply.test.js:47`
 
 **Interfaces:**
 - Produces: a def may carry `replaces: <key>` (string matching the key grammar `^[a-z][a-zA-Z0-9]*(\.[a-z][a-zA-Z0-9]*)+$`). `loadDefs` throws `X replaces Y, which is still defined` and `Y is replaced by both A and B`. Task 2 reads `def.replaces` and nothing else.
@@ -169,6 +169,7 @@ Both starter profiles: replace `glass.ring.driftHz: 15` with `glass.ring.sweepMs
 - line 402: `'glass.ring.focus', 'glass.ring.colorSource', 'glass.ring.color', 'glass.ring.sweepMs',`
 - line 415: `'glass.ring.sweepMs': 'Ring',`
 - line 451: `'glass.ring.color': '#ccccff', 'glass.ring.sweepMs': 1500,`
+- line 471 (`drift controls use whole Hz so every offered rate parses in niri`): the ring key is no longer a rate; the loop becomes `for (const key of ['glass.auroraDriftHz', 'glass.inactive.auroraDriftHz'])` and the aurora checks stay as they are.
 
 `test/plugin-presentation.test.js:60`: `'glass.ring.sweepMs',`
 
@@ -222,7 +223,8 @@ git commit -m "feat(defs): glass.ring.sweepMs replaces driftHz; the niri sink em
   - `migrateValues(values, defs): { values, changes: [{ from, to, old, value, kept }] }`
   - `planMigration(defs): [{ where, kind, name, path, source, values, changes }]` — `where` is `base`, `profile <name>` or `wallpaper <id>`; `kind` is `'base'|'profile'|'wallpaper'`; only files with changes appear; throws on a malformed context.
   - `backupDir(now: Date): string` — `<stateDir>/migrations/<YYYYMMDDTHHMMSSZ>`
-  - `runMigration(defs, { now }): { files, backup }` — `backup` is `null` when nothing changed. Caller holds the store lock.
+  - `writeBackup(files, now: Date): string` — creates the directory exclusively (an existing one is an error, nothing is copied) and copies each file byte for byte with `COPYFILE_EXCL`; returns the directory. Caller holds the store lock.
+  - `writeMigrated(file): void` — rewrites one plan entry through `writeValues` or `writeContext`. The verb calls it per file so it can report as it goes and name the backup on a failure.
 
 - [ ] **Step 1: Write the failing unit tests**
 
@@ -242,7 +244,7 @@ const { loadDefs } = await import('../src/defs.js');
 const { defsDir, valuesPath } = await import('../src/paths.js');
 const { readValues, writeValues } = await import('../src/values.js');
 const { writeContext, readContext, contextPath } = await import('../src/contexts.js');
-const { replacements, convertValue, migrateValues, planMigration, backupDir, runMigration } =
+const { replacements, convertValue, migrateValues, planMigration, backupDir, writeBackup, writeMigrated } =
   await import('../src/migrate.js');
 
 const defs = loadDefs(defsDir());
@@ -316,7 +318,7 @@ test('backupDir is a compact UTC timestamp under the state dir', () => {
     path.join(process.env.PRISM_STATE_DIR, 'migrations', '20260919T224107Z'));
 });
 
-test('runMigration copies every touched file byte for byte, then rewrites, and is a no-op the second time', () => {
+test('writeBackup copies every planned file byte for byte at its config-relative path and nothing else', () => {
   fs.writeFileSync(valuesPath(), 'glass.ring.driftHz: 25   # hand-written spacing survives in the backup\nglass.ior: 1.3\n');
   writeContext('profile', 'dusk', { source: null, values: { 'glass.ring.driftHz': 0 } });
   writeContext('profile', 'plain', { source: null, values: { 'glass.ior': 1.4 } });
@@ -325,30 +327,42 @@ test('runMigration copies every touched file byte for byte, then rewrites, and i
     base: fs.readFileSync(valuesPath()),
     dusk: fs.readFileSync(contextPath('profile', 'dusk')),
     wall: fs.readFileSync(contextPath('wallpaper', 'abc12345')),
-    plain: fs.readFileSync(contextPath('profile', 'plain')),
   };
 
   const now = new Date('2026-09-19T22:41:07Z');
-  const { files, backup } = runMigration(defs, { now });
+  const backup = writeBackup(planMigration(defs), now);
   assert.equal(backup, backupDir(now));
-  assert.equal(files.length, 3);
   assert.deepEqual(fs.readFileSync(path.join(backup, 'values.yaml')), originals.base);
   assert.deepEqual(fs.readFileSync(path.join(backup, 'contexts', 'profile', 'dusk.yaml')), originals.dusk);
   assert.deepEqual(fs.readFileSync(path.join(backup, 'contexts', 'wallpaper', 'abc12345.yaml')), originals.wall);
   assert.equal(fs.existsSync(path.join(backup, 'contexts', 'profile', 'plain.yaml')), false);
+  // the store itself is untouched by a backup
+  assert.deepEqual(fs.readFileSync(valuesPath()), originals.base);
+});
 
+test('writeBackup refuses a directory that already exists and copies nothing into it', () => {
+  writeValues({ 'glass.ring.driftHz': 25 });
+  const now = new Date('2026-09-19T22:41:07Z');
+  fs.mkdirSync(backupDir(now), { recursive: true });
+  assert.throws(() => writeBackup(planMigration(defs), now), /backup .*20260919T224107Z already exists/);
+  assert.deepEqual(fs.readdirSync(backupDir(now)), []);
+});
+
+test('writeMigrated rewrites one file through the store writers, and a migrated store plans nothing', () => {
+  writeValues({ 'glass.ring.driftHz': 25, 'glass.ior': 1.3 });
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ring.driftHz': 0 } });
+  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'glass.ring.driftHz': 12, 'glass.ring.sweepMs': 800 } });
+
+  const plan = planMigration(defs);
+  writeMigrated(plan[0]);
   assert.deepEqual(readValues(), { 'glass.ring.sweepMs': 1500, 'glass.ior': 1.3 });
+  assert.deepEqual(readContext('profile', 'dusk').values, { 'glass.ring.driftHz': 0 }, 'one file at a time');
+  writeMigrated(plan[1]);
+  writeMigrated(plan[2]);
   assert.deepEqual(readContext('profile', 'dusk').values, { 'glass.ring.sweepMs': 0 });
   assert.deepEqual(readContext('wallpaper', 'abc12345'), { source: '/w', values: { 'glass.ring.sweepMs': 800 } });
-  assert.deepEqual(fs.readFileSync(contextPath('profile', 'plain')), originals.plain);
 
-  const after = [valuesPath(), contextPath('profile', 'dusk'), contextPath('wallpaper', 'abc12345')]
-    .map((file) => fs.readFileSync(file));
-  const second = runMigration(defs, { now: new Date('2026-09-19T22:42:00Z') });
-  assert.deepEqual(second, { files: [], backup: null });
-  assert.deepEqual([valuesPath(), contextPath('profile', 'dusk'), contextPath('wallpaper', 'abc12345')]
-    .map((file) => fs.readFileSync(file)), after);
-  assert.deepEqual(fs.readdirSync(path.join(process.env.PRISM_STATE_DIR, 'migrations')), ['20260919T224107Z']);
+  assert.deepEqual(planMigration(defs), [], 'a second pass has nothing to do');
 });
 ```
 
@@ -430,31 +444,40 @@ export function backupDir(now) {
   return path.join(stateDir(), 'migrations', stamp);
 }
 
-// Copies every file the plan touches, byte for byte and at its path relative
-// to the config dir, then rewrites them through the same writers `set` uses.
-// The caller holds the store lock. Nothing to change means nothing written,
-// no backup made.
-export function runMigration(defs, { now = new Date() } = {}) {
-  const files = planMigration(defs);
-  if (files.length === 0) return { files, backup: null };
+// Every file the plan touches, byte for byte and at its path relative to the
+// config dir, in a directory this call creates: a directory that already
+// exists is refused before anything is copied, and every copy is exclusive,
+// so no earlier backup is ever written over. The caller holds the store lock.
+export function writeBackup(files, now) {
   const backup = backupDir(now);
+  fs.mkdirSync(path.dirname(backup), { recursive: true });
+  try {
+    fs.mkdirSync(backup);
+  } catch (error) {
+    if (error.code === 'EEXIST') throw new Error(`backup ${backup} already exists`);
+    throw error;
+  }
   for (const file of files) {
     const copy = path.join(backup, path.relative(configDir(), file.path));
     fs.mkdirSync(path.dirname(copy), { recursive: true });
-    fs.copyFileSync(file.path, copy);
+    fs.copyFileSync(file.path, copy, fs.constants.COPYFILE_EXCL);
   }
-  for (const file of files) {
-    if (file.kind === 'base') writeValues(file.values);
-    else writeContext(file.kind, file.name, { source: file.source, values: file.values });
-  }
-  return { files, backup };
+  return backup;
+}
+
+// One plan entry, through the same writers `set` uses. The caller sequences
+// these after `writeBackup` and reports each one, so a failure part way
+// leaves a report of what landed and where the originals are.
+export function writeMigrated(file) {
+  if (file.kind === 'base') writeValues(file.values);
+  else writeContext(file.kind, file.name, { source: file.source, values: file.values });
 }
 ```
 
 - [ ] **Step 4: Run the unit tests**
 
 Run: `node --test test/migrate.test.js`
-Expected: 7 tests PASS.
+Expected: 9 tests PASS.
 
 - [ ] **Step 5: Run the suite and commit**
 
@@ -475,13 +498,15 @@ git commit -m "feat(migrate): rewrite replaced keys across base and every contex
 - Test: `test/cli.test.js`
 
 **Interfaces:**
-- Consumes: `runMigration`, `replacements` from Task 2.
+- Consumes: `planMigration`, `writeBackup`, `writeMigrated`, `replacements` from Task 2; `configDir` from `src/paths.js`.
 - Produces: the verb's output lines, verbatim:
   - `migrate: nothing to migrate` (exit 0, no backup)
   - `migrate: backup <dir>`
   - `migrate: <where>: <from> <old> -> <to> <value>`
   - `migrate: <where>: <from> <old> removed; <to> <value> kept`
   - `migrate: done — run 'prism apply' to hand the new keys to the sinks`
+  - on a write failure (stderr, exit 1): `prism: migrate: <where>: <error>; the files reported above are migrated, this one and those after it are not; the originals are in <backup> — copy them back over <configDir> to undo`
+  - The backup line is printed **before** the first write, and each file's lines as soon as that file lands.
   - doctor: `doctor: pending migration: <from> in <where> is replaced by <to> — run 'prism migrate'`
 
 - [ ] **Step 1: Write the failing CLI tests**
@@ -530,6 +555,33 @@ test('migrate takes no arguments and aborts whole on a context that does not par
   assert.equal(fs.existsSync(path.join(process.env.PRISM_STATE_DIR, 'migrations')), false, 'no backup made');
 });
 
+test('migrate reports the backup before writing, and a failure part way names what landed and how to undo', async (t) => {
+  fs.writeFileSync(valuesPath(), 'glass.ring.driftHz: 25\n');
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ring.driftHz': 0 } });
+  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'glass.ring.driftHz': 12 } });
+  const wallpaperFile = fs.readFileSync(contextPath('wallpaper', 'abc12345'));
+  // The third file's directory refuses new files: the tmp-and-rename write fails there.
+  const wallpaperDir = path.dirname(contextPath('wallpaper', 'abc12345'));
+  fs.chmodSync(wallpaperDir, 0o555);
+  t.after(() => fs.chmodSync(wallpaperDir, 0o755));
+  if (process.getuid?.() === 0) { t.skip('root ignores directory modes'); return; }
+
+  let out = '';
+  const failure = await runCaptured(['migrate'], { print: (s) => { out += s; } });
+  assert.equal(failure.code, 1);
+  const backup = out.match(/^migrate: backup (.+)$/m)[1];
+  assert.match(out, /^migrate: base: glass\.ring\.driftHz 25 -> glass\.ring\.sweepMs 1500$/m);
+  assert.match(out, /^migrate: profile dusk: glass\.ring\.driftHz 0 -> glass\.ring\.sweepMs 0$/m);
+  assert.doesNotMatch(out, /abc12345|done/);
+  assert.match(failure.stderr, /^prism: migrate: wallpaper abc12345: .*EACCES.*; the files reported above are migrated, this one and those after it are not; the originals are in /m);
+  assert.ok(failure.stderr.includes(backup) && failure.stderr.includes(`copy them back over ${process.env.PRISM_CONFIG_DIR} to undo`), failure.stderr);
+
+  assert.deepEqual(readValues(), { 'glass.ring.sweepMs': 1500 });
+  assert.deepEqual(readContext('profile', 'dusk').values, { 'glass.ring.sweepMs': 0 });
+  assert.deepEqual(fs.readFileSync(contextPath('wallpaper', 'abc12345')), wallpaperFile, 'the failed file is untouched');
+  assert.deepEqual(fs.readFileSync(path.join(backup, 'values.yaml'), 'utf8'), 'glass.ring.driftHz: 25\n');
+});
+
 test('doctor names a pending migration in base and in a context, and is quiet once it has run', async () => {
   fs.writeFileSync(valuesPath(), 'glass.ring.driftHz: 25\n');
   writeContext('profile', 'dusk', { source: null, values: { 'glass.ring.driftHz': 0 } });
@@ -550,14 +602,14 @@ test('doctor names a pending migration in base and in a context, and is quiet on
 - [ ] **Step 2: Run them to see them fail**
 
 Run: `node --test test/cli.test.js`
-Expected: the three new tests FAIL (`migrate` falls to the usage default and exits 2; doctor prints the orphan line).
+Expected: the four new tests FAIL (`migrate` falls to the usage default and exits 2; doctor prints the orphan line).
 
 - [ ] **Step 3: Add the verb**
 
-In `src/cli.js` add the import:
+In `src/cli.js` add the import, and add `configDir` to the existing `./paths.js` import list:
 
 ```js
-import { replacements, runMigration } from './migrate.js';
+import { planMigration, replacements, writeBackup, writeMigrated } from './migrate.js';
 ```
 
 Insert before `case 'context':`:
@@ -565,23 +617,36 @@ Insert before `case 'context':`:
 ```js
       // One explicit step across a rename release: every stored occurrence of
       // a replaced key, in base and every context whether active or not, is
-      // rewritten under the lock after a byte-for-byte backup. It does not
+      // rewritten under the lock after a byte-for-byte backup. The backup is
+      // reported before the first write and each file as it lands, so a
+      // failure part way through leaves the recovery on screen. It does not
       // apply: the user reads the report, then applies.
       case 'migrate': {
         if (rest.length !== 0) throw new Error('usage: prism migrate');
         const { defs } = load();
-        const { files, backup } = await withLock(lockPath(), async () => runMigration(defs));
-        if (files.length === 0) {
+        const migrated = await withLock(lockPath(), async () => {
+          const files = planMigration(defs);
+          if (files.length === 0) return 0;
+          const backup = writeBackup(files, new Date());
+          print(`migrate: backup ${backup}\n`);
+          for (const file of files) {
+            try {
+              writeMigrated(file);
+            } catch (error) {
+              throw new Error(`migrate: ${file.where}: ${error.message}; the files reported above are migrated, `
+                + `this one and those after it are not; the originals are in ${backup} — copy them back over ${configDir()} to undo`);
+            }
+            for (const change of file.changes) {
+              print(change.kept
+                ? `migrate: ${file.where}: ${change.from} ${JSON.stringify(change.old)} removed; ${change.to} ${JSON.stringify(change.value)} kept\n`
+                : `migrate: ${file.where}: ${change.from} ${JSON.stringify(change.old)} -> ${change.to} ${JSON.stringify(change.value)}\n`);
+            }
+          }
+          return files.length;
+        });
+        if (migrated === 0) {
           print('migrate: nothing to migrate\n');
           return 0;
-        }
-        print(`migrate: backup ${backup}\n`);
-        for (const file of files) {
-          for (const change of file.changes) {
-            print(change.kept
-              ? `migrate: ${file.where}: ${change.from} ${JSON.stringify(change.old)} removed; ${change.to} ${JSON.stringify(change.value)} kept\n`
-              : `migrate: ${file.where}: ${change.from} ${JSON.stringify(change.old)} -> ${change.to} ${JSON.stringify(change.value)}\n`);
-          }
         }
         print("migrate: done — run 'prism apply' to hand the new keys to the sinks\n");
         return 0;
@@ -627,7 +692,7 @@ Context (replacing the `if (!def) { … continue; }` block inside the context lo
 
 - [ ] **Step 5: Run the CLI tests, then the suite**
 
-Run: `node --test test/cli.test.js` — the three new tests PASS and the existing doctor tests still pass (an orphan no def replaces keeps its old line).
+Run: `node --test test/cli.test.js` — the four new tests PASS and the existing doctor tests still pass (an orphan no def replaces keeps its old line).
 Run: `just test` — all pass.
 
 - [ ] **Step 6: Commit**
@@ -706,5 +771,6 @@ Rollback: copy `~/.local/state/prism/migrations/<stamp>/` back over `~/.config/p
 
 - Spec §5 coverage: definition with `replaces` (Task 1); sink emits `ring-sweep-ms`, never `ring-drift-hz` (Task 1, tested); migrate over base + all contexts, conversion rule, collision kept, backup before write, report of files/keys/backup (Tasks 2–3); doctor names the command (Task 3); `idle-after-ms` untouched (constraint); rollout and rollback (handoff section, README).
 - Spec §7 Prism tests: both materials carry `ring-sweep-ms` default/override (`niri-render.test.js`, the fixture uses 1200 and the zero case 0; `both materials carry the same response block` counts two); no `ring-drift-hz` in output (Task 1 Step 6); migration over three stores with the collision case, byte-for-byte backup, report naming every file and the kept collision, second run a no-op (Task 2 and Task 3 tests); doctor hint (Task 3).
-- Type consistency: `migrateValues` change shape `{ from, to, old, value, kept }` is what `cli.js` prints; `planMigration` entries carry `where`, `kind`, `name`, `path`, `source`, `values`, `changes`, which `runMigration` and the verb consume; `backupDir(now)` takes a `Date` in both the test and `runMigration`.
+- Type consistency: `migrateValues` change shape `{ from, to, old, value, kept }` is what `cli.js` prints; `planMigration` entries carry `where`, `kind`, `name`, `path`, `source`, `values`, `changes`, which `writeBackup`, `writeMigrated`, and the verb consume; `backupDir(now)` and `writeBackup(files, now)` take a `Date` in both the tests and the verb.
+- Review of 2026-09-19 (three findings, all applied): the `drift controls use whole Hz` test at `test/glass-defs.test.js:471` is in Task 1 Step 6; the backup directory is created exclusively and every copy uses `COPYFILE_EXCL`, with a collision test; the verb prints the backup before the first write, each file as it lands, and a failing write names what landed, what did not, and the undo, with a test that fails on the third file.
 - Placeholders: none; every step carries its code and command.
