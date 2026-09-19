@@ -8,12 +8,12 @@ function M.isSample(item)
   return item ~= nil and item.verb == "set" and item.sample == true
 end
 
--- A pin writes no value and a profile verb writes no parameter, but each moves
--- the write target or the resolved values, so every row's override and shadow
--- state has to be re-read once one lands.
+-- Commits and clears write no parameter and the profile verbs write none
+-- either, but each moves the resolved values or what the layers hold, so
+-- every row's edited state has to be re-read once one lands.
 local staleAfter = {
-  set = true, unset = true, pin = true, reset = true,
-  activate = true, deactivate = true, save = true, delete = true, rename = true,
+  set = true, unset = true, reset = true, commit = true, clear = true,
+  activate = true, deactivate = true, delete = true, rename = true,
 }
 
 function M.affectsParams(item)
@@ -53,7 +53,12 @@ end
 function M.argvFor(item)
   if item.verb == "set" then return { "prism", "set", item.key, tostring(item.value) } end
   if item.verb == "unset" then return { "prism", "unset", item.key } end
-  if item.verb == "pin" then return { "prism", "context", item.on and "pin" or "unpin", "wallpaper" } end
+  if item.verb == "clear" then return { "prism", "context", "clear", "wallpaper", item.id } end
+  if item.verb == "commit" then
+    local argv = { "prism", "commit", item.destination }
+    if item.target ~= nil then argv[#argv + 1] = item.target end
+    return argv
+  end
   if item.verb == "deactivate" then return { "prism", "context", "deactivate", "profile" } end
   if item.verb == "rename" then return { "prism", "context", "rename", "profile", item.name, item.newName } end
   if item.verb == "reset" then
@@ -64,7 +69,7 @@ function M.argvFor(item)
     end
     return argv
   end
-  for _, verb in ipairs({ "activate", "save", "delete" }) do
+  for _, verb in ipairs({ "activate", "delete" }) do
     if item.verb == verb then return { "prism", "context", verb, "profile", item.name } end
   end
   error("unknown queue verb: " .. item.verb)

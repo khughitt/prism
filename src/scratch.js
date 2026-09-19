@@ -13,7 +13,12 @@ export function readScratch() {
     if (err.code === 'ENOENT') return {};
     throw err;
   }
-  const doc = parse(text) ?? {};
+  let doc;
+  try {
+    doc = parse(text) ?? {};
+  } catch (err) {
+    throw new Error(`scratch.yaml: invalid YAML: ${err.message.split('\n')[0]}`);
+  }
   if (typeof doc !== 'object' || doc === null || Array.isArray(doc)) {
     throw new Error('scratch must be a flat object');
   }

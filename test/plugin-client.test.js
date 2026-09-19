@@ -76,12 +76,8 @@ test('queue is the sole serialization point and refreshes only after a completed
 
   assert.match(source, /Queue\.enqueue\(state\.queue, item\)/);
   assert.match(source, /Queue\.argvFor\(item\)/);
-  // The completed item drives both the refresh decision and any follow-up, so
-  // it is read once, before Queue.finish rotates it out.
+  // The completed item drives the refresh decision before Queue.finish rotates it out.
   assert.match(source, /local completed = state\.queue\.inFlight\n  local shouldRefresh = Queue\.shouldRefresh\(state\.batchAffectsParams, completed\)/);
-  // A follow-up command runs only when the one it depends on landed: the FIFO
-  // keeps going after a failure.
-  assert.match(source, /if not message and completed and completed\.activateAfter then/);
   assert.match(source, /Queue\.finish\(state\.queue\)/);
   assert.match(source, /local next = Queue\.finish\(state\.queue\)[\s\S]*if next\.launch then[\s\S]*launch\(next\.launch\)[\s\S]*elseif next\.drained then/);
 });
@@ -128,11 +124,11 @@ test('presentation renders every section open with a header toggle, matrix rows,
   assert.match(source, /Presentation\.titleParam\(state\.model\.params\)/);
   assert.match(source, /Presentation\.sections\(state\.model\.params, rack\.group\)/);
   assert.doesNotMatch(source, /expandedGroups|groupParams|Quick/);
-  assert.match(source, /Presentation\.overriddenCount\(params\)/);
+  assert.match(source, /Presentation\.editedCount\(params\)/);
   assert.match(source, /local function matrixRow\(row, indent\)[\s\S]*controlCell\(row\.unfocused, 1\)[\s\S]*controlCell\(row\.focused, 1\)/);
   assert.match(source, /text = "Unfocused"[\s\S]*text = "Focused"/);
   assert.match(source, /local function resetAction[\s\S]*enqueue\(\{verb = "reset", mode = mode, group = group\}\)/);
-  assert.match(source, /tooltip = param\.overridden and "Remove override"/);
+  assert.match(source, /tooltip = param\.edited and "Revert edit"/);
   assert.match(source, /resetModeButtons\("section", name, sectionParams\)/);
   assert.match(source, /tooltip = param\.description or param\.key/);
 });
@@ -153,17 +149,17 @@ test('the isolated preview surface is gone, leaving live terminals as feedback',
   // writing on release is the norm here and goes unsaid.
   assert.doesNotMatch(source, /On release/);
   // One row can hold two parameters on different layers, so the hint is chosen
-  // across the row in a fixed precedence: a dead consumer, then a shadow that
-  // explains a control with no visible effect, then the mild Live marker.
-  assert.match(source, /local function rowHint[\s\S]*text = "Unavailable"[\s\S]*Presentation\.shadowHint[\s\S]*text = "Live"/);
+  // across the row in a fixed precedence: an unavailable consumer, then
+  // wallpaper provenance, then the mild Live marker.
+  assert.match(source, /local function rowHint[\s\S]*text = "Unavailable"[\s\S]*text = "wallpaper"[\s\S]*text = "Live"/);
 });
 
 test('row geometry is fixed, so nothing moves when a value crosses its default', async () => {
   const source = await readEntry('panel.luau');
 
   // Every reset stays in the tree; its state is opacity, not presence.
-  assert.doesNotMatch(source, /visible = param\.overridden|visible = overriddenCount > 0/);
-  assert.match(source, /opacity = param\.overridden and 1\.0 or inertOpacity/);
+  assert.doesNotMatch(source, /visible = param\.edited|visible = editedCount > 0/);
+  assert.match(source, /opacity = param\.edited and 1\.0 or inertOpacity/);
   assert.match(source, /opacity = spec\.count > 0 and 1\.0 or inertOpacity/);
   // One reserved leading span, shared by the rows and the matrix header, so the
   // header reserves the same leading span as the name controls.
@@ -180,12 +176,13 @@ test('the queue speaks only to prism', async () => {
 
   assert.match(source, /if item\.verb == "set" then return \{ "prism", "set", item\.key, tostring\(item\.value\) \} end/);
   assert.match(source, /if item\.verb == "unset" then return \{ "prism", "unset", item\.key \} end/);
-  assert.match(source, /if item\.verb == "pin" then return \{ "prism", "context", item\.on and "pin" or "unpin", "wallpaper" \} end/);
+  assert.match(source, /if item\.verb == "clear" then return \{ "prism", "context", "clear", "wallpaper", item\.id \} end/);
+  assert.match(source, /if item\.verb == "commit" then/);
   assert.match(source, /error\("unknown queue verb: "/);
   assert.doesNotMatch(source, /preview|niri-glass|prismGlass|"qs"/);
-  // A pin and the profile verbs write no parameter but move the write target or
-  // the resolved values, so each must leave the model stale and force a re-read.
-  assert.match(source, /local staleAfter = \{\n  set = true, unset = true, pin = true, reset = true,\n  activate = true, deactivate = true, save = true, delete = true, rename = true,\n\}/);
+  // Commits and clears write no parameter but move the resolved values or what
+  // the layers hold, so each must leave the model stale and force a re-read.
+  assert.match(source, /local staleAfter = \{\n  set = true, unset = true, reset = true, commit = true, clear = true,\n  activate = true, deactivate = true, delete = true, rename = true,\n\}/);
   assert.match(source, /function M\.affectsParams\(item\)\n  return staleAfter\[item\.verb\] == true\nend/);
 });
 

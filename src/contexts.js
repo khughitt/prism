@@ -5,8 +5,10 @@ import { parse, stringify } from 'yaml';
 import { activePath, contextsDir } from './paths.js';
 import { readJson, writeJsonAtomic } from './store.js';
 
-// Resolution order of the context kinds, lowest first. Base sits below all of them.
-export const LAYER_ORDER = ['wallpaper', 'state', 'profile'];
+// Resolution order of the context kinds, lowest first. Base sits below all of
+// them and scratch above; the look is base then profile, and the deltas ride
+// on top of the look (2026-09-19 compositional profiles design, Section 1).
+export const LAYER_ORDER = ['profile', 'wallpaper', 'state'];
 // The kinds that are sparse, hook-activated deltas over the look.
 export const DELTA_KINDS = ['wallpaper', 'state'];
 // Kinds a verb may name. `state` is reserved until its activation sources are designed.
@@ -51,7 +53,7 @@ export function contextPath(kind, name) {
   return path.join(contextsDir(), kind, `${name}.yaml`);
 }
 
-export function readActive() {
+export function readActive({ warn = (text) => process.stderr.write(text) } = {}) {
   const active = readJson(activePath(), {});
   if (typeof active !== 'object' || active === null || Array.isArray(active)) {
     throw new Error('active.json must be an object');
@@ -70,11 +72,18 @@ export function readActive() {
       throw new Error('active wallpaper must carry id and path');
     }
     assertName(entry.id);
-    if (entry.pinned !== undefined && typeof entry.pinned !== 'boolean') {
-      throw new Error('active wallpaper pinned must be a boolean');
+    for (const field of Object.keys(entry)) {
+      if (!['id', 'path', 'pinned'].includes(field)) {
+        throw new Error(`active wallpaper carries unknown field ${field}`);
+      }
     }
   }
   if (active.profile !== undefined) assertName(active.profile);
+  if (active.wallpaper !== undefined && Object.hasOwn(active.wallpaper, 'pinned')) {
+    active.wallpaper = { id: active.wallpaper.id, path: active.wallpaper.path };
+    writeActive(active);
+    warn('prism: dropped the retired pinned field from active.json\n');
+  }
   return active;
 }
 

@@ -12,15 +12,14 @@ export function activeName(active, kind) {
 export function activeJson(active) {
   const wallpaper = active.wallpaper === undefined
     ? null
-    : { id: active.wallpaper.id, path: active.wallpaper.path, pinned: active.wallpaper.pinned === true };
+    : { id: active.wallpaper.id, path: active.wallpaper.path };
   return { wallpaper, profile: active.profile ?? null };
 }
 
 // The full resolution order, low to high: the two implicit layers under the
-// context stack, then the context kinds themselves. Clients rank a parameter's
-// layer against the write target with this, so adding a kind to LAYER_ORDER
-// reaches them without a second list to keep in step.
-export const RESOLUTION_ORDER = ['default', 'base', ...LAYER_ORDER];
+// context stack, the context kinds, then scratch. Clients read this rather
+// than carrying a copy, so adding a kind reaches them without a second list.
+export const RESOLUTION_ORDER = ['default', 'base', ...LAYER_ORDER, 'scratch'];
 
 // The active slots as layers in resolution order. A wallpaper without a file
 // is the untuned wallpaper: an empty layer. A profile without a file is broken.
@@ -38,30 +37,9 @@ export function loadLayers(active) {
   return layers;
 }
 
-// Scratch is always the topmost layer. Until the switch that makes it the
-// write target, nothing writes it, so it is empty on every host.
+// Scratch is always the topmost layer and the only one that takes edits.
 export function withScratch(layers, scratch) {
   return [...layers, { kind: 'scratch', name: null, values: scratch }];
-}
-
-// The write target is the topmost *explicit* layer. A profile is loaded by
-// hand, so it is always a target while active. A wallpaper is activated by the
-// shell's wallpaper hook without the user asking; it is an overlay that never
-// captures edits unless pinned. State (reserved) is automatic too and never a
-// target.
-export function writeTarget(active) {
-  if (active.profile !== undefined) return { kind: 'profile', name: active.profile };
-  if (active.wallpaper !== undefined && active.wallpaper.pinned === true) {
-    return { kind: 'wallpaper', name: active.wallpaper.id };
-  }
-  return { kind: 'base', name: null };
-}
-
-// The layers strictly below `target`, in resolution order.
-export function layersBelow(layers, target) {
-  if (target.kind === 'base') return [];
-  const rank = LAYER_ORDER.indexOf(target.kind);
-  return layers.filter((layer) => LAYER_ORDER.indexOf(layer.kind) < rank);
 }
 
 export function loadStore(defs) {
@@ -77,27 +55,13 @@ export function loadStore(defs) {
   // The fold beneath scratch: what a revert reveals, and what a set normalizes against.
   const beneath = resolveLayered(defs, base, layers).params;
   const held = {};
+  const fallback = {};
   for (const key of Object.keys(params)) {
     held[key] = [];
     if (Object.hasOwn(base, key)) held[key].push('base');
     for (const layer of layers) if (Object.hasOwn(layer.values, key)) held[key].push(layer.kind);
     if (Object.hasOwn(scratch, key)) held[key].push('scratch');
+    fallback[key] = Object.hasOwn(scratch, key) ? beneath[key] : params[key];
   }
-  const target = writeTarget(active);
-  // Target ownership includes values hidden by a higher layer.
-  const heldValues = target.kind === 'base'
-    ? base
-    : layers.find((layer) => layer.kind === target.kind && layer.name === target.name).values;
-  const heldInTarget = {};
-  // What unset would leave: the layers below the target. Below base sit the defaults.
-  const below = target.kind === 'base'
-    ? resolveLayered(defs, {}, []).params
-    : resolveLayered(defs, base, layersBelow(layers, target)).params;
-  const fallback = {};
-  for (const key of Object.keys(params)) {
-    heldInTarget[key] = Object.hasOwn(heldValues, key);
-    fallback[key] = layerOf[key] === target.kind ? below[key] : params[key];
-  }
-  return { base, active, profiles, layers, target, params, layerOf, fallback, heldInTarget,
-    scratch, beneath, held };
+  return { base, active, profiles, layers, scratch, params, layerOf, beneath, held, fallback };
 }

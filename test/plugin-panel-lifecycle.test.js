@@ -18,7 +18,7 @@ local function newHost()
     sliders = {},
     suppressNextReconcileCallback = false,
   }
-  local model = {active = {}, profiles = {}, layers = {"default", "base", "wallpaper", "state", "profile"}, target = "base",
+  local model = {active = {}, profiles = {}, layers = {"default", "base", "profile", "wallpaper", "state", "scratch"},
     rack = {group = "Focus", devices = {
       {device = "noise", label = "Noise", category = "post", mix = "Noise", rows = {}, shared = {}, bypass = "glass.bypass.noise"},
     }}, params = {
@@ -55,7 +55,7 @@ local function newHost()
   }}
 
   for _, param in ipairs(model.params) do
-    param.heldInTarget = param.layer == model.target
+    param.held = param.layer == "default" and {} or {param.layer}
     if param.key == "glass.focusSplit" then param.neutralize = false
     elseif param.ui.control == "toggle" then param.neutral = false
     else param.neutral = 0 end
@@ -105,6 +105,7 @@ local function newHost()
   local panel = {}
   function panel.render(tree) reconcile(tree) end
   function panel.setNeedsFrameTick(value) host.frameTicks = value end
+  function panel.setWantsSecondTicks() end
 
   local noctalia = {
     state = {get = function() return nil end},

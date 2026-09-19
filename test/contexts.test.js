@@ -22,7 +22,7 @@ test('kinds: profile and wallpaper are accepted, state is reserved, anything els
   contexts.assertKind('wallpaper');
   assert.throws(() => contexts.assertKind('state'), /kind state is reserved/);
   assert.throws(() => contexts.assertKind('theme'), /unknown kind theme/);
-  assert.deepEqual(contexts.LAYER_ORDER, ['wallpaper', 'state', 'profile']);
+  assert.deepEqual(contexts.LAYER_ORDER, ['profile', 'wallpaper', 'state']);
   assert.deepEqual(contexts.VERB_KINDS, ['profile', 'wallpaper']);
 });
 
@@ -121,8 +121,28 @@ test('active slots round-trip and reject the reserved kind and bad shapes', () =
   assert.throws(() => contexts.readActive(), /active wallpaper must carry id and path/);
   fs.writeFileSync(activePath(), JSON.stringify({ profile: 7 }));
   assert.throws(() => contexts.readActive(), /invalid context name/);
-  fs.writeFileSync(activePath(), JSON.stringify({ wallpaper: { id: 'abc12345', path: '/w', pinned: 'yes' } }));
-  assert.throws(() => contexts.readActive(), /active wallpaper pinned must be a boolean/);
-  fs.writeFileSync(activePath(), JSON.stringify({ wallpaper: { id: 'abc12345', path: '/w', pinned: true } }));
-  assert.deepEqual(contexts.readActive(), { wallpaper: { id: 'abc12345', path: '/w', pinned: true } });
+  fs.writeFileSync(activePath(), JSON.stringify({ wallpaper: { id: 'abc12345', path: '/w', given: '/x' } }));
+  assert.throws(() => contexts.readActive(), /active wallpaper carries unknown field given/);
+});
+
+test('a slot carrying the retired pinned field is repaired once on read, keeping the profile and wallpaper', () => {
+  fs.writeFileSync(activePath(), JSON.stringify({ wallpaper: { id: 'abc12345', path: '/w', pinned: false }, profile: 'dusk' }));
+  let warned = '';
+  const repaired = contexts.readActive({ warn: (text) => { warned += text; } });
+  assert.deepEqual(repaired, { wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' });
+  assert.equal(warned, 'prism: dropped the retired pinned field from active.json\n');
+  assert.deepEqual(JSON.parse(fs.readFileSync(activePath(), 'utf8')),
+    { wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' }, 'the file is rewritten at once');
+  warned = '';
+  contexts.readActive({ warn: (text) => { warned += text; } });
+  assert.equal(warned, '', 'the repair is unreachable once it has run');
+});
+
+test('retired pinned repair validates the active profile before writing', () => {
+  const original = JSON.stringify({ wallpaper: { id: 'abc12345', path: '/w', pinned: false }, profile: 'bad name' });
+  fs.writeFileSync(activePath(), original);
+  let warned = '';
+  assert.throws(() => contexts.readActive({ warn: (text) => { warned += text; } }), /invalid context name/);
+  assert.equal(warned, '');
+  assert.equal(fs.readFileSync(activePath(), 'utf8'), original);
 });

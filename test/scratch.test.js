@@ -35,3 +35,8 @@ test('a scratch file that is not a flat object fails loudly', () => {
   fs.writeFileSync(scratchPath(), '- 1\n- 2\n');
   assert.throws(() => readScratch(), /scratch must be a flat object/);
 });
+
+test('malformed scratch YAML names scratch.yaml in one line', () => {
+  fs.writeFileSync(scratchPath(), 'glass.ior: [\n');
+  assert.throws(() => readScratch(), /^Error: scratch\.yaml: invalid YAML: [^\n]+$/);
+});

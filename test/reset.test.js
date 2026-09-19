@@ -28,23 +28,23 @@ function defs() {
 
 const plan = (over) => planReset({
   defs: defs(), mode: 'neutral', group: null, held: {}, effective: {},
-  normalizeToDefault: false, ...over,
+  beneath: {}, ...over,
 });
 
 test('visibleGroups skips a group with no visible parameter', () => {
   assert.deepEqual([...visibleGroups(defs())].sort(), ['Focus', 'Glass', 'Terminal']);
 });
 
-test('defaults removes every scoped key the target holds, shadowed or not', () => {
+test('revert removes every scoped key scratch holds', () => {
   const held = { 'a.lip': 9, 'a.blur': 0.4 };
-  const out = plan({ mode: 'defaults', held, effective: { 'a.lip': 30, 'a.blur': 0.4 } });
+  const out = plan({ mode: 'revert', held, effective: { 'a.lip': 30, 'a.blur': 0.4 } });
   assert.deepEqual(out.values, {});
   assert.deepEqual(out.changedKeys.sort(), ['a.blur', 'a.lip']);
   assert.deepEqual(held, { 'a.lip': 9, 'a.blur': 0.4 }, 'held is not mutated');
 });
 
-test('defaults honours the group scope', () => {
-  const out = plan({ mode: 'defaults', group: 'Glass', held: { 'a.lip': 9, 'a.blur': 0.4 } });
+test('revert honours the group scope', () => {
+  const out = plan({ mode: 'revert', group: 'Glass', held: { 'a.lip': 9, 'a.blur': 0.4 } });
   assert.deepEqual(out.values, { 'a.blur': 0.4 });
   assert.deepEqual(out.changedKeys, ['a.lip']);
 });
@@ -87,7 +87,7 @@ test('a rejected copy leaves no partial batch behind', () => {
   assert.throws(() => planReset({
     defs: loadDefs(dir), mode: 'symmetric', group: 'Focus', held,
     effective: { 'a.blur': 0.9, 'a.blur.off': 0.1, 'a.tint': 0.9, 'a.tint.off': 0.1 },
-    normalizeToDefault: false,
+    beneath: {},
   }), /a\.tint\.off/);
   assert.deepEqual(held, { 'a.lip': 9 });
 });
@@ -95,7 +95,7 @@ test('a rejected copy leaves no partial batch behind', () => {
 test('a selected key can still be no change at all', () => {
   const out = planReset({
     defs: defs(), mode: 'neutral', group: 'Terminal', held: {},
-    effective: { 'a.opacity': 0.5 }, normalizeToDefault: true,
+    effective: { 'a.opacity': 0.5 }, beneath: { 'a.opacity': 0 },
   });
   assert.deepEqual(out.values, {});
   assert.deepEqual(out.changedKeys, []);
@@ -104,8 +104,15 @@ test('a selected key can still be no change at all', () => {
 test('a write away from the def default is stored at base', () => {
   const out = planReset({
     defs: defs(), mode: 'neutral', group: 'Glass', held: {},
-    effective: { 'a.lip': 6 }, normalizeToDefault: true,
+    effective: { 'a.lip': 6 }, beneath: { 'a.lip': 6 },
   });
   assert.deepEqual(out.values, { 'a.lip': 0 });
+  assert.deepEqual(out.changedKeys, ['a.lip']);
+});
+
+test('a neutral value the fold beneath already supplies is removed from scratch, not stored', () => {
+  const held = { 'a.lip': 9 };
+  const out = plan({ group: 'Glass', held, effective: { 'a.lip': 9 }, beneath: { 'a.lip': 0 } });
+  assert.deepEqual(out.values, {}, 'beneath is already neutral, so the edit goes');
   assert.deepEqual(out.changedKeys, ['a.lip']);
 });

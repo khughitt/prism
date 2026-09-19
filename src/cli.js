@@ -7,9 +7,11 @@ import { resolveLayered, writeResolved } from './resolve.js';
 import { fanOut, boundParams, unmetRequirement } from './fanout.js';
 import { readJson } from './store.js';
 import { withLock } from './lock.js';
-import { loadStore, loadLayers, writeTarget, activeJson, RESOLUTION_ORDER } from './layers.js';
-import { listContexts, readContext, readActive, writeContext, deleteContext, contextPath, VERB_KINDS } from './contexts.js';
+import { loadStore, loadLayers, withScratch, activeJson, RESOLUTION_ORDER } from './layers.js';
+import { listContexts, readContext, readActive, contextPath, VERB_KINDS } from './contexts.js';
+import { readScratch, writeScratch } from './scratch.js';
 import { runContext } from './context-cli.js';
+import { runCommit } from './commit.js';
 import { loadRack } from './rack.js';
 import { MODES, planReset, visibleGroups } from './reset.js';
 import {
@@ -30,10 +32,6 @@ function load() {
 function splitBaseFlag(rest) {
   const toBase = rest[0] === '--base';
   return { toBase, args: toBase ? rest.slice(1) : rest };
-}
-
-function contextSource(active, target) {
-  return target.kind === 'wallpaper' ? active.wallpaper.path : null;
 }
 
 // Every read of the store happens under the store lock: a slot and the file it
@@ -67,18 +65,18 @@ export async function run(argv, opts = {}) {
         let resolved;
         await withLock(lockPath(), async () => {
           const store = loadStore(defs);
-          const target = toBase ? { kind: 'base', name: null } : store.target;
-          if (target.kind === 'base') {
+          if (toBase) {
             const values = { ...store.base };
             if (isDeepStrictEqual(value, def.default)) delete values[key];
             else values[key] = value;
             writeValues(values);
           } else {
-            const layer = store.layers.find((l) => l.kind === target.kind && l.name === target.name);
-            writeContext(target.kind, target.name, {
-              source: contextSource(store.active, target),
-              values: { ...layer.values, [key]: value },
-            });
+            // Normalized: a value the fold beneath already shows is no edit,
+            // so dragging back to where a slider started leaves nothing behind.
+            const scratch = { ...store.scratch };
+            if (isDeepStrictEqual(value, store.beneath[key])) delete scratch[key];
+            else scratch[key] = value;
+            writeScratch(scratch);
           }
           resolved = writeResolved(loadStore(defs).params);
         });
@@ -96,22 +94,19 @@ export async function run(argv, opts = {}) {
         await withLock(lockPath(), async () => {
           const active = readActive();
           const layers = loadLayers(active);
-          const target = toBase ? { kind: 'base', name: null } : writeTarget(active);
           const base = readValues();
-          const held = target.kind === 'base'
-            ? base
-            : layers.find((l) => l.kind === target.kind && l.name === target.name).values;
-          const where = target.kind === 'base' ? 'base' : `${target.kind} ${target.name}`;
+          const scratch = readScratch();
+          const held = toBase ? base : scratch;
           const orphan = !defs.has(key) && Object.hasOwn(held, key);
           if (!defs.has(key) && !orphan) throw new Error(`unknown param ${key}`);
-          if (!Object.hasOwn(held, key)) throw new Error(`${key}: not set in ${where}`);
-          if (!orphan) resolveLayered(defs, base, layers);
+          if (!Object.hasOwn(held, key)) {
+            throw new Error(toBase ? `${key}: not set in base` : `${key}: not edited`);
+          }
           const values = { ...held };
           delete values[key];
-          if (target.kind === 'base') writeValues(values);
-          else if (target.kind === 'wallpaper' && Object.keys(values).length === 0) {
-            deleteContext(target.kind, target.name);
-          } else writeContext(target.kind, target.name, { source: contextSource(active, target), values });
+          resolveLayered(defs, toBase ? values : base, withScratch(layers, toBase ? scratch : values));
+          if (toBase) writeValues(values);
+          else writeScratch(values);
           resolved = writeResolved(loadStore(defs).params);
         });
 
@@ -119,7 +114,7 @@ export async function run(argv, opts = {}) {
       }
 
       case 'reset': {
-        const usage = 'usage: prism reset defaults|symmetric|neutral [--base] [--group <name>]';
+        const usage = 'usage: prism reset revert|symmetric|neutral [--base] [--group <name>]';
         let mode = null;
         let group = null;
         let toBase = false;
@@ -145,28 +140,17 @@ export async function run(argv, opts = {}) {
         let changedKeys = [];
         await withLock(lockPath(), async () => {
           const store = loadStore(defs);
-          const target = toBase ? { kind: 'base', name: null } : store.target;
-          const held = target.kind === 'base'
-            ? store.base
-            : store.layers.find((layer) => layer.kind === target.kind && layer.name === target.name).values;
-          // --base compares against, and copies from, the base layer alone: an
-          // overlay that happens to sit at the neutral must not block a base
-          // change the user asked for by name.
+          // --base targets base and compares against base alone: an overlay
+          // that happens to sit at the neutral must not block a base change
+          // the user asked for by name. Otherwise the target is scratch.
+          const held = toBase ? store.base : store.scratch;
           const effective = toBase ? resolveLayered(defs, store.base, []).params : store.params;
-          const plan = planReset({
-            defs, mode, group, held, effective, normalizeToDefault: target.kind === 'base',
-          });
+          const beneath = toBase ? resolveLayered(defs, {}, []).params : store.beneath;
+          const plan = planReset({ defs, mode, group, held, effective, beneath });
           changedKeys = plan.changedKeys;
           if (changedKeys.length === 0) return;
-          if (target.kind === 'base') writeValues(plan.values);
-          else if (target.kind === 'wallpaper' && Object.keys(plan.values).length === 0) {
-            deleteContext(target.kind, target.name);
-          } else {
-            writeContext(target.kind, target.name, {
-              source: contextSource(store.active, target),
-              values: plan.values,
-            });
-          }
+          if (toBase) writeValues(plan.values);
+          else writeScratch(plan.values);
           resolved = writeResolved(loadStore(defs).params);
         });
 
@@ -224,7 +208,7 @@ export async function run(argv, opts = {}) {
             default: def.default,
             neutral: def.neutral,
             neutralize: def.neutralize,
-            heldInTarget: store.heldInTarget[key],
+            held: store.held[key],
             value: store.params[key],
             layer: store.layerOf[key],
             fallback: store.fallback[key],
@@ -236,7 +220,7 @@ export async function run(argv, opts = {}) {
           });
         }
 
-        print(`${JSON.stringify({ active: activeJson(store.active), profiles: store.profiles, layers: RESOLUTION_ORDER, target: store.target.kind, rack, params: described }, null, 2)}\n`);
+        print(`${JSON.stringify({ active: activeJson(store.active), profiles: store.profiles, layers: RESOLUTION_ORDER, rack, params: described }, null, 2)}\n`);
         return 0;
       }
 
@@ -270,7 +254,7 @@ export async function run(argv, opts = {}) {
       case 'requirements': {
         if (rest.length !== 0) throw new Error('usage: prism requirements');
         const { defs, manifests } = load();
-        const { params } = loadStore(defs);
+        const { params } = await snapshot(defs);
         let unmetCount = 0;
         for (const manifest of manifests) {
           const unmet = unmetRequirement(manifest, { params });
@@ -348,6 +332,21 @@ export async function run(argv, opts = {}) {
               }
             }
           }
+          const scratch = readScratch();
+          for (const [key, value] of Object.entries(scratch)) {
+            const def = defs.get(key);
+            if (!def) {
+              print(`doctor: orphan value ${key} in scratch: no definition — run 'prism unset ${key}'\n`);
+              contextProblems++;
+              continue;
+            }
+            try {
+              validateValue(def, value);
+            } catch (error) {
+              print(`doctor: scratch: ${error.message}\n`);
+              contextProblems++;
+            }
+          }
           if (orphans.length > 0 || contextProblems > 0) return { params: null, blocked: true };
           const { params } = loadStore(defs);
           return { params, blocked: false };
@@ -380,6 +379,11 @@ export async function run(argv, opts = {}) {
         return problems === 0 ? 0 : 1;
       }
 
+      case 'commit': {
+        const { defs } = load();
+        return await runCommit(rest, { defs });
+      }
+
       case 'context': {
         const { defs, manifests } = load();
         const outcome = await runContext(rest, { defs, manifests, print, eprint, runner: opts.runner });
@@ -387,7 +391,7 @@ export async function run(argv, opts = {}) {
       }
 
       default:
-        eprint('usage: prism set|unset|get|list|describe|apply|requirements|doctor|context|reset\n');
+        eprint('usage: prism set|unset|get|list|describe|apply|requirements|doctor|context|reset|commit\n');
         return 2;
     }
   } catch (error) {

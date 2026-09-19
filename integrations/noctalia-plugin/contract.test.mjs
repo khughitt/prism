@@ -92,7 +92,7 @@ function describeStore(contexts) {
   assert.equal(result.status, 0, result.stderr);
   const model = JSON.parse(result.stdout);
   for (const param of model.params) {
-    assert.equal(typeof param.heldInTarget, 'boolean', `${param.key} heldInTarget`);
+    assert.ok(Array.isArray(param.held), `${param.key} held`);
     if (param.ui.control === 'none') continue;
     assert.notEqual(Object.hasOwn(param, 'neutral'), Object.hasOwn(param, 'neutralize'),
       `${param.key} declares exactly one of neutral and neutralize`);
@@ -119,7 +119,7 @@ local function inspect(model)
   local ui = setmetatable({}, {__index = function(_, kind)
     return function(props, children) return {kind = kind, props = props or {}, children = children or {}} end
   end})
-  local panel = {render = function(tree) rendered = tree end, setNeedsFrameTick = function() end}
+  local panel = {render = function(tree) rendered = tree end, setNeedsFrameTick = function() end, setWantsSecondTicks = function() end}
   local described
   local noctalia = {
     json = {decode = function() return model end},
@@ -202,21 +202,17 @@ const controlNode = { slider: 'slider', toggle: 'toggle', select: 'select', colo
 
 test('real describe output satisfies the panel model validator', () => {
   const fresh = describeStore({});
-  // A profile shifts the write target off `base` and shadows the override
-  // below it, which is where the panel reads `layers`, `target` and `active`.
+  // A profile shadows the override below it, which is where the panel reads
+  // `layers` and `active`.
   const tuned = describeStore({
     base: { 'glass.roughness': 0.3 },
     profiles: { night: { 'glass.roughness': 0.7 } },
-    active: { profile: 'night', wallpaper: { id: 'abc12345', path: '/nonexistent/wall.png', pinned: false } },
+    active: { profile: 'night', wallpaper: { id: 'abc12345', path: '/nonexistent/wall.png' } },
   });
-  assert.equal(fresh.target, 'base');
-  assert.equal(tuned.target, 'profile');
-  // Pin what the fixtures arranged: a renamed parameter would otherwise leave a
-  // store with no contexts in it and quietly stop exercising the layer ranks.
   assert.deepEqual(
     tuned.params.filter((param) => param.layer === 'profile')
       .map(({ key, value, fallback }) => ({ key, value, fallback })),
-    [{ key: 'glass.roughness', value: 0.7, fallback: 0.3 }],
+    [{ key: 'glass.roughness', value: 0.7, fallback: 0.7 }],
   );
 
   const [freshReport, tunedReport] = inspectModels([fresh, tuned]);
