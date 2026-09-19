@@ -1,7 +1,7 @@
 # Compositional profiles: scratch edits, deltas above the look, typed commits
 
 **Date:** 2026-09-19
-**Status:** draft for review
+**Status:** approved 2026-09-19 after three review rounds; implementation plan `docs/plans/2026-09-19-compositional-profiles.md`
 **Task:** `prism-aec90f`, under goal `prism-2f0b4b`; settles `prism-46035b`,
 `prism-bf3ae9`, `prism-ad2b12`, `prism-b8b589`, `prism-8a8eac`, `prism-49a068`,
 `prism-b6d7ee` and frames `prism-9298b9` (Section 12)

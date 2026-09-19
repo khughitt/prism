@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: main
 created: 2026-09-19T20:01:06Z
-updated: 2026-09-19T20:31:04Z
+updated: 2026-09-19T20:44:03Z
 started: 2026-09-19T20:01:22Z
 depends: []
 parent: prism-2f0b4b
@@ -27,3 +27,4 @@ Design the profile system as a fold over layers: defaults, base, profile (the lo
 - 2026-09-19T20:15:49Z (prism-aec90f): Review round 1: validate before writing with a fixed multi-file write order; rotation refresh and id-checked wallpaper verbs in scope (absorbs prism-b6d7ee); save-as exempt from the empty-scratch refusal; save-as snapshots the screen, deltas included, so neutral-then-save-as is exact
 - 2026-09-19T20:27:20Z (prism-aec90f): Review round 2: save-as activates before clearing scratch; the hook keeps scratch when no wallpaper is leaving; the slot records the path as given so the panel reconciles by string equality and issues the hook verb itself
 - 2026-09-19T20:31:04Z (prism-aec90f): Review round 3: the hook stays the sole automatic writer and the panel refreshes describe every two seconds while open; given dropped; a slot carrying the retired pinned field is repaired once on read
+- 2026-09-19T20:44:03Z (prism-aec90f): Spec approved 2026-09-19. Plan detail from review: requirements (src/cli.js) calls loadStore unlocked; route it through the locked snapshot helper before readActive gains the pinned repair write
