@@ -190,19 +190,16 @@ declare equal neutrals, validated at definition load. The panel uses the
 reported `layers` order rather than carrying its own copy.
 
 The panel is installed into Noctalia separately from the `prism` command, so
-the two must be upgraded together. The loud failure is one-sided, because every
-field the panel needs is one the CLI adds: a newer panel reading an older CLI's
-output fails `validateModel` on the first field that is absent — `prism
+the two must be upgraded together. A newer panel reading an older CLI's output
+fails `validateModel` on the first field that is absent — `prism
 describe returned no layer order` without `layers`, `prism describe returned
 no profile list` without `profiles`, `<key> has no held layers` without a per-parameter `held`,
 `<key> has no layer` without a per-parameter `layer` — and degrades to the panel's visible-error banner, which is the
-correct failure mode. The other direction is quiet: `validateModel` inspects
-only the fields it knows and does not reject unknown ones, so an older panel
-ignores what a newer CLI adds and keeps rendering under its older rules.
-A user who sees any of those
-messages, or a panel that draws no wallpaper header row against a CLI that
-reports one, should read it as "the panel and the `prism` command are out of
-sync" and upgrade whichever side is behind.
+correct failure mode. An older panel reading the newer CLI also fails
+validation: it requires `model.target`, which the newer CLI no longer emits,
+and reports `prism describe returned no write target`. A user who sees either
+validation error should read it as "the panel and the `prism` command are out
+of sync" and upgrade whichever side is behind.
 
 That agreement is checked rather than assumed:
 `integrations/noctalia-plugin/contract.test.mjs` spawns `prism describe --json`

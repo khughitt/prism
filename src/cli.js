@@ -284,7 +284,7 @@ export async function run(argv, opts = {}) {
           const values = readValues();
           const orphans = Object.keys(values).filter((key) => !defs.has(key));
           for (const key of orphans) {
-            print(`doctor: orphan value ${key}: no definition — run 'prism unset ${key}'\n`);
+            print(`doctor: orphan value ${key}: no definition — run 'prism unset --base ${key}'\n`);
             problems++;
           }
 

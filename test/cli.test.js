@@ -494,8 +494,7 @@ test('doctor: an orphan values key is reported by name with its remedy', async (
   let out = '';
   const code = await cli.run(['doctor'], { runner: () => {}, print: (s) => { out += s; } });
   assert.equal(code, 1);
-  assert.match(out, /gone\.away/);
-  assert.match(out, /unset/, 'doctor must name the way out');
+  assert.match(out, /doctor: orphan value gone\.away: no definition — run 'prism unset --base gone\.away'/);
 });
 
 test('doctor screens scratch.yaml for orphans and invalid values, naming the file', async () => {
