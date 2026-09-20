@@ -1,9 +1,10 @@
+import fs from 'node:fs';
 import { stringify } from 'yaml';
 import { isDeepStrictEqual } from 'node:util';
 import { withLock } from './lock.js';
 import { lockPath } from './paths.js';
 import {
-  VERB_KINDS, assertKind, assertName, deleteContext, inspectContext, listContexts, readActive, readContext,
+  VERB_KINDS, assertKind, assertName, contextPath, deleteContext, inspectContext, listContexts, readActive, readContext,
   readContextText, renameContext, wallpaperId, canonicalWallpaperPath, writeActive, writeContext,
 } from './contexts.js';
 import { activeName, loadLayers, loadStore, withScratch } from './layers.js';
@@ -56,9 +57,9 @@ function planFold(leaving, scratch) {
 // delete) and reports whether it changed anything effective, and `without`
 // names the context that delete removes so the next state is computed and
 // validated as if the file were already gone. The whole next state is
-// validated before the first write. Wallpaper deletion clears the context
-// before the slot; profile deletion clears the slot first so no prefix can
-// point at a missing profile. The previous state is allowed not to resolve,
+// validated before the first write. Deletion clears the active slot before
+// removing its file, so a retry can finish after either write. The previous
+// state is allowed not to resolve,
 // in which case every bound key fans out (the apply contract): that is how a
 // broken active context is recovered from.
 async function changeSlots({ defs, manifests, runner }, mutate,
@@ -194,7 +195,7 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
         return next;
       }, {
         commit: () => { deleteContext(kind, name); return wasActive; },
-        slotBeforeCommit: kind === 'profile',
+        slotBeforeCommit: true,
       });
     }
 
@@ -228,8 +229,23 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
       if (kind !== 'profile') throw new Error('rename is for profiles; a wallpaper is named by its path');
       await withLock(lockPath(), async () => {
         const active = readActive();
-        renameContext(kind, from, to);
-        if (active.profile === from) writeActive({ ...active, profile: to });
+        if (active.profile !== from && active.profile !== to) {
+          renameContext(kind, from, to);
+          return;
+        }
+        if (readContextText(kind, from) === null) throw new Error(`profile ${from}: no such context`);
+        if (from === to) throw new Error(`profile ${to} already exists`);
+        const source = contextPath(kind, from);
+        const destination = contextPath(kind, to);
+        if (readContextText(kind, to) !== null) {
+          const old = fs.statSync(source);
+          const next = fs.statSync(destination);
+          if (old.dev !== next.dev || old.ino !== next.ino) throw new Error(`profile ${to} already exists`);
+        } else {
+          fs.linkSync(source, destination);
+        }
+        if (active.profile !== to) writeActive({ ...active, profile: to });
+        fs.unlinkSync(source);
       });
       return null;
     }
