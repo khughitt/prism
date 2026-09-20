@@ -48,13 +48,21 @@ function failer(eprint, json) {
   };
 }
 
-function report({ failed }, { eprint, json, fail }) {
-  if (failed.length === 0) return 0;
+// The outcome of a change that fanned out: under --json the one value is the keys that
+// changed and the sinks that took them; pretty mode stays silent on success as it always
+// has. Failures are the error object (json) or one `prism: <sink>: <error>` line per sink.
+function report({ applied, failed }, { print, eprint, json, fail }, changedKeys) {
+  if (failed.length === 0) {
+    if (json) print(`${JSON.stringify({ changed: changedKeys, applied })}\n`);
+    return 0;
+  }
   const messages = failed.map((failure) => `${failure.sink}: ${failure.error}`);
   if (json) return fail(messages.join('; '));
   for (const message of messages) eprint(`prism: ${message}\n`);
   return 1;
 }
+
+const UNCHANGED = { applied: [], failed: [] };
 
 function describeText(store, rack) {
   const active = activeJson(store.active);
@@ -96,7 +104,9 @@ export async function run(argv, opts = {}) {
 
   const json = inv.mode === 'json';
   const fail = failer(eprint, json);
-  const output = { eprint, json, fail };
+  const output = { print, eprint, json, fail };
+  // One value in each mode: the JSON object under --json, the text lines otherwise.
+  const emit = (value, text) => print(json ? `${JSON.stringify(value)}\n` : text);
   const { positionals, options } = inv;
   const toBase = options.base === true;
 
@@ -129,7 +139,7 @@ export async function run(argv, opts = {}) {
           resolved = writeResolved(loadStore(defs).params);
         });
 
-        return report(await fanOut({ manifests, resolved, changedKeys: [key], runner: opts.runner }), output);
+        return report(await fanOut({ manifests, resolved, changedKeys: [key], runner: opts.runner }), output, [key]);
       }
 
       case 'unset': {
@@ -159,7 +169,7 @@ export async function run(argv, opts = {}) {
           resolved = writeResolved(loadStore(defs).params);
         });
 
-        return report(await fanOut({ manifests, resolved, changedKeys: [key], runner: opts.runner }), output);
+        return report(await fanOut({ manifests, resolved, changedKeys: [key], runner: opts.runner }), output, [key]);
       }
 
       case 'reset': {
@@ -200,8 +210,8 @@ export async function run(argv, opts = {}) {
           resolved = writeResolved(loadStore(defs).params);
         });
 
-        if (changedKeys.length === 0) return 0;
-        return report(await fanOut({ manifests, resolved, changedKeys, runner: opts.runner }), output);
+        if (changedKeys.length === 0) return report(UNCHANGED, output, []);
+        return report(await fanOut({ manifests, resolved, changedKeys, runner: opts.runner }), output, changedKeys);
       }
 
       case 'get': {
@@ -294,7 +304,7 @@ export async function run(argv, opts = {}) {
           resolved,
           changedKeys,
           runner: opts.runner,
-        }), output);
+        }), output, changedKeys);
       }
 
       // doctor's requirement pass alone, for a machine that has not applied
@@ -304,26 +314,32 @@ export async function run(argv, opts = {}) {
       case 'requirements': {
         const { defs, manifests } = load();
         const { params } = loadStore(defs);
-        let unmetCount = 0;
-        for (const manifest of manifests) {
-          const unmet = unmetRequirement(manifest, { params });
-          if (!unmet) continue;
-          print(`requirements: ${manifest.sink}: ${unmet}\n`);
-          unmetCount++;
-        }
-        if (unmetCount === 0) print('requirements: ok\n');
-        return unmetCount === 0 ? 0 : 1;
+        const unmet = manifests
+          .map((manifest) => ({ sink: manifest.sink, requirement: unmetRequirement(manifest, { params }) }))
+          .filter((entry) => entry.requirement);
+        emit({ ok: unmet.length === 0, unmet }, unmet.length === 0
+          ? 'requirements: ok\n'
+          : unmet.map((entry) => `requirements: ${entry.sink}: ${entry.requirement}\n`).join(''));
+        return unmet.length === 0 ? 0 : 1;
       }
 
       case 'doctor': {
         const { defs, manifests } = load();
-        let problems = 0;
+        // Every finding is one text line or one entry of the JSON object. Store problems
+        // (orphans, broken contexts, invalid values) block the sink pass, so they are
+        // counted on their own as well.
+        const problems = [];
+        const finish = () => {
+          emit({ ok: problems.length === 0, problems }, problems.length === 0
+            ? 'doctor: ok\n'
+            : problems.map((problem) => `doctor: ${problem}\n`).join(''));
+          return problems.length === 0 ? 0 : 1;
+        };
 
         for (const manifest of manifests) {
           for (const name of manifest.generates) {
             if (!fs.existsSync(generatedPath(name))) {
-              print(`doctor: ${manifest.sink}: generated file missing: ${name} — run 'prism apply ${manifest.sink}'\n`);
-              problems++;
+              problems.push(`${manifest.sink}: generated file missing: ${name} — run 'prism apply ${manifest.sink}'`);
             }
           }
         }
@@ -334,11 +350,10 @@ export async function run(argv, opts = {}) {
           const orphans = Object.keys(values).filter((key) => !defs.has(key));
           for (const key of orphans) {
             if (replaced.has(key)) {
-              print(`doctor: pending migration: ${key} in base is replaced by ${replaced.get(key).key} — run 'prism migrate'\n`);
+              problems.push(`pending migration: ${key} in base is replaced by ${replaced.get(key).key} — run 'prism migrate'`);
             } else {
-              print(`doctor: orphan value ${key}: no definition — run 'prism unset ${key}'\n`);
+              problems.push(`orphan value ${key}: no definition — run 'prism unset ${key}'`);
             }
-            problems++;
           }
 
           let contextProblems = 0;
@@ -348,14 +363,14 @@ export async function run(argv, opts = {}) {
             try {
               validateValue(def, value);
             } catch (error) {
-              print(`doctor: base: ${error.message}\n`);
+              problems.push(`base: ${error.message}`);
               contextProblems++;
             }
           }
 
           const active = readActive();
           if (active.profile !== undefined && readContext('profile', active.profile) === null) {
-            print(`doctor: profile ${active.profile}: active context is missing — run 'prism context deactivate profile'\n`);
+            problems.push(`profile ${active.profile}: active context is missing — run 'prism context deactivate profile'`);
             contextProblems++;
           }
           const all = listContexts();
@@ -365,7 +380,7 @@ export async function run(argv, opts = {}) {
               try {
                 context = readContext(kind, name);
               } catch (error) {
-                print(`doctor: ${error.message}\n`);
+                problems.push(error.message);
                 contextProblems++;
                 continue;
               }
@@ -373,9 +388,9 @@ export async function run(argv, opts = {}) {
                 const def = defs.get(key);
                 if (!def) {
                   if (replaced.has(key)) {
-                    print(`doctor: pending migration: ${key} in ${kind} ${name} is replaced by ${replaced.get(key).key} — run 'prism migrate'\n`);
+                    problems.push(`pending migration: ${key} in ${kind} ${name} is replaced by ${replaced.get(key).key} — run 'prism migrate'`);
                   } else {
-                    print(`doctor: orphan value ${key} in ${kind} ${name}: no definition — edit ${contextPath(kind, name)}\n`);
+                    problems.push(`orphan value ${key} in ${kind} ${name}: no definition — edit ${contextPath(kind, name)}`);
                   }
                   contextProblems++;
                   continue;
@@ -383,7 +398,7 @@ export async function run(argv, opts = {}) {
                 try {
                   validateValue(def, value);   // inactive contexts are never resolved, so check them here
                 } catch (error) {
-                  print(`doctor: ${kind} ${name}: ${error.message}\n`);
+                  problems.push(`${kind} ${name}: ${error.message}`);
                   contextProblems++;
                 }
               }
@@ -394,67 +409,73 @@ export async function run(argv, opts = {}) {
           return { params, blocked: false };
         });
 
-        if (blocked) return 1;
+        if (blocked) return finish();
         const status = readJson(sinkStatusPath(), {});
         for (const manifest of manifests) {
           const unmet = unmetRequirement(manifest, { params });
           if (unmet) {
-            print(`doctor: ${manifest.sink}: ${unmet}\n`);
-            problems++;
+            problems.push(`${manifest.sink}: ${unmet}`);
             continue;
           }
           const entry = status[manifest.sink];
           const expected = boundParams(manifest, { params });
           if (!entry) {
-            print(`doctor: ${manifest.sink}: never applied\n`);
-            problems++;
+            problems.push(`${manifest.sink}: never applied`);
           } else if (!entry.ok) {
-            print(`doctor: ${manifest.sink}: failed: ${entry.error}\n`);
-            problems++;
+            problems.push(`${manifest.sink}: failed: ${entry.error}`);
           } else if (!isDeepStrictEqual(entry.params, expected)) {
-            print(`doctor: ${manifest.sink}: stale (applied values differ from current)\n`);
-            problems++;
+            problems.push(`${manifest.sink}: stale (applied values differ from current)`);
           }
         }
 
-        if (problems === 0) print('doctor: ok\n');
-        return problems === 0 ? 0 : 1;
+        return finish();
       }
 
       case 'migrate': {
         const { defs } = load();
+        // Pretty mode streams: the backup line lands before any write, then each file as
+        // it is rewritten, so a failure part-way leaves what landed on the screen. Under
+        // --json the one object is emitted after the lock, and a failure names the
+        // migrated files in its detail instead.
+        const line = (text) => { if (!json) print(text); };
+        const changeLine = (where, change) => (change.kept
+          ? `migrate: ${where}: ${change.from} ${JSON.stringify(change.old)} removed; ${change.to} ${JSON.stringify(change.value)} kept\n`
+          : `migrate: ${where}: ${change.from} ${JSON.stringify(change.old)} -> ${change.to} ${JSON.stringify(change.value)}\n`);
         const migrated = await withLock(lockPath(), async () => {
           const files = planMigration(defs);
-          if (files.length === 0) return 0;
+          if (files.length === 0) return { backup: null, files: [] };
           const backup = writeBackup(files, new Date());
-          print(`migrate: backup ${backup}\n`);
+          line(`migrate: backup ${backup}\n`);
+          const done = [];
           for (const file of files) {
             try {
               writeMigrated(file);
             } catch (error) {
-              throw new Error(`migrate: ${file.where}: ${error.message}; the files reported above are migrated, `
-                + `this one and those after it are not; the originals are in ${backup} — copy them back over ${configDir()} to undo`);
+              const landed = json
+                ? (done.length === 0 ? 'no file is migrated;' : `migrated: ${done.map((f) => f.where).join(', ')};`)
+                : 'the files reported above are migrated,';
+              throw new Error(`migrate: ${file.where}: ${error.message}; ${landed} this one and those after it are not; `
+                + `the originals are in ${backup} — copy them back over ${configDir()} to undo`);
             }
-            for (const change of file.changes) {
-              print(change.kept
-                ? `migrate: ${file.where}: ${change.from} ${JSON.stringify(change.old)} removed; ${change.to} ${JSON.stringify(change.value)} kept\n`
-                : `migrate: ${file.where}: ${change.from} ${JSON.stringify(change.old)} -> ${change.to} ${JSON.stringify(change.value)}\n`);
-            }
+            done.push({ where: file.where, changes: file.changes });
+            for (const change of file.changes) line(changeLine(file.where, change));
           }
-          return files.length;
+          return { backup, files: done };
         });
-        if (migrated === 0) {
-          print('migrate: nothing to migrate\n');
+        if (migrated.files.length === 0) {
+          emit(migrated, 'migrate: nothing to migrate\n');
           return 0;
         }
-        print("migrate: done — run 'prism apply' to hand the new keys to the sinks\n");
+        emit(migrated, "migrate: done — run 'prism apply' to hand the new keys to the sinks\n");
         return 0;
       }
 
       case 'context': {
         const { defs, manifests } = load();
-        const fanned = await runContext(inv.cmd.path[1], positionals, { defs, manifests, print, eprint, runner: opts.runner });
-        return fanned === null ? 0 : report(fanned, output);
+        // A verb that changed the slots returns { changedKeys, result }; one that printed
+        // its own value through emit returns null.
+        const change = await runContext(inv.cmd.path[1], positionals, { defs, manifests, emit, eprint, json, runner: opts.runner });
+        return change === null ? 0 : report(change.result ?? UNCHANGED, output, change.changedKeys);
       }
 
       default:

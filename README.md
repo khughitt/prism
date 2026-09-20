@@ -86,8 +86,12 @@ copy of ops's inventory; `test/cli-surface.test.js` proves the two agree.
   and reads no store. `--version`/`-V` prints `prism <version>`.
 - `--json` and `--pretty` are global and mutually exclusive, accepted before or after
   the command; the default is pretty, `PRISM_FORMAT` overrides the default, the flag
-  overrides both. `get` prints `{"key","value"}` and `list` `{"params":{…}}` under
-  `--json`; `describe` prints its document under `--json` and a text summary otherwise.
+  overrides both. Under `--json` every command prints exactly one object: `get`
+  `{"key","value"}`, `list` `{"params":{…}}`, `describe` its document (a text summary
+  otherwise), a change that reached the sinks `{"changed":[keys],"applied":[sinks]}`,
+  `doctor` `{"ok","problems"}`, `requirements` `{"ok","unmet"}`, `migrate`
+  `{"backup","files"}`, `context list` `{"active","contexts"}`, `context show`
+  `{"kind","name","source","values"}`.
 - `--color auto|always|never` (default `never`, `PRISM_COLOR` overrides) is accepted
   everywhere; prism prints no color yet.
 - Exit codes: 0 done, 1 the command ran and failed, 2 a usage error (unknown command or

@@ -126,6 +126,7 @@ test('completion callback and scripts', async () => {
   assert.ok((await candidates(['prism', 'context', ''], 2)).includes('deactivate'));
   assert.ok((await candidates(['prism', 'reset', '--'], 2)).includes('--base'));
   assert.deepEqual((await candidates(['prism', 'reset', ''], 2)).sort(), ['defaults', 'neutral', 'symmetric']);
+  assert.deepEqual((await candidates(['prism', 'reset', '--base', ''], 3)).sort(), ['defaults', 'neutral', 'symmetric']);
   assert.deepEqual((await candidates(['prism', 're'], 1)).sort(), ['requirements', 'reset']);
   assert.deepEqual((await candidates(['prism', '--json', 'reset', 'n'], 3)), ['neutral']);
   assert.deepEqual(await candidates(['prism', '--color', 'never', 'context', 'dea'], 4), ['deactivate']);
@@ -133,4 +134,39 @@ test('completion callback and scripts', async () => {
   assert.equal(execFileSync('zsh', ['-f', '-c', `autoload -Uz compinit; compinit -D -u; source ${zsh}; print -r -- \${_comps[prism]}`], { encoding: 'utf8' }).trim(), '_prism');
   const bash = path.join(dir, 'prism.bash'); fs.writeFileSync(bash, (await run([], { PRISM_COMPLETE: 'bash' })).stdout);
   execFileSync('bash', ['-c', `source ${bash}; complete -p prism`]);
+});
+
+// Every command row without an `output` row follows the CLI default and its precedence:
+// under --json, or PRISM_FORMAT=json, stdout is exactly one JSON value. The rows come from
+// the table, so a command added there without a fixture here fails this test.
+function commandRowsWithoutOutput() {
+  const script = 'import json, sys, tomllib\n'
+    + 'rows = tomllib.load(open(sys.argv[1], "rb"))["cli"]["prism"]["commands"]\n'
+    + 'print(json.dumps([r["path"] for r in rows if "output" not in r]))';
+  return JSON.parse(execFileSync('python3', ['-c', script, path.join(ROOT, 'tools', 'cli.toml')], { encoding: 'utf8' }));
+}
+
+test('every command without an output row emits one JSON value under --json and PRISM_FORMAT=json', async () => {
+  const wallpaper = path.join(dir, 'wallpaper.jpg'); fs.writeFileSync(wallpaper, '');
+  const fixture = [ // in an order each step leaves valid for the next
+    ['set', 'glass.ior', '1.4'], ['get', 'glass.ior'], ['unset', 'glass.ior'], ['reset', 'neutral'],
+    ['list'], ['describe'], ['apply'], ['requirements'], ['doctor'], ['migrate'],
+    ['context', 'wallpaper', wallpaper], ['context', 'pin', 'wallpaper'], ['context', 'unpin', 'wallpaper'],
+    ['context', 'save', 'profile', 'dusk'], ['context', 'list'], ['context', 'show', 'profile', 'dusk'],
+    ['context', 'activate', 'profile', 'dusk'], ['context', 'deactivate', 'profile'],
+    ['context', 'rename', 'profile', 'dusk', 'dawn'], ['context', 'delete', 'profile', 'dawn'],
+  ];
+  const isGroup = (p) => COMMANDS.some((c) => c.path.length === p.length + 1 && p.every((w, i) => c.path[i] === w));
+  const runnable = commandRowsWithoutOutput().filter((p) => !isGroup(p)).map((p) => p.join(' ')).sort();
+  const covered = fixture.map((argv) => COMMANDS.filter((c) => c.path.every((w, i) => argv[i] === w)).sort((a, b) => b.path.length - a.path.length)[0].path.join(' '));
+  assert.deepEqual([...new Set(covered)].sort(), runnable, 'every runnable command row needs a fixture invocation');
+  for (const via of ['flag', 'env']) {
+    for (const argv of fixture) {
+      const r = via === 'flag' ? await run(['--json', ...argv]) : await run(argv, { PRISM_FORMAT: 'json' });
+      assert.equal(r.stderr, '', `${via}: ${argv.join(' ')}: ${r.stderr}`);
+      assert.ok([0, 1].includes(r.code), `${via}: ${argv.join(' ')}: exit ${r.code}`);
+      assert.doesNotThrow(() => JSON.parse(r.stdout), `${via}: ${argv.join(' ')}: stdout is not one JSON value: ${JSON.stringify(r.stdout)}`);
+      assert.equal(typeof JSON.parse(r.stdout), 'object', `${via}: ${argv.join(' ')}`);
+    }
+  }
 });

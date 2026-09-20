@@ -165,14 +165,22 @@ export function candidates(words, index) {
   const depth = cmd ? cmd.path.length : 0;
   const prev = words[index - 1];
   if (prev === '--color') return COLORS.map((v) => [v, '']);
-  if (cmd) {
-    const opt = (cmd.options ?? []).find((o) => o.names.includes(prev));
-    if (opt?.values) return opt.values.map((v) => [v, '']);
-  }
+  const optionOf = (w) => (cmd?.options ?? []).find((o) => o.names.includes(w));
+  const prevOpt = optionOf(prev);
+  if (prevOpt && prevOpt.value !== 'none') return (prevOpt.values ?? []).map((v) => [v, '']);
   if (word.startsWith('-')) return [...(cmd?.options ?? []).flatMap((o) => o.names.map((n) => [n, ''])), ...GLOBAL_OPTIONS];
   const sub = children(cmd ? cmd.path : []);
   if (sub.length) return [...sub.map((c) => [c.path.at(-1), c.summary]), ...(depth === 0 ? [['help', "Print a command's help"]] : [])];
-  const positional = (cmd?.args ?? [])[before.length - depth];
+  // The positional being completed is the count of positional words after the command
+  // path: option words, and the value a valued option consumed, are not positionals.
+  let filled = 0;
+  for (let i = depth; i < before.length; i++) {
+    const opt = optionOf(before[i]);
+    if (!opt) filled++;
+    else if (opt.value !== 'none') i++;
+  }
+  const args = cmd?.args ?? [];
+  const positional = args[filled] ?? (args.at(-1)?.variadic ? args.at(-1) : undefined);
   return positional?.values ? positional.values.map((v) => [v, '']) : [];
 }
 

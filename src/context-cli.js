@@ -6,7 +6,7 @@ import {
   VERB_KINDS, assertKind, assertName, deleteContext, inspectContext, listContexts, readActive, readContext,
   renameContext, wallpaperId, canonicalWallpaperPath, writeActive, writeContext,
 } from './contexts.js';
-import { activeName, loadLayers, loadStore } from './layers.js';
+import { activeJson, activeName, loadLayers, loadStore } from './layers.js';
 import { readValues } from './values.js';
 import { resolveLayered, writeResolved } from './resolve.js';
 import { fanOut } from './fanout.js';
@@ -34,7 +34,8 @@ function kindAndName([kind, name]) {
   return { kind, name };
 }
 
-// Apply a slot change. `mutate(active)` computes the next slots and may throw
+// Apply a slot change and return { changedKeys, result }, `result` being the fan-out
+// outcome or null when nothing reached the bus. `mutate(active)` computes the next slots and may throw
 // (e.g. activating a context that does not exist), but writes nothing itself;
 // `commit()` performs any file change (a delete) and runs only after the
 // resulting state has resolved, so a refused change leaves every file and
@@ -64,12 +65,14 @@ async function changeSlots({ defs, manifests, runner }, mutate, commit = () => {
       : Object.keys(params).filter((key) => !isDeepStrictEqual(params[key], previous[key]));
     outcome = { resolved, changedKeys };
   });
-  if (outcome === null || outcome.changedKeys.length === 0) return null;
-  return fanOut({ manifests, resolved: outcome.resolved, changedKeys: outcome.changedKeys, runner });
+  if (outcome === null || outcome.changedKeys.length === 0) return { changedKeys: [], result: null };
+  return { changedKeys: outcome.changedKeys, result: await fanOut({ manifests, resolved: outcome.resolved, changedKeys: outcome.changedKeys, runner }) };
 }
 
-// Returns a fan-out result, or null when nothing reached the bus.
-export async function runContext(sub, rest, { defs, manifests, print, eprint, runner }) {
+// A verb that changes the slots returns changeSlots' { changedKeys, result } for cli.js to
+// report; every other verb emits its own value (one JSON object, or the text) and returns
+// null.
+export async function runContext(sub, rest, { defs, manifests, emit, eprint, json, runner }) {
   switch (sub) {
     case 'list': {
       const { active, all, inspected } = await withLock(lockPath(), async () => {
@@ -81,24 +84,33 @@ export async function runContext(sub, rest, { defs, manifests, print, eprint, ru
             Object.fromEntries(listed[kind].map((name) => [name, inspectContext(kind, name)]))])),
         };
       });
+      const contexts = [];
       for (const kind of VERB_KINDS) {
         const current = activeName(active, kind);
         for (const name of all[kind]) {
           const entry = inspected[kind][name];
           if (entry === null) continue; // removed between the listing and the read
-          if (entry.error !== null) {
-            print(`! ${kind} ${name}  ${entry.error} — run 'prism doctor'\n`);
-            continue;
-          }
-          const marker = name === current ? '*' : ' ';
-          const source = kind === 'wallpaper' ? `  ${entry.context.source}` : '';
-          const pinned = kind === 'wallpaper' && name === current && active.wallpaper.pinned === true ? ' (pinned)' : '';
-          print(`${marker} ${kind} ${name}${source}${pinned}\n`);
+          const isActive = name === current;
+          const pinned = kind === 'wallpaper' && isActive && active.wallpaper.pinned === true;
+          contexts.push({
+            kind, name, active: isActive, untuned: false,
+            source: entry.error === null && kind === 'wallpaper' ? entry.context.source : null,
+            pinned, error: entry.error,
+          });
         }
       }
       if (active.wallpaper && !all.wallpaper.includes(active.wallpaper.id)) {
-        print(`* wallpaper ${active.wallpaper.id}  ${active.wallpaper.path} (untuned)\n`);
+        contexts.push({
+          kind: 'wallpaper', name: active.wallpaper.id, active: true, untuned: true,
+          source: active.wallpaper.path, pinned: false, error: null,
+        });
       }
+      emit({ active: activeJson(active), contexts }, contexts.map((entry) => {
+        if (entry.error !== null) return `! ${entry.kind} ${entry.name}  ${entry.error} — run 'prism doctor'\n`;
+        const source = entry.kind === 'wallpaper' ? `  ${entry.source}` : '';
+        const note = entry.untuned ? ' (untuned)' : entry.pinned ? ' (pinned)' : '';
+        return `${entry.active ? '*' : ' '} ${entry.kind} ${entry.name}${source}${note}\n`;
+      }).join(''));
       return null;
     }
 
@@ -109,13 +121,14 @@ export async function runContext(sub, rest, { defs, manifests, print, eprint, ru
       const entry = await withLock(lockPath(), async () => inspectContext(kind, name));
       if (entry === null) throw new Error(`${kind} ${name}: no such context`);
       if (entry.error !== null) {
-        print(entry.text);
-        eprint(`prism: ${kind} ${name}: ${entry.error} — run 'prism doctor'\n`);
+        const detail = `${kind} ${name}: ${entry.error} — run 'prism doctor'`;
+        emit({ kind, name, text: entry.text, warnings: [{ kind: 'prism', detail }] }, entry.text);
+        if (!json) eprint(`prism: ${detail}\n`);
         return null;
       }
       const { context } = entry;
       const doc = kind === 'wallpaper' ? { _source: context.source, ...context.values } : context.values;
-      print(stringify(doc));
+      emit({ kind, name, source: context.source, values: context.values }, stringify(doc));
       return null;
     }
 
@@ -129,6 +142,7 @@ export async function runContext(sub, rest, { defs, manifests, print, eprint, ru
         const { params } = loadStore(defs);
         writeContext(kind, name, { source: null, values: params });
       });
+      emit({ kind, name }, '');
       return null;
     }
 
@@ -147,7 +161,7 @@ export async function runContext(sub, rest, { defs, manifests, print, eprint, ru
       const [kind] = rest;
       assertKind(kind);
       if (kind !== 'wallpaper') throw new Error(`pin applies to automatic kinds (wallpaper), not ${kind}`);
-      await withLock(lockPath(), async () => {
+      const id = await withLock(lockPath(), async () => {
         const active = readActive();
         if (active.wallpaper === undefined) throw new Error('no active wallpaper');
         if (sub === 'pin') {
@@ -159,7 +173,9 @@ export async function runContext(sub, rest, { defs, manifests, print, eprint, ru
           if (active.wallpaper.pinned !== true) throw new Error('wallpaper is not pinned');
           writeActive(unpinned(active));
         }
+        return active.wallpaper.id;
       });
+      emit({ kind, name: id, pinned: sub === 'pin' }, '');
       return null;
     }
 
@@ -197,6 +213,7 @@ export async function runContext(sub, rest, { defs, manifests, print, eprint, ru
         renameContext(kind, from, to);
         if (active.profile === from) writeActive({ ...active, profile: to });
       });
+      emit({ kind, from, to }, '');
       return null;
     }
 
