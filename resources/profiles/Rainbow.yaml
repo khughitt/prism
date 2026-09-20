@@ -59,7 +59,7 @@ glass.bypass.aurora: false
 glass.ring.focus: true
 glass.ring.colorSource: familiar
 glass.ring.color: "#ccccff"
-glass.ring.driftHz: 15
+glass.ring.sweepMs: 1500
 terminal.background.opacity.active: 0
 terminal.background.opacity.inactive: 0
 terminal.apps:

@@ -3016,6 +3016,10 @@ git commit -m "docs: describe the scratch layer, commits, and the panel's edits 
   digits after the separate keyboard task `prism-84d308` lands. This checkout
   has no keyboard handler and the spec excludes that task; cost: keyboard
   integration remains unverified here.
+- Integration with the ring sweep migration includes the runtime scratch layer
+  in the locked migration. Its byte-for-byte backup is `state/scratch.yaml`
+  under the migration directory, while config files keep their existing paths.
+  Cost: restoring scratch has a separate state-dir destination.
 - Desktop acceptance in Task 13 remains pending. The final status change
   and task closeout belong to Task 13's merge boundary, after observed
   gestures; they are not claimed by this documentation commit.

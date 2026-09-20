@@ -20,6 +20,33 @@ test('shipped defs load and default the opacity pair to a fully transparent term
   assert.equal(defs.get('compositor.gaps').type, 'int');
 });
 
+test('the ring sweep replaces the ring drift rate', () => {
+  const defs = loadDefs(defsDir());
+  const sweep = defs.get('glass.ring.sweepMs');
+  assert.deepEqual([sweep.type, sweep.range, sweep.default, sweep.neutral], ['int', [0, 10000], 1500, 1500]);
+  assert.equal(sweep.replaces, 'glass.ring.driftHz');
+  assert.deepEqual([sweep.ui.group, sweep.ui.order, sweep.ui.unit], ['Ring', 530, 'ms']);
+  assert.equal(defs.has('glass.ring.driftHz'), false);
+});
+
+test('replaces must name a key', () => {
+  const dir = dirWith('- {key: a.b, type: int, range: [0, 1], default: 0, neutral: 0, replaces: 7, ui: {group: g, control: slider, step: 1, label: B, order: 1}, description: d}\n');
+  assert.throws(() => loadDefs(dir), /replaces must name a key/);
+  const self = dirWith('- {key: a.b, type: int, range: [0, 1], default: 0, neutral: 0, replaces: a.b, ui: {group: g, control: slider, step: 1, label: B, order: 1}, description: d}\n');
+  assert.throws(() => loadDefs(self), /cannot replace itself/);
+});
+
+test('a def cannot replace a key that is still defined, and a key is replaced at most once', () => {
+  const live = dirWith(
+    '- {key: a.old, type: int, range: [0, 1], default: 0, neutral: 0, ui: {group: g, control: slider, step: 1, label: O, order: 1}, description: d}\n'
+    + '- {key: a.new, type: int, range: [0, 1], default: 0, neutral: 0, replaces: a.old, ui: {group: g, control: slider, step: 1, label: N, order: 2}, description: d}\n');
+  assert.throws(() => loadDefs(live), /a\.new replaces a\.old, which is still defined/);
+  const twice = dirWith(
+    '- {key: a.one, type: int, range: [0, 1], default: 0, neutral: 0, replaces: a.old, ui: {group: g, control: slider, step: 1, label: O, order: 1}, description: d}\n'
+    + '- {key: a.two, type: int, range: [0, 1], default: 0, neutral: 0, replaces: a.old, ui: {group: g, control: slider, step: 1, label: N, order: 2}, description: d}\n');
+  assert.throws(() => loadDefs(twice), /a\.old is replaced by both a\.one and a\.two/);
+});
+
 test('glass slider ranges and curves follow the sweep evidence', () => {
   // niri-material docs/materials/2026-09-06-glass-parameter-sweep-evidence.md, Part 2.
   const defs = loadDefs(defsDir());

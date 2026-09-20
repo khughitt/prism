@@ -8,6 +8,7 @@ import { renderNiriFragment, DRY } from '../integrations/niri/render.js';
 import { readNoctaliaAccent } from '../integrations/niri/palette.js';
 import { loadDefs } from '../src/defs.js';
 import { defsDir } from '../src/paths.js';
+import { resolveParams } from '../src/resolve.js';
 
 const resolved = { params: {
   'compositor.gaps': 54,
@@ -66,7 +67,7 @@ const resolved = { params: {
   'glass.ring.focus': true,
   'glass.ring.colorSource': 'manual',
   'glass.ring.color': '#f2c14e',
-  'glass.ring.driftHz': 12,
+  'glass.ring.sweepMs': 1200,
 } };
 
 const with_ = (overrides) => ({ params: { ...resolved.params, ...overrides } });
@@ -107,7 +108,7 @@ material "terminal-glass" {
         accent "none"
         focus "ring-light"
         ring-color "#f2c14e"
-        ring-drift-hz 12
+        ring-sweep-ms 1200
     }
 }
 material "terminal-glass-inactive" {
@@ -139,7 +140,7 @@ material "terminal-glass-inactive" {
         accent "none"
         focus "ring-light"
         ring-color "#f2c14e"
-        ring-drift-hz 12
+        ring-sweep-ms 1200
     }
 }
 window-rule {
@@ -197,7 +198,7 @@ material "terminal-glass" {
         accent "none"
         focus "ring-light"
         ring-color "#f2c14e"
-        ring-drift-hz 12
+        ring-sweep-ms 1200
     }
 }
 window-rule {
@@ -520,12 +521,18 @@ test('optic bypasses silence both states while retaining their settings', () => 
 test('both materials carry the same response block', () => {
   const kdl = renderNiriFragment(resolved);
   const block = '    response "default" {\n        accent "none"\n        focus "ring-light"\n'
-    + '        ring-color "#f2c14e"\n        ring-drift-hz 12\n    }';
+    + '        ring-color "#f2c14e"\n        ring-sweep-ms 1200\n    }';
 
   assert.equal(count(kdl, block), 2, kdl);
   const [active, inactive] = kdl.match(/^material [^]*?^\}/gm);
   assert.ok(active.includes(block));
   assert.ok(inactive.includes(block));
+});
+
+test('the resolved shipped sweep default reaches both material response blocks', () => {
+  const kdl = renderNiriFragment({ params: resolveParams(loadDefs(defsDir()), {}) });
+
+  assert.equal(count(kdl, 'ring-sweep-ms 1500'), 2, kdl);
 });
 
 test('the focus light switches off without touching the rest of the response', () => {
@@ -565,10 +572,12 @@ test('the manual source ignores a palette accent', () => {
   assert.equal(count(kdl, '#bad065'), 0);
 });
 
-test('a zero drift pins the ring light', () => {
-  const kdl = renderNiriFragment(with_({ 'glass.ring.driftHz': 0 }));
+test('a zero sweep skips the lap, and the retired drift key never reaches the config', () => {
+  const kdl = renderNiriFragment(with_({ 'glass.ring.sweepMs': 0 }));
 
-  assert.equal(count(kdl, 'ring-drift-hz 0'), 2);
+  assert.equal(count(kdl, 'ring-sweep-ms 0'), 2);
+  assert.equal(count(kdl, 'ring-drift-hz'), 0);
+  assert.equal(count(renderNiriFragment(resolved), 'ring-drift-hz'), 0);
 });
 
 test('the palette reader rests on absence and fails on a broken file', (t) => {

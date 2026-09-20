@@ -9,6 +9,7 @@ export const CONTROLS = ['slider', 'toggle', 'color', 'select', 'none'];
 export const DISPLAYS = ['raw', 'percent', 'normalized'];
 export const SCALES = ['linear', 'logarithmic', 'power'];
 export const STATES = ['focused', 'unfocused'];
+const KEY_RE = /^[a-z][a-zA-Z0-9]*(\.[a-z][a-zA-Z0-9]*)+$/;
 // Controls the panel can draw twice in one focus row. A select is left out:
 // an enum shared by both states belongs in a single-parameter row instead.
 export const MATRIX_CONTROLS = ['slider', 'toggle', 'color'];
@@ -51,12 +52,29 @@ export function loadDefs(dir) {
       defs.set(def.key, def);
     }
   }
+  // A replacement is a rename across a release: the old key must be gone
+  // from the definitions, or the store could hold both with a straight face.
+  const replacedBy = new Map();
+  for (const def of defs.values()) {
+    if (def.replaces === undefined) continue;
+    if (defs.has(def.replaces)) {
+      throw new Error(`${def.key} replaces ${def.replaces}, which is still defined`);
+    }
+    if (replacedBy.has(def.replaces)) {
+      throw new Error(`${def.replaces} is replaced by both ${replacedBy.get(def.replaces)} and ${def.key}`);
+    }
+    replacedBy.set(def.replaces, def.key);
+  }
   return defs;
 }
 
 export function validateDef(def, src) {
   const fail = (msg) => { throw new Error(`invalid def ${def?.key ?? '?'} (${src}): ${msg}`); };
-  if (typeof def?.key !== 'string' || !/^[a-z][a-zA-Z0-9]*(\.[a-z][a-zA-Z0-9]*)+$/.test(def.key)) fail('bad key');
+  if (typeof def?.key !== 'string' || !KEY_RE.test(def.key)) fail('bad key');
+  if (Object.hasOwn(def, 'replaces')) {
+    if (typeof def.replaces !== 'string' || !KEY_RE.test(def.replaces)) fail('replaces must name a key');
+    if (def.replaces === def.key) fail('a def cannot replace itself');
+  }
   if (!TYPES.includes(def.type)) fail(`type must be one of ${TYPES.join('|')}`);
   if (!CONTROLS.includes(def.ui?.control)) fail(`ui.control must be one of ${CONTROLS.join('|')}`);
   if (typeof def.ui?.group !== 'string') fail('ui.group required');

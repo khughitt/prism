@@ -52,6 +52,7 @@ and Directional blur, which ride its taps, and flattens Blur. Design:
 ~/.local/state/prism/active.json             # which contexts are active (runtime state)
 ~/.local/state/prism/scratch.yaml            # every edit not yet committed (runtime state)
 ~/.local/state/prism/resolved.json           # the bus: every parameter's effective value
+~/.local/state/prism/migrations/<stamp>/     # byte-for-byte copies of the store files `prism migrate` rewrote
 ```
 
 Values resolve as defaults, then base, then the loaded profile, then the
@@ -67,6 +68,19 @@ revert` forgets them instead. `prism set --base` writes the base file directly.
 `activate`, `deactivate`, `delete`, `clear wallpaper <id>`, and
 `wallpaper <path>`, the last being what a Noctalia `wallpaper_changed` hook
 calls. Design: `docs/specs/2026-09-19-compositional-profiles-design.md`.
+
+A definition may replace a retired one (`replaces: <old key>` in `defs/`).
+The store is never rewritten behind your back: `prism doctor` reports a
+pending migration wherever a replaced key is still stored, and `prism migrate`
+rewrites base, scratch, and every profile and wallpaper context, active or not,
+after
+copying each file it touches into a timestamped directory under the state
+dir. Config files keep their config-relative paths there; scratch is backed up
+as state/scratch.yaml. It converts what has an equivalent (`glass.ring.driftHz 0` becomes
+`glass.ring.sweepMs 0`) and falls back to the new default otherwise; a file
+that already holds the new key keeps its value. Then `prism apply`. Rollback
+copies the config files back over the config dir and state/scratch.yaml back
+to the state dir's scratch.yaml.
 
 ## Starter profiles
 
