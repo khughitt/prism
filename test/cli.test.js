@@ -849,3 +849,87 @@ for (const mode of ['neutral', 'symmetric']) {
     })), before);
   });
 }
+
+test('migrate rewrites the replaced ring key everywhere, backs the files up, reports, and is idempotent', async () => {
+  fs.writeFileSync(valuesPath(), 'glass.ring.driftHz: 25\nglass.ior: 1.3\n');
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ring.driftHz': 0 } });
+  writeContext('profile', 'plain', { source: null, values: { 'glass.ior': 1.4 } });
+  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'glass.ring.driftHz': 12, 'glass.ring.sweepMs': 800 } });
+  const base = fs.readFileSync(valuesPath());
+
+  let out = '';
+  assert.equal(await cli.run(['migrate'], { print: (s) => { out += s; } }), 0);
+  const backup = out.match(/^migrate: backup (.+)$/m)[1];
+  assert.ok(backup.startsWith(path.join(process.env.PRISM_STATE_DIR, 'migrations', '')), backup);
+  assert.match(out, /^migrate: base: glass\.ring\.driftHz 25 -> glass\.ring\.sweepMs 1500$/m);
+  assert.match(out, /^migrate: profile dusk: glass\.ring\.driftHz 0 -> glass\.ring\.sweepMs 0$/m);
+  assert.match(out, /^migrate: wallpaper abc12345: glass\.ring\.driftHz 12 removed; glass\.ring\.sweepMs 800 kept$/m);
+  assert.match(out, /^migrate: done — run 'prism apply' to hand the new keys to the sinks$/m);
+  assert.doesNotMatch(out, /plain/);
+  assert.deepEqual(fs.readFileSync(path.join(backup, 'values.yaml')), base);
+  assert.deepEqual(readValues(), { 'glass.ring.sweepMs': 1500, 'glass.ior': 1.3 });
+  assert.deepEqual(readContext('wallpaper', 'abc12345').values, { 'glass.ring.sweepMs': 800 });
+
+  out = '';
+  assert.equal(await cli.run(['migrate'], { print: (s) => { out += s; } }), 0);
+  assert.equal(out, 'migrate: nothing to migrate\n');
+  assert.equal(fs.readdirSync(path.join(process.env.PRISM_STATE_DIR, 'migrations')).length, 1);
+});
+
+test('migrate takes no arguments and aborts whole on a context that does not parse', async () => {
+  const usage = await runCaptured(['migrate', 'now']);
+  assert.equal(usage.code, 1);
+  assert.match(usage.stderr, /usage: prism migrate/);
+
+  fs.writeFileSync(valuesPath(), 'glass.ring.driftHz: 25\n');
+  fs.mkdirSync(path.dirname(contextPath('profile', 'bad')), { recursive: true });
+  fs.writeFileSync(contextPath('profile', 'bad'), '- not\n- flat\n');
+  const failure = await runCaptured(['migrate'], { print: () => {} });
+  assert.equal(failure.code, 1);
+  assert.match(failure.stderr, /profile bad: context must be a flat object/);
+  assert.equal(fs.readFileSync(valuesPath(), 'utf8'), 'glass.ring.driftHz: 25\n', 'base untouched');
+  assert.equal(fs.existsSync(path.join(process.env.PRISM_STATE_DIR, 'migrations')), false, 'no backup made');
+});
+
+test('migrate reports the backup before writing, and a failure part way names what landed and how to undo', async (t) => {
+  fs.writeFileSync(valuesPath(), 'glass.ring.driftHz: 25\n');
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ring.driftHz': 0 } });
+  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'glass.ring.driftHz': 12 } });
+  const wallpaperFile = fs.readFileSync(contextPath('wallpaper', 'abc12345'));
+  // The third file's directory refuses new files: the tmp-and-rename write fails there.
+  const wallpaperDir = path.dirname(contextPath('wallpaper', 'abc12345'));
+  fs.chmodSync(wallpaperDir, 0o555);
+  t.after(() => fs.chmodSync(wallpaperDir, 0o755));
+  if (process.getuid?.() === 0) { t.skip('root ignores directory modes'); return; }
+
+  let out = '';
+  const failure = await runCaptured(['migrate'], { print: (s) => { out += s; } });
+  assert.equal(failure.code, 1);
+  const backup = out.match(/^migrate: backup (.+)$/m)[1];
+  assert.match(out, /^migrate: base: glass\.ring\.driftHz 25 -> glass\.ring\.sweepMs 1500$/m);
+  assert.match(out, /^migrate: profile dusk: glass\.ring\.driftHz 0 -> glass\.ring\.sweepMs 0$/m);
+  assert.doesNotMatch(out, /abc12345|done/);
+  assert.match(failure.stderr, /^prism: migrate: wallpaper abc12345: .*EACCES.*; the files reported above are migrated, this one and those after it are not; the originals are in /m);
+  assert.ok(failure.stderr.includes(backup) && failure.stderr.includes(`copy them back over ${process.env.PRISM_CONFIG_DIR} to undo`), failure.stderr);
+
+  assert.deepEqual(readValues(), { 'glass.ring.sweepMs': 1500 });
+  assert.deepEqual(readContext('profile', 'dusk').values, { 'glass.ring.sweepMs': 0 });
+  assert.deepEqual(fs.readFileSync(contextPath('wallpaper', 'abc12345')), wallpaperFile, 'the failed file is untouched');
+  assert.deepEqual(fs.readFileSync(path.join(backup, 'values.yaml'), 'utf8'), 'glass.ring.driftHz: 25\n');
+});
+
+test('doctor names a pending migration in base and in a context, and is quiet once it has run', async () => {
+  fs.writeFileSync(valuesPath(), 'glass.ring.driftHz: 25\n');
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ring.driftHz': 0 } });
+  let out = '';
+  assert.equal(await cli.run(['doctor'], { runner: () => {}, print: (s) => { out += s; } }), 1);
+  assert.match(out, /^doctor: pending migration: glass\.ring\.driftHz in base is replaced by glass\.ring\.sweepMs — run 'prism migrate'$/m);
+  assert.match(out, /^doctor: pending migration: glass\.ring\.driftHz in profile dusk is replaced by glass\.ring\.sweepMs — run 'prism migrate'$/m);
+  assert.doesNotMatch(out, /orphan value glass\.ring\.driftHz/);
+
+  assert.equal(await cli.run(['migrate'], { print: () => {} }), 0);
+  assert.equal(await cli.run(['apply'], { runner: () => {} }), 0);
+  out = '';
+  await cli.run(['doctor'], { runner: () => {}, print: (s) => { out += s; } });
+  assert.doesNotMatch(out, /pending migration/);
+});

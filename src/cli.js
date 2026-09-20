@@ -12,7 +12,9 @@ import { listContexts, readContext, readActive, writeContext, deleteContext, con
 import { runContext } from './context-cli.js';
 import { loadRack } from './rack.js';
 import { MODES, planReset, visibleGroups } from './reset.js';
+import { planMigration, replacements, writeBackup, writeMigrated } from './migrate.js';
 import {
+  configDir,
   defsDir,
   generatedPath,
   integrationsDir,
@@ -298,9 +300,14 @@ export async function run(argv, opts = {}) {
 
         const { params, blocked } = await withLock(lockPath(), async () => {
           const values = readValues();
+          const replaced = replacements(defs);
           const orphans = Object.keys(values).filter((key) => !defs.has(key));
           for (const key of orphans) {
-            print(`doctor: orphan value ${key}: no definition — run 'prism unset ${key}'\n`);
+            if (replaced.has(key)) {
+              print(`doctor: pending migration: ${key} in base is replaced by ${replaced.get(key).key} — run 'prism migrate'\n`);
+            } else {
+              print(`doctor: orphan value ${key}: no definition — run 'prism unset ${key}'\n`);
+            }
             problems++;
           }
 
@@ -335,7 +342,11 @@ export async function run(argv, opts = {}) {
               for (const [key, value] of Object.entries(context.values)) {
                 const def = defs.get(key);
                 if (!def) {
-                  print(`doctor: orphan value ${key} in ${kind} ${name}: no definition — edit ${contextPath(kind, name)}\n`);
+                  if (replaced.has(key)) {
+                    print(`doctor: pending migration: ${key} in ${kind} ${name} is replaced by ${replaced.get(key).key} — run 'prism migrate'\n`);
+                  } else {
+                    print(`doctor: orphan value ${key} in ${kind} ${name}: no definition — edit ${contextPath(kind, name)}\n`);
+                  }
                   contextProblems++;
                   continue;
                 }
@@ -380,6 +391,37 @@ export async function run(argv, opts = {}) {
         return problems === 0 ? 0 : 1;
       }
 
+      case 'migrate': {
+        if (rest.length !== 0) throw new Error('usage: prism migrate');
+        const { defs } = load();
+        const migrated = await withLock(lockPath(), async () => {
+          const files = planMigration(defs);
+          if (files.length === 0) return 0;
+          const backup = writeBackup(files, new Date());
+          print(`migrate: backup ${backup}\n`);
+          for (const file of files) {
+            try {
+              writeMigrated(file);
+            } catch (error) {
+              throw new Error(`migrate: ${file.where}: ${error.message}; the files reported above are migrated, `
+                + `this one and those after it are not; the originals are in ${backup} — copy them back over ${configDir()} to undo`);
+            }
+            for (const change of file.changes) {
+              print(change.kept
+                ? `migrate: ${file.where}: ${change.from} ${JSON.stringify(change.old)} removed; ${change.to} ${JSON.stringify(change.value)} kept\n`
+                : `migrate: ${file.where}: ${change.from} ${JSON.stringify(change.old)} -> ${change.to} ${JSON.stringify(change.value)}\n`);
+            }
+          }
+          return files.length;
+        });
+        if (migrated === 0) {
+          print('migrate: nothing to migrate\n');
+          return 0;
+        }
+        print("migrate: done — run 'prism apply' to hand the new keys to the sinks\n");
+        return 0;
+      }
+
       case 'context': {
         const { defs, manifests } = load();
         const outcome = await runContext(rest, { defs, manifests, print, eprint, runner: opts.runner });
@@ -387,7 +429,7 @@ export async function run(argv, opts = {}) {
       }
 
       default:
-        eprint('usage: prism set|unset|get|list|describe|apply|requirements|doctor|context|reset\n');
+        eprint('usage: prism set|unset|get|list|describe|apply|requirements|doctor|migrate|context|reset\n');
         return 2;
     }
   } catch (error) {
