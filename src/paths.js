@@ -18,6 +18,7 @@ export const sinkStatusPath = () => path.join(stateDir(), 'sink-status.json');
 export const statusLockPath = () => path.join(stateDir(), 'status.lock');
 export const lockPath = () => path.join(stateDir(), 'store.lock');
 export const activePath = () => path.join(stateDir(), 'active.json');
+// Retired standalone scratch; only the explicit layout migration reads it.
 export const scratchPath = () => path.join(stateDir(), 'scratch.yaml');
 export const contextsDir = () => path.join(configDir(), 'contexts');
 export const generatedPath = (name) => path.join(stateDir(), 'generated', name);

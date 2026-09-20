@@ -48,9 +48,9 @@ test('readValues and writeValues reject scalar and array documents', async () =>
   const { readValues, writeValues } = await import('../src/values.js');
   const file = path.join(process.env.PRISM_CONFIG_DIR, 'values.yaml');
   fs.writeFileSync(file, 'scalar\n');
-  assert.throws(() => readValues(), /object/);
+  assert.throws(() => readValues(), /mapping/);
   fs.writeFileSync(file, '- item\n');
-  assert.throws(() => readValues(), /object/);
-  assert.throws(() => writeValues('scalar'), /object/);
-  assert.throws(() => writeValues(['item']), /object/);
+  assert.throws(() => readValues(), /mapping/);
+  assert.throws(() => writeValues('scalar'), /mapping/);
+  assert.throws(() => writeValues(['item']), /mapping/);
 });

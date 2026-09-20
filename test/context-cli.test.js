@@ -20,7 +20,7 @@ process.env.PRISM_INTEGRATIONS_DIR = integ;
 
 const cli = await import('../src/cli.js');
 const { activePath, scratchPath, resolvedPath, valuesPath, defsDir } = await import('../src/paths.js');
-const { contextPath, readActive, readContext, writeActive, writeContext } = await import('../src/contexts.js');
+const { contextPath, readActive, readContext, writeActive, writeContext, writeLook, readPair, writeRuntime } = await import('../src/contexts.js');
 const { readScratch, writeScratch } = await import('../src/scratch.js');
 const { loadDefs } = await import('../src/defs.js');
 const { loadStore } = await import('../src/layers.js');
@@ -57,6 +57,7 @@ async function runCaptured(argv, opts = {}) {
 test('context list shows every context by kind, marks the active ones, and shows the untuned active wallpaper', async () => {
   writeContext('profile', 'dusk', { source: null, values: {} });
   writeContext('profile', 'dawn', { source: null, values: {} });
+  writeActive({ profile: 'dusk' });
   writeContext('wallpaper', 'abc12345', { source: '/walls/a.jpg', values: {} });
   writeActive({ profile: 'dusk', wallpaper: { id: 'ffff0000', path: '/walls/z.jpg' } });
   const { code, stdout } = await runCaptured(['context', 'list']);
@@ -83,30 +84,19 @@ test('context show prints the file contents, _source first for a wallpaper', asy
   assert.match(missing.stderr, /profile nope: no such context/);
 });
 
-test('context list degrades on a broken context: the rest still lists and the broken one points at doctor', async () => {
-  writeContext('profile', 'dawn', { source: null, values: {} });
-  writeContext('wallpaper', 'abc12345', { source: '/walls/a.jpg', values: {} });
-  fs.writeFileSync(contextPath('wallpaper', 'nosrc'), 'glass.ior: 1\n');
-  fs.writeFileSync(contextPath('profile', 'dusk'), 'glass.ior: [\n');
+test('context list and show keep diagnosing malformed inactive profile documents', async () => {
+  writeLook('dawn', { values: {}, wallpapers: {} });
+  const raw = 'glass.ior: [\n';
+  fs.writeFileSync(contextPath('profile', 'dusk'), raw);
   writeActive({ profile: 'dawn' });
-  const { code, stdout, stderr } = await runCaptured(['context', 'list']);
-  assert.equal(code, 0);
-  assert.equal(stderr, '');
-  const lines = stdout.split('\n');
-  assert.equal(lines[0], '* profile dawn');
-  assert.match(lines[1], /^! profile dusk  invalid YAML: .* — run 'prism doctor'$/);
-  assert.equal(lines[2], '  wallpaper abc12345  /walls/a.jpg');
-  assert.equal(lines[3], "! wallpaper nosrc  missing _source — run 'prism doctor'");
-  assert.deepEqual(lines.slice(4), ['']);
-});
-
-test('context show prints a broken file as-is and says why on stderr', async () => {
-  fs.mkdirSync(path.dirname(contextPath('wallpaper', 'nosrc')), { recursive: true });
-  fs.writeFileSync(contextPath('wallpaper', 'nosrc'), 'glass.ior:   1   # untidy\n');
-  const { code, stdout, stderr } = await runCaptured(['context', 'show', 'wallpaper', 'nosrc']);
-  assert.equal(code, 0);
-  assert.equal(stdout, 'glass.ior:   1   # untidy\n');
-  assert.match(stderr, /wallpaper nosrc: missing _source — run 'prism doctor'/);
+  const listed = await runCaptured(['context', 'list']);
+  assert.equal(listed.code, 0);
+  assert.match(listed.stdout, /\* profile dawn/);
+  assert.match(listed.stdout, /! profile dusk.*invalid YAML/);
+  const shown = await runCaptured(['context', 'show', 'profile', 'dusk']);
+  assert.equal(shown.code, 0);
+  assert.equal(shown.stdout, raw);
+  assert.match(shown.stderr, /invalid YAML.*prism doctor/);
 });
 
 test('context verbs reject the reserved kind, unknown kinds, bad names, and stray arguments', async () => {
@@ -197,7 +187,7 @@ test('deactivate and delete clear the slot and restore the layer below', async (
   assert.equal(await cli.run(['context', 'deactivate', 'profile'], { runner: (m, f, keys) => calls.push(keys) }), 0);
   assert.deepEqual(readActive(), { wallpaper: { id: 'abc12345', path: '/w' } });
   assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['terminal.background.opacity.inactive'], 0.5);
-  assert.deepEqual(calls, [], 'wallpaper still holds the value above the profile');
+  assert.equal(calls.length, 2, 'Default loads its own saved pair');
 
   calls = [];
   assert.equal(await cli.run(['context', 'delete', 'wallpaper', 'abc12345'], { runner: (m, f, keys) => calls.push(keys) }), 0);
@@ -253,6 +243,7 @@ test('an unchanged slot is still validated: re-activating a broken context fails
   const { wallpaperId } = await import('../src/contexts.js');
   const a = wallpaperFile('a.jpg');
   const id = wallpaperId(a);
+  writeActive({});
   writeContext('wallpaper', id, { source: a, values: { 'glass.ior': 99 } });
   writeActive({ wallpaper: { id, path: a } });
   const repeat = await runCaptured(['context', 'wallpaper', a]);
@@ -477,7 +468,7 @@ test('an invalid incoming delta is refused before anything is written', async ()
   assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
   await cli.run(['set', 'glass.ior', '1.7'], { runner: () => {} });
   const before = {
-    scratch: fs.readFileSync(scratchPath(), 'utf8'),
+    scratch: readScratch(),
     active: fs.readFileSync(activePath(), 'utf8'),
     resolved: fs.readFileSync(resolvedPath(), 'utf8'),
   };
@@ -486,7 +477,7 @@ test('an invalid incoming delta is refused before anything is written', async ()
   assert.equal(refused.code, 1);
   assert.match(refused.stderr, /wallpaper .*glass\.ior: 99 outside range/);
   assert.deepEqual(calls, []);
-  assert.equal(fs.readFileSync(scratchPath(), 'utf8'), before.scratch);
+  assert.deepEqual(readScratch(), before.scratch);
   assert.equal(fs.readFileSync(activePath(), 'utf8'), before.active);
   assert.equal(fs.readFileSync(resolvedPath(), 'utf8'), before.resolved);
   assert.equal(readContext('wallpaper', wallpaperId(a)), null, 'the leaving delta was not written either');
@@ -503,14 +494,14 @@ test('deleting the active wallpaper clears the slot and leaves scratch: the fold
   assert.deepEqual(readScratch(), { 'glass.ior': 1.7 });
 });
 
-test('profile activate and deactivate leave scratch alone', async () => {
+test('profile activate and deactivate discard scratch without a wallpaper', async () => {
   writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.3 } });
   await cli.run(['set', 'glass.ior', '1.7'], { runner: () => {} });
   assert.equal(await cli.run(['context', 'activate', 'profile', 'dusk'], { runner: () => {} }), 0);
-  assert.deepEqual(readScratch(), { 'glass.ior': 1.7 });
-  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.7, 'the edit rides on top');
+  assert.deepEqual(readScratch(), {});
+  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.3, 'the selected profile loads without pending edits');
   assert.equal(await cli.run(['context', 'deactivate', 'profile'], { runner: () => {} }), 0);
-  assert.deepEqual(readScratch(), { 'glass.ior': 1.7 });
+  assert.deepEqual(readScratch(), {});
 });
 
 test('clear wallpaper removes the on-screen delta, resolves, fans out, and refuses a stale or untuned id', async () => {
@@ -535,16 +526,145 @@ test('clear wallpaper removes the on-screen delta, resolves, fans out, and refus
   assert.match((await runCaptured(['context', 'clear', 'wallpaper', id])).stderr, new RegExp(`wallpaper ${id}: untuned`));
 });
 
-test('clear can remove a malformed on-screen wallpaper delta', async () => {
+test('clear can remove a parameter-invalid on-screen pair', async () => {
   const a = wallpaperFile('broken.jpg');
   const { wallpaperId } = await import('../src/contexts.js');
   const id = wallpaperId(a);
   writeContext('wallpaper', id, { source: a, values: {} });
   writeActive({ wallpaper: { id, path: a } });
-  fs.writeFileSync(contextPath('wallpaper', id), 'glass.ior: [\n');
+  writeContext('wallpaper', id, { source: a, values: { 'glass.ior': 99 } });
   const cleared = await runCaptured(['context', 'clear', 'wallpaper', id]);
   assert.equal(cleared.code, 0, cleared.stderr);
   assert.equal(readContext('wallpaper', id), null);
   assert.deepEqual(readActive(), { wallpaper: { id, path: a } });
   assert.equal(loadStore(defs).params['glass.ior'], 1.5);
+});
+
+test('select saves outgoing edits to its pair and returns with no pending edits', async () => {
+  writeLook('Aurora', { values: { 'glass.roughness': 0.4 }, wallpapers: {} });
+  writeLook('Dark', { values: { 'glass.roughness': 0.8 }, wallpapers: {} });
+  writeRuntime({ active: { profile: 'Aurora', wallpaper: { id: 'w1', path: '/w' } },
+    scratch: { 'glass.roughness': 0.2, 'terminal.background.opacity.inactive': 0.5 } });
+  assert.equal((await runCaptured(['context', 'activate', 'profile', 'Dark'])).code, 0);
+  assert.deepEqual(readScratch(), {});
+  assert.equal(loadStore(defs).params['glass.roughness'], 0.8);
+  assert.equal(readPair('Dark', 'w1'), null);
+  assert.equal(readPair('Aurora', 'w1').values['glass.roughness'], 0.2);
+  assert.equal(Object.keys(readPair('Aurora', 'w1').values).length, 2);
+  assert.equal((await runCaptured(['context', 'activate', 'profile', 'Aurora'])).code, 0);
+  assert.deepEqual(readScratch(), {});
+  assert.equal(loadStore(defs).params['glass.roughness'], 0.2);
+});
+
+function storeBytes() {
+  return Object.fromEntries([process.env.PRISM_CONFIG_DIR, process.env.PRISM_STATE_DIR].flatMap((root) =>
+    fs.readdirSync(root, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile()
+      && entry.name !== 'store.lock').map((entry) => {
+      const file = path.join(entry.parentPath, entry.name);
+      return [file, fs.readFileSync(file, 'utf8')];
+    })));
+}
+
+for (const destination of ['Aurora', null]) {
+  test(`explicit ${destination ?? 'Default'} selection saves every pending key, including same-look selection`, async () => {
+    writeLook(null, { values: { 'glass.roughness': 0.6 }, wallpapers: {} });
+    writeLook('Aurora', { values: { 'glass.roughness': 0.4 }, wallpapers: {} });
+    const scratch = { 'glass.roughness': 0.2, 'terminal.background.opacity.inactive': 0.5 };
+    writeRuntime({ active: { profile: 'Aurora', wallpaper: { id: 'w1', path: '/w' } }, scratch });
+    const args = destination === null ? ['deactivate', 'profile'] : ['activate', 'profile', destination];
+    const selected = await runCaptured(['context', ...args]);
+    assert.equal(selected.code, 0, selected.stderr);
+    assert.deepEqual(readPair('Aurora', 'w1').values, scratch);
+    assert.deepEqual(readScratch(), {});
+    assert.equal(loadStore(defs).params['glass.roughness'], destination === null ? 0.6 : 0.2);
+    assert.equal(readPair(null, 'w1'), null);
+  });
+}
+
+for (const broken of ['missing', 'malformed', 'invalid-pair']) {
+  for (const wallpaper of [undefined, { id: 'w1', path: '/w' }]) {
+    test(`doctor remedy preserves scratch for ${broken} named look ${wallpaper ? 'with' : 'without'} wallpaper`, async () => {
+      writeLook(null, { values: { 'glass.roughness': 0.4 }, wallpapers: {} });
+      const file = contextPath('profile', 'Broken');
+      if (broken !== 'missing') {
+        writeLook('Broken', { values: {}, wallpapers: {} });
+        if (broken === 'malformed') fs.writeFileSync(file, 'glass.roughness: [\n');
+        else writeLook('Broken', { values: wallpaper ? {} : { 'glass.roughness': 99 },
+          wallpapers: { w1: { source: '/w', values: { 'glass.roughness': 99 } } } });
+      }
+      const original = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
+      const scratch = { 'glass.roughness': 0.3 };
+      writeRuntime({ active: { profile: 'Broken', ...(wallpaper ? { wallpaper } : {}) }, scratch });
+      const diagnosis = await runCaptured(['doctor']);
+      assert.equal(diagnosis.code, 1);
+      assert.match(diagnosis.stdout, /prism context deactivate profile/);
+      const calls = [];
+      const recovered = await runCaptured(['context', 'deactivate', 'profile'], { runner: (m, f, keys) => calls.push(keys) });
+      assert.equal(recovered.code, 0, recovered.stderr);
+      assert.deepEqual(readScratch(), scratch);
+      assert.deepEqual(readActive(), wallpaper ? { wallpaper } : {});
+      assert.equal(loadStore(defs).params['glass.roughness'], 0.3);
+      assert.equal(readPair(null, 'w1'), null);
+      assert.deepEqual(calls, [['terminal.background.opacity.inactive'], ['terminal.background.opacity.inactive']],
+        'all bound keys fan out even when their incoming value is the default');
+      assert.equal(fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null, original);
+    });
+  }
+}
+
+for (const invalid of ['base', 'scratch', 'incoming-pair', 'incoming-look']) {
+  test(`recovery refuses invalid ${invalid} with zero writes`, async () => {
+    writeLook(null, { values: invalid === 'base' ? { 'glass.roughness': 99 } : {},
+      wallpapers: invalid === 'incoming-pair' ? { w1: { source: '/w', values: { 'glass.roughness': 99 } } } : {} });
+    writeLook('Destination', { values: {}, wallpapers: {} });
+    if (invalid === 'incoming-look') fs.writeFileSync(contextPath('profile', 'Destination'), '- invalid\n');
+    writeRuntime({ active: { profile: 'Missing', wallpaper: { id: 'w1', path: '/w' } },
+      scratch: { 'glass.roughness': invalid === 'scratch' ? 99 : 0.3 } });
+    const before = storeBytes();
+    const args = invalid === 'incoming-look' ? ['activate', 'profile', 'Destination'] : ['deactivate', 'profile'];
+    assert.equal((await runCaptured(['context', ...args])).code, 1);
+    assert.deepEqual(storeBytes(), before);
+  });
+}
+
+test('named selection recovers but wallpaper rotation cannot leave a broken selected look', async () => {
+  writeLook('Good', { values: { 'glass.roughness': 0.8 }, wallpapers: {} });
+  writeRuntime({ active: { profile: 'Missing', wallpaper: { id: 'w1', path: '/w' } }, scratch: { 'glass.roughness': 0.3 } });
+  const next = wallpaperFile('next.jpg');
+  const before = storeBytes();
+  assert.equal((await runCaptured(['context', 'wallpaper', next])).code, 1);
+  assert.deepEqual(storeBytes(), before);
+  assert.equal((await runCaptured(['context', 'activate', 'profile', 'Good'])).code, 0);
+  assert.deepEqual(readScratch(), { 'glass.roughness': 0.3 });
+  assert.equal(loadStore(defs).params['glass.roughness'], 0.3);
+});
+
+test('malformed incoming and outgoing pair documents are byte-preserving refusals', async () => {
+  for (const bad of ['incoming', 'outgoing']) {
+    writeLook(null, { values: {}, wallpapers: {} });
+    writeLook('Good', { values: {}, wallpapers: {} });
+    writeRuntime({ active: { wallpaper: { id: 'w1', path: '/w' } }, scratch: { 'glass.roughness': 0.3 } });
+    fs.writeFileSync(bad === 'incoming' ? contextPath('profile', 'Good') : valuesPath(), '_wallpapers:\n  w1: []\n');
+    const before = storeBytes();
+    assert.equal((await runCaptured(['context', 'activate', 'profile', 'Good'])).code, 1);
+    assert.deepEqual(storeBytes(), before);
+  }
+});
+
+test('profile selection and wallpaper rotation commute with empty scratch', async () => {
+  const { wallpaperId } = await import('../src/contexts.js');
+  const w = wallpaperFile('next.jpg');
+  const id = wallpaperId(w);
+  writeLook('Aurora', { values: { 'glass.roughness': 0.4 }, wallpapers: {} });
+  writeLook('Dark', { values: { 'glass.roughness': 0.8 }, wallpapers: { [id]: { source: w, values: { 'glass.roughness': 0.1 } } } });
+  const initial = { active: { profile: 'Aurora', wallpaper: { id: 'old', path: '/old' } }, scratch: {} };
+  writeRuntime(initial);
+  assert.equal((await runCaptured(['context', 'activate', 'profile', 'Dark'])).code, 0);
+  assert.equal((await runCaptured(['context', 'wallpaper', w])).code, 0);
+  const first = loadStore(defs).params;
+  writeRuntime(initial);
+  assert.equal((await runCaptured(['context', 'wallpaper', w])).code, 0);
+  assert.equal((await runCaptured(['context', 'activate', 'profile', 'Dark'])).code, 0);
+  assert.deepEqual(loadStore(defs).params, first);
+  assert.deepEqual(readScratch(), {});
 });

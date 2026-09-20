@@ -1,13 +1,9 @@
 import { isDeepStrictEqual } from 'node:util';
 import { withLock } from './lock.js';
 import { lockPath } from './paths.js';
-import {
-  DELTA_KINDS, LAYER_ORDER, assertName, deleteContext, readContext, writeActive, writeContext,
-} from './contexts.js';
-import { loadStore, withScratch } from './layers.js';
+import { assertName, readLook, writeLook, writeRuntime } from './contexts.js';
+import { loadLayers, loadStore } from './layers.js';
 import { resolveLayered } from './resolve.js';
-import { writeScratch } from './scratch.js';
-import { writeValues } from './values.js';
 
 const usage = () => new Error('usage: prism commit base | profile [<name>] | wallpaper <id>');
 
@@ -20,7 +16,7 @@ export async function runCommit(args, { defs }) {
 
   await withLock(lockPath(), async () => {
     const store = loadStore(defs);
-    const { active, layers, scratch } = store;
+    const { active, scratch } = store;
     const keys = Object.keys(scratch);
     const name = rest[0];
     if (name !== undefined) assertName(name);
@@ -36,55 +32,30 @@ export async function runCommit(args, { defs }) {
     }
     const saveAs = destination === 'profile' && name !== undefined && name !== active.profile;
     if (!saveAs && keys.length === 0) throw new Error('nothing to commit');
-
-    // Compute the complete next store before the first write. Scratch remains
-    // on top until the last step, so every write prefix keeps the screen.
-    const nextActive = saveAs ? { ...active, profile: name } : active;
-    const nextBase = { ...store.base };
-    let target = null;
-    if (destination === 'base') {
-      for (const key of keys) {
-        if (isDeepStrictEqual(scratch[key], defs.get(key).default)) delete nextBase[key];
-        else nextBase[key] = scratch[key];
-      }
-    } else if (destination === 'profile') {
-      const profileName = saveAs ? name : active.profile;
-      target = { kind: 'profile', name: profileName, source: null,
-        values: saveAs ? store.params : { ...readContext('profile', profileName).values, ...scratch } };
+    const selected = saveAs ? name : active.profile ?? null;
+    const look = readLook(selected) ?? { values: {}, wallpapers: {} };
+    const id = active.wallpaper?.id;
+    if (saveAs) {
+      look.values = { ...store.params };
+      if (id !== undefined) delete look.wallpapers[id];
+    } else if (destination === 'wallpaper') {
+      const old = Object.hasOwn(look.wallpapers, id) ? look.wallpapers[id] : null;
+      look.wallpapers = { ...look.wallpapers, [id]: { source: old?.source ?? active.wallpaper.path, values: { ...old?.values, ...scratch } } };
     } else {
-      const old = readContext('wallpaper', name);
-      target = { kind: 'wallpaper', name,
-        source: old === null ? active.wallpaper.path : old.source,
-        values: { ...(old === null ? {} : old.values), ...scratch } };
+      for (const key of keys) {
+        if (selected === null && isDeepStrictEqual(scratch[key], defs.get(key).default)) delete look.values[key];
+        else look.values[key] = scratch[key];
+      }
+      if (id !== undefined && Object.hasOwn(look.wallpapers, id)) {
+        for (const key of keys) delete look.wallpapers[id].values[key];
+        if (Object.keys(look.wallpapers[id].values).length === 0) delete look.wallpapers[id];
+      }
     }
-
-    const rank = destination === 'base' ? -1 : LAYER_ORDER.indexOf(destination);
-    const stripped = layers.filter((layer) => DELTA_KINDS.includes(layer.kind)
-      && LAYER_ORDER.indexOf(layer.kind) > rank
-      && keys.some((key) => Object.hasOwn(layer.values, key))).map((layer) => {
-      const values = { ...layer.values };
-      for (const key of keys) delete values[key];
-      return { ...layer, source: readContext(layer.kind, layer.name).source, values };
-    });
-    const nextLayers = layers.map((layer) =>
-      stripped.find((entry) => entry.kind === layer.kind && entry.name === layer.name) ?? layer);
-    if (target !== null) {
-      const index = nextLayers.findIndex((layer) => layer.kind === target.kind);
-      if (index >= 0) nextLayers[index] = target;
-      else nextLayers.splice(LAYER_ORDER.indexOf(target.kind), 0, target);
-    }
-    const next = resolveLayered(defs, nextBase, withScratch(nextLayers, {})).params;
+    const nextActive = saveAs ? { ...active, profile: name } : active;
+    const next = resolveLayered(defs, selected === null ? look.values : store.base, loadLayers(nextActive, look)).params;
     if (!isDeepStrictEqual(next, store.params)) throw new Error('commit would change effective values');
-
-    // Section 8: destination, save-as slot, stripped deltas, cleared scratch.
-    if (destination === 'base') writeValues(nextBase);
-    else writeContext(target.kind, target.name, target);
-    if (saveAs) writeActive(nextActive);
-    for (const layer of stripped) {
-      if (Object.keys(layer.values).length === 0) deleteContext(layer.kind, layer.name);
-      else writeContext(layer.kind, layer.name, layer);
-    }
-    writeScratch({});
+    writeLook(selected, look);
+    writeRuntime({ active: nextActive, scratch: {} });
   });
   return 0;
 }

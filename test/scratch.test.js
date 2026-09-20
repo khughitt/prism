@@ -6,7 +6,7 @@ import path from 'node:path';
 
 process.env.PRISM_STATE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-state-'));
 const { readScratch, writeScratch } = await import('../src/scratch.js');
-const { scratchPath } = await import('../src/paths.js');
+const { scratchPath, activePath } = await import('../src/paths.js');
 
 beforeEach(() => {
   fs.rmSync(process.env.PRISM_STATE_DIR, { recursive: true, force: true });
@@ -17,26 +17,24 @@ test('a missing scratch file is an empty layer', () => {
   assert.deepEqual(readScratch(), {});
 });
 
-test('scratch round-trips as flat YAML in the state directory', () => {
+test('scratch round-trips inside active.json and clearing retains active slots', async () => {
+  const { writeActive, readActive } = await import('../src/contexts.js');
+  writeActive({ profile: 'Aurora' });
   writeScratch({ 'glass.ior': 1.4, 'glass.noise': 0 });
-  assert.equal(scratchPath(), path.join(process.env.PRISM_STATE_DIR, 'scratch.yaml'));
-  assert.equal(fs.readFileSync(scratchPath(), 'utf8'), 'glass.ior: 1.4\nglass.noise: 0\n');
+  assert.deepEqual(JSON.parse(fs.readFileSync(activePath(), 'utf8'))._scratch, { 'glass.ior': 1.4, 'glass.noise': 0 });
   assert.deepEqual(readScratch(), { 'glass.ior': 1.4, 'glass.noise': 0 });
-});
-
-test('writing an empty scratch removes the file, so a clean store leaves nothing behind', () => {
-  writeScratch({ 'glass.ior': 1.4 });
   writeScratch({});
-  assert.equal(fs.existsSync(scratchPath()), false);
   assert.deepEqual(readScratch(), {});
+  assert.deepEqual(readActive(), { profile: 'Aurora' });
+  assert.equal(fs.existsSync(scratchPath()), false);
+  assert.equal(fs.existsSync(activePath()), true);
 });
 
-test('a scratch file that is not a flat object fails loudly', () => {
-  fs.writeFileSync(scratchPath(), '- 1\n- 2\n');
-  assert.throws(() => readScratch(), /scratch must be a flat object/);
-});
-
-test('malformed scratch YAML names scratch.yaml in one line', () => {
-  fs.writeFileSync(scratchPath(), 'glass.ior: [\n');
-  assert.throws(() => readScratch(), /^Error: scratch\.yaml: invalid YAML: [^\n]+$/);
+test('malformed runtime scratch is refused without writing', () => {
+  for (const scratch of [[], null, 4]) {
+    const text = JSON.stringify({ _scratch: scratch });
+    fs.writeFileSync(activePath(), text);
+    assert.throws(() => readScratch(), /_scratch must be a mapping/);
+    assert.equal(fs.readFileSync(activePath(), 'utf8'), text);
+  }
 });

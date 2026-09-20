@@ -38,8 +38,9 @@ test('loadLayers: an untuned wallpaper is an empty layer, a missing profile is a
     [{ kind: 'wallpaper', name: 'abc12345', values: {} }]);
   assert.throws(() => layers.loadLayers({ profile: 'gone' }), /profile gone: active context is missing/);
 
-  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'a.x': 0.7 } });
   writeContext('profile', 'dusk', { source: null, values: { 'a.y': false } });
+  writeActive({ profile: 'dusk' });
+  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'a.x': 0.7 } });
   assert.deepEqual(layers.loadLayers({ profile: 'dusk', wallpaper: { id: 'abc12345', path: '/w' } }), [
     { kind: 'profile', name: 'dusk', values: { 'a.y': false } },
     { kind: 'wallpaper', name: 'abc12345', values: { 'a.x': 0.7 } },
@@ -51,8 +52,9 @@ test('the resolution order puts the profile under the deltas and scratch on top'
 });
 
 test('loadLayers lists the profile before the wallpaper', () => {
-  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'a.x': 0.7 } });
   writeContext('profile', 'dusk', { source: null, values: { 'a.y': false } });
+  writeActive({ profile: 'dusk' });
+  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'a.x': 0.7 } });
   assert.deepEqual(layers.loadLayers({ profile: 'dusk', wallpaper: { id: 'abc12345', path: '/w' } }), [
     { kind: 'profile', name: 'dusk', values: { 'a.y': false } },
     { kind: 'wallpaper', name: 'abc12345', values: { 'a.x': 0.7 } },
@@ -62,6 +64,7 @@ test('loadLayers lists the profile before the wallpaper', () => {
 test('loadStore: a wallpaper delta shows through under a full profile, and scratch shows over both', () => {
   writeValues({ 'a.x': 0.2 });
   writeContext('profile', 'dusk', { source: null, values: { 'a.x': 0.9, 'a.y': true } });
+  writeActive({ profile: 'dusk' });
   writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'a.x': 0.7 } });
   writeActive({ wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' });
   writeScratch({ 'a.y': false });

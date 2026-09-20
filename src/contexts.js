@@ -53,42 +53,12 @@ export function contextPath(kind, name) {
   return path.join(contextsDir(), kind, `${name}.yaml`);
 }
 
-export function readActive({ warn = (text) => process.stderr.write(text) } = {}) {
-  const active = readJson(activePath(), {});
-  if (typeof active !== 'object' || active === null || Array.isArray(active)) {
-    throw new Error('active.json must be an object');
-  }
-  for (const kind of Object.keys(active)) {
-    try {
-      assertKind(kind);
-    } catch (err) {
-      throw new Error(`${activePath()}: ${err.message}`);
-    }
-  }
-  if (active.wallpaper !== undefined) {
-    const entry = active.wallpaper;
-    if (typeof entry !== 'object' || entry === null
-        || typeof entry.id !== 'string' || typeof entry.path !== 'string') {
-      throw new Error('active wallpaper must carry id and path');
-    }
-    assertName(entry.id);
-    for (const field of Object.keys(entry)) {
-      if (!['id', 'path', 'pinned'].includes(field)) {
-        throw new Error(`active wallpaper carries unknown field ${field}`);
-      }
-    }
-  }
-  if (active.profile !== undefined) assertName(active.profile);
-  if (active.wallpaper !== undefined && Object.hasOwn(active.wallpaper, 'pinned')) {
-    active.wallpaper = { id: active.wallpaper.id, path: active.wallpaper.path };
-    writeActive(active);
-    warn('prism: dropped the retired pinned field from active.json\n');
-  }
-  return active;
+export function readActive() {
+  return readRuntime().active;
 }
 
 export function writeActive(active) {
-  writeJsonAtomic(activePath(), active);
+  writeRuntime({ active, scratch: readRuntime().scratch });
 }
 
 const isMapping = (value) => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -187,7 +157,7 @@ export function listPairs() {
   return out;
 }
 
-function validateRuntimeRecord(record) {
+export function validateRuntimeRecord(record) {
   if (!isMapping(record)) throw new Error('active.json must be an object');
   for (const field of Object.keys(record)) {
     if (!['profile', 'wallpaper', '_scratch'].includes(field)) throw new Error(`unknown active field ${field}`);
@@ -229,81 +199,58 @@ export function writeRuntime(state) {
   writeJsonAtomic(activePath(), record);
 }
 
-// A context file that does not parse. `reason` is the message without the
-// "<kind> <name>: " prefix, for verbs that print it beside the name.
-class ContextError extends Error {
-  constructor(kind, name, reason) {
-    super(`${kind} ${name}: ${reason}`);
-    this.reason = reason;
-  }
-}
-
-function parseContext(kind, name, text) {
-  let doc;
-  try {
-    doc = parse(text) ?? {};
-  } catch (err) {
-    throw new ContextError(kind, name, `invalid YAML: ${err.message.split('\n')[0]}`);
-  }
-  if (typeof doc !== 'object' || doc === null || Array.isArray(doc)) {
-    throw new ContextError(kind, name, 'context must be a flat object');
-  }
-  const { _source: source, ...values } = doc;
-  if (kind !== 'wallpaper' && source !== undefined) {
-    throw new ContextError(kind, name, '_source is only allowed in wallpaper contexts');
-  }
-  if (kind === 'wallpaper' && typeof source !== 'string') {
-    throw new ContextError(kind, name, 'missing _source');
-  }
-  return { source: source ?? null, values };
-}
-
-// The raw file, or null when it is missing. Never parses.
+// Raw profile documents are retained for diagnostics and whole-file lifecycle operations.
 export function readContextText(kind, name) {
-  try {
-    return fs.readFileSync(contextPath(kind, name), 'utf8');
-  } catch (err) {
-    if (err.code === 'ENOENT') return null;
-    throw err;
+  assertKind(kind);
+  assertName(name);
+  if (kind === 'wallpaper') {
+    const pair = readPair(readActive().profile ?? null, name);
+    return pair === null ? null : stringify({ _source: pair.source, ...pair.values });
   }
+  try { return fs.readFileSync(contextPath(kind, name), 'utf8'); }
+  catch (err) { if (err.code === 'ENOENT') return null; throw err; }
 }
 
-// null when the file is missing; a malformed file is an error.
 export function readContext(kind, name) {
-  const text = readContextText(kind, name);
-  return text === null ? null : parseContext(kind, name, text);
+  assertKind(kind);
+  if (kind === 'wallpaper') return readPair(readActive().profile ?? null, name);
+  const look = readLook(name);
+  return look === null ? null : { source: null, values: look.values };
 }
 
-// For discovery verbs, which degrade where diagnosis verbs fail: a file that
-// does not parse comes back with its raw text and the reason instead of a
-// throw, so one broken context cannot hide the others. null when missing.
 export function inspectContext(kind, name) {
   const text = readContextText(kind, name);
   if (text === null) return null;
-  try {
-    return { context: parseContext(kind, name, text), text, error: null };
-  } catch (err) {
-    if (!(err instanceof ContextError)) throw err;
-    return { context: null, text, error: err.reason };
-  }
+  try { return { context: readContext(kind, name), text, error: null }; }
+  catch (err) { return { context: null, text, error: err.message }; }
 }
 
 export function writeContext(kind, name, { source, values }) {
-  const file = contextPath(kind, name);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  const doc = kind === 'wallpaper' ? { _source: source, ...values } : values;
-  const tmp = `${file}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, stringify(doc));
-  fs.renameSync(tmp, file);
+  assertKind(kind);
+  if (kind === 'profile') {
+    const look = readLook(name) ?? { values: {}, wallpapers: {} };
+    writeLook(name, { ...look, values });
+  } else {
+    const selected = readActive().profile ?? null;
+    const look = readLook(selected);
+    if (look === null) throw new Error(`profile ${selected}: no such look`);
+    writeLook(selected, { ...look, wallpapers: { ...look.wallpapers, [name]: { source, values } } });
+  }
 }
 
 export function deleteContext(kind, name) {
-  try {
-    fs.unlinkSync(contextPath(kind, name));
-  } catch (err) {
-    if (err.code === 'ENOENT') throw new Error(`${kind} ${name}: no such context`);
-    throw err;
+  assertKind(kind);
+  assertName(name);
+  if (kind === 'wallpaper') {
+    const selected = readActive().profile ?? null;
+    const look = readLook(selected);
+    if (!look || !Object.hasOwn(look.wallpapers, name)) throw new Error(`wallpaper ${name}: no such context`);
+    delete look.wallpapers[name];
+    writeLook(selected, look);
+    return;
   }
+  try { fs.unlinkSync(contextPath(kind, name)); }
+  catch (err) { if (err.code === 'ENOENT') throw new Error(`${kind} ${name}: no such context`); throw err; }
 }
 
 // A file move only. The caller holds the store lock and has decided what the
@@ -315,15 +262,8 @@ export function renameContext(kind, from, to) {
 }
 
 export function listContexts() {
-  const out = {};
-  for (const kind of VERB_KINDS) {
-    let files = [];
-    try {
-      files = fs.readdirSync(path.join(contextsDir(), kind));
-    } catch (err) {
-      if (err.code !== 'ENOENT') throw err;
-    }
-    out[kind] = files.filter((f) => f.endsWith('.yaml')).map((f) => f.slice(0, -5)).sort();
-  }
-  return out;
+  let files = [];
+  try { files = fs.readdirSync(path.join(contextsDir(), 'profile')); }
+  catch (err) { if (err.code !== 'ENOENT') throw err; }
+  return { profile: files.filter((f) => f.endsWith('.yaml')).map((f) => f.slice(0, -5)).sort(), wallpaper: [] };
 }

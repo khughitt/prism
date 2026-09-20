@@ -14,7 +14,7 @@ process.env.PRISM_INTEGRATIONS_DIR = integ;
 
 const cli = await import('../src/cli.js');
 const { resolvedPath, valuesPath, defsDir } = await import('../src/paths.js');
-const { contextPath, readActive, readContext, writeActive, writeContext } = await import('../src/contexts.js');
+const { contextPath, readActive, readContext, writeActive, writeContext, writeLook, readPair } = await import('../src/contexts.js');
 const { readScratch, writeScratch } = await import('../src/scratch.js');
 const { readValues } = await import('../src/values.js');
 const { loadDefs } = await import('../src/defs.js');
@@ -76,6 +76,7 @@ test('commit base is refused under a loaded profile, and a merging commit refuse
 
 test('commit profile merges scratch into the loaded profile and strips those keys from the active wallpaper delta', async () => {
   writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.3, 'glass.paneLip': 9 } });
+  writeActive({ profile: 'dusk' });
   writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.ior': 1.35, 'glass.noise': 0.2 } });
   writeActive({ profile: 'dusk', wallpaper: { id: 'w1', path: '/w.png' } });
   writeScratch({ 'glass.ior': 1.7 });
@@ -100,9 +101,10 @@ test('commit profile with none loaded is refused', async () => {
   assert.match((await runCaptured(['commit', 'profile'])).stderr, /no profile is loaded; commit profile <name> to save one/);
 });
 
-test('save-as snapshots the screen, deltas included, strips only scratch keys from the delta, and loads the new profile', async () => {
+test('save-as snapshots the screen, deltas included, preserves the outgoing pair, and loads the new profile', async () => {
   fs.writeFileSync(valuesPath(), 'glass.paneLip: 9\n');
   writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.3 } });
+  writeActive({ profile: 'dusk' });
   writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.ior': 1.35, 'glass.noise': 0.2 } });
   writeActive({ profile: 'dusk', wallpaper: { id: 'w1', path: '/w.png' } });
   writeScratch({ 'glass.ior': 1.7 });
@@ -112,7 +114,8 @@ test('save-as snapshots the screen, deltas included, strips only scratch keys fr
   assert.equal(noon['glass.ior'], 1.7, "scratch's value");
   assert.equal(noon['glass.noise'], 0.2, "the delta's value, because it is what was on screen");
   assert.equal(noon['glass.paneLip'], 9, 'base shows through the sparse profile');
-  assert.deepEqual(readContext('wallpaper', 'w1').values, { 'glass.noise': 0.2 }, 'an untouched nudge stays');
+  assert.equal(readPair('noon', 'w1'), null);
+  assert.deepEqual(readPair('dusk', 'w1').values, { 'glass.ior': 1.35, 'glass.noise': 0.2 }, 'outgoing pair stays intact');
   assert.deepEqual(readActive(), { profile: 'noon', wallpaper: { id: 'w1', path: '/w.png' } });
   assert.deepEqual(readScratch(), {});
   assert.deepEqual(readContext('profile', 'dusk').values, { 'glass.ior': 1.3 }, 'the old profile is untouched');
@@ -132,6 +135,7 @@ test('save-as needs no edit, and saving the loaded profile under its own name is
 
 test('neutral then save-as makes a neutral profile even when the wallpaper already quiets a key', async () => {
   writeContext('profile', 'dusk', { source: null, values: { 'glass.roughness': 0.5 } });
+  writeActive({ profile: 'dusk' });
   writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.roughness': 0 } });
   writeActive({ profile: 'dusk', wallpaper: { id: 'w1', path: '/w.png' } });
   assert.equal(await cli.run(['reset', 'neutral'], { runner: () => {} }), 0);
@@ -161,3 +165,24 @@ test('commit rejects a bad destination, a bad name, and stray arguments', async 
   }
   assert.match((await runCaptured(['commit'])).stderr, /usage: prism commit base \| profile \[<name>\] \| wallpaper <id>/);
 });
+
+for (const source of [null, 'Aurora']) {
+  for (const scratch of [{}, { 'glass.roughness': 0.3 }]) {
+    test(`Save As replaces conflicting active destination pair from ${source ?? 'Default'}, ${Object.keys(scratch).length} edits`, async () => {
+      writeLook(source, { values: { 'glass.roughness': 0.4 }, wallpapers: {
+        w1: { source: '/w', values: { 'glass.roughness': 0.2 } },
+      } });
+      writeLook('Destination', { values: { 'glass.roughness': 0.9 }, wallpapers: {
+        w1: { source: '/w', values: { 'glass.roughness': 0.8 } },
+        w2: { source: '/other', values: { 'glass.roughness': 0.7 } },
+      } });
+      writeActive({ ...(source === null ? {} : { profile: source }), wallpaper: { id: 'w1', path: '/w' } });
+      writeScratch(scratch);
+      const old = readPair(source, 'w1');
+      await commitKeepsScreen(['commit', 'profile', 'Destination']);
+      assert.equal(readPair('Destination', 'w1'), null);
+      assert.deepEqual(readPair('Destination', 'w2').values, { 'glass.roughness': 0.7 });
+      assert.deepEqual(readPair(source, 'w1'), old);
+    });
+  }
+}

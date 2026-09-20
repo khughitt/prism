@@ -1,5 +1,6 @@
+import { assertPairLayout } from './migrate.js';
 import { readValues } from './values.js';
-import { LAYER_ORDER, listContexts, readActive, readContext } from './contexts.js';
+import { LAYER_ORDER, listContexts, readActive, readLook } from './contexts.js';
 import { readScratch } from './scratch.js';
 import { resolveLayered } from './resolve.js';
 
@@ -23,16 +24,13 @@ export const RESOLUTION_ORDER = ['default', 'base', ...LAYER_ORDER, 'scratch'];
 
 // The active slots as layers in resolution order. A wallpaper without a file
 // is the untuned wallpaper: an empty layer. A profile without a file is broken.
-export function loadLayers(active) {
+export function loadLayers(active, look = readLook(active.profile ?? null)) {
+  if (look === null) throw new Error(`profile ${active.profile}: active context is missing`);
   const layers = [];
-  for (const kind of LAYER_ORDER) {
-    const name = activeName(active, kind);
-    if (name === null) continue;
-    const context = readContext(kind, name);
-    if (context === null && kind !== 'wallpaper') {
-      throw new Error(`${kind} ${name}: active context is missing`);
-    }
-    layers.push({ kind, name, values: context === null ? {} : context.values });
+  if (active.profile !== undefined) layers.push({ kind: 'profile', name: active.profile, values: look.values });
+  if (active.wallpaper !== undefined) {
+    const pair = Object.hasOwn(look.wallpapers, active.wallpaper.id) ? look.wallpapers[active.wallpaper.id] : null;
+    layers.push({ kind: 'wallpaper', name: active.wallpaper.id, values: pair?.values ?? {} });
   }
   return layers;
 }
@@ -43,6 +41,7 @@ export function withScratch(layers, scratch) {
 }
 
 export function loadStore(defs) {
+  assertPairLayout();
   const base = readValues();
   const active = readActive();
   // Listed in the same locked read as the active slots: a list read separately

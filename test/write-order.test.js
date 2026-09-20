@@ -137,6 +137,7 @@ const cases = [
     name: 'commit profile',
     setup: () => {
       writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.3 } });
+      writeActive({ profile: 'dusk' });
       writeActive({ profile: 'dusk', wallpaper: wallpaper('old.jpg', { 'glass.ior': 1.35, 'glass.noise': 0.2 }) });
       writeScratch({ 'glass.ior': 1.7 });
       return ['commit', 'profile'];
@@ -147,6 +148,7 @@ const cases = [
     name: 'save-as profile',
     setup: () => {
       writeContext('profile', 'dusk', { source: null, values: { 'glass.roughness': 0.5 } });
+      writeActive({ profile: 'dusk' });
       writeActive({ profile: 'dusk', wallpaper: wallpaper('old.jpg', { 'glass.roughness': 0.1 }) });
       writeScratch({ 'glass.roughness': 0.2 });
       return ['commit', 'profile', 'noon'];
@@ -170,7 +172,7 @@ const cases = [
       writeScratch({ 'glass.ior': 1.7 });
       return ['context', 'clear', 'wallpaper', old.id];
     },
-    visible: () => contextPath('wallpaper', wallpaperId(path.join(process.env.PRISM_CONFIG_DIR, 'walls', 'old.jpg'))),
+    visible: () => valuesPath(),
     completedRefusal: /wallpaper .*: untuned/,
   },
   {

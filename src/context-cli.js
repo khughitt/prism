@@ -5,13 +5,13 @@ import { withLock } from './lock.js';
 import { lockPath } from './paths.js';
 import {
   VERB_KINDS, assertKind, assertName, contextPath, deleteContext, inspectContext, listContexts, readActive, readContext,
-  readContextText, renameContext, wallpaperId, canonicalWallpaperPath, writeActive, writeContext,
+  readContextText, renameContext, wallpaperId, canonicalWallpaperPath, writeActive, readLook, readRuntime, writeLook, writeRuntime,
 } from './contexts.js';
-import { activeName, loadLayers, loadStore, withScratch } from './layers.js';
-import { readScratch, writeScratch } from './scratch.js';
-import { readValues } from './values.js';
+import { activeName, loadLayers, withScratch } from './layers.js';
+import { readScratch } from './scratch.js';
 import { checkLayer, resolveLayered, writeResolved } from './resolve.js';
 import { fanOut } from './fanout.js';
+import { assertPairLayout, pairLayoutSources } from './migrate.js';
 
 function usage(text) {
   return new Error(`usage: prism context ${text}`);
@@ -31,67 +31,54 @@ function kindAndName(rest, verb) {
   return { kind, name };
 }
 
-// The wallpaper a slot change leaves, or null when none does. A repeat of the
-// same wallpaper leaves nothing, so it folds nothing.
-function wallpaperLeaving(active, next) {
-  if (active.wallpaper === undefined) return null;
-  if (next.wallpaper !== undefined && next.wallpaper.id === active.wallpaper.id) return null;
-  return active.wallpaper;
-}
-
-// The fold: edits made while a wallpaper showed belong to it when it leaves
-// (design of 2026-09-19, Section 2). The merged delta to write, or null when
-// there is nothing to fold -- no wallpaper leaving, or nothing edited.
-function planFold(leaving, scratch) {
-  if (leaving === null || Object.keys(scratch).length === 0) return null;
-  const delta = readContext('wallpaper', leaving.id);
-  return {
-    name: leaving.id,
-    source: delta === null ? leaving.path : delta.source,
-    values: { ...(delta === null ? {} : delta.values), ...scratch },
-  };
-}
-
-// Apply a slot change. `mutate(active)` computes the next slots and may throw,
-// but writes nothing itself; `commit()` performs a context-file change (a
-// delete) and reports whether it changed anything effective, and `without`
-// names the context that delete removes so the next state is computed and
-// validated as if the file were already gone. The whole next state is
-// validated before the first write. Deletion clears the active slot before
-// removing its file, so a retry can finish after either write. The previous
-// state is allowed not to resolve,
-// in which case every bound key fans out (the apply contract): that is how a
-// broken active context is recovered from.
+// Resolve and validate both sides before mutation. Only a named outgoing look
+// can fail during explicit selection/recovery; base and scratch never share that catch.
 async function changeSlots({ defs, manifests, runner }, mutate,
-  { commit = () => false, fold = false, without = null, slotBeforeCommit = false } = {}) {
+  { commit = () => false, intent = 'wallpaper', without = null, slotBeforeCommit = false } = {}) {
   let outcome = null;
   await withLock(lockPath(), async () => {
-    const active = readActive();
-    let previous = null;
-    try {
-      previous = loadStore(defs).params;
-    } catch {
-      previous = null;
-    }
-    const base = readValues();
-    const scratch = readScratch();
+    assertPairLayout();
+    const { active, scratch } = readRuntime();
+    const baseLook = readLook(null);
+    const base = baseLook.values;
+    checkLayer(defs, base, 'base');
+    checkLayer(defs, scratch, 'scratch');
     const next = mutate(active);
-    const folded = fold ? planFold(wallpaperLeaving(active, next), scratch) : null;
-    if (folded !== null) checkLayer(defs, folded.values, `wallpaper ${folded.name}`);
-    const scratchAfter = folded === null ? scratch : {};
-    const readNext = { ...next };
-    if (without !== null && activeName(next, without.kind) === without.name) delete readNext[without.kind];
-    const nextLayers = loadLayers(readNext);
-    const { params } = resolveLayered(defs, base, withScratch(nextLayers, scratchAfter));
-    if (folded !== null) {
-      writeContext('wallpaper', folded.name, { source: folded.source, values: folded.values });
-      writeScratch({});
+    const selectLook = intent === 'select-profile';
+    let outgoingLook;
+    let previous = null;
+    let recoverOutgoing = false;
+    try {
+      outgoingLook = active.profile === undefined ? baseLook : readLook(active.profile);
+      previous = resolveLayered(defs, base, withScratch(loadLayers(active, outgoingLook), scratch)).params;
+    } catch (error) {
+      if (active.profile !== undefined && (selectLook || (intent === 'delete-profile' && next.profile !== active.profile))) recoverOutgoing = true;
+      else if (without?.kind !== 'wallpaper') throw error;
     }
-    const slotsChanged = !isDeepStrictEqual(next, active);
-    if (slotBeforeCommit && slotsChanged) writeActive(next);
-    const touched = commit() === true;
-    if (!slotBeforeCommit && slotsChanged) writeActive(next);
-    if (folded === null && !touched && !slotsChanged) return;
+    const wallpaperChanged = active.wallpaper?.id !== next.wallpaper?.id;
+    const saveOutgoing = !recoverOutgoing && active.wallpaper !== undefined
+      && (selectLook || (intent === 'wallpaper' && wallpaperChanged));
+    const scratchAfter = recoverOutgoing ? scratch : (selectLook || saveOutgoing ? {} : scratch);
+    let folded = null;
+    if (saveOutgoing && Object.keys(scratch).length) {
+      const id = active.wallpaper.id;
+      const old = Object.hasOwn(outgoingLook.wallpapers, id) ? outgoingLook.wallpapers[id] : null;
+      folded = { ...outgoingLook, wallpapers: { ...outgoingLook.wallpapers,
+        [id]: { source: old?.source ?? active.wallpaper.path, values: { ...old?.values, ...scratch } } } };
+      resolveLayered(defs, base, withScratch(loadLayers(active, folded), scratch));
+    }
+    let incomingLook = folded && active.profile === next.profile ? folded : readLook(next.profile ?? null);
+    if (without?.kind === 'wallpaper' && incomingLook !== null) {
+      incomingLook = { ...incomingLook, wallpapers: { ...incomingLook.wallpapers } };
+      delete incomingLook.wallpapers[without.name];
+    }
+    const { params } = resolveLayered(defs, base, withScratch(loadLayers(next, incomingLook), scratchAfter));
+    if (folded !== null) writeLook(active.profile ?? null, folded);
+    const runtimeChanged = !isDeepStrictEqual({ active: next, scratch: scratchAfter }, { active, scratch });
+    if (slotBeforeCommit && runtimeChanged) writeRuntime({ active: next, scratch: scratchAfter });
+    const touched = commit(active) === true;
+    if (!slotBeforeCommit && runtimeChanged) writeRuntime({ active: next, scratch: scratchAfter });
+    if (folded === null && !touched && !runtimeChanged) return;
     const resolved = writeResolved(params);
     const changedKeys = previous === null
       ? [...new Set(manifests.flatMap((manifest) => manifest.binds.map((bind) => bind.param)))]
@@ -114,7 +101,9 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
     case 'list': {
       if (rest.length !== 0) throw usage('list');
       const { active, all, inspected, scratch } = await withLock(lockPath(), async () => {
+        for (const source of pairLayoutSources()) print(`! old pair layout: ${source} — run 'prism migrate pairs'\n`);
         const listed = listContexts();
+        listed.wallpaper = Object.keys(readLook(readActive().profile ?? null)?.wallpapers ?? {}).sort();
         return {
           active: readActive(),
           all: listed,
@@ -149,7 +138,10 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
     // printed as it is, with the reason on stderr.
     case 'show': {
       const { kind, name } = kindAndName(rest, 'show');
-      const entry = await withLock(lockPath(), async () => inspectContext(kind, name));
+      const entry = await withLock(lockPath(), async () => {
+        for (const source of pairLayoutSources()) eprint(`prism: old pair layout: ${source} — run 'prism migrate pairs'\n`);
+        return inspectContext(kind, name);
+      });
       if (entry === null) throw new Error(`${kind} ${name}: no such context`);
       if (entry.error !== null) {
         print(entry.text);
@@ -169,7 +161,7 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
         return kind === 'wallpaper'
           ? { ...active, wallpaper: { id: name, path: context.source } }
           : { ...active, profile: name };
-      }, { fold: kind === 'wallpaper' });
+      }, { intent: kind === 'profile' ? 'select-profile' : 'wallpaper' });
     }
 
     case 'deactivate': {
@@ -181,7 +173,7 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
         const next = { ...active };
         delete next[kind];
         return next;
-      }, { fold: kind === 'wallpaper' });
+      }, { intent: kind === 'profile' ? 'select-profile' : 'wallpaper' });
     }
 
     case 'delete': {
@@ -194,7 +186,17 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
         if (wasActive) delete next[kind];
         return next;
       }, {
-        commit: () => { deleteContext(kind, name); return wasActive; },
+        commit: (active) => {
+          if (kind === 'profile') deleteContext(kind, name);
+          else {
+            const look = readLook(active.profile ?? null);
+            delete look.wallpapers[name];
+            writeLook(active.profile ?? null, look);
+          }
+          return wasActive;
+        },
+        intent: kind === 'profile' ? 'delete-profile' : 'delete-wallpaper',
+        without: kind === 'wallpaper' ? { kind, name } : null,
         slotBeforeCommit: true,
       });
     }
@@ -228,6 +230,7 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
       assertName(to);
       if (kind !== 'profile') throw new Error('rename is for profiles; a wallpaper is named by its path');
       await withLock(lockPath(), async () => {
+        assertPairLayout();
         const active = readActive();
         if (active.profile !== from && active.profile !== to) {
           renameContext(kind, from, to);
@@ -260,7 +263,7 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
       const wallpaper = canonicalWallpaperPath(rest[0]);
       const id = wallpaperId(wallpaper);
       return changeSlots({ defs, manifests, runner }, (active) => (
-        active.wallpaper?.id === id ? active : { ...active, wallpaper: { id, path: wallpaper } }), { fold: true });
+        active.wallpaper?.id === id ? active : { ...active, wallpaper: { id, path: wallpaper } }), { intent: 'wallpaper' });
     }
 
     default:

@@ -8,20 +8,19 @@ import { fanOut, boundParams, unmetRequirement } from './fanout.js';
 import { readJson } from './store.js';
 import { withLock } from './lock.js';
 import { loadStore, loadLayers, withScratch, activeJson, RESOLUTION_ORDER } from './layers.js';
-import { listContexts, readContext, readActive, contextPath, VERB_KINDS } from './contexts.js';
+import { listContexts, readLook, readActive, lookPath } from './contexts.js';
 import { readScratch, writeScratch } from './scratch.js';
 import { runContext } from './context-cli.js';
 import { runCommit } from './commit.js';
 import { loadRack } from './rack.js';
 import { MODES, planReset, visibleGroups } from './reset.js';
-import { planMigration, replacements, writeBackup, writeMigrated } from './migrate.js';
+import { planMigration, replacements, writeBackup, writeMigrated, runPairMigration, assertPairLayout, pairLayoutSources } from './migrate.js';
 import {
   configDir,
   defsDir,
   generatedPath,
   integrationsDir,
   lockPath,
-  scratchPath,
   sinkStatusPath,
 } from './paths.js';
 
@@ -95,6 +94,7 @@ export async function run(argv, opts = {}) {
         let resolved;
 
         await withLock(lockPath(), async () => {
+          assertPairLayout();
           const active = readActive();
           const layers = loadLayers(active);
           const base = readValues();
@@ -284,88 +284,56 @@ export async function run(argv, opts = {}) {
         }
 
         const { params, blocked } = await withLock(lockPath(), async () => {
-          const values = readValues();
-          const replaced = replacements(defs);
-          const orphans = Object.keys(values).filter((key) => !defs.has(key));
-          for (const key of orphans) {
-            if (replaced.has(key)) {
-              print(`doctor: pending migration: ${key} in base is replaced by ${replaced.get(key).key} — run 'prism migrate'\n`);
-            } else {
-              print(`doctor: orphan value ${key}: no definition — run 'prism unset --base ${key}'\n`);
-            }
-            problems++;
-          }
-
           let contextProblems = 0;
-          for (const [key, value] of Object.entries(values)) {
-            const def = defs.get(key);
-            if (!def) continue; // orphan, already reported above
-            try {
-              validateValue(def, value);
-            } catch (error) {
-              print(`doctor: base: ${error.message}\n`);
-              contextProblems++;
-            }
+          const replaced = replacements(defs);
+          for (const source of pairLayoutSources()) {
+            print(`doctor: old pair layout: ${source} — run 'prism migrate pairs'\n`);
+            contextProblems++;
           }
-
-          const active = readActive();
-          if (active.profile !== undefined && readContext('profile', active.profile) === null) {
+          let active = {};
+          let scratch = {};
+          try { active = readActive(); scratch = readScratch(); }
+          catch (error) { print(`doctor: ${error.message}\n`); contextProblems++; }
+          const diagnose = (values, where, remedy) => {
+            let invalid = false;
+            for (const [key, value] of Object.entries(values)) {
+              const def = defs.get(key);
+              let message;
+              if (!def) {
+                message = replaced.has(key)
+                  ? `pending migration: ${key} in ${where} is replaced by ${replaced.get(key).key} — run 'prism migrate'`
+                  : `orphan value ${key}${where === 'base' ? '' : ` in ${where}`}: no definition — ${remedy.replace('<key>', key)}`;
+              } else {
+                try { validateValue(def, value); }
+                catch (error) { message = `${where}: ${error.message}`; }
+              }
+              if (message) { print(`doctor: ${message}\n`); contextProblems++; invalid = true; }
+            }
+            return invalid;
+          };
+          const names = listContexts().profile;
+          if (active.profile !== undefined && !names.includes(active.profile)) {
             print(`doctor: profile ${active.profile}: active context is missing — run 'prism context deactivate profile'\n`);
             contextProblems++;
           }
-          const all = listContexts();
-          for (const kind of VERB_KINDS) {
-            for (const name of all[kind]) {
-              let context;
-              try {
-                context = readContext(kind, name);
-              } catch (error) {
-                print(`doctor: ${error.message}\n`);
-                contextProblems++;
-                continue;
-              }
-              for (const [key, value] of Object.entries(context.values)) {
-                const def = defs.get(key);
-                if (!def) {
-                  if (replaced.has(key)) {
-                    print(`doctor: pending migration: ${key} in ${kind} ${name} is replaced by ${replaced.get(key).key} — run 'prism migrate'\n`);
-                  } else {
-                    print(`doctor: orphan value ${key} in ${kind} ${name}: no definition — edit ${contextPath(kind, name)}\n`);
-                  }
-                  contextProblems++;
-                  continue;
-                }
-                try {
-                  validateValue(def, value);   // inactive contexts are never resolved, so check them here
-                } catch (error) {
-                  print(`doctor: ${kind} ${name}: ${error.message}\n`);
-                  contextProblems++;
-                }
-              }
-            }
-          }
-          const scratch = readScratch();
-          for (const [key, value] of Object.entries(scratch)) {
-            const def = defs.get(key);
-            if (!def) {
-              if (replaced.has(key)) {
-                print(`doctor: pending migration: ${key} in scratch is replaced by ${replaced.get(key).key} — run 'prism migrate'\n`);
-              } else {
-                print(`doctor: orphan value ${key} in scratch: no definition — run 'prism unset ${key}'\n`);
-              }
-              contextProblems++;
-              continue;
-            }
+          for (const name of [null, ...names]) {
+            const where = name === null ? 'base' : `profile ${name}`;
+            let broken = false;
             try {
-              validateValue(def, value);
-            } catch (error) {
-              print(`doctor: scratch: ${error.message}\n`);
-              contextProblems++;
+              const look = readLook(name);
+              broken = diagnose(look.values, where, name === null ? "run 'prism unset --base <key>'" : `edit ${lookPath(name)}`);
+              for (const [id, pair] of Object.entries(look.wallpapers)) {
+                const invalid = diagnose(pair.values, `${where} / wallpaper ${id}`, `edit ${lookPath(name)}`);
+                if (id === active.wallpaper?.id) broken ||= invalid;
+              }
+            } catch (error) { print(`doctor: ${where}: ${error.message}\n`); contextProblems++; broken = true; }
+            if (broken && name !== null && name === active.profile) {
+              print(`doctor: profile ${name}: active look is broken — run 'prism context deactivate profile'\n`);
             }
           }
-          if (orphans.length > 0 || contextProblems > 0) return { params: null, blocked: true };
-          const { params } = loadStore(defs);
-          return { params, blocked: false };
+          diagnose(scratch, 'scratch', "run 'prism unset <key>'");
+          if (contextProblems > 0) return { params: null, blocked: true };
+          return { params: loadStore(defs).params, blocked: false };
         });
 
         if (blocked) return 1;
@@ -401,16 +369,21 @@ export async function run(argv, opts = {}) {
       }
 
       case 'migrate': {
-        if (rest.length !== 0) throw new Error('usage: prism migrate');
+        if (rest.length === 1 && rest[0] === 'pairs') {
+          const { defs } = load();
+          await withLock(lockPath(), async () => runPairMigration(defs, { print }));
+          return 0;
+        }
+        if (rest.length !== 0) throw new Error('usage: prism migrate [pairs]');
         const { defs } = load();
         const migrated = await withLock(lockPath(), async () => {
           const files = planMigration(defs);
           if (files.length === 0) return 0;
           const backup = writeBackup(files, new Date());
-          const restore = files.some((file) => file.kind === 'scratch')
-            ? `${files.some((file) => file.kind !== 'scratch')
-              ? `copy config files back over ${configDir()} and ` : 'copy '}state/scratch.yaml back to ${scratchPath()} to undo`
-            : `copy them back over ${configDir()} to undo`;
+          const restore = 'copy ' + [
+            files.some((file) => file.kind === 'look') && `config files back over ${configDir()}`,
+            files.some((file) => file.kind === 'runtime') && 'state/active.json back to the runtime document',
+          ].filter(Boolean).join(' and ') + ' to undo';
           print(`migrate: backup ${backup}\n`);
           for (const file of files) {
             try {
@@ -421,8 +394,8 @@ export async function run(argv, opts = {}) {
             }
             for (const change of file.changes) {
               print(change.kept
-                ? `migrate: ${file.where}: ${change.from} ${JSON.stringify(change.old)} removed; ${change.to} ${JSON.stringify(change.value)} kept\n`
-                : `migrate: ${file.where}: ${change.from} ${JSON.stringify(change.old)} -> ${change.to} ${JSON.stringify(change.value)}\n`);
+                ? `migrate: ${change.where ?? file.where}: ${change.from} ${JSON.stringify(change.old)} removed; ${change.to} ${JSON.stringify(change.value)} kept\n`
+                : `migrate: ${change.where ?? file.where}: ${change.from} ${JSON.stringify(change.old)} -> ${change.to} ${JSON.stringify(change.value)}\n`);
             }
           }
           return files.length;

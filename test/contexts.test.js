@@ -8,7 +8,7 @@ process.env.PRISM_CONFIG_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-cfg-
 process.env.PRISM_STATE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-state-'));
 
 const contexts = await import('../src/contexts.js');
-const { activePath, contextsDir } = await import('../src/paths.js');
+const { activePath, contextsDir, valuesPath } = await import('../src/paths.js');
 
 beforeEach(() => {
   for (const dir of [process.env.PRISM_CONFIG_DIR, process.env.PRISM_STATE_DIR]) {
@@ -49,8 +49,8 @@ test('context files round-trip; wallpaper files carry _source', () => {
   assert.equal(contexts.contextPath('profile', 'dusk'), path.join(contextsDir(), 'profile', 'dusk.yaml'));
 
   contexts.writeContext('wallpaper', 'abc12345', { source: '/walls/a.jpg', values: { 'glass.ior': 1.1 } });
-  const text = fs.readFileSync(contexts.contextPath('wallpaper', 'abc12345'), 'utf8');
-  assert.match(text, /^_source: \/walls\/a\.jpg\n/);
+  const text = fs.readFileSync(valuesPath(), 'utf8');
+  assert.match(text, /_source: \/walls\/a\.jpg/);
   assert.deepEqual(contexts.readContext('wallpaper', 'abc12345'),
     { source: '/walls/a.jpg', values: { 'glass.ior': 1.1 } });
 });
@@ -59,10 +59,10 @@ test('malformed context files fail loudly', () => {
   fs.mkdirSync(path.join(contextsDir(), 'profile'), { recursive: true });
   fs.mkdirSync(path.join(contextsDir(), 'wallpaper'), { recursive: true });
   fs.writeFileSync(contexts.contextPath('profile', 'list'), '- 1\n- 2\n');
-  assert.throws(() => contexts.readContext('profile', 'list'), /profile list: context must be a flat object/);
+  assert.throws(() => contexts.readContext('profile', 'list'), /look must be a mapping/);
   fs.writeFileSync(contexts.contextPath('profile', 'src'), '_source: /x\n');
-  assert.throws(() => contexts.readContext('profile', 'src'), /profile src: _source is only allowed in wallpaper contexts/);
-  fs.writeFileSync(contexts.contextPath('wallpaper', 'nosrc'), 'glass.ior: 1\n');
+  assert.throws(() => contexts.readContext('profile', 'src'), /unknown metadata _source/);
+  fs.writeFileSync(valuesPath(), '_wallpapers:\n  nosrc:\n    glass.ior: 1\n');
   assert.throws(() => contexts.readContext('wallpaper', 'nosrc'), /wallpaper nosrc: missing _source/);
 });
 
@@ -73,18 +73,14 @@ test('inspectContext reports a parse failure instead of throwing, with the raw t
   assert.deepEqual(contexts.inspectContext('wallpaper', 'good'),
     { context: { source: '/x', values: { 'glass.ior': 1 } }, text: '_source: /x\nglass.ior: 1\n', error: null });
 
-  fs.writeFileSync(contexts.contextPath('wallpaper', 'nosrc'), 'glass.ior: 1\n');
-  assert.deepEqual(contexts.inspectContext('wallpaper', 'nosrc'),
-    { context: null, text: 'glass.ior: 1\n', error: 'missing _source' });
-
   fs.writeFileSync(contexts.contextPath('profile', 'syntax'), 'glass.ior: [\n');
   const syntax = contexts.inspectContext('profile', 'syntax');
   assert.equal(syntax.context, null);
   assert.equal(syntax.text, 'glass.ior: [\n');
-  assert.match(syntax.error, /^invalid YAML: /);
+  assert.match(syntax.error, /invalid YAML: /);
   assert.doesNotMatch(syntax.error, /\n/);
   // readContext throws the same reason, prefixed with the context it names.
-  assert.throws(() => contexts.readContext('profile', 'syntax'), /^Error: profile syntax: invalid YAML: /);
+  assert.throws(() => contexts.readContext('profile', 'syntax'), /invalid YAML: /);
 
   assert.equal(contexts.inspectContext('profile', 'absent'), null);
 });
@@ -101,7 +97,7 @@ test('listContexts lists every kind sorted, empty when nothing exists', () => {
   contexts.writeContext('profile', 'zed', { source: null, values: {} });
   contexts.writeContext('profile', 'alpha', { source: null, values: {} });
   contexts.writeContext('wallpaper', 'abc12345', { source: '/w', values: {} });
-  assert.deepEqual(contexts.listContexts(), { profile: ['alpha', 'zed'], wallpaper: ['abc12345'] });
+  assert.deepEqual(contexts.listContexts(), { profile: ['alpha', 'zed'], wallpaper: [] });
 });
 
 test('active slots round-trip and reject the reserved kind and bad shapes', () => {
@@ -112,11 +108,7 @@ test('active slots round-trip and reject the reserved kind and bad shapes', () =
   assert.deepEqual(contexts.readActive(), { wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' });
 
   fs.writeFileSync(activePath(), JSON.stringify({ state: 'dark' }));
-  assert.throws(() => contexts.readActive(), (err) => {
-    assert.match(err.message, /kind state is reserved/);
-    assert.ok(err.message.includes(activePath()), 'must name active.json');
-    return true;
-  });
+  assert.throws(() => contexts.readActive(), /unknown active field state/);
   fs.writeFileSync(activePath(), JSON.stringify({ wallpaper: 'abc12345' }));
   assert.throws(() => contexts.readActive(), /active wallpaper must carry id and path/);
   fs.writeFileSync(activePath(), JSON.stringify({ profile: 7 }));
@@ -125,17 +117,11 @@ test('active slots round-trip and reject the reserved kind and bad shapes', () =
   assert.throws(() => contexts.readActive(), /active wallpaper carries unknown field given/);
 });
 
-test('a slot carrying the retired pinned field is repaired once on read, keeping the profile and wallpaper', () => {
-  fs.writeFileSync(activePath(), JSON.stringify({ wallpaper: { id: 'abc12345', path: '/w', pinned: false }, profile: 'dusk' }));
-  let warned = '';
-  const repaired = contexts.readActive({ warn: (text) => { warned += text; } });
-  assert.deepEqual(repaired, { wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' });
-  assert.equal(warned, 'prism: dropped the retired pinned field from active.json\n');
-  assert.deepEqual(JSON.parse(fs.readFileSync(activePath(), 'utf8')),
-    { wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' }, 'the file is rewritten at once');
-  warned = '';
-  contexts.readActive({ warn: (text) => { warned += text; } });
-  assert.equal(warned, '', 'the repair is unreachable once it has run');
+test('retired pinned is refused on read without repairing the runtime document', () => {
+  const text = JSON.stringify({ wallpaper: { id: 'abc12345', path: '/w', pinned: false }, profile: 'dusk' });
+  fs.writeFileSync(activePath(), text);
+  assert.throws(() => contexts.readActive(), /unknown field pinned/);
+  assert.equal(fs.readFileSync(activePath(), 'utf8'), text);
 });
 
 test('retired pinned repair validates the active profile before writing', () => {

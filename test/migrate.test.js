@@ -64,18 +64,18 @@ test('planMigration covers base and every context, active or not, and skips clea
   writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'glass.ring.driftHz': 12, 'glass.ring.sweepMs': 800 } });
 
   const plan = planMigration(defs);
-  assert.deepEqual(plan.map((file) => file.where), ['base', 'profile dusk', 'wallpaper abc12345']);
+  assert.deepEqual(plan.map((file) => file.where), ['base', 'profile dusk']);
   assert.deepEqual(plan.map((file) => file.path),
-    [valuesPath(), contextPath('profile', 'dusk'), contextPath('wallpaper', 'abc12345')]);
-  assert.equal(plan[2].source, '/w');
-  assert.deepEqual(plan[2].values, { 'glass.ring.sweepMs': 800 });
+    [valuesPath(), contextPath('profile', 'dusk')]);
+  assert.equal(plan[0].document.wallpapers.abc12345.source, '/w');
+  assert.deepEqual(plan[0].document.wallpapers.abc12345.values, { 'glass.ring.sweepMs': 800 });
 });
 
 test('planMigration aborts on a context that does not parse', () => {
   writeValues({ 'glass.ring.driftHz': 25 });
   fs.mkdirSync(path.dirname(contextPath('profile', 'bad')), { recursive: true });
   fs.writeFileSync(contextPath('profile', 'bad'), '- not\n- flat\n');
-  assert.throws(() => planMigration(defs), /profile bad: context must be a flat object/);
+  assert.throws(() => planMigration(defs), /look must be a mapping/);
 });
 
 test('backupDir is a compact UTC timestamp under the state dir', () => {
@@ -91,7 +91,6 @@ test('writeBackup copies every planned file byte for byte at its config-relative
   const originals = {
     base: fs.readFileSync(valuesPath()),
     dusk: fs.readFileSync(contextPath('profile', 'dusk')),
-    wall: fs.readFileSync(contextPath('wallpaper', 'abc12345')),
   };
 
   const now = new Date('2026-09-19T22:41:07Z');
@@ -99,7 +98,6 @@ test('writeBackup copies every planned file byte for byte at its config-relative
   assert.equal(backup, backupDir(now));
   assert.deepEqual(fs.readFileSync(path.join(backup, 'values.yaml')), originals.base);
   assert.deepEqual(fs.readFileSync(path.join(backup, 'contexts', 'profile', 'dusk.yaml')), originals.dusk);
-  assert.deepEqual(fs.readFileSync(path.join(backup, 'contexts', 'wallpaper', 'abc12345.yaml')), originals.wall);
   assert.equal(fs.existsSync(path.join(backup, 'contexts', 'profile', 'plain.yaml')), false);
   assert.deepEqual(fs.readFileSync(valuesPath()), originals.base);
 });
@@ -114,7 +112,7 @@ test('writeBackup refuses a directory that already exists and copies nothing int
 
 test('writeBackup refuses a config-relative path that would escape its directory', () => {
   const now = new Date('2026-09-19T22:41:07Z');
-  const outside = path.join(process.env.PRISM_STATE_DIR, 'scratch.yaml');
+  const outside = path.join(process.env.PRISM_STATE_DIR, 'outside.yaml');
   fs.writeFileSync(outside, 'glass.ring.driftHz: 0\n');
   assert.throws(() => writeBackup([{ kind: 'base', path: outside }], now), /backup source outside config directory/);
   assert.deepEqual(fs.readdirSync(backupDir(now)), []);
@@ -130,7 +128,6 @@ test('writeMigrated rewrites one file through the store writers, and a migrated 
   assert.deepEqual(readValues(), { 'glass.ring.sweepMs': 1500, 'glass.ior': 1.3 });
   assert.deepEqual(readContext('profile', 'dusk').values, { 'glass.ring.driftHz': 0 }, 'one file at a time');
   writeMigrated(plan[1]);
-  writeMigrated(plan[2]);
   assert.deepEqual(readContext('profile', 'dusk').values, { 'glass.ring.sweepMs': 0 });
   assert.deepEqual(readContext('wallpaper', 'abc12345'), { source: '/w', values: { 'glass.ring.sweepMs': 800 } });
 
