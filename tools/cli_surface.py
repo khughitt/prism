@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# cli_surface 1: the conformance half of docs/specs/2026-09-20-cli-conventions-design.md.
+# cli_surface 2: the conformance half of docs/specs/2026-09-20-cli-conventions-design.md.
 """Build a CLI's parser surface and compare it with its rows in cli.toml.
 
 Vendored from ops as tools/cli_surface.py beside tools/cli.toml; never edited in a project.
@@ -17,7 +17,8 @@ table-only metadata and never compared.
 
 --json, --pretty, --color, -h, and --help are implied on every command and never rows;
 -V and --version are implied at the root only, so a nested --version (mindful history)
-is an ordinary option row.
+is an ordinary option row. The root `help` command is implied by the Help rule and
+never a row.
 
     python3 tools/cli_surface.py rows <cli> [tools/cli.toml]   # the table's rows as JSON lines
 """
@@ -104,6 +105,8 @@ def argparse_rows(parser, path=()):
                 if id(sub) in seen:
                     continue
                 seen.add(id(sub))
+                if not path and name == "help":
+                    continue
                 sub.description = sub.description or helps.get(name) or ""
                 rows |= argparse_rows(sub, path + (name,))
             continue
@@ -162,6 +165,8 @@ def click_rows(group, path=()):
             index += 1
     if isinstance(group, click.Group):
         for name, cmd in group.commands.items():
+            if not path and name == "help":
+                continue
             rows |= click_rows(cmd, path + (name,))
     return rows
 
