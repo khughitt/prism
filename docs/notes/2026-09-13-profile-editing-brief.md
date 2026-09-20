@@ -71,3 +71,12 @@ No research task is needed for behavior already established in code and tests.
 Verdicts: prism-b8b589, prism-920f31, and prism-ad2b12 are **briefed**, still ideas.
 prism-8a8eac and prism-49a068 are **shelved** until reset and autosave settle; then
 unshelve and reconsider their recorded review. No implementation was committed by scoping.
+
+## Outcome (2026-09-19)
+
+The [compositional profiles design](../specs/2026-09-19-compositional-profiles-design.md)
+answers this brief by changing the store rather than the controls: edits land in a
+scratch layer, the edited count is derived from describe's `held`, the panel-wide
+neutral no longer clears the profile, save-as is New, and a profile is never emptied
+by a reset. Managing an unloaded profile from the panel stays an idea (prism-920f31);
+loading one first now costs a compositor reload and no lost work.

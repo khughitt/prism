@@ -24,17 +24,17 @@
 
 ## Commit boundaries
 
-The contract test (`integrations/noctalia-plugin/contract.test.mjs`) hands real `describe` output to the panel's validator, so the store's shape and the panel's model contract cannot change in separate green commits. The tasks therefore group into five commits, each of which passes `just test`:
+The contract test (`integrations/noctalia-plugin/contract.test.mjs`) hands real `describe` output to the panel's validator, so the store's shape and the panel's model contract cannot change in separate green commits. The tasks therefore group into five commit boundaries. Task 8 also needed a reviewed fix commit; each landed commit passed `just test`:
 
 | commit | tasks | message |
 |---|---|---|
-| 1 | 1, 2 | `feat(store): add the scratch layer, repair the retired pinned field, lock the requirements read` (Task 1 commits its half; Task 2 amends nothing and commits its own) |
-| 2 | 3, 4, 5, 6, 7, 9, 10 | `feat: move every edit into the scratch layer with typed commits` |
-| 3 | 8 | `test(store): prove every multi-file verb survives an interruption after any write` |
+| 1 | 1 | `feat(store): add the scratch layer and read it above every context` |
+| 2 | 2, 3, 4, 5, 6, 7, 9, 10 | `feat: move every edit into the scratch layer with typed commits` |
+| 3 | 8 | `fix(context): make profile rename interruption-safe and verify store writes`, then `fix(context): reject symlink as interrupted rename` |
 | 4 | 11 | `feat(panel): re-read the store every two seconds while open` |
 | 5 | 12 | `docs: describe the scratch layer, commits, and the panel's edits row` |
 
-Inside commit 2, each task ends by running the tests it touched and says so; only Task 10 runs the full suite and commits. A task in that group is still reviewed on its own diff (`git diff` against the commit-1 tip), which is what makes it a task.
+Inside commit 2, each task ends by running the tests it touched and says so; only Task 10 runs the full suite and commits. Each task in that group was reviewed with an isolated before/after tree diff; Task 8 followed the grouped commit, after Task 10.
 
 ## File structure
 
@@ -47,12 +47,12 @@ Inside commit 2, each task ends by running the tests it touched and says so; onl
 | `src/resolve.js` | exports `checkLayer` |
 | `src/reset.js` | modes `revert`, `symmetric`, `neutral`; normalizes against `beneath` |
 | `src/commit.js` (new) | `prism commit base | profile [<name>] | wallpaper <id>` |
-| `src/context-cli.js` | no `save`/`pin`/`unpin`; `clear wallpaper <id>`; fold branches in `changeSlots` |
+| `src/context-cli.js` | no `save`/`pin`/`unpin`; `clear wallpaper <id>`; fold branches in `changeSlots`; slot-first active deletion and interruption-safe profile rename |
 | `src/cli.js` | `set`/`unset`/`reset` write scratch; `describe` emits `held`; `commit` dispatch; `requirements` locked |
 | `integrations/noctalia-plugin/queue.luau` | verbs `commit` and `clear`; no `pin`/`save` |
 | `integrations/noctalia-plugin/presentation.luau` | `holds`, `editedCount`, `wallpaperHeader` from `held`, `profileSection` with `Default`; no shadow helpers |
 | `integrations/noctalia-plugin/panel.luau` | validator on `held`, edits row, wallpaper header with clear, provenance marker, commit flows, second-tick refresh |
-| tests | `test/scratch.test.js` (new), `test/commit.test.js` (new), edits to `layers`, `contexts`, `cli`, `context-cli`, `reset`, `plugin-client`, `plugin-panel-lifecycle` tests, `plugin_test.lua`, `contract.test.mjs` |
+| tests | `test/scratch.test.js`, `test/commit.test.js`, `test/write-order.test.js` (new), edits to `layers`, `contexts`, `cli`, `context-cli`, `reset`, `plugin-client`, `plugin-panel-lifecycle` tests, `plugin_test.lua`, `contract.test.mjs` |
 | docs | README, `docs/notes/noctalia-plugin-contract.md`, status lines on the two superseded specs, closing paragraph on the brief |
 
 ---
@@ -72,7 +72,7 @@ Additive only: the layer order, the write target, and every existing export stay
 **Interfaces:**
 - Produces: `readScratch(): object`, `writeScratch(values)`, `scratchPath()`, `DELTA_KINDS = ['wallpaper','state']`, `withScratch(layers, scratch)`, `checkLayer(defs, values, where)`; `loadStore(defs)` gains `scratch`, `beneath`, and `held` beside its existing fields.
 
-- [ ] **Step 1: Write the failing scratch test**
+- [x] **Step 1: Write the failing scratch test**
 
 Create `test/scratch.test.js`:
 
@@ -116,12 +116,12 @@ test('a scratch file that is not a flat object fails loudly', () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `node --test test/scratch.test.js`
 Expected: FAIL, `Cannot find module '../src/scratch.js'`.
 
-- [ ] **Step 3: Add the path and the module**
+- [x] **Step 3: Add the path and the module**
 
 Append to `src/paths.js` after `activePath`:
 
@@ -168,12 +168,12 @@ export function writeScratch(values) {
 }
 ```
 
-- [ ] **Step 4: Run the scratch test to verify it passes**
+- [x] **Step 4: Run the scratch test to verify it passes**
 
 Run: `node --test test/scratch.test.js`
 Expected: PASS, 4 tests.
 
-- [ ] **Step 5: Append the scratch tests to the layers test**
+- [x] **Step 5: Append the scratch tests to the layers test**
 
 Append to `test/layers.test.js`, with `const { writeScratch } = await import('../src/scratch.js');` added beside the other imports:
 
@@ -213,12 +213,12 @@ test('withScratch appends scratch as the last layer', () => {
 });
 ```
 
-- [ ] **Step 6: Run the layers test to verify it fails**
+- [x] **Step 6: Run the layers test to verify it fails**
 
 Run: `node --test test/layers.test.js`
 Expected: FAIL, `store.held` is undefined and `withScratch` is not a function.
 
-- [ ] **Step 7: Add `DELTA_KINDS` and export `checkLayer`**
+- [x] **Step 7: Add `DELTA_KINDS` and export `checkLayer`**
 
 In `src/contexts.js` after `LAYER_ORDER` add:
 
@@ -229,7 +229,7 @@ export const DELTA_KINDS = ['wallpaper', 'state'];
 
 In `src/resolve.js` change `function checkLayer(` to `export function checkLayer(`.
 
-- [ ] **Step 8: Extend `loadStore`**
+- [x] **Step 8: Extend `loadStore`**
 
 In `src/layers.js` add `import { readScratch } from './scratch.js';`, add after `loadLayers`:
 
@@ -259,12 +259,12 @@ and in `loadStore` replace `const { params, layerOf } = resolveLayered(defs, bas
 
 and add `scratch, beneath, held` to the returned object. Everything else in the file stays as it is.
 
-- [ ] **Step 9: Run the scratch and layers tests, then the suite**
+- [x] **Step 9: Run the scratch and layers tests, then the suite**
 
 Run: `node --test test/scratch.test.js test/layers.test.js && just test`
 Expected: PASS throughout; the additions change no behaviour while scratch is empty.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add src/paths.js src/scratch.js src/contexts.js src/layers.js src/resolve.js test/scratch.test.js test/layers.test.js
@@ -357,7 +357,7 @@ export function loadStore(defs) {
 **Interfaces:**
 - Produces: `readActive({ warn } = {})`; `warn(text)` defaults to `process.stderr.write`. The repair rewrites `active.json` without `pinned` and calls `warn` once.
 
-- [ ] **Step 1: Write the failing slot tests**
+- [x] **Step 1: Write the failing slot tests**
 
 In `test/contexts.test.js` replace the last four lines of the `active slots round-trip…` test (from `fs.writeFileSync(activePath(), JSON.stringify({ wallpaper: { id: 'abc12345', path: '/w', pinned: 'yes' } }));` to the end of the test) with:
 
@@ -380,12 +380,12 @@ test('a slot carrying the retired pinned field is repaired once on read, keeping
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `node --test test/contexts.test.js`
 Expected: FAIL, `pinned must be a boolean` and no `unknown field` message.
 
-- [ ] **Step 3: Implement the repair**
+- [x] **Step 3: Implement the repair**
 
 In `src/contexts.js` replace the `readActive` function with:
 
@@ -429,12 +429,12 @@ export function readActive({ warn = (text) => process.stderr.write(text) } = {})
 }
 ```
 
-- [ ] **Step 4: Run the contexts test to verify it passes**
+- [x] **Step 4: Run the contexts test to verify it passes**
 
 Run: `node --test test/contexts.test.js`
 Expected: PASS.
 
-- [ ] **Step 5: Write the failing `requirements` lock test**
+- [x] **Step 5: Write the failing `requirements` lock test**
 
 In `test/cli.test.js`, directly after the test `reading verbs take the store lock, so they wait for an in-flight write`, add:
 
@@ -454,35 +454,31 @@ test('requirements takes the store lock too, so the pinned repair never writes o
 });
 ```
 
-- [ ] **Step 6: Run it to verify it fails**
+- [x] **Step 6: Run it to verify it fails**
 
 Run: `node --test test/cli.test.js --test-name-pattern "requirements takes the store lock"`
 Expected: FAIL, order is `['locked', 'read', 'released']`.
 
-- [ ] **Step 7: Route `requirements` through the locked snapshot**
+- [x] **Step 7: Route `requirements` through the locked snapshot**
 
 In `src/cli.js` inside `case 'requirements'` replace `const { params } = loadStore(defs);` with `const { params } = await snapshot(defs);`.
 
-- [ ] **Step 8: Run it to verify it passes**
+- [x] **Step 8: Run it to verify it passes**
 
 Run: `node --test test/cli.test.js --test-name-pattern "requirements takes the store lock"`
 Expected: PASS.
 
-- [ ] **Step 9: Run the suite and commit**
+- [x] **Step 9: Verify and stage for commit 2**
 
-Run: `just test`
-Expected: PASS.
-
-```bash
-git add src/contexts.js src/cli.js test/contexts.test.js test/cli.test.js
-git commit -m "feat(store): repair the retired pinned slot field once and lock the requirements read"
-```
+Run the focused tests touched by Task 2. Stage its source and tests with the
+Tasks 3–10 atomic switch; retiring `pinned` leaves old consumers incompatible
+until Task 3, so Task 2 has no standalone commit.
 
 ---
 
 ### Task 3: The switch: the new order, and `set` and `unset` write scratch
 
-First task of commit 2. From here to Task 10 the suite is red between tasks; each task runs the tests it touched.
+Task 2 already staged the first part of commit 2. Task 3 begins the scratch write switch; the suite is red between these grouped tasks until Task 10. Each task runs the tests it touched.
 
 **Files:**
 - Modify: `src/contexts.js:9-10` (`LAYER_ORDER`)
@@ -495,7 +491,7 @@ First task of commit 2. From here to Task 10 the suite is red between tasks; eac
 - Produces: `LAYER_ORDER = ['profile','wallpaper','state']`, `RESOLUTION_ORDER = ['default','base','profile','wallpaper','state','scratch']`, `loadStore(defs) -> { base, active, profiles, layers, scratch, params, layerOf, beneath, held, fallback }` with `fallback` meaning what revert reveals; `prism set [--base] <key> <value>` normalizes into scratch; `prism unset [--base] <key>` removes from scratch or base; errors `<key>: not edited` and `<key>: not set in base`.
 - Removes: `writeTarget`, `layersBelow`, `store.target`, `store.heldInTarget`, `activeJson`'s `pinned`.
 
-- [ ] **Step 1: The order and the store**
+- [x] **Step 1: The order and the store**
 
 In `src/contexts.js` replace the `LAYER_ORDER` line and its comment with:
 
@@ -564,7 +560,7 @@ test('withScratch appends scratch as the last layer', () => {
 
 (This replaces the `writeTarget`, the four old `loadStore …` tests, and Task 1's three appended tests.) Run `node --test test/layers.test.js`: PASS.
 
-- [ ] **Step 2: Rewrite the write-target tests**
+- [x] **Step 2: Rewrite the write-target tests**
 
 In `test/cli.test.js` replace the six tests from `set under an unpinned wallpaper writes base…` through `unset of the last key in a profile context still leaves an empty file…` with:
 
@@ -648,12 +644,12 @@ const { readScratch, writeScratch } = await import('../src/scratch.js');
 
 and add `scratchPath` to the `paths.js` import list.
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `node --test test/cli.test.js --test-name-pattern "scratch|normalizes|not edited|orphan out of scratch|bypassing scratch"`
 Expected: FAIL, `Cannot read properties of undefined (reading 'kind')` from the old `store.target`.
 
-- [ ] **Step 4: Rewrite `set` and `unset`**
+- [x] **Step 4: Rewrite `set` and `unset`**
 
 In `src/cli.js` change the imports:
 
@@ -728,12 +724,12 @@ import { readScratch, writeScratch } from './scratch.js';
       }
 ```
 
-- [ ] **Step 5: Run the CLI set and unset tests**
+- [x] **Step 5: Run the CLI set and unset tests**
 
 Run: `node --test test/cli.test.js --test-name-pattern "^set|^unset|scratch"`
 Expected: PASS for the rewritten tests. Tests named `describe carries the neutral contract…`, `a base override hidden…`, and the `reset` tests still fail; Tasks 4 and 5 own them.
 
-- [ ] **Step 6: Teach doctor to screen scratch**
+- [x] **Step 6: Teach doctor to screen scratch**
 
 Spec Section 1: doctor reports an orphan or invalid key in scratch the way it does for any layer, naming the file. Add to `test/cli.test.js` after `doctor screens values.yaml for invalid values…`:
 
@@ -772,7 +768,7 @@ Run it to see it fail (doctor throws on the orphan instead of reporting it), the
 Run: `node --test test/cli.test.js --test-name-pattern "doctor screens scratch"`
 Expected: PASS.
 
-- [ ] **Step 7: No commit**
+- [x] **Step 7: No commit**
 
 This task is part of commit 2 (see Commit boundaries). Leave the work staged and continue with Task 4.
 
@@ -788,7 +784,7 @@ This task is part of commit 2 (see Commit boundaries). Leave the work staged and
 **Interfaces:**
 - Produces: `MODES = ['revert', 'symmetric', 'neutral']`; `planReset({ defs, mode, group, held, effective, beneath }) -> { values, changedKeys }`, where a value equal to `beneath[key]` is deleted rather than stored.
 
-- [ ] **Step 1: Update the planner tests**
+- [x] **Step 1: Update the planner tests**
 
 In `test/reset.test.js` change the `plan` helper and the two `defaults` tests:
 
@@ -822,12 +818,12 @@ test('a neutral value the fold beneath already supplies is removed from scratch,
 
 Every other test in the file that passed `normalizeToDefault: true` passes `beneath: <the defaults map>` instead; those that passed `false` pass nothing. Run `grep -n normalizeToDefault test/reset.test.js` and convert each.
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `node --test test/reset.test.js`
 Expected: FAIL, `revert` is not a mode.
 
-- [ ] **Step 3: Rewrite the planner**
+- [x] **Step 3: Rewrite the planner**
 
 In `src/reset.js`:
 
@@ -876,12 +872,12 @@ export function planReset({ defs, mode, group, held, effective, beneath }) {
 }
 ```
 
-- [ ] **Step 4: Run the planner test to verify it passes**
+- [x] **Step 4: Run the planner test to verify it passes**
 
 Run: `node --test test/reset.test.js`
 Expected: PASS.
 
-- [ ] **Step 5: Rewrite the CLI reset tests**
+- [x] **Step 5: Rewrite the CLI reset tests**
 
 In `test/cli.test.js`:
 
@@ -940,12 +936,12 @@ test('a neutral value the fold beneath already supplies is not stored in scratch
 5. In `reset visits each affected sink once and leaves hidden values alone`, replace the base fixture with an edit: delete the `fs.writeFileSync(valuesPath(), …)` line, add `await cli.run(['set', 'glass.paneLip', '30'], { runner: () => {} });` and `await cli.run(['set', 'debug.backdrop', 'true'], { runner: () => {} });`, and replace the final `readValues()` assertion with `assert.deepEqual(readScratch(), { 'debug.backdrop': true });` (`debug.backdrop` is `control: none`, so a panel-scope revert leaves it).
 6. In `reset neutral leaves the exempt parameter alone` and `reset neutral writes the curated values once…` the fixtures use `set --base`; leave them, they still hold.
 
-- [ ] **Step 6: Run the reset tests to verify they fail**
+- [x] **Step 6: Run the reset tests to verify they fail**
 
 Run: `node --test test/cli.test.js --test-name-pattern "reset|neutral|symmetric"`
 Expected: FAIL on `store.target`.
 
-- [ ] **Step 7: Rewrite `case 'reset'` in `src/cli.js`**
+- [x] **Step 7: Rewrite `case 'reset'` in `src/cli.js`**
 
 ```js
       case 'reset': {
@@ -994,12 +990,12 @@ Expected: FAIL on `store.target`.
       }
 ```
 
-- [ ] **Step 8: Run the reset tests to verify they pass**
+- [x] **Step 8: Run the reset tests to verify they pass**
 
 Run: `node --test test/cli.test.js --test-name-pattern "reset|neutral|symmetric"`
 Expected: PASS.
 
-- [ ] **Step 9: No commit**
+- [x] **Step 9: No commit**
 
 Part of commit 2. Continue with Task 5.
 
@@ -1014,7 +1010,7 @@ Part of commit 2. Continue with Task 5.
 **Interfaces:**
 - Produces: per parameter `held: string[]` (layers holding the key, in resolution order, never `default`); top-level `target` removed; `active.wallpaper` is `{ id, path }`.
 
-- [ ] **Step 1: Update the describe tests**
+- [x] **Step 1: Update the describe tests**
 
 In `test/cli.test.js`:
 
@@ -1071,12 +1067,12 @@ In `integrations/noctalia-plugin/contract.test.mjs`:
 1. In `describeStore`, replace the `heldInTarget` check with `assert.ok(Array.isArray(param.held), `${param.key} held`);`.
 2. In the test body, the `tuned` fixture's `active` becomes `{ profile: 'night', wallpaper: { id: 'abc12345', path: '/nonexistent/wall.png' } }` (no `pinned`); delete the two `target` assertions; the profile-layer expectation becomes `[{ key: 'glass.roughness', value: 0.7, fallback: 0.7 }]` with the comment `// fallback is what revert reveals; nothing is edited, so it is the value itself.`
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `node --test test/cli.test.js test/context-cli.test.js integrations/noctalia-plugin/contract.test.mjs --test-name-pattern "describe|held|edited key"`
 Expected: FAIL, `held` undefined and `target` present.
 
-- [ ] **Step 3: Change the emitter**
+- [x] **Step 3: Change the emitter**
 
 In `src/cli.js` `case 'describe'` replace `heldInTarget: store.heldInTarget[key],` with `held: store.held[key],` and the final `print` with:
 
@@ -1084,11 +1080,11 @@ In `src/cli.js` `case 'describe'` replace `heldInTarget: store.heldInTarget[key]
         print(`${JSON.stringify({ active: activeJson(store.active), profiles: store.profiles, layers: RESOLUTION_ORDER, rack, params: described }, null, 2)}\n`);
 ```
 
-- [ ] **Step 4: Run them to verify they pass**
+- [x] **Step 4: Run them to verify they pass**
 
 Run: the Step 2 command. Expected: PASS for the Node tests. The contract test's Lua half still fails until Task 10 teaches the panel `held`; that is why Tasks 3 to 10 share a commit.
 
-- [ ] **Step 5: No commit**
+- [x] **Step 5: No commit**
 
 Part of commit 2. Continue with Task 6.
 
@@ -1104,7 +1100,7 @@ Part of commit 2. Continue with Task 6.
 - Consumes: `checkLayer`, `withScratch`, `readScratch`, `writeScratch`.
 - Produces: `prism context clear wallpaper <id>`; `changeSlots(deps, mutate, { commit, fold, without })` where `commit()` performs a context-file deletion after validation and returns `true` when it changed something effective, `fold` enables the wallpaper fold, and `without` names a context whose file the next state is computed as if it were already gone; verbs `save`, `pin`, `unpin` gone; usage `list|show|rename|activate|deactivate|delete|clear|wallpaper`.
 
-- [ ] **Step 1: Rewrite the context tests**
+- [x] **Step 1: Rewrite the context tests**
 
 In `test/context-cli.test.js`:
 
@@ -1249,12 +1245,12 @@ test('clear wallpaper removes the on-screen delta, resolves, fans out, and refus
 
 Add `activePath` and `scratchPath` to the `paths.js` import in this file.
 
-- [ ] **Step 2: Run the context tests to verify they fail**
+- [x] **Step 2: Run the context tests to verify they fail**
 
 Run: `node --test test/context-cli.test.js`
 Expected: FAIL on the fold, `clear`, and the retired verbs still being accepted.
 
-- [ ] **Step 3: Rewrite `src/context-cli.js`**
+- [x] **Step 3: Rewrite `src/context-cli.js`**
 
 Replace the whole file with:
 
@@ -1508,12 +1504,12 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
 }
 ```
 
-- [ ] **Step 4: Run the context tests to verify they pass**
+- [x] **Step 4: Run the context tests to verify they pass**
 
 Run: `node --test test/context-cli.test.js`
 Expected: PASS. Then run `node --test test/cli.test.js` and fix any test still naming `save`, `pin`, or `pinned` in a fixture (`writeActive` calls with `pinned:` lose that field).
 
-- [ ] **Step 5: No commit**
+- [x] **Step 5: No commit**
 
 Part of commit 2. Continue with Task 7.
 
@@ -1530,7 +1526,7 @@ Part of commit 2. Continue with Task 7.
 - Consumes: `loadStore`, `DELTA_KINDS`, `LAYER_ORDER`, `readContext`, `writeContext`, `deleteContext`, `writeActive`, `writeValues`, `writeScratch`.
 - Produces: `runCommit(args, { defs }) -> 0`; `prism commit base | profile [<name>] | wallpaper <id>`.
 
-- [ ] **Step 1: Write the failing commit tests**
+- [x] **Step 1: Write the failing commit tests**
 
 Create `test/commit.test.js`:
 
@@ -1700,12 +1696,12 @@ test('commit rejects a bad destination, a bad name, and stray arguments', async 
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `node --test test/commit.test.js`
 Expected: FAIL, every test with `usage: prism set|unset|…` on stderr (the verb is unknown).
 
-- [ ] **Step 3: Write `src/commit.js`**
+- [x] **Step 3: Write `src/commit.js`**
 
 ```js
 import { isDeepStrictEqual } from 'node:util';
@@ -1813,7 +1809,7 @@ export async function runCommit(args, { defs }) {
 }
 ```
 
-- [ ] **Step 4: Dispatch it from the CLI**
+- [x] **Step 4: Dispatch it from the CLI**
 
 In `src/cli.js` add `import { runCommit } from './commit.js';` and, before `case 'context':`:
 
@@ -1828,12 +1824,12 @@ In `src/cli.js` add `import { runCommit } from './commit.js';` and, before `case
 
 Change the usage line in `default:` to `usage: prism set|unset|get|list|describe|apply|requirements|doctor|context|reset|commit\n`. Add `'commit'` to the verb list in the `every public verb enforces its required and stray arguments` test in `test/cli.test.js` if it enumerates verbs (check with `grep -n "every public verb" -A 15 test/cli.test.js`).
 
-- [ ] **Step 5: Run the commit tests to verify they pass**
+- [x] **Step 5: Run the commit tests to verify they pass**
 
 Run: `node --test test/commit.test.js test/cli.test.js`
 Expected: PASS.
 
-- [ ] **Step 6: No commit**
+- [x] **Step 6: No commit**
 
 Part of commit 2. Continue with Task 9 (Task 8 runs after commit 2 lands).
 
@@ -1849,7 +1845,7 @@ Runs after commit 2 has landed (Task 10), because it exercises the finished verb
 **Interfaces:**
 - Consumes: the verbs from Tasks 6 and 7. No production change is expected; a failure here is a bug in the write order and is fixed in `src/context-cli.js` or `src/commit.js`.
 
-- [ ] **Step 1: Write the resilience test**
+- [x] **Step 1: Write the resilience test**
 
 Create `test/write-order.test.js`:
 
@@ -2017,16 +2013,16 @@ function snapshotFiles() {
 
 The `visible` flag marks the one verb whose last write is the visible switch; for it the last prefix is allowed to differ from `before`. `resolved.json` is excluded from the file snapshot because the bus is allowed to lag and `prism apply` recovers it, as the spec says.
 
-- [ ] **Step 2: Run it**
+- [x] **Step 2: Run it**
 
 Run: `node --test test/write-order.test.js`
 Expected: PASS. If a case fails, the write order in the named verb disagrees with Section 8's table; fix the verb, not the test. The store lock uses `node:fs/promises`, so the sync patches never see it and it is not counted; if `interruptedAfter(Infinity, …)` reports zero writes, the verb never reached its writes and the fixture is wrong.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
-git add test/write-order.test.js
-git commit -m "test(store): prove every multi-file verb survives an interruption after any write"
+git add test/write-order.test.js src/context-cli.js
+git commit -m "fix(context): make profile rename interruption-safe and verify store writes"
 ```
 
 ---
@@ -2041,7 +2037,7 @@ git commit -m "test(store): prove every multi-file verb survives an interruption
 **Interfaces:**
 - Produces (Lua): `Queue.argvFor` for `{verb="commit", destination="base"|"profile"|"wallpaper", target=<name or id>}` and `{verb="clear", id=<id>}`; `staleAfter` gains `commit` and `clear`, loses `pin` and `save`. `Presentation.holds(param, layer) -> bool`, `Presentation.editedCount(params)`, `Presentation.wallpaperHeader(model) -> {id, name, tuned} | nil`, `Presentation.profileSection(model)` whose first option is `"Default"`. Removed: `layerRanks`, `isShadowed`, `shadowHint`, `overriddenCount`.
 
-- [ ] **Step 1: Write the failing module tests**
+- [x] **Step 1: Write the failing module tests**
 
 In `plugin_test.lua`:
 
@@ -2118,12 +2114,12 @@ and the `staleAfter` regex with:
   assert.match(source, /local staleAfter = \{\n  set = true, unset = true, reset = true, commit = true, clear = true,\n  activate = true, deactivate = true, delete = true, rename = true,\n\}/);
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
 Expected: FAIL at `Presentation.holds` being nil.
 
-- [ ] **Step 3: Rewrite the queue module's verb table and `argvFor`**
+- [x] **Step 3: Rewrite the queue module's verb table and `argvFor`**
 
 In `queue.luau`:
 
@@ -2166,7 +2162,7 @@ function M.argvFor(item)
 end
 ```
 
-- [ ] **Step 4: Rewrite the presentation helpers**
+- [x] **Step 4: Rewrite the presentation helpers**
 
 In `presentation.luau` replace everything from `function M.overriddenCount` through the end of `M.profileSection` (lines 219-309) with:
 
@@ -2230,12 +2226,12 @@ function M.profileSection(model)
 end
 ```
 
-- [ ] **Step 5: Run the module tests**
+- [x] **Step 5: Run the module tests**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
 Expected: the module assertions above pass and the first failure is a panel-rendering assertion below them, which Task 10 owns. The file runs top to bottom, so read the failing line number: inside the blocks edited here it is a Task 9 failure, past them it is Task 10's.
 
-- [ ] **Step 6: No commit**
+- [x] **Step 6: No commit**
 
 Part of commit 2. Continue with Task 10.
 
@@ -2251,7 +2247,7 @@ Part of commit 2. Continue with Task 10.
 - Consumes: Task 9's `Presentation.holds`, `editedCount`, `wallpaperHeader`, `profileSection`, and the queue verbs `commit` and `clear`.
 - Produces: `validateModel` requiring `held` per parameter and no `target`; `param.edited` and `param.fromWallpaper` flags; the edits row; the wallpaper header with a clear button; `commitName` issuing `commit profile <name>`.
 
-- [ ] **Step 1: Rewrite the panel test fixtures and rendering assertions**
+- [x] **Step 1: Rewrite the panel test fixtures and rendering assertions**
 
 In `plugin_test.lua`, apply these edits in order:
 
@@ -2525,12 +2521,12 @@ equal(glyphButton(cleanTree, "bookmark").props.tooltip, "Nothing to keep")
 
 In `test/plugin-client.test.js` (line 158) replace the `rowHint` regex with `/local function rowHint[\s\S]*text = "Unavailable"[\s\S]*text = "wallpaper"[\s\S]*text = "Live"/`.
 
-- [ ] **Step 2: Run the Lua tests to verify they fail**
+- [x] **Step 2: Run the Lua tests to verify they fail**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
 Expected: FAIL at the first rendering assertion after the fixture (the validator still demands `target`).
 
-- [ ] **Step 3: Rewrite the validator and the edit marking**
+- [x] **Step 3: Rewrite the validator and the edit marking**
 
 In `panel.luau`:
 
@@ -2574,7 +2570,7 @@ and call `markEdits(model)` where `markLayers(model)` was.
 
 5. `updateParam` sets `param.edited = true`; `unsetParam` sets `param.edited = false`.
 
-- [ ] **Step 4: Rewrite the reset and commit actions**
+- [x] **Step 4: Rewrite the reset and commit actions**
 
 Replace `resetAction` with:
 
@@ -2640,7 +2636,7 @@ Replace `rowHint`'s middle loop with:
 
 and its comment with `-- a wallpaper's nudge says where a value comes from, and Live is the mildest of the three`.
 
-- [ ] **Step 5: Remove the dimming**
+- [x] **Step 5: Remove the dimming**
 
 - `headCell(text, param, indent)`: drop the `dimmed` parameter and set `opacity = 1.0`; update the three callers (`singleRow`, `matrixRow`, and any in cards).
 - `controlCell`: `opacity = 1.0`.
@@ -2650,7 +2646,7 @@ and its comment with `-- a wallpaper's nudge says where a value comes from, and 
 - `sectionHeader`: delete the shadow-hint label and the toggle's `opacity` line.
 - `render`'s title row: delete the shadow-hint label and the toggle's `opacity` line.
 
-- [ ] **Step 6: The reset buttons, the edits row, and the header**
+- [x] **Step 6: The reset buttons, the edits row, and the header**
 
 Replace `resetModeButtons`'s first button with:
 
@@ -2732,7 +2728,7 @@ end
 
 In `render`, replace `children[#children + 1] = allRow(state.model)` with `children[#children + 1] = editsRow(state.model)`.
 
-- [ ] **Step 7: Save-as and replace through `commit`**
+- [x] **Step 7: Save-as and replace through `commit`**
 
 In `commitName`, replace the `elseif name ~= active …` / `else enqueue save` branches with:
 
@@ -2749,12 +2745,12 @@ In `commitName`, replace the `elseif name ~= active …` / `else enqueue save` b
 
 In `confirmRow`, the replace branch becomes `commitAction({verb = "commit", destination = "profile", target = confirm.name}, Presentation.visibleParams(state.model))()`. In `finishWrite`, delete the `activateAfter` block and its comment. Change the save button's tooltip to `"Save what is on screen as a profile"`.
 
-- [ ] **Step 8: Run every panel test**
+- [x] **Step 8: Run every panel test**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua && node --test test/plugin-client.test.js test/plugin-panel-lifecycle.test.js integrations/noctalia-plugin/contract.test.mjs`
 Expected: PASS. Then `just test` for the whole suite.
 
-- [ ] **Step 9: Commit 2**
+- [x] **Step 9: Commit 2**
 
 Run: `just test`
 Expected: PASS, the whole suite.
@@ -2777,7 +2773,7 @@ git commit -m "feat: move every edit into the scratch layer with typed commits"
 - Consumes: the host's `panel.setWantsSecondTicks(bool)`, which makes Noctalia call the plugin's global `update()` once per second while the panel is open (`~/software/noctalia/src/shell/panel/plugin_panel.cpp`, `kTickIntervalMs = 1000`, dispatching `update` through `ScriptRuntime::enqueueUpdate`). Verified against the installed tree at `v5.0.1-31-g019f16079` on 2026-09-19.
 - Produces: `update()` requesting one refresh every second tick through the existing stale-and-replay path.
 
-- [ ] **Step 1: Write the failing refresh tests**
+- [x] **Step 1: Write the failing refresh tests**
 
 Append to `plugin_test.lua`:
 
@@ -2838,12 +2834,12 @@ described({ exitCode = 0, stdout = "{}" })
 equal(selectWithOption(rendered, "Default").props.selectedIndex, 2)
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua`
 Expected: FAIL, `ticksWanted` is nil.
 
-- [ ] **Step 3: Invalidate an outstanding describe when a write enqueues**
+- [x] **Step 3: Invalidate an outstanding describe when a write enqueues**
 
 In `panel.luau`, in `enqueue`, add before the `Queue.enqueue` call:
 
@@ -2856,7 +2852,7 @@ In `panel.luau`, in `enqueue`, add before the `Queue.enqueue` call:
 
 `described` already treats `state.describeInvalidated` as "drop this result and set `refreshAfterDrag`", so no further change is needed there.
 
-- [ ] **Step 4: Implement the tick**
+- [x] **Step 4: Implement the tick**
 
 In `panel.luau` add `ticks = 0,` to the `state` table and replace `onOpen` and `onClose` with:
 
@@ -2894,12 +2890,12 @@ function update()
 end
 ```
 
-- [ ] **Step 5: Run it to verify it passes**
+- [x] **Step 5: Run it to verify it passes**
 
 Run: `lua integrations/noctalia-plugin/plugin_test.lua && node --test test/plugin-client.test.js test/plugin-panel-lifecycle.test.js && just test`
 Expected: PASS. If `plugin-client.test.js`'s lifecycle test greps `onClose` for exact text, extend its regex to allow the new `setWantsSecondTicks(false)` line.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add integrations/noctalia-plugin/panel.luau integrations/noctalia-plugin/plugin_test.lua test/plugin-client.test.js
@@ -2916,7 +2912,7 @@ git commit -m "feat(panel): re-read the store every two seconds while open"
 - Modify: `docs/specs/2026-09-05-prism-context-layers-design.md:3-4`, `docs/specs/2026-09-10-reset-modes-design.md:3-4` (status lines)
 - Modify: `docs/notes/2026-09-13-profile-editing-brief.md` (closing paragraph)
 
-- [ ] **Step 1: README**
+- [x] **Step 1: README**
 
 Replace the configuration layout block and the paragraph after it with:
 
@@ -2947,7 +2943,7 @@ calls. Design: `docs/specs/2026-09-19-compositional-profiles-design.md`.
 
 In the reset modes section: the usage line becomes `prism reset revert|symmetric|neutral [--base] [--group <name>]`, and the sentence beginning `` `defaults` removes overrides…`` becomes `` `revert` forgets the edits in scope; the value revealed comes from the layers beneath. `` The `--base` paragraph stays.
 
-- [ ] **Step 2: The plugin contract note**
+- [x] **Step 2: The plugin contract note**
 
 In `docs/notes/noctalia-plugin-contract.md`:
 
@@ -2959,7 +2955,7 @@ In `docs/notes/noctalia-plugin-contract.md`:
 6. Replace the wallpaper-header bullet with: `When a wallpaper is active the panel draws a header row above the sections: a glyph lit while the wallpaper's delta holds any visible key, the count (`N for this wallpaper`), and a clear button that runs `prism context clear wallpaper <id>` with the id from the model. The basename is the glyph's tooltip. With no active wallpaper there is no header row.`
 7. In the describe paragraph: `target` goes; `held` replaces `heldInTarget` (`the list of layers that hold the key, in resolution order, never default`); `layers` is `default, base, profile, wallpaper, state, scratch`; `fallback` is `what revert would reveal`. The one-sided failure list gains `<key> has no held layers` and loses the `target` message.
 
-- [ ] **Step 3: Status lines and the brief**
+- [x] **Step 3: Status lines and the brief**
 
 Prepend to the `**Status:**` line of `docs/specs/2026-09-05-prism-context-layers-design.md`: `Superseded 2026-09-19 for the resolution order, the write target, the pin, and save by [compositional profiles](2026-09-19-compositional-profiles-design.md); the file layout, the verbs it keeps, and the describe fields it introduced remain as revised there. ` Prepend to the reset-modes spec's status line: `Revised 2026-09-19 by [compositional profiles](2026-09-19-compositional-profiles-design.md): every mode writes scratch and `defaults` is `revert`. ` Append to the brief:
 
@@ -2974,15 +2970,51 @@ by a reset. Managing an unloaded profile from the panel stays an idea (prism-920
 loading one first now costs a compositor reload and no lost work.
 ```
 
-- [ ] **Step 4: Check and commit**
+- [x] **Step 4: Check and commit**
 
 Run: `just check && just test`
 Expected: both pass.
 
 ```bash
-git add README.md docs/notes/noctalia-plugin-contract.md docs/specs/2026-09-05-prism-context-layers-design.md docs/specs/2026-09-10-reset-modes-design.md docs/notes/2026-09-13-profile-editing-brief.md
+git add README.md docs/notes/noctalia-plugin-contract.md docs/specs/2026-09-05-prism-context-layers-design.md docs/specs/2026-09-10-reset-modes-design.md docs/specs/2026-09-19-compositional-profiles-design.md docs/notes/2026-09-13-profile-editing-brief.md docs/plans/2026-09-19-compositional-profiles.md tasks/prism-3f7075.md
 git commit -m "docs: describe the scratch layer, commits, and the panel's edits row"
 ```
+
+---
+
+## Execution notes (2026-09-19)
+
+- Task 2 joined the Tasks 3–10 atomic switch because removing `pinned` broke
+  old consumers until Task 3; cost: a larger commit, with no runtime change.
+  The controller reviewed each grouped task through an isolated tree diff
+  instead of a red commit; cost: the review boundary depends on the SDD ledger.
+- `readActive` validates the whole slot before retiring `pinned`, so malformed
+  profile names cannot cause a partial migration write; cost: repair waits
+  until the malformed slot is fixed. Malformed scratch YAML gets a one-line
+  `scratch.yaml` diagnostic, and orphan-unset validates its next state before
+  persistence; cost: stricter text and refusal when another invalid key remains.
+- Commits resolve each complete candidate state before writing; cost: an
+  additional resolve per commit. A retry after the final store mutation may
+  return the documented already-complete refusal; `prism apply` repairs a
+  stale bus. Cost: callers inspect completion or apply in that narrow window.
+- Active profile deletion clears its slot before removing its file; active
+  wallpaper deletion uses the same order. Cost: an interruption can leave an
+  inactive file until retry. Active profile rename hard-links the new name,
+  changes the slot, then unlinks the old name; a retry accepts only a genuine
+  same-inode hard link, never a symlink. Cost: one extra filesystem operation
+  and hard-link support within the profile directory.
+- Execution order was 1, 2, 3, 4, 5, 6, 7, 9, 10, 8, 11, 12, then pending
+  13; Task 9 depends on 7, while Task 8 tests the completed atomic switch.
+  Cost of a wrong order: scheduling only, no runtime change. Interruption
+  tests cover first activation, explicit activation/deactivation, clear,
+  active profile deletion, and rename as well as commits; cost: more focused
+  tests.
+- The panel validator checks `held` on hidden as well as visible parameters,
+  because every parameter has that contract; cost: stricter refusal of bad
+  hidden metadata.
+- Desktop acceptance in Task 13 remains pending. The final status change
+  and task closeout belong to Task 13's merge boundary, after observed
+  gestures; they are not claimed by this documentation commit.
 
 ---
 

@@ -490,8 +490,9 @@ First, it computes and validates its whole next state before the first
 write, the way `changeSlots` does today: nothing is written that the resolve
 has not accepted. Second, it writes in an order where **every prefix of the
 sequence is a valid store with the same effective values as before the
-verb**, up to the one step that is meant to be visible, and where re-running
-the verb completes an interrupted one because each step is idempotent.
+verb**, up to the one step that is meant to be visible. Re-running before the
+final store mutation completes the operation; a completed operation may
+instead return its documented refusal, as described below.
 
 | verb | write order | why each prefix holds |
 |---|---|---|
@@ -500,14 +501,22 @@ the verb completes an interrupted one because each step is idempotent.
 | `commit base`, `commit profile` | destination, stripped deltas, cleared scratch | scratch stays on top until the last step |
 | `commit profile <name>` | snapshot, slot, stripped deltas, cleared scratch | the snapshot equals the screen, so activating it under the unchanged deltas and scratch is invisible; scratch stays on top until the last step. Clearing scratch before the slot would expose the old profile's values, and a re-run would then snapshot those, losing the edit |
 | `commit wallpaper <id>` | merged delta, stripped state delta, cleared scratch | as above |
-| `clear wallpaper <id>` | delta file, `resolved.json` | one file, then the bus |
+| `clear wallpaper <id>` | delta file, `resolved.json` | one file, then the bus; a repeat after removal refuses `wallpaper <id>: untuned` |
+| `delete` active profile or wallpaper | clear slot, remove file, `resolved.json` | the slot never names a missing file; a retry can remove the now-inactive file |
+| `rename` active profile | hard-link old file to new name, update slot, unlink old name | either name refers to the same inode until the slot points to the new name; a retry recognizes only a genuine hard link, never a symlink or distinct destination |
 
 A crash between the last store write and `resolved.json` leaves the bus
 stale, which is the existing `prism-ebbd33` condition and is recovered by
 `prism apply`; this design does not widen it. A merge repeated on re-run
 merges the same keys again, a strip removes keys already gone, and a cleared
-scratch folds nothing, so re-running the hook or the commit after an
-interruption finishes it.
+scratch folds nothing, so re-running the hook or an interrupted merge can
+finish it. A retry after the final store mutation can instead return its
+documented already-complete refusal (`nothing to commit`, `wallpaper <id>:
+untuned`, or `profile <old>: no such context`) when the store already matches
+the completed result. `prism apply` repairs a stale bus in that case. The
+active-profile rename recognizes a destination only when `lstat` sees the
+same device and inode as the source, with the slot naming the old or new
+profile; a distinct destination or symlink is refused before any write.
 
 Migration: `values.yaml` and every profile file are unchanged. An existing
 wallpaper delta file stays valid and simply ranks above the profile now.
@@ -565,7 +574,8 @@ Lua (`plugin_test.lua`, `test/plugin-presentation.test.js`,
 Desktop acceptance, manual, on the worktree's plugin symlink:
 
 1. nudge two sliders under a loaded profile, watch the edits row count, and
-   switch profiles with the digits: the nudges stay on top;
+   switch profiles with the selector: the nudges stay on top. Digit shortcuts
+   can exercise the same invariant when the separate keyboard task lands;
 2. keep for wallpaper, rotate the wallpaper by hand, rotate back: the nudge
    returns and the header counts it;
 3. nudge, rotate without keeping: the leaving wallpaper's header shows the

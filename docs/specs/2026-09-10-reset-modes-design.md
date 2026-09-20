@@ -1,7 +1,7 @@
 # Neutral and symmetric reset modes
 
 **Date:** 2026-09-10
-**Status:** merged into `main` on 2026-09-10; implemented in `06d568e`, `beff4e0`, `deb17e1`, and `a97d397`; user accepted Neutralize All on 2026-09-10 and authorized merge. Neutral Edge bevel is 8 pixels.
+**Status:** Revised 2026-09-19 by [compositional profiles](2026-09-19-compositional-profiles-design.md): every mode writes scratch and `defaults` is `revert`. Merged into `main` on 2026-09-10; implemented in `06d568e`, `beff4e0`, `deb17e1`, and `a97d397`; user accepted Neutralize All on 2026-09-10 and authorized merge. Neutral Edge bevel is 8 pixels.
 **Task:** `prism-91edc5`
 
 ## Context

@@ -48,20 +48,25 @@ and Directional blur, which ride its taps, and flattens Blur. Design:
 ```
 ~/.config/prism/values.yaml                  # base values, dotfiles-tracked per host
 ~/.config/prism/contexts/profile/<name>.yaml # named profiles, full snapshots
-~/.config/prism/contexts/wallpaper/<id>.yaml # per-wallpaper overrides, `_source` names the wallpaper
+~/.config/prism/contexts/wallpaper/<id>.yaml # per-wallpaper nudges, `_source` names the wallpaper
 ~/.local/state/prism/active.json             # which contexts are active (runtime state)
+~/.local/state/prism/scratch.yaml            # every edit not yet committed (runtime state)
 ~/.local/state/prism/resolved.json           # the bus: every parameter's effective value
 ```
 
-Values resolve as defaults, then base, then the active wallpaper context, then
-the active profile. `prism set` writes into the topmost explicit layer: the
-loaded profile, else the wallpaper while it is pinned, else base; a wallpaper
-the hook activated on its own is an overlay and never captures edits.
-`prism set --base` writes the base file regardless. `prism context` manages
-contexts: `list`, `show`, `save` and `rename` (profiles), `activate`,
-`deactivate`, `delete`, `pin` and `unpin wallpaper`, and `wallpaper <path>`, the last being
-what a Noctalia `wallpaper_changed` hook calls. Design:
-`docs/specs/2026-09-05-prism-context-layers-design.md`.
+Values resolve as defaults, then base, then the loaded profile, then the
+active wallpaper's nudges, then scratch. Every `prism set` writes scratch, and
+a value the layers beneath already show is not stored. `prism commit` moves the
+edits somewhere persistent: `commit base` into the base file, `commit profile`
+into the loaded profile, `commit profile <name>` as a new profile snapshotting
+what is on screen, `commit wallpaper <id>` into the wallpaper's nudges. A
+commit never changes what is on screen. When the wallpaper changes, edits made
+while the old one showed fold into its nudges automatically; `prism reset
+revert` forgets them instead. `prism set --base` writes the base file directly.
+`prism context` manages contexts: `list`, `show`, `rename` (profiles),
+`activate`, `deactivate`, `delete`, `clear wallpaper <id>`, and
+`wallpaper <path>`, the last being what a Noctalia `wallpaper_changed` hook
+calls. Design: `docs/specs/2026-09-19-compositional-profiles-design.md`.
 
 ## Starter profiles
 
@@ -91,12 +96,12 @@ probe checks this before applying glass.
 ## Reset modes
 
 ```sh
-prism reset defaults|symmetric|neutral [--base] [--group <name>]
+prism reset revert|symmetric|neutral [--base] [--group <name>]
 ```
 
 The panel offers the same actions per section and across all visible controls.
-`defaults` removes overrides held by the write target, including shadowed ones;
-the value revealed may come from another layer. `symmetric` copies each focused
+`revert` forgets the edits in scope; the value revealed comes from the layers
+beneath. `symmetric` copies each focused
 value onto its unfocused twin. `neutral` writes the curated quiet baseline,
 leaving `glass.focusSplit` unchanged. Edge bevel stays at 8 pixels so the
 native material ring fits with zero pane offsets. Effect dependencies still apply: raise
@@ -104,8 +109,8 @@ Refraction above 1 before exploring Blur or Directional blur.
 
 Without `--base`, comparisons and symmetric's source use resolved values.
 With `--base`, they use base values over def defaults; active overlays may still
-hide the result. Each reset changes one target layer and invokes each affected
-sink at most once. A reset with no target changes writes nothing.
+hide the result. Each reset changes scratch (base with `--base`) and invokes each
+affected sink at most once. A reset with no changes writes nothing.
 
 ## Development prerequisites
 
