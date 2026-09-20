@@ -5,7 +5,7 @@ import test from 'node:test';
 
 const pluginDir = fileURLToPath(new URL('../integrations/noctalia-plugin/', import.meta.url));
 
-test('canonical correction ignores only the synchronous reconciler callback', () => {
+test('slider reconciliation leaves no drag while later real changes still work', () => {
   const script = String.raw`
 local pluginDir = arg[1]
 local hostEpsilon = 0.0001
@@ -13,12 +13,14 @@ local hostEpsilon = 0.0001
 local function newHost()
   local host = {
     calls = {},
+    deferredReconcile = {},
+    deferReconcileCallbacks = false,
     frameTicks = false,
     reconcileCallbacks = 0,
     sliders = {},
     suppressNextReconcileCallback = false,
   }
-  local model = {active = {}, profiles = {}, layers = {"default", "base", "profile", "wallpaper", "state", "scratch"},
+  local model = {active = {}, profiles = {"new"}, layers = {"default", "base", "profile", "wallpaper", "state", "scratch"},
     rack = {group = "Focus", devices = {
       {device = "noise", label = "Noise", category = "post", mix = "Noise", rows = {}, shared = {}, bypass = "glass.bypass.noise"},
     }}, params = {
@@ -78,7 +80,13 @@ local function newHost()
       host.suppressNextReconcileCallback = false
       return
     end
-    if fromReconcile then host.reconcileCallbacks = host.reconcileCallbacks + 1 end
+    if fromReconcile then
+      host.reconcileCallbacks = host.reconcileCallbacks + 1
+      if host.deferReconcileCallbacks then
+        host.deferredReconcile[#host.deferredReconcile + 1] = {slider = slider, value = value}
+        return
+      end
+    end
     slider.onChange(value)
   end
 
@@ -103,7 +111,7 @@ local function newHost()
   end
 
   local panel = {}
-  function panel.render(tree) reconcile(tree) end
+  function panel.render(tree) host.tree = tree; reconcile(tree) end
   function panel.setNeedsFrameTick(value) host.frameTicks = value end
   function panel.setWantsSecondTicks() end
 
@@ -145,6 +153,44 @@ local function newHost()
   function host.release()
     host.slider().onDragEnd()
   end
+  function host.switchProfile()
+    local params = {}
+    for index, param in ipairs(model.params) do
+      local fresh = {}
+      for key, value in pairs(param) do fresh[key] = value end
+      params[index] = fresh
+    end
+    params[2].value, params[2].layer, params[2].held = 120, "profile", {"profile"}
+    model = {active = {profile = "new"}, profiles = {"new"}, layers = model.layers, rack = model.rack, params = params}
+  end
+  function host.pickProfile()
+    local function find(tree)
+      if tree.kind == "select" and tree.props.options[1] == "Default" then return tree end
+      for _, child in ipairs(tree.children or {}) do
+        local found = find(child)
+        if found then return found end
+      end
+    end
+    assert(find(host.tree), "missing profile selector").props.onChange(1)
+  end
+  function host.editCount()
+    local function find(tree)
+      if tree.kind == "label" and (tree.props.text == "No edits" or tree.props.text == "1 edit") then
+        return tree.props.text
+      end
+      for _, child in ipairs(tree.children or {}) do
+        local found = find(child)
+        if found then return found end
+      end
+    end
+    return find(host.tree)
+  end
+  function host.flushReconcile()
+    local pending = host.deferredReconcile
+    host.deferredReconcile = {}
+    for _, event in ipairs(pending) do event.slider.onChange(event.value) end
+  end
+  function host.tick() env.update(); env.update() end
   return host
 end
 
@@ -162,6 +208,15 @@ host.complete(3)
 host.change(host.slider().value + 0.01)
 assert(host.frameTicks == true, "subsequent genuine onChange did not start a normal interaction")
 
+local backtrackHost = newHost()
+backtrackHost.open()
+local origin = backtrackHost.slider().value
+backtrackHost.change(origin + 0.02)
+backtrackHost.change(origin)
+backtrackHost.release()
+assert(backtrackHost.calls[2].command == "'prism' 'set' 'glass.depth' '100'",
+  "dragging back to the starting value must keep the real release")
+
 local silentHost = newHost()
 silentHost.open()
 local silentSlider = silentHost.slider()
@@ -169,10 +224,31 @@ silentHost.change(silentSlider.value + 0.05)
 silentHost.suppressNextReconcileCallback = true
 silentHost.release()
 local expected = silentHost.slider().value
--- Return through the same value later, when a stale suppression would swallow genuine input.
+-- A no-op callback after a silent correction is harmless; a later changed value is real input.
 silentHost.slider().value = expected + 0.01
 silentHost.change(expected)
-assert(silentHost.frameTicks == true, "callback suppression survived a render that emitted no callback")
+assert(silentHost.frameTicks == false, "a no-op callback started a drag")
+silentHost.change(expected + 0.02)
+assert(silentHost.frameTicks == true, "a later changed value did not start a real drag")
+
+local profileHost = newHost()
+profileHost.open()
+assert(profileHost.editCount() == "No edits")
+profileHost.deferReconcileCallbacks = true
+profileHost.pickProfile()
+assert(profileHost.calls[2].command == "'prism' 'context' 'activate' 'profile' 'new'")
+profileHost.complete(2)
+assert(profileHost.calls[3].command == "'prism' 'describe' '--json'")
+profileHost.switchProfile()
+profileHost.complete(3)
+assert(#profileHost.deferredReconcile == 1, "the profile's changed slider emitted a native callback")
+profileHost.flushReconcile()
+assert(profileHost.editCount() == "No edits", "profile selection fabricated a scratch edit")
+assert(profileHost.frameTicks == false, "profile selection left a synthetic drag active")
+assert(#profileHost.calls == 3, "profile selection issued a synthetic set")
+profileHost.tick()
+assert(profileHost.calls[4] and profileHost.calls[4].command == "'prism' 'describe' '--json'",
+  "a synthetic drag blocked the periodic refresh")
 `;
   const result = spawnSync('lua', ['-', `${pluginDir}/`], { input: script, encoding: 'utf8' });
 

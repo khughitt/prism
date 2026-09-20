@@ -340,6 +340,8 @@ local function beginDrag(param, sliderValue)
     state.renderedSliderCorrection = nil
     return
   end
+  -- Noctalia emits onChange when reconciliation applies the value we rendered.
+  if math.abs(sliderValue - Presentation.toSliderValue(param.value, param)) < hostSliderEpsilon then return end
   local canonical = Presentation.canonicalFromSlider(sliderValue, param)
   if not state.drag or state.drag.key ~= param.key then
     state.drag = {
