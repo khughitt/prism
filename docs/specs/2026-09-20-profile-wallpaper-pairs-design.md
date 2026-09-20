@@ -1,7 +1,7 @@
 # Profile loading and wallpaper-specific tweaks
 
 **Date:** 2026-09-20
-**Status:** approved 2026-09-20 with outgoing-pair auto-save; [implementation plan](../plans/2026-09-20-profile-wallpaper-pairs.md) reviewed with the requested recovery, migration, and task-split changes incorporated
+**Status:** implemented in the worktree with outgoing-pair auto-save; all five [implementation steps](../plans/2026-09-20-profile-wallpaper-pairs.md) passed scoped review. Whole-branch review and its scoped fix review passed; desktop acceptance remains pending.
 **Parent:** `prism-aec90f`
 **Amends:** [compositional profiles](2026-09-19-compositional-profiles-design.md), particularly Sections 2, 3, 6, 7 and 9.
 

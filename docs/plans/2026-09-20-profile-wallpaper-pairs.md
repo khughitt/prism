@@ -12,7 +12,7 @@
 
 **Task:** `prism-a3484e`, under `prism-aec90f`.
 
-**Status:** reviewed 2026-09-20; the user’s recovery, migration, and task-split changes are incorporated below. Controller verification precedes execution; no repeat approval is requested.
+**Status:** implemented in the worktree; all five task reviews passed. Whole-branch review and its scoped fix review passed; desktop acceptance remains pending.
 
 ## Global Constraints
 
@@ -187,7 +187,7 @@ Introduce `assertPairLayout()` in `migrate.js`: refuse normal store reads/writes
 
 **Interfaces:** Produces `lookPath`, `readLook`, `writeLook`, `readPair`, `listPairs`, `readRuntime`, `writeRuntime` with the exact contracts above. Consumes existing `activePath`, `valuesPath`, `contextsDir`, `readJson`, `writeJsonAtomic`, `assertName`, and `yaml`.
 
-- [ ] **Step 1: Write storage tests in isolated config/state directories.** Use existing `beforeEach` temp-store pattern. Include these tests and malformed metadata cases:
+- [x] **Step 1: Write storage tests in isolated config/state directories.** Use existing `beforeEach` temp-store pattern. Include these tests and malformed metadata cases:
 
 ```js
 test('same wallpaper has independent Default and named-look values', () => {
@@ -215,9 +215,9 @@ test('runtime atomically carries selection and scratch without leaking metadata'
 
 Write table cases for `_wallpapers: []`, a pair without `_source`, `_scratch: []`, unknown runtime fields, invalid profile names, wallpaper unknown fields, and `pinned`. Read failures leave bytes unchanged; invalid `writeRuntime` inputs leave the previous valid record byte-identical. Include `writeRuntime({active:{_scratch:{x:1}},scratch:{}})` and assert rejection before filesystem calls. Flat profile YAML still decodes to `{values, wallpapers:{}}`; a missing named look is null; writing an existing look preserves exactly the explicitly supplied pair map.
 
-- [ ] **Step 2: Run the new tests red.** `node --test test/pairs.test.js test/runtime.test.js`; expect missing-export failures, then implement.
+- [x] **Step 2: Run the new tests red.** `node --test test/pairs.test.js test/runtime.test.js`; expect missing-export failures, then implement.
 
-- [ ] **Step 3: Add document parsing/writing using current atomic primitives.** Keep metadata outside parameter maps. The conversion’s core is:
+- [x] **Step 3: Add document parsing/writing using current atomic primitives.** Keep metadata outside parameter maps. The conversion’s core is:
 
 ```js
 const { _wallpapers = {}, ...values } = doc;
@@ -243,9 +243,9 @@ export function writeRuntime({ active, scratch }) {
 
 Define `validateRuntimeRecord(record)` in `contexts.js`; it returns `{active,scratch}`, validates every field described above, and is used on reads and writes. `writeLook` uses the current temp-write/rename code, serializes `_source`, and validates document shape before creating directories. Keep low-level IO independent of `defs`; callers perform parameter validation.
 
-- [ ] **Step 4: Run focused and full gates.** `node --test test/pairs.test.js test/runtime.test.js`, then `just test`, `just check`, `tasks check`. The existing suite must still pass because production consumers have not switched.
+- [x] **Step 4: Run focused and full gates.** `node --test test/pairs.test.js test/runtime.test.js`, then `just test`, `just check`, `tasks check`. The existing suite must still pass because production consumers have not switched.
 
-- [ ] **Step 5: Close this step through the CLI and commit only its files and task record.** `tasks done prism-95e0d0 "Added validated atomic look/pair and runtime document primitives."`; rerun `tasks check`; commit `feat(store): add look pairs and atomic runtime documents`.
+- [x] **Step 5: Close this step through the CLI and commit only its files and task record.** `tasks done prism-95e0d0 "Added validated atomic look/pair and runtime document primitives."`; rerun `tasks check`; commit `feat(store): add look pairs and atomic runtime documents`.
 
 ### Task 2: Cut over store readers and writers with idempotent layout migration
 
@@ -266,7 +266,7 @@ writeBackup(files, now, { unique = false } = {}); // existing helper, optional f
 
 The plan is ephemeral. `originals` are present files passed to the existing backup helper; `outputs` are `{path, text, existed}` for changed look/runtime files; `removals` are old source paths; `copies` are `{look:string|null,id:string,existing:boolean}` for reporting. Paths are constructed from the configured store paths and validated context names, never deserialized from a saved plan. `originally-absent.txt` is derived from `outputs` with `existed:false`, for a human to undo new files; migration never reads it. Parameter migration retains `planMigration/writeMigrated`, grouping each physical look/runtime file into one output while reporting all changed logical maps.
 
-- [ ] **Step 1: Add the behavioral regression before switching production readers.** Extend the current CLI test fixture with `writeLook` and this case (use the captured helper below, returning exactly `{code,stdout,stderr}`):
+- [x] **Step 1: Add the behavioral regression before switching production readers.** Extend the current CLI test fixture with `writeLook` and this case (use the captured helper below, returning exactly `{code,stdout,stderr}`):
 
 ```js
 async function runCaptured(argv, opts = {}) {
@@ -317,7 +317,7 @@ test('doctor remedy leaves a missing active profile without losing scratch', asy
 
 Repeat with a malformed outgoing profile document and with no wallpaper. Preserve the broken document byte-for-byte and verify the command's runner receives every bound key (including keys whose new value matches a default). Add invalid base, invalid scratch, and invalid incoming Default pair variants that refuse with **zero writes**. A malformed incoming profile during normal activation still refuses; recovery is explicit selection away from a currently named broken look. Add a valid named destination variant to preserve the existing ability to recover by selecting that profile; wallpaper rotation alone still fails because it leaves the broken selected look in its incoming fold.
 
-- [ ] **Step 2: Wire projections and the resolver together.** Replace the implementations of `readActive/readScratch/readValues` and their writers with the documented projections. A value-only writer performs a locked read/replace of its containing document:
+- [x] **Step 2: Wire projections and the resolver together.** Replace the implementations of `readActive/readScratch/readValues` and their writers with the documented projections. A value-only writer performs a locked read/replace of its containing document:
 
 ```js
 export function writeValues(values) {
@@ -331,7 +331,7 @@ export function writeScratch(scratch) {
 
 Keep the old scratch path only for explicit migration; remove ordinary reads/writes of it. In `loadLayers`, use `readPair(active.profile ?? null, active.wallpaper.id)` for wallpaper; preserve `LAYER_ORDER`, `RESOLUTION_ORDER`, and scratch normalization against `beneath`. Rename/delete keeps the existing whole-file operations because pairs are embedded. Audit **every** `readContext/writeContext`, `writeValues`, and `writeActive` caller with `rg` so no value-only write drops embedded pairs or scratch.
 
-- [ ] **Step 3: Implement one transition for profile selection and wallpaper changes.** Replace `wallpaperLeaving/planFold`’s wallpaper-only decision with explicit transition intent. Keep hook-repeat detection separate from explicit profile selection. Compute `recoverOutgoing` first: only explicit profile selection/deactivation with a currently named profile may catch its outgoing document read/validation failure. Read/validate runtime, base, scratch and the incoming look/pair outside that catch. On recovery set `previous = null`; on normal transitions resolve the previous state normally. Do not call `loadStore` in a broad try/catch that also swallows incoming/base/scratch failures:
+- [x] **Step 3: Implement one transition for profile selection and wallpaper changes.** Replace `wallpaperLeaving/planFold`’s wallpaper-only decision with explicit transition intent. Keep hook-repeat detection separate from explicit profile selection. Compute `recoverOutgoing` first: only explicit profile selection/deactivation with a currently named profile may catch its outgoing document read/validation failure. Read/validate runtime, base, scratch and the incoming look/pair outside that catch. On recovery set `previous = null`; on normal transitions resolve the previous state normally. Do not call `loadStore` in a broad try/catch that also swallows incoming/base/scratch failures:
 
 ```js
 const outgoing = active.wallpaper;
@@ -351,7 +351,7 @@ For same-look selection, compute incoming layers from the **planned merged look*
 
 Keep existing unqualified wallpaper commands working during the atomic format switch: replace their global file reads/writes with explicit `readPair(active.profile ?? null, id)` and whole-look writes. List/show may retain current-look scope until Task 3 adds all-pair discovery. Clear/delete must already touch only that selected look; no temporary global IO or compatibility reader survives this commit. Document active-profile **delete** separately in README: it removes the profile and all its pairs, selects Default, and preserves scratch, unlike a successful ordinary explicit selection.
 
-- [ ] **Step 4: Implement commits from whole look documents.** For Keep in look, merge scratch into settings and remove precisely its keys from the selected pair **in the same document**. For Keep for wallpaper, merge scratch into that look’s active pair. For Save As, create this destination before publishing runtime:
+- [x] **Step 4: Implement commits from whole look documents.** For Keep in look, merge scratch into settings and remove precisely its keys from the selected pair **in the same document**. For Keep for wallpaper, merge scratch into that look’s active pair. For Save As, create this destination before publishing runtime:
 
 ```js
 const target = readLook(name) ?? { values: {}, wallpapers: {} };
@@ -366,7 +366,7 @@ writeRuntime({ active: { ...active, profile: name }, scratch: {} });
 
 Do not overwrite the outgoing pair during Save As; do not strip any other destination pair. Extend `commitKeepsScreen` tests for replacement with a conflicting current destination pair, empty scratch, Default source, and a destination retaining a second wallpaper’s pair. `resolved.json` stays byte-identical and the runner is uncalled on every commit.
 
-- [ ] **Step 5: Build and test the explicit migration before enabling its guard.** Use the current-store migration algorithm above and existing atomic writers. Extend `writeBackup(files, now, {unique = false} = {})` so `unique: true` uses `fs.mkdtempSync(backupDir(now) + "-")`; existing callers retain their current timestamp/collision behavior. Pair migration passes `unique: true` for a fresh backup on every modifying attempt. Write the restoration-only `originally-absent.txt` after all copies and before the first store write. Extend backup handling to `state/active.json`, preserving byte-for-byte originals and originally absent destinations. Add `migrate pairs` dispatch; it acquires the existing lock once. Plain `migrate` traverses Default and all named-look settings/pairs plus runtime scratch and writes each physical file once, so two changed maps in one profile never overwrite each other.
+- [x] **Step 5: Build and test the explicit migration before enabling its guard.** Use the current-store migration algorithm above and existing atomic writers. Extend `writeBackup(files, now, {unique = false} = {})` so `unique: true` uses `fs.mkdtempSync(backupDir(now) + "-")`; existing callers retain their current timestamp/collision behavior. Pair migration passes `unique: true` for a fresh backup on every modifying attempt. Write the restoration-only `originally-absent.txt` after all copies and before the first store write. Extend backup handling to `state/active.json`, preserving byte-for-byte originals and originally absent destinations. Add `migrate pairs` dispatch; it acquires the existing lock once. Plain `migrate` traverses Default and all named-look settings/pairs plus runtime scratch and writes each physical file once, so two changed maps in one profile never overwrite each other.
 
 Representative fixture in `test/pair-migrate.test.js`, with local isolated dirs and the existing CLI captured-output pattern:
 
@@ -393,9 +393,9 @@ test('layout migration copies globals to every existing look and preserves pendi
 
 Cover zero old wallpaper files with scratch-only migration; multiple active/inactive profiles; preserved YAML backup comments; malformed inactive pair/global file; already-present conflicting pair; conflicting scratch sources; missing original base/runtime; `pinned`; equal existing pairs and equal dual scratch representations; explicit empty/new versus nonempty/old scratch conflict; clean repeat; and a replacement parameter in an inactive pair. Byte snapshots must show ordinary describe/get/list never repairs layout. Doctor must identify each bad pair with look and id and keep diagnosing remaining valid documents.
 
-- [ ] **Step 6: Finish the atomic consumer cutover and run full gates.** Replace old global-wallpaper test fixture writes with explicit look/pair setup except where testing migration. Replace assertions requiring scratch survival on profile selection with the approved zero-pending behavior. Keep first-activation, same-wallpaper-hook, typed-value validation, and slider-echo regression assertions intact. Update README’s storage, explicit migration/restore instructions, recovery boundary, active-profile-delete scratch preservation, and interruption table. Existing argv stays accepted; expected-slot suffixes and broader discovery arrive in Task 3. Adapt existing write-order fixtures/assertions as needed to keep the current complete suite green; the expanded adversarial matrix is Task 4. Run focused tests, then `just test`, `just check`, `tasks check`; all Node, Lua, and contract tests must pass together.
+- [x] **Step 6: Finish the atomic consumer cutover and run full gates.** Replace old global-wallpaper test fixture writes with explicit look/pair setup except where testing migration. Replace assertions requiring scratch survival on profile selection with the approved zero-pending behavior. Keep first-activation, same-wallpaper-hook, typed-value validation, and slider-echo regression assertions intact. Update README’s storage, explicit migration/restore instructions, recovery boundary, active-profile-delete scratch preservation, and interruption table. Existing argv stays accepted; expected-slot suffixes and broader discovery arrive in Task 3. Adapt existing write-order fixtures/assertions as needed to keep the current complete suite green; the expanded adversarial matrix is Task 4. Run focused tests, then `just test`, `just check`, `tasks check`; all Node, Lua, and contract tests must pass together.
 
-- [ ] **Step 7: Close and commit this atomic format cutover.** `tasks done prism-01554f "Cut over look/pair and runtime storage, preserved broken-profile recovery, and added backed-up idempotent layout migration."`; rerun `tasks check`; commit `feat(store): cut over to profile wallpaper pairs`. The required atomic boundary is the actual reader/writer and fixture format switch; the separate guard/discovery and adversarial-verification tasks each have their own full-suite gate.
+- [x] **Step 7: Close and commit this atomic format cutover.** `tasks done prism-01554f "Cut over look/pair and runtime storage, preserved broken-profile recovery, and added backed-up idempotent layout migration."`; rerun `tasks check`; commit `feat(store): cut over to profile wallpaper pairs`. The required atomic boundary is the actual reader/writer and fixture format switch; the separate guard/discovery and adversarial-verification tasks each have their own full-suite gate.
 
 ### Task 3: Guard pair actions and expose all-pair discovery
 
@@ -405,9 +405,9 @@ Cover zero old wallpaper files with scratch-only migration; multiple active/inac
 
 **Interfaces:** Consumes Task 2’s pair-aware store and existing unqualified commands. Produces `parseExpectedSlots(args)` and `assertExpectedSlots(active, expected)` with the signatures in Pair selection and guards; `Queue.captureSlots(model)` returns `{look:string,wallpaper:string}` tagged tokens; `item.expected` is optional only for intentional direct/current-store CLI behavior. Produces all-look `context list`, `context show wallpaper <id> [--look <token>]`, and guard-aware clear/delete/commit/rename. No storage format change.
 
-- [ ] **Step 1: Write the stale-owner and discovery regressions, then run them red.** Use `{code,stdout,stderr}` captured results and existing isolated fixtures. For each `commit wallpaper w1`, `context clear wallpaper w1`, and active profile delete/rename, capture Aurora/W tokens, switch the store to Dark/W, and assert a guarded request returns nonzero with all files byte-identical. Repeat with only wallpaper changed and with Default versus a profile named Default. List must show identical ids under two looks as separate owned pairs; show with an explicit inactive look must return that look’s values. Run `node --test test/context-cli.test.js test/commit.test.js test/plugin-client.test.js` before implementation.
+- [x] **Step 1: Write the stale-owner and discovery regressions, then run them red.** Use `{code,stdout,stderr}` captured results and existing isolated fixtures. For each `commit wallpaper w1`, `context clear wallpaper w1`, and active profile delete/rename, capture Aurora/W tokens, switch the store to Dark/W, and assert a guarded request returns nonzero with all files byte-identical. Repeat with only wallpaper changed and with Default versus a profile named Default. List must show identical ids under two looks as separate owned pairs; show with an explicit inactive look must return that look’s values. Run `node --test test/context-cli.test.js test/commit.test.js test/plugin-client.test.js` before implementation.
 
-- [ ] **Step 2: Wire explicit slot guards and pair discovery.** Parse guard suffixes before existing positional arguments. Check the parsed expectation inside each mutation’s lock before reads leading to writes. Add a shared Lua `Queue.captureSlots(model)` returning `{look=<tagged token>, wallpaper=<tagged token>}`; append both flags from `item.expected` in `argvFor`. Capture on the rendered action, before `commitAction` optimistically changes `state.model.active`, and before replace confirmation queues Save As. Do not capture at process launch, where the model may already have changed.
+- [x] **Step 2: Wire explicit slot guards and pair discovery.** Parse guard suffixes before existing positional arguments. Check the parsed expectation inside each mutation’s lock before reads leading to writes. Add a shared Lua `Queue.captureSlots(model)` returning `{look=<tagged token>, wallpaper=<tagged token>}`; append both flags from `item.expected` in `argvFor`. Capture on the rendered action, before `commitAction` optimistically changes `state.model.active`, and before replace confirmation queues Save As. Do not capture at process launch, where the model may already have changed.
 
 ```lua
 local item = {verb = "commit", destination = "profile", target = name,
@@ -419,9 +419,9 @@ For `context show wallpaper <id>` add optional `--look <look-token>`; default is
 
 Test guard mismatch with the same wallpaper/different look, same look/different wallpaper, Default versus a profile called `Default`, no wallpaper versus an id, and half-specified flags. Each mismatch must preserve all files. Verify every actual queue argv against the CLI parser in the existing contract harness. Keep direct CLI calls without preconditions usable.
 
-- [ ] **Step 3: Verify clear/delete ownership and update command documentation.** Keep a same-id pair in Default, Aurora, and Dark; clear Aurora/W with both expected slots, assert only Aurora/W disappears and scratch stays; delete wallpaper W under Aurora, assert only Aurora's pair and the active wallpaper slot are removed while scratch survives. Delete an active named profile with scratch and multiple pairs, assert the full profile file is removed, Default is selected, and scratch survives. Stale guarded versions must mutate none of these files. README and the plugin contract must distinguish active-profile deletion from ordinary selection and show both expectation flags and inactive-look show syntax.
+- [x] **Step 3: Verify clear/delete ownership and update command documentation.** Keep a same-id pair in Default, Aurora, and Dark; clear Aurora/W with both expected slots, assert only Aurora/W disappears and scratch stays; delete wallpaper W under Aurora, assert only Aurora's pair and the active wallpaper slot are removed while scratch survives. Delete an active named profile with scratch and multiple pairs, assert the full profile file is removed, Default is selected, and scratch survives. Stale guarded versions must mutate none of these files. README and the plugin contract must distinguish active-profile deletion from ordinary selection and show both expectation flags and inactive-look show syntax.
 
-- [ ] **Step 4: Run full gates, close, and commit.** Run focused CLI/queue/contract tests, then `just test`, `just check`, `tasks check`. `tasks done prism-fba116 "Added expected-slot guards, captured panel pair identity, and all-look pair discovery and management."`; rerun `tasks check`; commit `feat(context): guard and inspect look wallpaper pairs`.
+- [x] **Step 4: Run full gates, close, and commit.** Run focused CLI/queue/contract tests, then `just test`, `just check`, `tasks check`. `tasks done prism-fba116 "Added expected-slot guards, captured panel pair identity, and all-look pair discovery and management."`; rerun `tasks check`; commit `feat(context): guard and inspect look wallpaper pairs`.
 
 ### Task 4: Verify interruption prefixes and concurrent pair mutations
 
@@ -431,9 +431,9 @@ Test guard mismatch with the same wallpaper/different look, same look/different 
 
 **Interfaces:** Consumes all durable transitions, commits, guards, and the current-store migration. Extends the existing real-filesystem injection harness (rename/link/rm/unlink and migration copy/write failures); no production failure-hook API or transaction abstraction.
 
-- [ ] **Step 1: Extend ordinary-transition prefix tests.** Exercise every operation in the prefix table with distinct values and at least two same-id pairs under different looks. Include no-wallpaper selection, same-look selection, Default round-trips, Keep in look, Save As replacement with other destination pairs, and active rename carrying pairs. At each write prefix assert exact before/after resolved appearance, correct source/destination pair maps, and retry convergence to the clean-run store (completed refusals only after final mutation). Add recovery separately: before its runtime write retry the selection/deactivation; after that write assert the valid incoming look plus unchanged scratch, then run `prism apply` and assert the bus, without treating a new explicit selection as a recovery retry.
+- [x] **Step 1: Extend ordinary-transition prefix tests.** Exercise every operation in the prefix table with distinct values and at least two same-id pairs under different looks. Include no-wallpaper selection, same-look selection, Default round-trips, Keep in look, Save As replacement with other destination pairs, and active rename carrying pairs. At each write prefix assert exact before/after resolved appearance, correct source/destination pair maps, and retry convergence to the clean-run store (completed refusals only after final mutation). Add recovery separately: before its runtime write retry the selection/deactivation; after that write assert the valid incoming look plus unchanged scratch, then run `prism apply` and assert the bus, without treating a new explicit selection as a recovery retry.
 
-- [ ] **Step 2: Exercise every migration write prefix from current state.** Add interruption points during backup copies, `originally-absent.txt` write, each look replacement, runtime replacement, each global deletion, and old scratch deletion. Before store mutation, every original stays byte-identical. After any store-write prefix, rerun `migrate pairs` against the current files and compare final look/runtime outputs with the clean result; after the final legacy deletion it is a no-op. Ignore fresh backup-directory names in output comparison, but retain and byte-verify the first complete backup against all pre-first-attempt originals and its absent-output list. Verify a modifying retry creates a different backup and never edits the first; backup failure creates no store mutation. Restore from the first backup plus plain absent-output list in a temporary store and compare original present/absent files exactly.
+- [x] **Step 2: Exercise every migration write prefix from current state.** Add interruption points during backup copies, `originally-absent.txt` write, each look replacement, runtime replacement, each global deletion, and old scratch deletion. Before store mutation, every original stays byte-identical. After any store-write prefix, rerun `migrate pairs` against the current files and compare final look/runtime outputs with the clean result; after the final legacy deletion it is a no-op. Ignore fresh backup-directory names in output comparison, but retain and byte-verify the first complete backup against all pre-first-attempt originals and its absent-output list. Verify a modifying retry creates a different backup and never edits the first; backup failure creates no store mutation. Restore from the first backup plus plain absent-output list in a temporary store and compare original present/absent files exactly.
 
 Add deliberate manual conflicts between attempts: change an already copied destination pair while its old global source still exists, or change `_scratch` while old scratch remains. The rerun must refuse before any backup or store write and preserve the manual edit; after resolving the conflict intentionally, rerun can finish. Also change a nonconflicting unrelated pair/setting and assert rerun retains it. No saved output is replayed over current content.
 
@@ -449,9 +449,9 @@ assert.match(refused.stderr, /conflict/);
 assert.deepEqual(files(), beforeRetry);
 ```
 
-- [ ] **Step 3: Extend multiprocess coverage and fix only demonstrated failures.** Run competing profile selections and guarded pair commits through the real store lock. Assert both commands serialize, a stale guarded command refuses, pending keys are attributed to the look/wallpaper active when their transition executes, and final runtime/looks parse and resolve. Use the existing subprocess harness; do not introduce a second lock or production test hook. Run `node --test test/write-order.test.js test/pair-migrate.test.js test/lock-multiprocess.test.js` and address each failing invariant at its shared implementation point.
+- [x] **Step 3: Extend multiprocess coverage and fix only demonstrated failures.** Run competing profile selections and guarded pair commits through the real store lock. Assert both commands serialize, a stale guarded command refuses, pending keys are attributed to the look/wallpaper active when their transition executes, and final runtime/looks parse and resolve. Use the existing subprocess harness; do not introduce a second lock or production test hook. Run `node --test test/write-order.test.js test/pair-migrate.test.js test/lock-multiprocess.test.js` and address each failing invariant at its shared implementation point.
 
-- [ ] **Step 4: Run full gates, close, and commit the verification deliverable.** Run `just test`, `just check`, `tasks check`. `tasks done prism-5bcb56 "Verified all pair write prefixes, current-store migration retries and conflict refusal, recovery apply boundary, and multiprocess attribution."`; rerun `tasks check`; commit `test(store): verify pair interruption and concurrency guarantees`. Once all three children are done, the controller verifies and closes goal `prism-d513ec`; no child closes that goal itself.
+- [x] **Step 4: Run full gates, close, and commit the verification deliverable.** Run `just test`, `just check`, `tasks check`. `tasks done prism-5bcb56 "Verified all pair write prefixes, current-store migration retries and conflict refusal, recovery apply boundary, and multiprocess attribution."`; rerun `tasks check`; commit `test(store): verify pair interruption and concurrency guarantees`. Once all three children are done, the controller verifies and closes goal `prism-d513ec`; no child closes that goal itself.
 
 ### Task 5: Show pair ownership and verify profile selection in the open panel
 
@@ -461,7 +461,7 @@ assert.deepEqual(files(), beforeRetry);
 
 **Interfaces:** Consumes unchanged describe `active/profile/held/fallback` fields and Task 3’s `Queue.captureSlots(model)` guarded transport. `Presentation.wallpaperHeader(model)` adds only `look` (display name) to existing `{id,name,tuned}`. The panel captures guarded actions with `Queue.captureSlots(model)`; presentation does not carry a second guard representation. No new describe protocol version, polling timer, shell observation, or model cache.
 
-- [ ] **Step 1: Add presentation/lifecycle expectations before changing copy.** Test header text `2 for Aurora + this wallpaper` and `2 for Default + this wallpaper`, zero visible saved keys, no wallpaper row, and a hidden CLI-only pair key excluded from the count. Verify saved pairs and profile settings never contribute to pending count. Reuse the existing Lua host and its immediate/deferred reconciliation callbacks; do not create another harness.
+- [x] **Step 1: Add presentation/lifecycle expectations before changing copy.** Test header text `2 for Aurora + this wallpaper` and `2 for Default + this wallpaper`, zero visible saved keys, no wallpaper row, and a hidden CLI-only pair key excluded from the count. Verify saved pairs and profile settings never contribute to pending count. Reuse the existing Lua host and its immediate/deferred reconciliation callbacks; do not create another harness.
 
 In that host, exercise this exact sequence:
 
@@ -475,7 +475,7 @@ Re-render and fire the periodic refresh → values/counts unchanged, no new set 
 
 Test an explicit same-look activation command with both visible and CLI-only scratch in Task 2; never gate that transition on the visible edit count. Model native programmatic selection updates as silent. Keep current same-index panel handling; changing a Lua guard cannot create an event that the host does not emit. Preserve `fde3bc8`’s slider callback handling unchanged unless a failing test demonstrates a required fix. The native dropdown limitation below remains outside this repository scope; a simulated callback is not evidence that a physical same-option click is emitted. Existing Keep for wallpaper already saves the current pair and clears pending edits without a new control.
 
-- [ ] **Step 2: Implement truthful optimistic selection and pair labels.** An ordinary user selection clears each parameter’s optimistic `edited` flag before render. Recovery selection is an exception that retains scratch; the accepted authoritative describe restores those pending flags, as it does after a failed selection. Do not rewrite `held` or pretend to know incoming saved values: the queued describe reconciles those. Failed activation’s follow-up describe restores the true count and existing error banner. Add one `state.selectionPending` boolean, set before queueing profile selection or Save As. Clear it only when `described()` accepts an authoritative, non-invalidated model; queue drain does not clear it. A failed command keeps it set until its reconciliation describe is accepted; a failed/invalidated describe keeps it set until a later accepted refresh. While it is set, disable and handler-guard Keep/Clear/Rename/Delete/Save As actions so optimistic `active.profile` cannot combine an incoming name with outgoing values. Profile selection and sliders remain enabled. Real slider edits queued behind a selection write the incoming look’s scratch; do not disable sliders or discard their queued set commands while `selectionPending` is true. Rapid consecutive selections stay available; preserve the existing queue and stale-and-replay mechanism. Existing captured closures must still carry their original expectation when tested after the store changes.
+- [x] **Step 2: Implement truthful optimistic selection and pair labels.** An ordinary user selection clears each parameter’s optimistic `edited` flag before render. Recovery selection is an exception that retains scratch; the accepted authoritative describe restores those pending flags, as it does after a failed selection. Do not rewrite `held` or pretend to know incoming saved values: the queued describe reconciles those. Failed activation’s follow-up describe restores the true count and existing error banner. Add one `state.selectionPending` boolean, set before queueing profile selection or Save As. Clear it only when `described()` accepts an authoritative, non-invalidated model; queue drain does not clear it. A failed command keeps it set until its reconciliation describe is accepted; a failed/invalidated describe keeps it set until a later accepted refresh. While it is set, disable and handler-guard Keep/Clear/Rename/Delete/Save As actions so optimistic `active.profile` cannot combine an incoming name with outgoing values. Profile selection and sliders remain enabled. Real slider edits queued behind a selection write the incoming look’s scratch; do not disable sliders or discard their queued set commands while `selectionPending` is true. Rapid consecutive selections stay available; preserve the existing queue and stale-and-replay mechanism. Existing captured closures must still carry their original expectation when tested after the store changes.
 
 ```lua
 -- In the genuine user-selection path, before enqueue and render:
@@ -489,9 +489,9 @@ text = header.tuned .. " for " .. header.look .. " + this wallpaper"
 
 Keep the basename in the tooltip. Use `Keep N edits for <look> + this wallpaper` and `Clear <look> + this wallpaper's N adjustments`; a saved pair is never described as pending edits. Count/reset visibility rules stay unchanged. The selector’s index 0 remains `Default`.
 
-- [ ] **Step 3: Verify complete control semantics through existing harnesses.** Cover Keep in look and Keep for wallpaper with stale look and stale wallpaper; Clear preserves scratch and other pairs; failed Keep restores optimistic pending flags from describe; Neutral then Revert restores profile+pair without changing stored look bytes; Save As replaces the current destination pair while retaining another destination pair. Test the interval after the queue drains but before describe completes: selectionPending still disables pair actions. Failed and invalidated describes must not reopen them. While selection is pending, move a slider, verify it stays enabled, and assert its genuine set is queued after selection and appears in the incoming scratch after accepted describe. Contrast that real user write with model-echo callbacks, which must still enqueue no set. Test two rapid selections and delayed periodic describe while the queue is busy: the existing stale-and-replay path runs once after drain and restores authoritative counts. No `context wallpaper` command may originate from panel events.
+- [x] **Step 3: Verify complete control semantics through existing harnesses.** Cover Keep in look and Keep for wallpaper with stale look and stale wallpaper; Clear preserves scratch and other pairs; failed Keep restores optimistic pending flags from describe; Neutral then Revert restores profile+pair without changing stored look bytes; Save As replaces the current destination pair while retaining another destination pair. Test the interval after the queue drains but before describe completes: selectionPending still disables pair actions. Failed and invalidated describes must not reopen them. While selection is pending, move a slider, verify it stays enabled, and assert its genuine set is queued after selection and appears in the incoming scratch after accepted describe. Contrast that real user write with model-echo callbacks, which must still enqueue no set. Test two rapid selections and delayed periodic describe while the queue is busy: the existing stale-and-replay path runs once after drain and restores authoritative counts. No `context wallpaper` command may originate from panel events.
 
-- [ ] **Step 4: Update the user contract and prepare desktop acceptance.** The contract note records exact guards, pair labels, zero edits after ordinary explicit selection, first-wallpaper and broken-profile-recovery exceptions, active-profile deletion preserving scratch, no-wallpaper discard, runtime scratch location, and CLI same-look selection. Write the acceptance note with this runnable temporary-store preflight:
+- [x] **Step 4: Update the user contract and prepare desktop acceptance.** The contract note records exact guards, pair labels, zero edits after ordinary explicit selection, first-wallpaper and broken-profile-recovery exceptions, active-profile deletion preserving scratch, no-wallpaper discard, runtime scratch location, and CLI same-look selection. Write the acceptance note with this runnable temporary-store preflight:
 
 ```sh
 just test
@@ -501,7 +501,7 @@ tasks check
 
 Then give a desktop checklist matching all six amendment acceptance items, with spaces to record observed results: zero-count selection while open; Aurora/W versus Dark/W round-trip; independent rotation; Keep/Clear locality; Neutral/Revert; rename plus migration/backup evidence. Add Save As replacement, Default, and no-wallpaper cases. State that automated failure injection supplies interruption evidence and desktop work must not corrupt real files to simulate crashes. Record migration command/report/backup location when the existing acceptance task runs it; do not claim desktop acceptance now. Have `prism-439774` consume this note rather than create a second acceptance task.
 
-- [ ] **Step 5: Run the full gate and commit the finished UI contract.** Run `node --test test/plugin-presentation.test.js test/plugin-panel-lifecycle.test.js integrations/noctalia-plugin/contract.test.mjs`, then `just test`, `just check`, `tasks check`. Close the step via `tasks done prism-0c82ac "Panel names the active look–wallpaper pair and verifies zero pending edits across selection and reconciliation."`; commit `feat(panel): show wallpaper adjustments for the selected look`.
+- [x] **Step 5: Run the full gate and commit the finished UI contract.** Run `node --test test/plugin-presentation.test.js test/plugin-panel-lifecycle.test.js integrations/noctalia-plugin/contract.test.mjs`, then `just test`, `just check`, `tasks check`. Close the step via `tasks done prism-0c82ac "Panel names the active look–wallpaper pair and verifies zero pending edits across selection and reconciliation."`; commit `feat(panel): show wallpaper adjustments for the selected look`.
 
 ## Native dropdown capability found during planning
 
@@ -512,3 +512,28 @@ Thus Prism can guarantee same-look selection through its CLI/shared transition, 
 ## Handoff and completion
 
 The user has reviewed this plan; these three requested amendments are incorporated and the controller verifies them before continuing with the preserved execution method. The reviewed architecture and unaffected decisions do not need a second approval. After implementation, dispatch the required whole-branch review through the preserved subagent-driven method, run `just gate`, and resolve its findings before live acceptance. Keep the branch unmerged until `prism-439774` records desktop results for the amendment. The controller owns existing parent task/spec status updates and any cross-project follow-up; children must not close or rewrite unrelated task records.
+
+## Execution decisions and evidence
+
+All five steps passed their scoped reviews. The final whole-branch review found
+one reopen-during-selection race; the shared refresh now defers while the queue
+is busy, with a permanent close/reopen regression. The full gate passes 464 Node
+tests plus Lua. Desktop observations belong to the
+[acceptance note](../notes/2026-09-20-profile-wallpaper-pairs-acceptance.md).
+
+- Applied all three user review corrections: broken-look recovery, current-store
+  migration without replay machinery, and separately green store tasks. The
+  tradeoffs are an explicit recovery exception, conflict refusal after manual
+  edits, and additional reviewable commits.
+- Recovery finishes at the atomic runtime write. Use `prism apply` afterward;
+  repeating selection is a new action that can save or discard preserved scratch.
+- Clear refuses structurally malformed shared YAML to preserve sibling data. A
+  structurally readable pair with invalid parameter values remains clearable.
+  Broken YAML requires repair or selection away from a named broken look.
+- Retained the timing-based child-ready assertion as a nonblocking test limitation:
+  independent ownership, consumption, exclusion, and negative-control checks
+  substantiate locking. A heavily delayed child can still mask that assertion's
+  lock-wait coverage; no production hook was added.
+
+Task closure emitted conflicting harness session-provenance warnings. Subsequent
+`tasks check` runs reported zero errors and zero warnings.

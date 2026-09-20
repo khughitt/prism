@@ -1,6 +1,6 @@
 # Look–wallpaper pair acceptance
 
-Status: prepared, desktop results **unobserved**. Existing task `prism-439774`
+Status: automated checks and live migration verified 2026-09-20; desktop gesture results **unobserved**. Existing task `prism-439774`
 consumes this note; no second acceptance task is needed. The controller owns
 live migration, the migration report, plugin installation/reload, and the user
 acceptance session. Keep the branch unmerged until that task records results.
@@ -18,10 +18,10 @@ tasks check
 
 Record date/commit, exit codes, test count, and all task warnings here:
 
-- Date / commit: __________
-- `just test`: __________
-- `just check`: __________
-- `tasks check` (zero errors; list warnings): __________
+- Date / commit: 2026-09-20 / product revision `9cd8031`.
+- `just test`: exit 0, 464 Node tests plus Lua; final controller `just gate` passed.
+- `just check`: exit 0.
+- `tasks check`: exit 0, zero errors and zero warnings. Earlier worker task closures emitted conflicting harness session-provenance warnings; validation remained clean.
 
 Automated failure injection supplies interruption evidence at durable write
 boundaries. Do **not** corrupt real desktop files to simulate crashes. Tests
@@ -97,19 +97,70 @@ No new control or native change belongs to this acceptance implementation.
 
 ## Live migration record (controller / prism-439774)
 
-- Date / operator / code revision: __________
-- Command (normally `prism migrate pairs`): __________
-- Complete migration report (attach or link): __________
-- First complete immutable backup location: __________
-- Later modifying-attempt backup locations, if any: __________
-- Original files and `originally-absent.txt` inspected: __________
-- Reported copied/matching pairs and scratch move: __________
-- Completed rerun is a no-op and creates no backup: __________
-- Installed CLI/plugin revisions and reload observation: __________
-- User acceptance / remaining issues: __________
+- Date / operator / code revision: 2026-09-20 14:15 UTC / implementation controller / `9cd8031`.
+- Command: `prism migrate pairs` (exit 0).
+- Complete migration report: recorded below.
+- First complete immutable backup: `~/.local/state/prism/migrations/20260920T141546Z-YySxLC`.
+- Later modifying-attempt backups: none.
+- Verified all 14 backup originals by SHA-256 and checked the empty `originally-absent.txt` list against the pre-migration plan. A fresh complete config/state snapshot was also retained in the ignored execution workspace.
+- Copied 45 pairs across Default and eight named looks. Active slots, all pending keys (zero at migration), and the full resolved parameter map exactly match the fresh pre-migration snapshot.
+- Completed rerun: `migrate pairs: nothing to migrate`; exactly one new backup directory exists.
+- CLI and plugin point to the reviewed worktree at product revision `9cd8031`. `prism apply` exited 0; `prism doctor` reported `doctor: ok`; describe showed the same active `glass4` look and wallpaper with zero pending keys. Plugin enable and panel-open were acknowledged after background export completed.
+- User acceptance: awaiting the desktop gesture checklist above. Branch remains unmerged; original launcher/plugin restoration awaits acceptance and integration.
 
 Preserve the first complete backup. Later attempt backups describe later
 prefixes and do not replace it. Manual rollback copies config-relative files
 back to config and `state/` files back to state, then removes the outputs listed
 in `originally-absent.txt`. This is an explicit restoration to the old layout;
 ordinary reads never use old global pairs as a fallback.
+
+### Recorded migration output
+
+```text
+migrate pairs: backup ~/.local/state/prism/migrations/20260920T141546Z-YySxLC
+migrate pairs: Default / wallpaper 4702efa8: copied
+migrate pairs: Default / wallpaper 6623f785: copied
+migrate pairs: Default / wallpaper bf6b0d29: copied
+migrate pairs: Default / wallpaper e443a760: copied
+migrate pairs: Default / wallpaper ed4c39c4: copied
+migrate pairs: profile Aurora / wallpaper 4702efa8: copied
+migrate pairs: profile Aurora / wallpaper 6623f785: copied
+migrate pairs: profile Aurora / wallpaper bf6b0d29: copied
+migrate pairs: profile Aurora / wallpaper e443a760: copied
+migrate pairs: profile Aurora / wallpaper ed4c39c4: copied
+migrate pairs: profile Rainbow / wallpaper 4702efa8: copied
+migrate pairs: profile Rainbow / wallpaper 6623f785: copied
+migrate pairs: profile Rainbow / wallpaper bf6b0d29: copied
+migrate pairs: profile Rainbow / wallpaper e443a760: copied
+migrate pairs: profile Rainbow / wallpaper ed4c39c4: copied
+migrate pairs: profile dark / wallpaper 4702efa8: copied
+migrate pairs: profile dark / wallpaper 6623f785: copied
+migrate pairs: profile dark / wallpaper bf6b0d29: copied
+migrate pairs: profile dark / wallpaper e443a760: copied
+migrate pairs: profile dark / wallpaper ed4c39c4: copied
+migrate pairs: profile frosted-glass-jungle / wallpaper 4702efa8: copied
+migrate pairs: profile frosted-glass-jungle / wallpaper 6623f785: copied
+migrate pairs: profile frosted-glass-jungle / wallpaper bf6b0d29: copied
+migrate pairs: profile frosted-glass-jungle / wallpaper e443a760: copied
+migrate pairs: profile frosted-glass-jungle / wallpaper ed4c39c4: copied
+migrate pairs: profile glass3 / wallpaper 4702efa8: copied
+migrate pairs: profile glass3 / wallpaper 6623f785: copied
+migrate pairs: profile glass3 / wallpaper bf6b0d29: copied
+migrate pairs: profile glass3 / wallpaper e443a760: copied
+migrate pairs: profile glass3 / wallpaper ed4c39c4: copied
+migrate pairs: profile glass4 / wallpaper 4702efa8: copied
+migrate pairs: profile glass4 / wallpaper 6623f785: copied
+migrate pairs: profile glass4 / wallpaper bf6b0d29: copied
+migrate pairs: profile glass4 / wallpaper e443a760: copied
+migrate pairs: profile glass4 / wallpaper ed4c39c4: copied
+migrate pairs: profile init / wallpaper 4702efa8: copied
+migrate pairs: profile init / wallpaper 6623f785: copied
+migrate pairs: profile init / wallpaper bf6b0d29: copied
+migrate pairs: profile init / wallpaper e443a760: copied
+migrate pairs: profile init / wallpaper ed4c39c4: copied
+migrate pairs: profile test2 / wallpaper 4702efa8: copied
+migrate pairs: profile test2 / wallpaper 6623f785: copied
+migrate pairs: profile test2 / wallpaper bf6b0d29: copied
+migrate pairs: profile test2 / wallpaper e443a760: copied
+migrate pairs: profile test2 / wallpaper ed4c39c4: copied
+```

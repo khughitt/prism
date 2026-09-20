@@ -3031,9 +3031,10 @@ git commit -m "docs: describe the scratch layer, commits, and the panel's edits 
 Acceptance on 2026-09-20 found a false edit-count defect (`prism-1cda51`) and
 requested a revised profile-switch model (`prism-a3484e`). The
 [amendment](../specs/2026-09-20-profile-wallpaper-pairs-design.md) is approved; its
-implementation plan was reviewed and amended before execution. The revised behavior
-remains incomplete until those steps and acceptance pass. Do not mark the old
-profile-switch acceptance item passed or merge while that work remains open.
+implementation plan is implemented with all five task reviews passed and the
+automated gate green. Desktop acceptance of the revision remains incomplete. Do
+not mark the old profile-switch acceptance item passed or merge before observed
+acceptance of the amendment.
 
 **Files:**
 - Modify: `docs/specs/2026-09-19-compositional-profiles-design.md:4` (status line)
