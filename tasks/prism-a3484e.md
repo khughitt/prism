@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: prism-aec90f
 created: 2026-09-20T11:50:27Z
-updated: 2026-09-20T12:12:54Z
+updated: 2026-09-20T12:40:24Z
 started: 2026-09-20T11:50:52Z
 depends: []
 parent: prism-aec90f
@@ -36,3 +36,7 @@ User requests0 pending edits after loading a profile and restoration of prior tw
 - 2026-09-20T12:12:54Z (prism-aec90f): Implementation plan written and self-reviewed: docs/plans/2026-09-20-profile-wallpaper-pairs.md. Three registered steps; embed pairs with look settings and atomically publish slots/scratch. Explicit resumable migration preserves current pending edits. Native same-option dropdown event limitation documented; no Noctalia work added.
 - 2026-09-20T12:12:54Z (prism-aec90f): parked (waiting on user, review): Review docs/plans/2026-09-20-profile-wallpaper-pairs.md; after approval resume prism-95e0d0 and execute the three steps using the already-selected subagent-driven method.
   provenance: {"harness_session":"codex:01a0bbd8-f021-7163-9af3-bf80490291a9","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-09-20T12:31:53Z (prism-aec90f): resumed
+  provenance: {"harness_session":"codex:01a0bbd8-f021-7163-9af3-bf80490291a9","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-09-20T12:31:53Z (prism-aec90f): User review accepted architecture with three required amendments; applying all: broken-look recovery preserving scratch, idempotent migration without replay journal, and three green/reviewable cutover steps. After incorporation and verification, proceed under existing subagent-driven instruction.
+- 2026-09-20T12:40:24Z (prism-aec90f): Applied all three user plan-review requirements and verified task drift: outgoing broken-look recovery preserves scratch, migration reruns current state with immutable backups and no replay machinery, combined cutover split into three children of prism-d513ec. Reviewed plan is ready for execution; sliders stay enabled and active-profile deletion exception is explicit.

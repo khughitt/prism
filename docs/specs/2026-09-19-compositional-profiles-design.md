@@ -10,7 +10,7 @@
 profile load and saved adjustments scoped to the profile–wallpaper pair. The
 [amendment](2026-09-20-profile-wallpaper-pairs-design.md) was approved on
 2026-09-20; its [implementation plan](../plans/2026-09-20-profile-wallpaper-pairs.md)
-is awaiting review. The original
+was reviewed with recovery, migration, and task-splitting corrections incorporated. The original
 switch semantics below remain implemented until the revised work lands. Desktop
 acceptance is incomplete.
 

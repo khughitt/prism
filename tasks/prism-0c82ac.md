@@ -7,14 +7,14 @@ size: m
 complexity: mid
 process: direct
 created: 2026-09-20T12:08:28Z
-updated: 2026-09-20T12:08:28Z
-depends: [prism-d513ec]
+updated: 2026-09-20T12:37:49Z
+depends: [prism-5bcb56]
 parent: prism-a3484e
 tags: [profiles]
 agent: codex
 spec: docs/specs/2026-09-20-profile-wallpaper-pairs-design.md
 plan: docs/plans/2026-09-20-profile-wallpaper-pairs.md
-step: "Task 3: Show pair ownership and verify profile selection in the open panel"
+step: "Task 5: Show pair ownership and verify profile selection in the open panel"
 ---
 
-Implement reviewed plan Task 3: pair labels, zero pending edits after selection, coherent guarded controls through accepted describe, retained visible scope and fde3bc8 slider tests. Update contract and prepare acceptance note for existing prism-439774. Full just test before commit; no live reload.
+Reviewed amendment Task 5: pair labels, ordinary selection zero-pending count, and coherent pair-action controls until an accepted describe; sliders remain enabled and real queued sets belong to incoming scratch. Preserve visible scope and fde3bc8 callback tests. Update contract and acceptance note for prism-439774; native reselect idea prism-02befb is not a dependency. Full just test; no live reload.
