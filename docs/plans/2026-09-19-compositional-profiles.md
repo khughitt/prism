@@ -3012,6 +3012,10 @@ git commit -m "docs: describe the scratch layer, commits, and the panel's edits 
 - The panel validator checks `held` on hidden as well as visible parameters,
   because every parameter has that contract; cost: stricter refusal of bad
   hidden metadata.
+- Desktop acceptance switches profiles with the selector on this branch, or
+  digits after the separate keyboard task `prism-84d308` lands. This checkout
+  has no keyboard handler and the spec excludes that task; cost: keyboard
+  integration remains unverified here.
 - Desktop acceptance in Task 13 remains pending. The final status change
   and task closeout belong to Task 13's merge boundary, after observed
   gestures; they are not claimed by this documentation commit.
