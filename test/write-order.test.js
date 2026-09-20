@@ -11,7 +11,7 @@ process.env.PRISM_INTEGRATIONS_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'pris
 
 const cli = await import('../src/cli.js');
 const { activePath, defsDir, resolvedPath, valuesPath } = await import('../src/paths.js');
-const { contextPath, writeActive, writeContext, wallpaperId } = await import('../src/contexts.js');
+const { contextPath, readActive, readContextText, writeActive, writeContext, wallpaperId } = await import('../src/contexts.js');
 const { writeScratch } = await import('../src/scratch.js');
 const { loadDefs } = await import('../src/defs.js');
 const { loadStore } = await import('../src/layers.js');
@@ -265,4 +265,22 @@ test('active profile rename refuses a distinct destination without changing the 
   assert.match(sameName.stderr, /profile dusk already exists/);
   assert.deepEqual(sameName.writes, []);
   assert.deepEqual(files(), before);
+});
+
+test('active profile rename refuses a destination symlink to its source', async () => {
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.3 } });
+  writeActive({ profile: 'dusk' });
+  const source = contextPath('profile', 'dusk');
+  const destination = contextPath('profile', 'noon');
+  fs.symlinkSync(source, destination);
+  const sourceText = readContextText('profile', 'dusk');
+
+  const result = await runAfterWrite(['context', 'rename', 'profile', 'dusk', 'noon']);
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /profile noon already exists/);
+  assert.deepEqual(result.writes, []);
+  assert.deepEqual(readActive(), { profile: 'dusk' });
+  assert.equal(readContextText('profile', 'dusk'), sourceText);
+  assert.equal(fs.readlinkSync(destination), source);
+  assert.equal(readContextText('profile', 'noon'), sourceText);
 });

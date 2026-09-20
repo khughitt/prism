@@ -237,9 +237,11 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
         if (from === to) throw new Error(`profile ${to} already exists`);
         const source = contextPath(kind, from);
         const destination = contextPath(kind, to);
-        if (readContextText(kind, to) !== null) {
-          const old = fs.statSync(source);
-          const next = fs.statSync(destination);
+        let next = null;
+        try { next = fs.lstatSync(destination); }
+        catch (error) { if (error.code !== 'ENOENT') throw error; }
+        if (next !== null) {
+          const old = fs.lstatSync(source);
           if (old.dev !== next.dev || old.ino !== next.ino) throw new Error(`profile ${to} already exists`);
         } else {
           fs.linkSync(source, destination);
