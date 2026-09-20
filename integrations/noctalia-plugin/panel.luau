@@ -4,6 +4,7 @@ local Shell = require("./shell.luau")
 
 local state = {
   model = nil,
+  selectionPending = false,
   errorText = nil,
   queue = Queue.new(),
   batchAffectsParams = false,
@@ -211,6 +212,7 @@ local function described(result)
   elseif not message then
     markEdits(model)
     state.model = model
+    state.selectionPending = false
     -- A command's error outlives the refresh it triggers. Clearing it here
     -- would flash the reason a profile would not load past the user and leave
     -- the panel looking fine.
@@ -320,8 +322,10 @@ end
 local function commitAction(item, params)
   item.expected = item.expected or Queue.captureSlots(state.model)
   return function()
+    if state.selectionPending then return end
     for _, param in ipairs(params) do param.edited = false end
     if item.destination == "profile" and item.target ~= nil then
+      state.selectionPending = true
       if not Presentation.profileExists(state.model, item.target) then
         state.model.profiles[#state.model.profiles + 1] = item.target
         table.sort(state.model.profiles)
@@ -334,6 +338,10 @@ local function commitAction(item, params)
 end
 
 local function beginDrag(param, sliderValue)
+  -- Synchronous reconciliation can call the previous render's closure.
+  for _, current in ipairs(state.model.params) do
+    if current.key == param.key then param = current; break end
+  end
   sliderValue = tonumber(sliderValue)
   local correction = state.renderedSliderCorrection
   if correction and correction.key == param.key
@@ -650,9 +658,10 @@ local function resetModeButton(spec)
     glyph = spec.glyph,
     variant = "ghost",
     controlSize = "sm",
+    enabled = spec.enabled ~= false,
     opacity = spec.count > 0 and 1.0 or inertOpacity,
     tooltip = spec.count > 0 and spec.active or spec.inert,
-    onClick = function() if spec.count > 0 then spec.act() end end,
+    onClick = function() if spec.enabled ~= false and spec.count > 0 then spec.act() end end,
   })
 end
 
@@ -709,14 +718,14 @@ local function editsRow(model)
   local children = {
     ui.label({text = edited > 0 and (edited .. plural) or "No edits", fontSize = 12, color = "on_surface_variant", flexGrow = 1}),
     resetModeButton({
-      glyph = "bookmark", count = edited,
+      glyph = "bookmark", count = edited, enabled = not state.selectionPending,
       active = "Keep " .. edited .. plural .. " in " .. look,
       inert = "Nothing to keep",
       act = commitAction({verb = "commit", destination = model.active.profile ~= nil and "profile" or "base"}, params),
     }),
     resetModeButton({
-      glyph = "photo-check", count = wallpaper ~= nil and edited or 0,
-      active = "Keep " .. edited .. plural .. " for this wallpaper",
+      glyph = "photo-check", count = wallpaper ~= nil and edited or 0, enabled = not state.selectionPending,
+      active = "Keep " .. edited .. plural .. " for " .. (model.active.profile or "Default") .. " + this wallpaper",
       inert = wallpaper == nil and "No wallpaper on screen" or "Nothing to keep",
       act = commitAction({verb = "commit", destination = "wallpaper", target = wallpaper and wallpaper.id}, params),
     }),
@@ -756,7 +765,7 @@ end
 -- question rather than a command. A rename onto a taken name is refused.
 local function commitName(text, naming)
   local name = trimmed(text)
-  if state.naming ~= naming then return end
+  if state.selectionPending or state.naming ~= naming then return end
   if not Presentation.validProfileName(name) then
     showNameError("A profile name may use letters, digits, dot, dash, and underscore")
     return
@@ -786,6 +795,7 @@ end
 -- One field and one question share the space under the profile row, so
 -- opening either closes the other.
 local function toggleNaming(mode, text, expected, activeName)
+  if state.selectionPending then return end
   state.confirm = nil
   if state.naming ~= nil and state.naming.mode == mode then
     state.naming = nil
@@ -796,6 +806,7 @@ local function toggleNaming(mode, text, expected, activeName)
 end
 
 local function ask(kind, name, expected)
+  if state.selectionPending then return end
   state.naming = nil
   state.confirm = {kind = kind, name = name, expected = expected}
   render()
@@ -803,8 +814,8 @@ end
 
 -- One selector loads and clears: index 0 is "no profile", which deactivates.
 -- Save, rename, and delete follow the reset idiom - always in the tree, state
--- carried by opacity and tooltip, and the guard in the handler rather than
--- `enabled`. While a mode's field is open its icon turns into a plain cancel:
+-- carried by opacity and tooltip. Pair actions are disabled until selection
+-- reconciles. While a mode's field is open its icon turns into a plain cancel:
 -- a floppy that closes the field reads as a broken save.
 local function profileRow(section)
   local loaded = section.activeName ~= nil
@@ -824,24 +835,23 @@ local function profileRow(section)
       onChange = function(index)
         index = tonumber(index) or -1
         if index == section.selectedIndex then return end
-        if index == 0 then
-          state.model.active.profile = nil
-          enqueue({verb = "deactivate"})
-        else
-          local name = section.options[index + 1]
-          if name == nil then
-            state.errorText = "Prism returned an invalid selection index"
-            render()
-            return
-          end
-          state.model.active.profile = name
-          enqueue({verb = "activate", name = name})
+        local name = section.options[index + 1]
+        if name == nil then
+          state.errorText = "Prism returned an invalid selection index"
+          render()
+          return
         end
+        state.selectionPending = true
+        state.naming, state.confirm = nil, nil
+        for _, param in ipairs(state.model.params) do param.edited = false end
+        state.model.active.profile = index ~= 0 and name or nil
+        enqueue(index == 0 and {verb = "deactivate"} or {verb = "activate", name = name})
         render()
       end,
     }),
     ui.button({
       glyph = mode == "save" and "x" or "device-floppy",
+      enabled = not state.selectionPending,
       variant = "ghost",
       controlSize = "sm",
       tooltip = mode == "save" and "Cancel" or "Save what is on screen as a profile",
@@ -849,6 +859,7 @@ local function profileRow(section)
     }),
     ui.button({
       glyph = mode == "rename" and "x" or "pencil",
+      enabled = not state.selectionPending,
       variant = "ghost",
       controlSize = "sm",
       opacity = loaded and 1.0 or inertOpacity,
@@ -861,6 +872,7 @@ local function profileRow(section)
     }),
     ui.button({
       glyph = "trash",
+      enabled = not state.selectionPending,
       variant = "ghost",
       controlSize = "sm",
       opacity = loaded and 1.0 or inertOpacity,
@@ -895,6 +907,7 @@ local function nameRow()
     }),
     ui.button({
       glyph = "check",
+      enabled = not state.selectionPending,
       variant = "ghost",
       controlSize = "sm",
       tooltip = renaming and "Rename to this name" or "Save under this name",
@@ -919,9 +932,11 @@ local function confirmRow()
     ui.label({text = string.format(action.question, confirm.name), flexGrow = 1, maxLines = 1}),
     ui.button({
       text = action.label,
+      enabled = not state.selectionPending,
       variant = "destructive",
       controlSize = "sm",
       onClick = function()
+        if state.selectionPending then return end
         state.confirm = nil
         if confirm.kind == "replace" then
           commitAction({verb = "commit", destination = "profile", target = confirm.name,
@@ -948,7 +963,7 @@ end
 -- count, and a clear that names the wallpaper so a stale panel is refused.
 local function wallpaperHeaderRow(header)
   local tuned = header.tuned > 0
-  local plural = header.tuned == 1 and " nudge" or " nudges"
+  local plural = header.tuned == 1 and " adjustment" or " adjustments"
   local expected = Queue.captureSlots(state.model)
   return ui.row({gap = 8, align = "center"}, {
     ui.button({
@@ -958,15 +973,16 @@ local function wallpaperHeaderRow(header)
       onClick = function() end,
     }),
     ui.label({
-      text = header.tuned .. " for this wallpaper",
+      text = header.tuned .. " for " .. header.look .. " + this wallpaper",
       fontSize = 12, color = "on_surface_variant", flexGrow = 1,
     }),
     ui.button({
       glyph = "eraser", variant = "ghost", controlSize = "sm",
+      enabled = not state.selectionPending,
       opacity = tuned and 1.0 or inertOpacity,
-      tooltip = tuned and ("Clear this wallpaper's " .. header.tuned .. plural) or "This wallpaper holds no nudges",
+      tooltip = tuned and ("Clear " .. header.look .. " + this wallpaper's " .. header.tuned .. plural) or "This look + wallpaper holds no adjustments",
       onClick = function()
-        if not tuned then return end
+        if state.selectionPending or not tuned then return end
         enqueue({verb = "clear", id = header.id, expected = expected})
         render()
       end,

@@ -243,6 +243,7 @@ function M.wallpaperHeader(model)
   end
   return {
     id = wallpaper.id,
+    look = model.active.profile or "Default",
     name = tostring(wallpaper.path):match("([^/]+)$") or tostring(wallpaper.path),
     tuned = tuned,
   }

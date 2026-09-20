@@ -79,6 +79,18 @@ explicit selection discards pending edits. A wallpaper rotation saves the
 outgoing pair; the first wallpaper activation and repeated observations of the
 same wallpaper preserve scratch. Panel counts and resets retain their
 visible-control scope, while transitions and commits move every scratch key.
+The panel names saved adjustments as `N for Aurora + this wallpaper` (or
+`Default`), separate from pending edits. Selection shows zero pending edits
+immediately, then reconciles the selected look's values and saved count.
+Keep, Clear, Rename, Delete, and Save As wait for that reconciliation; sliders
+and rapid selections remain available.
+
+Same-look activation works through the CLI (`prism context activate profile
+Aurora`, or `prism context deactivate profile` for Default). The installed
+Noctalia dropdown does not emit a same-option click to Lua; existing Keep for
+wallpaper saves the current pair in the panel. The native capability is tracked
+as `prism-02befb`. Desktop validation is recorded separately in
+[the acceptance checklist](docs/notes/2026-09-20-profile-wallpaper-pairs-acceptance.md).
 
 `commit base` keeps edits in Default; `commit profile` keeps them in the loaded
 look. Both remove just the committed keys from that look's active pair in the

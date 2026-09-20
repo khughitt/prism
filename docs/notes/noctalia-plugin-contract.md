@@ -69,7 +69,25 @@ a period. Each rendered Keep, Save As, Clear, Rename, and Delete action captures
 both selected slots before optimistic model changes. The queue sends
 `--expect-look <default|profile:name> --expect-wallpaper <none|id:id>`; a stale
 action is refused under the store lock and appears in the banner. Selection
-commands carry no slot expectation.
+commands carry no slot expectation. Both guards are required together; look
+`default` differs from a named `profile:Default`, and wallpaper `none` differs
+from `id:<id>`. The positional wallpaper id remains checked too.
+
+A genuine ordinary profile selection clears optimistic pending flags before
+rendering. Saved pair membership and incoming values come only from the next
+accepted describe. One `selectionPending` flag disables and handler-guards
+Keep, Clear, Rename, Delete, and Save As until an authoritative, non-invalidated
+describe is accepted. Queue drain, command failure, and failed or invalidated
+describes do not reopen those actions. Sliders and rapid profile selections
+stay enabled: a genuine slider command queued behind selection writes the
+incoming look's scratch. Immediate slider model echoes resolve the current
+parameter by key before the existing echo check; deferred model callbacks also
+produce no writes. Model dropdown updates are silent.
+
+Failed selection or Keep reconciles the real pending count and retains its
+error banner. Recovery from an unreadable/broken outgoing named profile or
+pair preserves scratch in the backend; accepted describe restores those flags,
+even though the optimistic selection cleared them.
 
 Noctalia API 22 exposes slider `step`, `onChange`, and `onDragEnd`, but no
 interaction-source callback. Normalized-display sliders and curved (logarithmic
@@ -158,10 +176,16 @@ The presentation module defines the panel's stable layout contract:
 - The panel draws a profile row above the sections and wallpaper header: a
   selector, save, rename, and delete. Index 0 is `Default`, the unnamed base
   look. A pick is optimistic, like a slider edit: the rendered index follows
-  the pick while describe reconciles after the command. Deactivating a profile
-  leaves the wallpaper layer active, so the screen may still show its nudges.
+  the pick while describe reconciles after the command. Ordinary selection,
+  including Default, saves all scratch keys to the outgoing pair and shows zero
+  pending edits, then loads only the incoming look's pair. With no wallpaper,
+  selection discards scratch. First wallpaper activation preserves scratch,
+  as does explicit recovery from a broken outgoing named profile or pair.
+  Runtime scratch lives in `_scratch` in the state directory's `active.json`.
   Save opens a name field and issues `prism commit profile <name>`, which
-  snapshots what is on screen and loads the new profile in one command. Saving
+  snapshots what is on screen and loads the new profile in one command. It
+  replaces the destination's current-wallpaper pair while retaining its other
+  pairs, so the saved snapshot cannot be overridden by its old pair. Saving
   the loaded profile under its own name issues `prism commit profile` when
   there are edits and closes the field otherwise. A name already in use opens
   a replace question that issues the same commit. The field uses `ui.input`
@@ -172,10 +196,16 @@ The presentation module defines the panel's stable layout contract:
   wallpaper pairs, selects Default, and preserves scratch. Ordinary selection
   saves pending edits to the outgoing pair when a wallpaper is active.
 - When a wallpaper is active the panel draws a header row above the sections:
-  a glyph lit while the wallpaper's delta holds any visible key, the count
-  (`N for this wallpaper`), and a clear button that runs
+  a glyph lit while the selected look–wallpaper pair holds any visible key,
+  the count (`N for Aurora + this wallpaper`, or `N for Default + this wallpaper`),
+  and a clear button that runs
   `prism context clear wallpaper <id>` with the id from the model. The basename
-  is the glyph's tooltip. With no active wallpaper there is no header row.
+  is the glyph's tooltip. Keep reads `Keep N edits for <look> + this wallpaper`;
+  Clear reads `Clear <look> + this wallpaper's N adjustments`. Saved pair keys
+  and saved profile settings never count as pending edits. CLI-only keys stay
+  outside visible counts and resets; transitions and commits save all keys.
+  Clear removes only the active pair and preserves scratch and other pairs.
+  With no active wallpaper there is no header row.
   `prism context list` discovers pairs in all looks; `prism context show
   wallpaper <id> --look profile:<name>` inspects an inactive pair, while
   `--look default` names the unnamed look.
@@ -245,3 +275,23 @@ them.
 The widget and panel use Noctalia's native v5 entries and controls. No
 additional runtime dependency or compatibility layer is part of this
 contract.
+
+## Same-look activation and desktop acceptance
+
+`prism context activate profile Aurora` explicitly selects Aurora even if it is
+already active; `prism context deactivate profile` similarly selects Default.
+These commands save every scratch key to the current pair and clear pending
+edits, or discard scratch when no wallpaper is active. No visible edit-count
+condition gates the CLI transition.
+
+The installed native dropdown suppresses a same-option click unless its
+`notifyOnReselect` capability is enabled. Noctalia does not expose that property
+to Lua; changing Prism's callback cannot create the event. Programmatic
+`selectedIndex` updates are silent. Existing Keep for wallpaper saves the
+current pair without a new control. Idea `prism-02befb` tracks the native
+property separately; simulated Lua callbacks do not prove physical reselection.
+
+Desktop acceptance remains with `prism-439774`, using
+[the pair acceptance record](2026-09-20-profile-wallpaper-pairs-acceptance.md).
+Automated checks use temporary stores; they do not establish desktop results
+or authorize live migration/plugin reload as part of coding.
