@@ -223,7 +223,8 @@ local function described(result)
 end
 
 refresh = function()
-  if describeRunning then
+  -- A reopen must not snapshot an outstanding write; replay once after drain.
+  if describeRunning or state.queue.inFlight ~= nil then
     state.refreshPending = true
     return
   end

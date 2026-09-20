@@ -229,6 +229,7 @@ local function newHost()
       profiles = {"Aurora", "Dark"}, layers = model.layers, rack = model.rack, params = params}
   end
   function host.tick() env.update(); env.update() end
+  function host.reopen() env.onClose(); env.onOpen({}) end
   return host
 end
 
@@ -360,6 +361,35 @@ pending.pairModel("Dark", 130, 0.3, false, {[2] = true})
 pending.complete(5)
 assert(pending.editCount() == "1 edit")
 assert(pending.find("button", "glyph", "bookmark").props.enabled ~= false)
+
+-- Reopening cannot read across a pending selection. An older periodic snapshot
+-- stays invalid even when its result arrives after the activation queue drains.
+for _, periodicRunning in ipairs({false, true}) do
+  local reopened = newHost()
+  reopened.pairModel("Aurora", 100, 0.1, true, true); reopened.open()
+  if periodicRunning then reopened.tick() end
+  reopened.pickProfile(2)
+  local activation = #reopened.calls
+  reopened.reopen(); reopened.reopen()
+  assert(#reopened.calls == activation, "reopen launched describe while selection was outstanding")
+  assertPending(reopened)
+  reopened.complete(activation)
+  assertPending(reopened)
+  if periodicRunning then
+    assert(#reopened.calls == activation, "drain must wait for the older describe to finish")
+    reopened.pairModel("Aurora", 100, 0.1, true, true); reopened.complete(2)
+    assertPending(reopened)
+    assert(reopened.editCount() == "No edits", "old snapshot restored outgoing scratch after drain")
+  end
+  assert(#reopened.calls == activation + 1, "reopen requests must replay one describe after drain")
+  assert(reopened.calls[activation + 1].command == "'prism' 'describe' '--json'")
+  reopened.pairModel("Dark", 140, 0.3, true); reopened.complete(activation + 1)
+  assert(reopened.find("button", "glyph", "device-floppy").props.enabled ~= false)
+  assert(reopened.find("label", "text", "2 for Dark + this wallpaper"))
+  assert(reopened.editCount() == "No edits" and reopened.slider().value == reopened.track(140))
+  assert(not reopened.frameTicks and #reopened.calls == activation + 1,
+    "accepted post-drain model must not cause phantom edits or another refresh")
+end
 
 -- A failed selection restores true scratch and leaves the command error visible.
 local failed = newHost()
