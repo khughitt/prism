@@ -856,9 +856,22 @@ test('migrate rewrites the replaced ring key everywhere, backs the files up, rep
   writeContext('profile', 'plain', { source: null, values: { 'glass.ior': 1.4 } });
   writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'glass.ring.driftHz': 12, 'glass.ring.sweepMs': 800 } });
   const base = fs.readFileSync(valuesPath());
+  const originals = [
+    [valuesPath(), base, 'values.yaml'],
+    [contextPath('profile', 'dusk'), fs.readFileSync(contextPath('profile', 'dusk')), 'contexts/profile/dusk.yaml'],
+    [contextPath('wallpaper', 'abc12345'), fs.readFileSync(contextPath('wallpaper', 'abc12345')), 'contexts/wallpaper/abc12345.yaml'],
+  ];
 
   let out = '';
-  assert.equal(await cli.run(['migrate'], { print: (s) => { out += s; } }), 0);
+  assert.equal(await cli.run(['migrate'], { print: (s) => {
+    out += s;
+    const backup = s.match(/^migrate: backup (.+)$/)?.[1];
+    if (!backup) return;
+    for (const [original, text, relative] of originals) {
+      assert.deepEqual(fs.readFileSync(original), text, `${relative} changed before migration`);
+      assert.deepEqual(fs.readFileSync(path.join(backup, relative)), text, `${relative} missing from backup`);
+    }
+  } }), 0);
   const backup = out.match(/^migrate: backup (.+)$/m)[1];
   assert.ok(backup.startsWith(path.join(process.env.PRISM_STATE_DIR, 'migrations', '')), backup);
   assert.match(out, /^migrate: base: glass\.ring\.driftHz 25 -> glass\.ring\.sweepMs 1500$/m);

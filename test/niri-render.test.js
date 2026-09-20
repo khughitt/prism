@@ -8,6 +8,7 @@ import { renderNiriFragment, DRY } from '../integrations/niri/render.js';
 import { readNoctaliaAccent } from '../integrations/niri/palette.js';
 import { loadDefs } from '../src/defs.js';
 import { defsDir } from '../src/paths.js';
+import { resolveParams } from '../src/resolve.js';
 
 const resolved = { params: {
   'compositor.gaps': 54,
@@ -526,6 +527,12 @@ test('both materials carry the same response block', () => {
   const [active, inactive] = kdl.match(/^material [^]*?^\}/gm);
   assert.ok(active.includes(block));
   assert.ok(inactive.includes(block));
+});
+
+test('the resolved shipped sweep default reaches both material response blocks', () => {
+  const kdl = renderNiriFragment({ params: resolveParams(loadDefs(defsDir()), {}) });
+
+  assert.equal(count(kdl, 'ring-sweep-ms 1500'), 2, kdl);
 });
 
 test('the focus light switches off without touching the rest of the response', () => {
