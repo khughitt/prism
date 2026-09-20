@@ -6,6 +6,14 @@
 `prism-bf3ae9`, `prism-ad2b12`, `prism-b8b589`, `prism-8a8eac`, `prism-49a068`,
 `prism-b6d7ee` and frames `prism-9298b9` (Section 12)
 
+**Acceptance feedback, 2026-09-20:** the user requested zero pending edits on
+profile load and saved adjustments scoped to the profile–wallpaper pair. The
+[amendment](2026-09-20-profile-wallpaper-pairs-design.md) was approved on
+2026-09-20; its [implementation plan](../plans/2026-09-20-profile-wallpaper-pairs.md)
+is awaiting review. The original
+switch semantics below remain implemented until the revised work lands. Desktop
+acceptance is incomplete.
+
 ## Context
 
 The store composes five layers, low to high: defaults, base, wallpaper,

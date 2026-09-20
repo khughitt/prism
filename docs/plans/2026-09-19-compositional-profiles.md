@@ -3028,6 +3028,12 @@ git commit -m "docs: describe the scratch layer, commits, and the panel's edits 
 
 ### Task 13: Desktop acceptance and closeout
 
+Acceptance on 2026-09-20 found a false edit-count defect (`prism-1cda51`) and
+requested a revised profile-switch model (`prism-a3484e`). The
+[amendment](../specs/2026-09-20-profile-wallpaper-pairs-design.md) is approved; its
+implementation plan requires review before the revised behavior is implemented. Do not mark the old
+profile-switch acceptance item passed or merge while that work remains open.
+
 **Files:**
 - Modify: `docs/specs/2026-09-19-compositional-profiles-design.md:4` (status line)
 - Tasks: the Section 12 map, through the `tasks` CLI only

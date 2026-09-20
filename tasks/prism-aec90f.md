@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: prism-aec90f
 created: 2026-09-19T20:01:06Z
-updated: 2026-09-20T00:47:41Z
+updated: 2026-09-20T12:12:54Z
 started: 2026-09-19T20:01:22Z
 depends: []
 parent: prism-2f0b4b
@@ -38,4 +38,12 @@ Design the profile system as a fold over layers: defaults, base, profile (the lo
 - 2026-09-19T22:50:48Z (prism-aec90f): Approved plan implementation started with subagent-driven development. Baseline 327 Node tests plus Lua passes. Preflight moves pinned repair into atomic store/panel switch, validates migration and commit next states before writes, and broadens interruption coverage; execution order 1,2,3,4,5,6,7,9,10,8,11,12,13.
 - 2026-09-20T00:41:39Z (prism-aec90f): Tasks 1–12 implemented and reviewed; final corrections add38b9 passed scoped review. Main ring-sweep work integrated at 5b03957; 385 Node tests plus Lua pass. Desktop preflight: installed niri 597aba66, running session 7526af1d; restart required before manual acceptance.
 - 2026-09-20T00:47:41Z (prism-aec90f): parked (waiting on user, review): Implementation and reviews complete through48bf463; waiting for user session restart and six desktop acceptance observations on prism-439774. Then controller performs closeout and merge.
+  provenance: {"harness_session":"codex:01a0bbd8-f021-7163-9af3-bf80490291a9","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-09-20T11:47:13Z (prism-aec90f): resumed
+  provenance: {"harness_session":"codex:01a0bbd8-f021-7163-9af3-bf80490291a9","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-09-20T11:57:17Z (prism-aec90f): parked (waiting on user, review): Review proposed profile/wallpaper pair amendment in prism-a3484e. Count bug fixed in fde3bc8; pair semantics remain unchanged until spec and plan review, implementation, and renewed acceptance.
+  provenance: {"harness_session":"codex:01a0bbd8-f021-7163-9af3-bf80490291a9","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-09-20T11:57:54Z (prism-aec90f): resumed
+  provenance: {"harness_session":"codex:01a0bbd8-f021-7163-9af3-bf80490291a9","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-09-20T12:12:54Z (prism-aec90f): parked (waiting on user, review): Count bug fde3bc8 is reviewed, tested and loaded in the live panel. Pair-model spec approved; review its new implementation plan under prism-a3484e before execution and renewed desktop acceptance.
   provenance: {"harness_session":"codex:01a0bbd8-f021-7163-9af3-bf80490291a9","harness_session_source":"CODEX_SESSION_ID"}
