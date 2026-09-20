@@ -46,7 +46,9 @@ const NATIVE = {
   'glass.jellyRipple': { range: [0, 0.5], default: 0.06 },
   'glass.ring.focus': { default: true },
   'glass.ring.color': { default: '#ccccff' },
-  'glass.ring.sweepMs': { range: [0, 10000], default: 1500 },
+  'glass.ring.beamSpeed': { range: [0, 5000], default: 300 },
+  'glass.ring.gap': { range: [0, 128], default: 8 },
+  'glass.ring.glow': { range: [0, 3], default: 1 },
   'glass.paneLip': { range: [0, 64], default: 6 },
   'glass.paneShiftX': { range: [-64, 64], default: 6 },
   'glass.paneShiftY': { range: [-64, 64], default: 6 },
@@ -399,7 +401,8 @@ test('everything outside the matrix is shared glass', () => {
   assert.deepEqual(shared.sort(), [
     'compositor.gaps', 'glass.paneLip', 'glass.paneShiftX',
     'glass.paneShiftY', 'glass.jellyFlex', 'glass.jellyRipple',
-    'glass.ring.focus', 'glass.ring.colorSource', 'glass.ring.color', 'glass.ring.sweepMs',
+    'glass.ring.focus', 'glass.ring.colorSource', 'glass.ring.color',
+    'glass.ring.beamSpeed', 'glass.ring.gap', 'glass.ring.glow',
   ].sort());
   const groups = Object.fromEntries(shared.map((key) => [key, defs.get(key).ui.group]));
   assert.deepEqual(groups, {
@@ -412,7 +415,9 @@ test('everything outside the matrix is shared glass', () => {
     'glass.ring.focus': 'Ring',
     'glass.ring.colorSource': 'Ring',
     'glass.ring.color': 'Ring',
-    'glass.ring.sweepMs': 'Ring',
+    'glass.ring.beamSpeed': 'Ring',
+    'glass.ring.gap': 'Ring',
+    'glass.ring.glow': 'Ring',
   });
 });
 
@@ -448,7 +453,7 @@ const NEUTRAL = {
   'glass.bypass.directionalBlur': false, 'glass.bypass.tint': false,
   'glass.bypass.saturation': false, 'glass.bypass.noise': false,
   'glass.ring.focus': true, 'glass.ring.colorSource': 'noctalia',
-  'glass.ring.color': '#ccccff', 'glass.ring.sweepMs': 1500,
+  'glass.ring.color': '#ccccff', 'glass.ring.beamSpeed': 300, 'glass.ring.gap': 8, 'glass.ring.glow': 1,
 };
 
 test('every visible parameter neutralizes to its curated value', () => {

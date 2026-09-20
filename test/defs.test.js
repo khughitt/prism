@@ -20,13 +20,13 @@ test('shipped defs load and default the opacity pair to a fully transparent term
   assert.equal(defs.get('compositor.gaps').type, 'int');
 });
 
-test('the ring sweep replaces the ring drift rate', () => {
+test('the ring beam speed replaces the ring sweep', () => {
   const defs = loadDefs(defsDir());
-  const sweep = defs.get('glass.ring.sweepMs');
-  assert.deepEqual([sweep.type, sweep.range, sweep.default, sweep.neutral], ['int', [0, 10000], 1500, 1500]);
-  assert.equal(sweep.replaces, 'glass.ring.driftHz');
-  assert.deepEqual([sweep.ui.group, sweep.ui.order, sweep.ui.unit], ['Ring', 530, 'ms']);
-  assert.equal(defs.has('glass.ring.driftHz'), false);
+  const beamSpeed = defs.get('glass.ring.beamSpeed');
+  assert.deepEqual([beamSpeed.type, beamSpeed.range, beamSpeed.default, beamSpeed.neutral], ['int', [0, 5000], 300, 300]);
+  assert.equal(beamSpeed.replaces, 'glass.ring.sweepMs');
+  assert.deepEqual([beamSpeed.ui.group, beamSpeed.ui.order, beamSpeed.ui.unit], ['Ring', 530, 'px/s']);
+  assert.equal(defs.has('glass.ring.sweepMs'), false);
 });
 
 test('replaces must name a key', () => {
