@@ -128,7 +128,7 @@ export function readLook(look) {
   }
   let doc;
   try {
-    doc = parse(text) ?? {};
+    doc = parse(text);
   } catch (err) {
     throw new Error(`${file}: invalid YAML: ${err.message.split('\n')[0]}`);
   }

@@ -64,6 +64,8 @@ test('an inherited object name is not mistaken for a saved pair', () => {
 
 test('malformed look metadata fails without changing file bytes', () => {
   const cases = [
+    ['', /look must be a mapping/],
+    ['null\n', /look must be a mapping/],
     ['- x\n', /mapping|object/],
     ['_wallpapers: []\n', /_wallpapers.*mapping/],
     ['_wallpapers:\n  w1:\n    glass.ior: 1.2\n', /_source/],
