@@ -10,8 +10,9 @@ import { withLock } from './lock.js';
 import { loadStore, loadLayers, writeTarget, activeJson, RESOLUTION_ORDER } from './layers.js';
 import { listContexts, readContext, readActive, writeContext, deleteContext, contextPath, VERB_KINDS } from './contexts.js';
 import { runContext } from './context-cli.js';
+import { UsageError, parseInvocation, helpText, rootHelp, candidatesFor, completionScript } from './commands.js';
 import { loadRack } from './rack.js';
-import { MODES, planReset, visibleGroups } from './reset.js';
+import { planReset, visibleGroups } from './reset.js';
 import { planMigration, replacements, writeBackup, writeMigrated } from './migrate.js';
 import {
   configDir,
@@ -23,15 +24,11 @@ import {
 } from './paths.js';
 
 const LIVENESS_ORDER = { live: 0, reload: 1, restart: 2 };
+const VERSION = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
 function load() {
   const defs = loadDefs(defsDir());
   return { defs, manifests: loadManifests(integrationsDir(), defs) };
-}
-
-function splitBaseFlag(rest) {
-  const toBase = rest[0] === '--base';
-  return { toBase, args: toBase ? rest.slice(1) : rest };
 }
 
 function contextSource(active, target) {
@@ -42,24 +39,71 @@ function contextSource(active, target) {
 // names must come from the same write.
 const snapshot = (defs) => withLock(lockPath(), async () => loadStore(defs));
 
-function report({ failed }, eprint) {
-  for (const failure of failed) {
-    eprint(`prism: ${failure.sink}: ${failure.error}\n`);
-  }
-  return failed.length === 0 ? 0 : 1;
+// A failure that ran: exit 1, the message on stderr — one error object under --json,
+// `prism: <message>` otherwise. Usage errors never reach here; parseInvocation exits 2.
+function failer(eprint, json) {
+  return (message) => {
+    eprint(json ? `${JSON.stringify({ error: { kind: 'prism', detail: message } })}\n` : `prism: ${message}\n`);
+    return 1;
+  };
+}
+
+function report({ failed }, { eprint, json, fail }) {
+  if (failed.length === 0) return 0;
+  const messages = failed.map((failure) => `${failure.sink}: ${failure.error}`);
+  if (json) return fail(messages.join('; '));
+  for (const message of messages) eprint(`prism: ${message}\n`);
+  return 1;
+}
+
+function describeText(store, rack) {
+  const active = activeJson(store.active);
+  const lines = [
+    `wallpaper: ${active.wallpaper === null ? 'none' : `${active.wallpaper.id}  ${active.wallpaper.path}${active.wallpaper.pinned ? ' (pinned)' : ''}`}`,
+    `profile: ${active.profile ?? 'none'}`,
+    `target: ${store.target.kind}`,
+    `profiles: ${store.profiles.length === 0 ? 'none' : store.profiles.join(', ')}`,
+    `layers: ${RESOLUTION_ORDER.join(', ')}`,
+    `rack: ${rack.group}: ${rack.devices.map((device) => device.device).join(', ')}`,
+    'params:',
+    ...Object.keys(store.params).map((key) => `  ${key} = ${JSON.stringify(store.params[key])}  [${store.layerOf[key]}]`),
+  ];
+  return `${lines.join('\n')}\n`;
 }
 
 export async function run(argv, opts = {}) {
   const print = opts.print ?? ((text) => process.stdout.write(text));
   const eprint = opts.eprint ?? ((text) => process.stderr.write(text));
-  const [verb, ...rest] = argv;
+  const env = opts.env ?? process.env;
+
+  if (env.PRISM_COMPLETE) {
+    if (argv.length === 0) { print(completionScript(env.PRISM_COMPLETE)); return 0; }
+    if (argv[0] === '--') {
+      for (const [v, d] of candidatesFor(argv.slice(1), Number(env.PRISM_COMPLETE_INDEX ?? argv.length - 2))) print(`${v}\t${d}\n`);
+      return 0;
+    }
+  }
+
+  let inv;
+  try {
+    inv = parseInvocation(argv, env);
+  } catch (error) {
+    if (error instanceof UsageError) { eprint(`prism: ${error.message}\n`); return 2; }
+    throw error;
+  }
+  if (inv.version) { print(`prism ${VERSION}\n`); return 0; }
+  if (Object.hasOwn(inv, 'help')) { print(inv.help === null ? rootHelp() : helpText(inv.help)); return 0; }
+
+  const json = inv.mode === 'json';
+  const fail = failer(eprint, json);
+  const output = { eprint, json, fail };
+  const { positionals, options } = inv;
+  const toBase = options.base === true;
 
   try {
-    switch (verb) {
+    switch (inv.cmd.path[0]) {
       case 'set': {
-        const { toBase, args } = splitBaseFlag(rest);
-        if (args.length !== 2) throw new Error('usage: prism set [--base] <key> <value>');
-        const [key, text] = args;
+        const [key, text] = positionals;
         const { defs, manifests } = load();
         const def = defs.get(key);
         if (!def) throw new Error(`unknown param ${key}`);
@@ -85,13 +129,11 @@ export async function run(argv, opts = {}) {
           resolved = writeResolved(loadStore(defs).params);
         });
 
-        return report(await fanOut({ manifests, resolved, changedKeys: [key], runner: opts.runner }), eprint);
+        return report(await fanOut({ manifests, resolved, changedKeys: [key], runner: opts.runner }), output);
       }
 
       case 'unset': {
-        const { toBase, args } = splitBaseFlag(rest);
-        if (args.length !== 1) throw new Error('usage: prism unset [--base] <key>');
-        const [key] = args;
+        const [key] = positionals;
         const { defs, manifests } = load();
         let resolved;
 
@@ -117,26 +159,12 @@ export async function run(argv, opts = {}) {
           resolved = writeResolved(loadStore(defs).params);
         });
 
-        return report(await fanOut({ manifests, resolved, changedKeys: [key], runner: opts.runner }), eprint);
+        return report(await fanOut({ manifests, resolved, changedKeys: [key], runner: opts.runner }), output);
       }
 
       case 'reset': {
-        const usage = 'usage: prism reset defaults|symmetric|neutral [--base] [--group <name>]';
-        let mode = null;
-        let group = null;
-        let toBase = false;
-        for (let index = 0; index < rest.length; index += 1) {
-          const arg = rest[index];
-          if (arg === '--base') toBase = true;
-          else if (arg === '--group') {
-            index += 1;
-            group = rest[index];
-            if (group === undefined) throw new Error(usage);
-          } else if (mode === null) mode = arg;
-          else throw new Error(usage);
-        }
-        if (!MODES.includes(mode)) throw new Error(usage);
-
+        const [mode] = positionals;
+        const group = options.group ?? null;
         const { defs, manifests } = load();
         const groups = visibleGroups(defs);
         if (group !== null && !groups.has(group)) {
@@ -173,22 +201,25 @@ export async function run(argv, opts = {}) {
         });
 
         if (changedKeys.length === 0) return 0;
-        return report(await fanOut({ manifests, resolved, changedKeys, runner: opts.runner }), eprint);
+        return report(await fanOut({ manifests, resolved, changedKeys, runner: opts.runner }), output);
       }
 
       case 'get': {
-        if (rest.length !== 1) throw new Error('usage: prism get <key>');
-        const [key] = rest;
+        const [key] = positionals;
         const { defs } = load();
         if (!defs.has(key)) throw new Error(`unknown param ${key}`);
-        print(`${JSON.stringify((await snapshot(defs)).params[key])}\n`);
+        const value = (await snapshot(defs)).params[key];
+        print(`${JSON.stringify(json ? { key, value } : value)}\n`);
         return 0;
       }
 
       case 'list': {
-        if (rest.length !== 0) throw new Error('usage: prism list');
         const { defs } = load();
         const { params } = await snapshot(defs);
+        if (json) {
+          print(`${JSON.stringify({ params })}\n`);
+          return 0;
+        }
         for (const key of Object.keys(params)) {
           print(`${key} = ${JSON.stringify(params[key])}\n`);
         }
@@ -196,12 +227,13 @@ export async function run(argv, opts = {}) {
       }
 
       case 'describe': {
-        if (rest.length !== 1 || rest[0] !== '--json') {
-          throw new Error('usage: prism describe --json');
-        }
         const { defs, manifests } = load();
         const store = await snapshot(defs);
         const rack = loadRack(defsDir(), defs);
+        if (!json) {
+          print(describeText(store, rack));
+          return 0;
+        }
         const described = [];
 
         for (const [key, def] of defs) {
@@ -245,11 +277,11 @@ export async function run(argv, opts = {}) {
       case 'apply': {
         const { defs, manifests } = load();
         const knownSinks = new Set(manifests.map((manifest) => manifest.sink));
-        const unknown = rest.find((sink) => !knownSinks.has(sink));
+        const unknown = positionals.find((sink) => !knownSinks.has(sink));
         if (unknown) throw new Error(`unknown sink ${unknown}`);
-        const targets = rest.length === 0
+        const targets = positionals.length === 0
           ? manifests
-          : manifests.filter((manifest) => rest.includes(manifest.sink));
+          : manifests.filter((manifest) => positionals.includes(manifest.sink));
 
         let resolved;
         await withLock(lockPath(), async () => {
@@ -262,7 +294,7 @@ export async function run(argv, opts = {}) {
           resolved,
           changedKeys,
           runner: opts.runner,
-        }), eprint);
+        }), output);
       }
 
       // doctor's requirement pass alone, for a machine that has not applied
@@ -270,7 +302,6 @@ export async function run(argv, opts = {}) {
       // past the generated files setup is about to create. A missing store
       // resolves to the defaults, so `when` evaluates on a fresh machine.
       case 'requirements': {
-        if (rest.length !== 0) throw new Error('usage: prism requirements');
         const { defs, manifests } = load();
         const { params } = loadStore(defs);
         let unmetCount = 0;
@@ -285,7 +316,6 @@ export async function run(argv, opts = {}) {
       }
 
       case 'doctor': {
-        if (rest.length !== 0) throw new Error('usage: prism doctor');
         const { defs, manifests } = load();
         let problems = 0;
 
@@ -392,7 +422,6 @@ export async function run(argv, opts = {}) {
       }
 
       case 'migrate': {
-        if (rest.length !== 0) throw new Error('usage: prism migrate');
         const { defs } = load();
         const migrated = await withLock(lockPath(), async () => {
           const files = planMigration(defs);
@@ -424,16 +453,14 @@ export async function run(argv, opts = {}) {
 
       case 'context': {
         const { defs, manifests } = load();
-        const outcome = await runContext(rest, { defs, manifests, print, eprint, runner: opts.runner });
-        return outcome === null ? 0 : report(outcome, eprint);
+        const fanned = await runContext(inv.cmd.path[1], positionals, { defs, manifests, print, eprint, runner: opts.runner });
+        return fanned === null ? 0 : report(fanned, output);
       }
 
       default:
-        eprint('usage: prism set|unset|get|list|describe|apply|requirements|doctor|migrate|context|reset\n');
-        return 2;
+        throw new Error(`prism ${inv.cmd.path.join(' ')} is declared but not implemented`);
     }
   } catch (error) {
-    eprint(`prism: ${error.message}\n`);
-    return 1;
+    return fail(error.message);
   }
 }

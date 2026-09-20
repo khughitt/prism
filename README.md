@@ -74,6 +74,30 @@ dir. It converts what has an equivalent (`glass.ring.driftHz 0` becomes
 that already holds the new key keeps its value. Then `prism apply`. Rollback
 is copying the backup back over the config dir.
 
+## Command line
+
+`prism [--json|--pretty] [--color <when>] <command> [args]`, following the shared CLI
+vocabulary (ops `docs/specs/2026-09-20-cli-conventions-design.md`). The command table
+is declared once in `src/commands.js` and mirrored in `tools/cli.toml`, the vendored
+copy of ops's inventory; `test/cli-surface.test.js` proves the two agree.
+
+- `--help`/`-h` on the root and on every command, `context <verb>` included, and
+  `prism help <command>…` routes to the same text; help prints to stdout, exits 0,
+  and reads no store. `--version`/`-V` prints `prism <version>`.
+- `--json` and `--pretty` are global and mutually exclusive, accepted before or after
+  the command; the default is pretty, `PRISM_FORMAT` overrides the default, the flag
+  overrides both. `get` prints `{"key","value"}` and `list` `{"params":{…}}` under
+  `--json`; `describe` prints its document under `--json` and a text summary otherwise.
+- `--color auto|always|never` (default `never`, `PRISM_COLOR` overrides) is accepted
+  everywhere; prism prints no color yet.
+- Exit codes: 0 done, 1 the command ran and failed, 2 a usage error (unknown command or
+  option, missing or extra argument, a value outside its set). A usage error is one
+  stderr line with the usage line; under `--json` a failure is one
+  `{"error":{"kind","detail"}}` object on stderr and nothing on stdout.
+- Completion: `PRISM_COMPLETE=zsh prism` (or `bash`) prints a script that calls back into
+  `prism` for commands, options, and closed value sets, the mechanism the dotfiles
+  already source for `tasks`.
+
 ## Starter profiles
 
 `resources/profiles/Aurora.yaml` and `resources/profiles/Rainbow.yaml` are ordinary full snapshots
@@ -132,6 +156,9 @@ Install the existing Node dependency with `npm install`.
   `tools/tt`; `just check` and `just gate` are the pre-commit and pre-push
   gates, and a fresh clone installs the hooks with
   `git config core.hooksPath .githooks`.
+- `tools/cli.toml` and `tools/cli_surface.py` are byte-identical copies of the shared
+  CLI table and its helper in the ops repository; a change to prism's command surface
+  is a change to the ops table first, then re-vendored here.
 - `npm run test:plugin-lua` is the direct Noctalia plugin contract check for
   the production Lua modules.
 

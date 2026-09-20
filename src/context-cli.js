@@ -11,10 +11,6 @@ import { readValues } from './values.js';
 import { resolveLayered, writeResolved } from './resolve.js';
 import { fanOut } from './fanout.js';
 
-function usage(text) {
-  return new Error(`usage: prism context ${text}`);
-}
-
 function requireContext(kind, name) {
   const context = readContext(kind, name);
   if (context === null) throw new Error(`${kind} ${name}: no such context`);
@@ -29,9 +25,10 @@ function unpinned(active) {
   return { ...active, wallpaper: pinned === undefined ? wallpaper : { ...wallpaper, pinned: false } };
 }
 
-function kindAndName(rest, verb) {
-  if (rest.length !== 2) throw usage(`${verb} <kind> <name>`);
-  const [kind, name] = rest;
+// Arity and the kind's value set are validated against the declared table (commands.js)
+// before a verb runs; assertKind stays as the store's own invariant, assertName as the
+// file-name rule the table does not express.
+function kindAndName([kind, name]) {
   assertKind(kind);
   assertName(name);
   return { kind, name };
@@ -72,11 +69,9 @@ async function changeSlots({ defs, manifests, runner }, mutate, commit = () => {
 }
 
 // Returns a fan-out result, or null when nothing reached the bus.
-export async function runContext(args, { defs, manifests, print, eprint, runner }) {
-  const [sub, ...rest] = args;
+export async function runContext(sub, rest, { defs, manifests, print, eprint, runner }) {
   switch (sub) {
     case 'list': {
-      if (rest.length !== 0) throw usage('list');
       const { active, all, inspected } = await withLock(lockPath(), async () => {
         const listed = listContexts();
         return {
@@ -110,7 +105,7 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
     // Showing the file is what was asked for, so a file that does not parse is
     // printed as it is, with the reason on stderr.
     case 'show': {
-      const { kind, name } = kindAndName(rest, 'show');
+      const { kind, name } = kindAndName(rest);
       const entry = await withLock(lockPath(), async () => inspectContext(kind, name));
       if (entry === null) throw new Error(`${kind} ${name}: no such context`);
       if (entry.error !== null) {
@@ -128,7 +123,7 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
     // tuned while pinned. The target is always topmost, so a save can never
     // absorb a layer above it.
     case 'save': {
-      const { kind, name } = kindAndName(rest, 'save');
+      const { kind, name } = kindAndName(rest);
       if (kind !== 'profile') throw new Error('save is for profiles; a wallpaper context holds only pinned edits');
       await withLock(lockPath(), async () => {
         const { params } = loadStore(defs);
@@ -138,7 +133,7 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
     }
 
     case 'activate': {
-      const { kind, name } = kindAndName(rest, 'activate');
+      const { kind, name } = kindAndName(rest);
       return changeSlots({ defs, manifests, runner }, (active) => {
         const context = requireContext(kind, name);
         return kind === 'wallpaper'
@@ -149,7 +144,6 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
 
     case 'pin':
     case 'unpin': {
-      if (rest.length !== 1) throw usage(`${sub} <kind>`);
       const [kind] = rest;
       assertKind(kind);
       if (kind !== 'wallpaper') throw new Error(`pin applies to automatic kinds (wallpaper), not ${kind}`);
@@ -170,7 +164,6 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
     }
 
     case 'deactivate': {
-      if (rest.length !== 1) throw usage('deactivate <kind>');
       const [kind] = rest;
       assertKind(kind);
       return changeSlots({ defs, manifests, runner }, (active) => {
@@ -181,7 +174,7 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
     }
 
     case 'delete': {
-      const { kind, name } = kindAndName(rest, 'delete');
+      const { kind, name } = kindAndName(rest);
       return changeSlots({ defs, manifests, runner }, (active) => {
         const next = { ...active };
         if (activeName(active, kind) === name) delete next[kind];
@@ -194,7 +187,6 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
     // resolved.json and the sinks are never touched. A wallpaper's name is a
     // hash of its path, so it has nothing to rename.
     case 'rename': {
-      if (rest.length !== 3) throw usage('rename <kind> <old> <new>');
       const [kind, from, to] = rest;
       assertKind(kind);
       assertName(from);
@@ -212,7 +204,6 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
     // re-set) changes nothing, pin included; a different one is a new
     // activation and arrives unpinned.
     case 'wallpaper': {
-      if (rest.length !== 1) throw usage('wallpaper <path>');
       const wallpaper = canonicalWallpaperPath(rest[0]);
       const id = wallpaperId(wallpaper);
       return changeSlots({ defs, manifests, runner }, (active) => (
@@ -220,6 +211,6 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
     }
 
     default:
-      throw usage('list|show|save|rename|activate|deactivate|delete|pin|unpin|wallpaper');
+      throw new Error(`prism context ${sub} is declared but not implemented`);
   }
 }

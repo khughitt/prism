@@ -168,8 +168,13 @@ test('context verbs reject the reserved kind, unknown kinds, bad names, and stra
     const failure = await runCaptured(argv);
     assert.notEqual(failure.code, 0, `${argv.join(' ')} unexpectedly succeeded`);
   }
-  assert.match((await runCaptured(['context', 'save', 'state', 'dark'])).stderr, /kind state is reserved/);
-  assert.match((await runCaptured(['context', 'save', 'theme', 'x'])).stderr, /unknown kind theme/);
+  // the declared enum refuses every kind outside the set before a verb runs, the
+  // reserved `state` included: a usage error, exit 2
+  for (const kind of ['state', 'theme']) {
+    const refused = await runCaptured(['context', 'save', kind, 'dark']);
+    assert.equal(refused.code, 2);
+    assert.match(refused.stderr, new RegExp(`kind must be one of profile, wallpaper, got "${kind}"`));
+  }
   assert.match((await runCaptured(['context', 'save', 'profile', 'a b'])).stderr, /invalid context name/);
   assert.match((await runCaptured(['context'])).stderr, /usage: prism context/);
 });

@@ -29,6 +29,9 @@ const cli = await import('../src/cli.js');
 const { readValues } = await import('../src/values.js');
 const { lockPath, resolvedPath, valuesPath, generatedPath } = await import('../src/paths.js');
 const { writeActive, writeContext, contextPath, readContext } = await import('../src/contexts.js');
+const { VERB_KINDS } = await import('../src/contexts.js');
+const { MODES } = await import('../src/reset.js');
+const { findCommand } = await import('../src/commands.js');
 const prismBin = fileURLToPath(new URL('../bin/prism', import.meta.url));
 
 // Every test starts from an identical clean store and arranges what it needs.
@@ -530,22 +533,28 @@ test('orphans block mutation; orphan unsets remove exactly one per invocation', 
   assert.deepEqual(fs.readFileSync(valuesPath(), 'utf8'), '{}\n');
 });
 
-test('every public verb enforces its required and stray arguments', async () => {
+test('every public verb enforces its required and stray arguments as usage errors', async () => {
   const invalid = [
     ['unset'], ['unset', 'compositor.gaps', 'extra'],
     ['get'], ['get', 'compositor.gaps', 'extra'],
     ['list', 'extra'],
-    ['describe'], ['describe', '--json', 'extra'], ['describe', '--yaml'],
+    ['describe', '--json', 'extra'], ['describe', '--yaml'],
     ['doctor', 'extra'],
     ['requirements', 'extra'],
     ['set', '--base'], ['set', '--base', 'glass.ior'], ['unset', '--base'],
   ];
   for (const argv of invalid) {
-    const failure = await runCaptured(argv, { print: () => {} });
-    assert.notEqual(failure.code, 0,
-      `${argv.join(' ')} unexpectedly succeeded`);
+    let stdout = '';
+    const failure = await runCaptured(argv, { print: (text) => { stdout += text; } });
+    assert.equal(failure.code, 2, `${argv.join(' ')}: ${failure.stderr}`);
+    assert.equal(stdout, '');
     assert.match(failure.stderr, /usage: prism/);
   }
+  // describe no longer needs --json: the global output mode picks the rendering
+  let pretty = '';
+  assert.equal(await cli.run(['describe'], { print: (text) => { pretty += text; } }), 0);
+  assert.match(pretty, /^wallpaper: none\nprofile: none\ntarget: base\n/);
+  assert.throws(() => JSON.parse(pretty));
 });
 
 test('set under an unpinned wallpaper writes base: an automatic layer never captures edits', async () => {
@@ -777,6 +786,15 @@ test('reset refuses a store it cannot resolve, and writes nothing', async () => 
   assert.deepEqual(calls, []);
 });
 
+// The declared value sets are what the parser enforces, so they must be the same lists
+// the verbs implement against, or the table would admit a mode or kind the code refuses.
+test('the declared enums are the runtime constants', () => {
+  assert.deepEqual(findCommand(['reset']).args[0].values, MODES);
+  for (const verb of ['show', 'save', 'activate', 'deactivate', 'delete', 'rename', 'pin', 'unpin']) {
+    assert.deepEqual(findCommand(['context', verb]).args[0].values, VERB_KINDS, verb);
+  }
+});
+
 test('reset rejects an unknown group and a bad mode', async () => {
   const bad = await runCaptured(['reset', 'neutral', '--group', 'Nope'], { runner: () => {} });
   assert.equal(bad.code, 1);
@@ -784,8 +802,8 @@ test('reset rejects an unknown group and a bad mode', async () => {
   assert.match(bad.stderr, /Focus/);
 
   const mode = await runCaptured(['reset', 'sideways'], { runner: () => {} });
-  assert.equal(mode.code, 1);
-  assert.match(mode.stderr, /usage: prism reset/);
+  assert.equal(mode.code, 2);
+  assert.match(mode.stderr, /mode must be one of defaults, symmetric, neutral, got "sideways"/);
 });
 
 test('reset --base writes beneath an overlay', async () => {
@@ -891,8 +909,8 @@ test('migrate rewrites the replaced ring key everywhere, backs the files up, rep
 
 test('migrate takes no arguments and aborts whole on a context that does not parse', async () => {
   const usage = await runCaptured(['migrate', 'now']);
-  assert.equal(usage.code, 1);
-  assert.match(usage.stderr, /usage: prism migrate/);
+  assert.equal(usage.code, 2);
+  assert.match(usage.stderr, /unexpected argument "now"; usage: prism migrate/);
 
   fs.writeFileSync(valuesPath(), 'glass.ring.driftHz: 25\n');
   fs.mkdirSync(path.dirname(contextPath('profile', 'bad')), { recursive: true });
