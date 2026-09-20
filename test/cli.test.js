@@ -937,6 +937,25 @@ test('migrate includes scratch with a backup inside the migration directory', as
   assert.deepEqual(fs.readdirSync(backup), ['state']);
 });
 
+test('scratch-only migration failure names only its state restore destination', async (t) => {
+  fs.writeFileSync(scratchPath(), 'glass.ring.driftHz: 0\n');
+  const originalWrite = fs.writeFileSync;
+  t.after(() => { fs.writeFileSync = originalWrite; });
+
+  let backup;
+  const failure = await runCaptured(['migrate'], { print: (s) => {
+    backup = s.match(/^migrate: backup ([^\n]+)/)?.[1] ?? backup;
+    if (backup) fs.writeFileSync = (file, ...args) => {
+      if (String(file).startsWith(`${scratchPath()}.`)) throw new Error('injected scratch write failure');
+      return originalWrite(file, ...args);
+    };
+  } });
+  assert.equal(failure.code, 1);
+  assert.ok(backup);
+  assert.ok(failure.stderr.includes(`copy state/scratch.yaml back to ${scratchPath()} to undo`), failure.stderr);
+  assert.doesNotMatch(failure.stderr, /copy config files/);
+});
+
 test('migrate takes no arguments and aborts whole on a context that does not parse', async () => {
   const usage = await runCaptured(['migrate', 'now']);
   assert.equal(usage.code, 1);

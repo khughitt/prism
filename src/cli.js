@@ -408,7 +408,8 @@ export async function run(argv, opts = {}) {
           if (files.length === 0) return 0;
           const backup = writeBackup(files, new Date());
           const restore = files.some((file) => file.kind === 'scratch')
-            ? `copy config files back over ${configDir()} and state/scratch.yaml back to ${scratchPath()} to undo`
+            ? `${files.some((file) => file.kind !== 'scratch')
+              ? `copy config files back over ${configDir()} and ` : 'copy '}state/scratch.yaml back to ${scratchPath()} to undo`
             : `copy them back over ${configDir()} to undo`;
           print(`migrate: backup ${backup}\n`);
           for (const file of files) {
