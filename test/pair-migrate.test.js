@@ -15,12 +15,14 @@ const { loadDefs } = await import('../src/defs.js');
 const { planPairMigration, runPairMigration, assertPairLayout } = await import('../src/migrate.js');
 const defs = loadDefs(defsDir());
 
-beforeEach(() => {
+function reset() {
   for (const dir of [process.env.PRISM_CONFIG_DIR, process.env.PRISM_STATE_DIR]) {
     fs.rmSync(dir, { recursive: true, force: true });
     fs.mkdirSync(dir, { recursive: true });
   }
-});
+}
+
+beforeEach(reset);
 
 async function runCaptured(argv, opts = {}) {
   let stdout = '', stderr = '';
@@ -208,3 +210,191 @@ test('accepted saved ids that collide with Object prototype names migrate as ord
   assert.equal(result.code, 0, result.stderr);
   assert.deepEqual(readPair(null, '__proto__'), { source: '/w', values: { 'glass.roughness': 0.2 } });
 });
+
+// Inject at real durable boundaries; never add failure hooks to production code.
+async function interruptedMigration({ stop = Infinity, before = false } = {}) {
+  const real = { copyFileSync: fs.copyFileSync, writeFileSync: fs.writeFileSync,
+    renameSync: fs.renameSync, unlinkSync: fs.unlinkSync };
+  const events = [];
+  for (const name of Object.keys(real)) {
+    fs[name] = (...args) => {
+      const target = ['copyFileSync', 'renameSync'].includes(name) ? args[1] : args[0];
+      const tracked = name !== 'writeFileSync' || path.basename(target) === 'originally-absent.txt';
+      if (tracked && before && events.length + 1 === stop) throw new Error(`interrupted migration ${stop}`);
+      const result = real[name](...args);
+      if (tracked) {
+        events.push({ name, target });
+        if (!before && events.length === stop) throw new Error(`interrupted migration ${stop}`);
+      }
+      return result;
+    };
+  }
+  try { return { ...await runCaptured(['migrate', 'pairs']), events }; }
+  finally { Object.assign(fs, real); }
+}
+
+function migrationFixture(absent) {
+  if (!absent) {
+    fs.writeFileSync(valuesPath(), 'glass.roughness: 0.4 # keep these exact original bytes\n');
+    fs.writeFileSync(activePath(), '{"profile":"Aurora","wallpaper":{"id":"w1","path":"/one","pinned":true}}');
+  }
+  writeLook('Aurora', { values: { 'glass.ior': 1.4 }, wallpapers: {} });
+  writeLook('Dusk', { values: { 'glass.roughness': 0.6 }, wallpapers: {
+    unrelated: { source: '/unrelated', values: { 'glass.roughness': 0.8 } },
+  } });
+  oldPair('w1', '_source: /one\nglass.roughness: 0.2 # global one\n');
+  oldPair('w2', '_source: /two\nglass.roughness: 0.7\n');
+  fs.writeFileSync(scratchPath(), 'glass.roughness: 0.3 # pending\nterminal.background.opacity.inactive: 0.51\n');
+}
+
+function storeBytes(config = process.env.PRISM_CONFIG_DIR, state = process.env.PRISM_STATE_DIR) {
+  const result = {};
+  for (const [prefix, root] of [['config', config], ['state', state]]) {
+    for (const entry of fs.readdirSync(root, { recursive: true, withFileTypes: true })) {
+      const file = path.join(entry.parentPath, entry.name);
+      const relative = path.relative(root, file);
+      if (entry.isFile() && !relative.startsWith('migrations' + path.sep)
+          && entry.name !== 'store.lock' && !entry.name.endsWith('.tmp')) {
+        result[`${prefix}/${relative}`] = fs.readFileSync(file, 'utf8');
+      }
+    }
+  }
+  return result;
+}
+
+function backupBytes(backup) {
+  return Object.fromEntries(Object.entries(bytes()).filter(([file]) => file.startsWith(backup + path.sep)));
+}
+
+function verifyFirstBackup(backup, original, absent) {
+  for (const [file, content] of Object.entries(original)) {
+    const relative = file.startsWith('config/') ? file.slice(7) : file;
+    assert.equal(fs.readFileSync(path.join(backup, relative), 'utf8'), content, `original backup ${file}`);
+  }
+  const list = fs.readFileSync(path.join(backup, 'originally-absent.txt'), 'utf8');
+  assert.equal(list, absent ? 'config/values.yaml\nstate/active.json\n' : '');
+
+  // Manual rollback: start with the migrated store, copy the first backup, remove
+  // only the plain absent-output list. No migration plan or helper performs restore.
+  const restored = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-pair-restore-'));
+  const config = path.join(restored, 'config'), state = path.join(restored, 'state');
+  fs.mkdirSync(config); fs.mkdirSync(state);
+  for (const [file, content] of Object.entries(storeBytes())) {
+    const target = path.join(restored, file);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, content);
+  }
+  for (const entry of fs.readdirSync(backup, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || entry.name === 'originally-absent.txt') continue;
+    const source = path.join(entry.parentPath, entry.name);
+    const relative = path.relative(backup, source);
+    const target = path.join(relative.startsWith('state/') ? restored : config, relative);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.copyFileSync(source, target);
+  }
+  for (const file of list.trim().split('\n').filter(Boolean)) fs.unlinkSync(path.join(restored, file));
+  assert.deepEqual(storeBytes(config, state), original, 'first-backup rollback restores exact present/absent files');
+  fs.rmSync(restored, { recursive: true });
+}
+
+for (const absent of [false, true]) {
+  test(`migration ${absent ? 'with absent outputs' : 'with existing outputs'}: every backup/install/delete boundary retries and restores`, async () => {
+    migrationFixture(absent);
+    const original = storeBytes();
+    const plan = planPairMigration(defs);
+    const clean = await interruptedMigration();
+    assert.equal(clean.code, 0, clean.stderr);
+    const final = storeBytes();
+    assert.deepEqual(clean.events.map(({ name }) => name), [
+      ...plan.originals.map(() => 'copyFileSync'), 'writeFileSync',
+      ...plan.outputs.map(() => 'renameSync'), ...plan.removals.map(() => 'unlinkSync'),
+    ]);
+    assert.deepEqual(clean.events.filter(({ name }) => name === 'renameSync').map(({ target }) => target), plan.outputs.map(({ path }) => path));
+    assert.deepEqual(clean.events.filter(({ name }) => name === 'unlinkSync').map(({ target }) => target), plan.removals);
+    const firstInstall = plan.originals.length + 2;
+
+    for (const before of [true, false]) {
+      for (let stop = 1; stop <= clean.events.length; stop += 1) {
+        reset(); migrationFixture(absent);
+        const interrupted = await interruptedMigration({ stop, before });
+        assert.equal(interrupted.code, 1, `boundary ${stop}, before=${before}`);
+        assert.match(interrupted.stderr, /interrupted migration/);
+        const completed = stop - Number(before);
+        if (completed < firstInstall) assert.deepEqual(storeBytes(), original, 'backup failure never mutates the store');
+        // Sources cannot disappear until every destination and runtime is installed.
+        if (completed < firstInstall + plan.outputs.length) {
+          for (const source of plan.removals) assert.equal(fs.existsSync(source), true);
+        }
+        const first = backups()[0];
+        const firstBytes = backupBytes(first);
+        const firstComplete = fs.existsSync(path.join(first, 'originally-absent.txt'));
+        const retry = await runCaptured(['migrate', 'pairs']);
+        assert.equal(retry.code, 0, retry.stderr);
+        assert.deepEqual(storeBytes(), final, `boundary ${stop}, before=${before}: current-store retry diverged`);
+        assert.deepEqual(backupBytes(first), firstBytes, 'retry never changes even a partial first backup');
+        if (completed === clean.events.length) {
+          assert.equal(retry.stdout, 'migrate pairs: nothing to migrate\n');
+          assert.deepEqual(backups(), [first]);
+        } else {
+          assert.equal(backups().length, 2, 'every modifying retry creates a fresh backup');
+          assert.ok(backups().some((backup) => backup !== first));
+        }
+        const firstCompleteBackup = firstComplete ? first : backups().find((backup) => backup !== first);
+        verifyFirstBackup(firstCompleteBackup, original, absent);
+        const complete = bytes();
+        assert.equal((await runCaptured(['migrate', 'pairs'])).stdout, 'migrate pairs: nothing to migrate\n');
+        assert.deepEqual(bytes(), complete, 'completed rerun is byte-identical, including backups');
+      }
+    }
+  });
+}
+
+for (const conflict of ['pair', 'scratch']) {
+  test(`manual ${conflict} conflict between migration attempts refuses before backup; intentional resolution finishes`, async () => {
+    migrationFixture(false);
+    const original = storeBytes();
+    const plan = planPairMigration(defs);
+    const target = conflict === 'pair' ? contextPath('profile', 'Aurora') : activePath();
+    const stop = plan.originals.length + 2 + plan.outputs.findIndex((output) => output.path === target);
+    assert.equal((await interruptedMigration({ stop })).code, 1);
+    assert.ok(fs.existsSync(contextPath('wallpaper', 'w1')));
+    assert.ok(fs.existsSync(scratchPath()));
+    const first = backups()[0];
+    const immutable = backupBytes(first);
+    if (conflict === 'pair') {
+      const look = readLook('Aurora');
+      look.wallpapers.w1.values['glass.roughness'] = 0.7;
+      writeLook('Aurora', look);
+    } else {
+      writeRuntime({ active: readActive(), scratch: { 'glass.roughness': 0.7 } });
+    }
+    const manual = bytes();
+    const refused = await runCaptured(['migrate', 'pairs']);
+    assert.equal(refused.code, 1);
+    assert.match(refused.stderr, /conflict/);
+    assert.deepEqual(bytes(), manual, 'refusal preserves the manual edit and all backups');
+    if (conflict === 'pair') {
+      const look = readLook('Aurora');
+      look.wallpapers.w1.values['glass.roughness'] = 0.2;
+      writeLook('Aurora', look);
+    } else {
+      writeRuntime({ active: readActive(), scratch: { 'glass.roughness': 0.3, 'terminal.background.opacity.inactive': 0.51 } });
+    }
+    // Hand edits that do not conflict must be preserved, never replayed over.
+    const current = readLook('Dusk');
+    current.values['glass.ior'] = 1.8;
+    current.wallpapers.unrelated.values['glass.roughness'] = 0.9;
+    writeLook('Dusk', current);
+    const retry = await runCaptured(['migrate', 'pairs']);
+    assert.equal(retry.code, 0, retry.stderr);
+    assert.equal(readLook('Dusk').values['glass.ior'], 1.8);
+    assert.equal(readPair('Dusk', 'unrelated').values['glass.roughness'], 0.9);
+    for (const look of [null, 'Aurora', 'Dusk']) {
+      assert.deepEqual(readPair(look, 'w1'), { source: '/one', values: { 'glass.roughness': 0.2 } });
+      assert.deepEqual(readPair(look, 'w2'), { source: '/two', values: { 'glass.roughness': 0.7 } });
+    }
+    assert.deepEqual(backupBytes(first), immutable);
+    assert.equal(backups().length, 2);
+    verifyFirstBackup(first, original, false);
+  });
+}
