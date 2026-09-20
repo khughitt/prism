@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { parse, stringify } from 'yaml';
-import { activePath, contextsDir } from './paths.js';
+import { activePath, contextsDir, valuesPath } from './paths.js';
 import { readJson, writeJsonAtomic } from './store.js';
 
 // Resolution order of the context kinds, lowest first. Base sits below all of
@@ -89,6 +89,144 @@ export function readActive({ warn = (text) => process.stderr.write(text) } = {})
 
 export function writeActive(active) {
   writeJsonAtomic(activePath(), active);
+}
+
+const isMapping = (value) => typeof value === 'object' && value !== null && !Array.isArray(value);
+
+function validateValues(values, location) {
+  if (!isMapping(values)) throw new Error(`${location} must be a mapping`);
+  for (const key of Object.keys(values)) {
+    if (key.startsWith('_')) throw new Error(`${location}: unknown metadata ${key}`);
+  }
+}
+
+export function lookPath(look) {
+  if (look === null) return valuesPath();
+  assertName(look);
+  return contextPath('profile', look);
+}
+
+function validateWallpapers(wallpapers, location) {
+  if (!isMapping(wallpapers)) throw new Error(`${location} _wallpapers must be a mapping`);
+  for (const [id, pair] of Object.entries(wallpapers)) {
+    assertName(id);
+    if (!isMapping(pair)) throw new Error(`${location} wallpaper ${id} must be a mapping`);
+    if (typeof pair._source !== 'string') throw new Error(`${location} wallpaper ${id}: missing _source`);
+    const { _source, ...values } = pair;
+    validateValues(values, `${location} wallpaper ${id}`);
+  }
+}
+
+export function readLook(look) {
+  const file = lookPath(look);
+  let text;
+  try {
+    text = fs.readFileSync(file, 'utf8');
+  } catch (err) {
+    if (err.code === 'ENOENT') return look === null ? { values: {}, wallpapers: {} } : null;
+    throw err;
+  }
+  let doc;
+  try {
+    doc = parse(text) ?? {};
+  } catch (err) {
+    throw new Error(`${file}: invalid YAML: ${err.message.split('\n')[0]}`);
+  }
+  if (!isMapping(doc)) throw new Error(`${file}: look must be a mapping`);
+  const { _wallpapers, ...values } = doc;
+  validateValues(values, file);
+  const pairs = Object.hasOwn(doc, '_wallpapers') ? _wallpapers : {};
+  validateWallpapers(pairs, file);
+  const wallpapers = Object.fromEntries(Object.entries(pairs).map(([id, pair]) => {
+    const { _source, ...pairValues } = pair;
+    return [id, { source: _source, values: pairValues }];
+  }));
+  return { values, wallpapers };
+}
+
+export function writeLook(look, document) {
+  const file = lookPath(look);
+  if (!isMapping(document) || Object.keys(document).some((key) => !['values', 'wallpapers'].includes(key))) {
+    throw new Error('look document must contain only values and wallpapers');
+  }
+  validateValues(document.values, file);
+  if (!isMapping(document.wallpapers)) throw new Error(`${file} _wallpapers must be a mapping`);
+  const pairs = Object.fromEntries(Object.entries(document.wallpapers).map(([id, pair]) => {
+    assertName(id);
+    if (!isMapping(pair)) throw new Error(`${file} wallpaper ${id} must be a mapping`);
+    if (typeof pair.source !== 'string') throw new Error(`${file} wallpaper ${id}: missing source`);
+    if (Object.keys(pair).some((key) => !['source', 'values'].includes(key))) {
+      throw new Error(`${file} wallpaper ${id}: unknown field`);
+    }
+    validateValues(pair.values, `${file} wallpaper ${id}`);
+    return [id, { _source: pair.source, ...pair.values }];
+  }));
+  const doc = { ...document.values, ...(Object.keys(pairs).length ? { _wallpapers: pairs } : {}) };
+  const yaml = stringify(doc);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, yaml);
+  fs.renameSync(tmp, file);
+}
+
+export function readPair(look, id) {
+  assertName(id);
+  const document = readLook(look);
+  if (document === null) throw new Error(`profile ${look}: no such look`);
+  return Object.hasOwn(document.wallpapers, id) ? document.wallpapers[id] : null;
+}
+
+export function listPairs() {
+  const out = [];
+  for (const look of [null, ...listContexts().profile]) {
+    const document = readLook(look);
+    for (const [id, pair] of Object.entries(document.wallpapers)) {
+      out.push({ look, id, source: pair.source, values: pair.values });
+    }
+  }
+  return out;
+}
+
+function validateRuntimeRecord(record) {
+  if (!isMapping(record)) throw new Error('active.json must be an object');
+  for (const field of Object.keys(record)) {
+    if (!['profile', 'wallpaper', '_scratch'].includes(field)) throw new Error(`unknown active field ${field}`);
+  }
+  if (record.profile !== undefined) assertName(record.profile);
+  if (record.wallpaper !== undefined) {
+    const entry = record.wallpaper;
+    if (!isMapping(entry) || typeof entry.id !== 'string' || typeof entry.path !== 'string') {
+      throw new Error('active wallpaper must carry id and path');
+    }
+    assertName(entry.id);
+    for (const field of Object.keys(entry)) {
+      if (!['id', 'path'].includes(field)) throw new Error(`active wallpaper carries unknown field ${field}`);
+    }
+  }
+  const scratch = Object.hasOwn(record, '_scratch') ? record._scratch : {};
+  validateValues(scratch, '_scratch');
+  const active = { ...(record.profile === undefined ? {} : { profile: record.profile }),
+    ...(record.wallpaper === undefined ? {} : { wallpaper: record.wallpaper }) };
+  return { active, scratch };
+}
+
+export function readRuntime() {
+  return validateRuntimeRecord(readJson(activePath(), {}));
+}
+
+export function writeRuntime(state) {
+  if (!isMapping(state) || Object.keys(state).some((key) => !['active', 'scratch'].includes(key))) {
+    throw new Error('runtime must contain only active and scratch');
+  }
+  const { active, scratch } = state;
+  if (!isMapping(active)) throw new Error('active must be an object');
+  for (const field of Object.keys(active)) {
+    if (!['profile', 'wallpaper'].includes(field)) throw new Error(`unknown active field ${field}`);
+  }
+  validateValues(scratch, '_scratch');
+  const record = { ...active, ...(Object.keys(scratch).length ? { _scratch: scratch } : {}) };
+  validateRuntimeRecord(record);
+  writeJsonAtomic(activePath(), record);
 }
 
 // A context file that does not parse. `reason` is the message without the

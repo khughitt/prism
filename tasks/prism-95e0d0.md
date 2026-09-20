@@ -1,13 +1,16 @@
 ---
 id: prism-95e0d0
 title: Add atomic look and runtime document primitives
-status: todo
+status: done
 priority: 2
 size: m
 complexity: mid
 process: direct
+owner: prism-aec90f
 created: 2026-09-20T12:07:54Z
-updated: 2026-09-20T12:38:56Z
+updated: 2026-09-20T12:44:56Z
+started: 2026-09-20T12:40:52Z
+completed: 2026-09-20T12:44:56Z
 depends: []
 parent: prism-a3484e
 tags: [profiles]
@@ -23,3 +26,7 @@ Implement reviewed and amended plan Task 1 in existing .worktrees/prism-aec90f: 
 
 - 2026-09-20T12:12:54Z (prism-aec90f): parked (waiting on user, review): Written plan docs/plans/2026-09-20-profile-wallpaper-pairs.md requires user review before starting this first implementation step.
   provenance: {"harness_session":"codex:01a0bbd8-f021-7163-9af3-bf80490291a9","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-09-20T12:40:52Z (prism-aec90f): started
+  provenance: {"harness_session":"codex:01a0bbd8-f021-7163-9af3-bf80490291a9","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-09-20T12:44:56Z (prism-aec90f): done
+- 2026-09-20T12:44:56Z (prism-aec90f): Added validated atomic look/pair and runtime document primitives.
