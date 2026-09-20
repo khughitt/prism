@@ -3032,7 +3032,7 @@ git commit -m "docs: describe the scratch layer, commits, and the panel's edits 
 - Modify: `docs/specs/2026-09-19-compositional-profiles-design.md:4` (status line)
 - Tasks: the Section 12 map, through the `tasks` CLI only
 
-- [ ] **Step 1: Point the running shell at the worktree**
+- [x] **Step 1: Point the running shell at the worktree**
 
 ```bash
 ls -l ~/.local/share/noctalia/plugins/prism

@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: prism-aec90f
 created: 2026-09-19T20:01:06Z
-updated: 2026-09-19T22:50:48Z
+updated: 2026-09-20T00:47:41Z
 started: 2026-09-19T20:01:22Z
 depends: []
 parent: prism-2f0b4b
@@ -36,3 +36,6 @@ Design the profile system as a fold over layers: defaults, base, profile (the lo
 - 2026-09-19T22:47:33Z (prism-aec90f): resumed
   provenance: {"harness_session":"codex:01a0bbd8-f021-7163-9af3-bf80490291a9","harness_session_source":"CODEX_SESSION_ID"}
 - 2026-09-19T22:50:48Z (prism-aec90f): Approved plan implementation started with subagent-driven development. Baseline 327 Node tests plus Lua passes. Preflight moves pinned repair into atomic store/panel switch, validates migration and commit next states before writes, and broadens interruption coverage; execution order 1,2,3,4,5,6,7,9,10,8,11,12,13.
+- 2026-09-20T00:41:39Z (prism-aec90f): Tasks 1–12 implemented and reviewed; final corrections add38b9 passed scoped review. Main ring-sweep work integrated at 5b03957; 385 Node tests plus Lua pass. Desktop preflight: installed niri 597aba66, running session 7526af1d; restart required before manual acceptance.
+- 2026-09-20T00:47:41Z (prism-aec90f): parked (waiting on user, review): Implementation and reviews complete through48bf463; waiting for user session restart and six desktop acceptance observations on prism-439774. Then controller performs closeout and merge.
+  provenance: {"harness_session":"codex:01a0bbd8-f021-7163-9af3-bf80490291a9","harness_session_source":"CODEX_SESSION_ID"}
