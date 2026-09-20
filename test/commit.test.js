@@ -36,6 +36,15 @@ async function runCaptured(argv, opts = {}) {
   return { code, stderr };
 }
 
+function storeBytes() {
+  return Object.fromEntries([process.env.PRISM_CONFIG_DIR, process.env.PRISM_STATE_DIR].flatMap((root) =>
+    fs.readdirSync(root, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile()
+      && entry.name !== 'store.lock').map((entry) => {
+      const file = path.join(entry.parentPath, entry.name);
+      return [file, fs.readFileSync(file)];
+    })));
+}
+
 // Every commit keeps the screen: the values before and after are identical,
 // resolved.json is untouched, and no sink runs.
 async function commitKeepsScreen(argv) {
@@ -155,6 +164,32 @@ test('commit wallpaper merges scratch into the on-screen delta and refuses a sta
   writeScratch({ 'glass.noise': 0.3 });
   await commitKeepsScreen(['commit', 'wallpaper', 'w1']);
   assert.deepEqual(readContext('wallpaper', 'w1').values, { 'glass.ior': 1.7, 'glass.noise': 0.3 });
+});
+
+test('guarded commit refuses a stale look, wallpaper, or Default identity without changing files', async () => {
+  for (const active of [
+    { profile: 'Dark', wallpaper: { id: 'w1', path: '/w' } },
+    { profile: 'Aurora', wallpaper: { id: 'w2', path: '/other' } },
+    { profile: 'Default', wallpaper: { id: 'w1', path: '/w' } },
+  ]) {
+    writeLook(active.profile, { values: {}, wallpapers: {} });
+    writeActive(active);
+    writeScratch({ 'glass.ior': 1.6 });
+    const before = storeBytes();
+    const result = await runCaptured(['commit', 'wallpaper', 'w1', '--expect-look', 'profile:Aurora',
+      '--expect-wallpaper', 'id:w1']);
+    assert.equal(result.code, 1, result.stderr);
+    assert.match(result.stderr, /expected .*slot/);
+    assert.deepEqual(storeBytes(), before);
+  }
+  writeActive({ wallpaper: { id: 'w1', path: '/w' } });
+  const wrongDefault = await runCaptured(['commit', 'wallpaper', 'w1', '--expect-look', 'profile:Default',
+    '--expect-wallpaper', 'id:w1']);
+  assert.equal(wrongDefault.code, 1);
+  assert.match(wrongDefault.stderr, /expected .*slot/);
+  for (const guards of [['--expect-look', 'default'], ['--expect-wallpaper', 'id:w1']]) {
+    assert.equal((await runCaptured(['commit', 'wallpaper', 'w1', ...guards])).code, 1);
+  }
 });
 
 test('commit rejects a bad destination, a bad name, and stray arguments', async () => {

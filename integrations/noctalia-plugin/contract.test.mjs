@@ -72,6 +72,44 @@ function luaLiteral(value) {
 
 const prismBin = fileURLToPath(new URL('../../bin/prism', pluginDir));
 
+test('every queue argv shape reaches a CLI command rather than usage parsing', () => {
+  const script = String.raw`
+local Queue = dofile(arg[1])
+local expected = { look = "default", wallpaper = "none" }
+local items = {
+  { verb = "set", key = "glass.ior", value = 1.6 },
+  { verb = "unset", key = "glass.ior" },
+  { verb = "reset", mode = "revert" },
+  { verb = "reset", mode = "neutral", group = "Focus" },
+  { verb = "commit", destination = "base", expected = expected },
+  { verb = "commit", destination = "profile", target = "Saved", expected = expected },
+  { verb = "commit", destination = "wallpaper", target = "w1", expected = expected },
+  { verb = "clear", id = "w1", expected = expected },
+  { verb = "activate", name = "Saved" },
+  { verb = "deactivate" },
+  { verb = "rename", name = "Saved", newName = "New", expected = expected },
+  { verb = "delete", name = "Saved", expected = expected },
+}
+for _, item in ipairs(items) do print(table.concat(Queue.argvFor(item), "\t")) end
+`;
+  const generated = spawnSync('lua', ['-', fileURLToPath(new URL('queue.luau', pluginDir))],
+    { input: script, encoding: 'utf8' });
+  assert.equal(generated.status, 0, generated.stderr);
+  const commands = generated.stdout.trim().split('\n').map((line) => line.split('\t'));
+  assert.equal(commands.length, 12);
+  const integrations = mkdtempSync(join(tmpdir(), 'prism-contract-integ-'));
+  for (const argv of commands) {
+    const configDir = mkdtempSync(join(tmpdir(), 'prism-contract-cfg-'));
+    const stateDir = mkdtempSync(join(tmpdir(), 'prism-contract-state-'));
+    writeFileSync(join(configDir, 'values.yaml'), '{}\n');
+    const result = spawnSync(prismBin, argv.slice(1), { encoding: 'utf8',
+      env: { ...process.env, PRISM_CONFIG_DIR: configDir, PRISM_STATE_DIR: stateDir,
+        PRISM_INTEGRATIONS_DIR: integrations } });
+    assert.doesNotMatch(result.stderr, /usage:|invalid expected|expected slots require|unknown kind|invalid context name/,
+      `${argv.join(' ')}: ${result.stderr}`);
+  }
+});
+
 // A store the CLI reads but no sink writes: describe is read-only, so the
 // contexts can be laid down as files instead of driven through `prism set`.
 function describeStore(contexts) {

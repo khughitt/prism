@@ -92,11 +92,22 @@ Default settings directly without replacing its pairs.
 
 `prism context` supports `list`, `show`, `rename` (profiles), `activate`,
 `deactivate`, `delete`, `clear wallpaper <id>`, and `wallpaper <path>` (the
-Noctalia hook). Wallpaper commands operate on the selected look. Clear removes
+Noctalia hook). `context list` prints saved wallpaper pairs from every look as
+`wallpaper <look-token> <id> <source>` and marks only the selected pair.
+`context show wallpaper <id> --look <look-token>` inspects an inactive look;
+without `--look` it uses the selected look. `context show profile <name>` prints
+the full document, including its pairs. Look tokens are `default` or
+`profile:<name>`; wallpaper tokens are `none` or `id:<id>`.
+Wallpaper commands operate on the selected look. Clear removes
 its active pair and retains the wallpaper slot; delete removes the pair and
 clears that slot when active. Renaming a profile carries all its pairs.
 Deleting the active profile removes its settings and pairs, selects Default,
 and **preserves scratch**; this differs from ordinary explicit selection.
+Panel Keep, Save As, Clear, Rename, and Delete actions append
+`--expect-look <look-token> --expect-wallpaper <wallpaper-token>`. Both flags
+are required together; stale actions fail before changing files. Direct CLI
+calls may omit them to act on the current store. Explicit profile selection
+remains unguarded so it can select the requested destination.
 
 Explicitly selecting a valid look can recover from a missing or broken active
 named profile, including its selected pair. `prism doctor` recommends

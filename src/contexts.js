@@ -27,6 +27,47 @@ export function assertName(name) {
   }
 }
 
+export function parseLookToken(token) {
+  if (token === 'default') return null;
+  if (!token?.startsWith('profile:')) throw new Error(`invalid expected look token ${JSON.stringify(token)}`);
+  const name = token.slice(8);
+  assertName(name);
+  return name;
+}
+
+export function parseExpectedSlots(args) {
+  const first = args.findIndex((arg) => arg === '--expect-look' || arg === '--expect-wallpaper');
+  if (first < 0) return { args, expected: null };
+  const suffix = args.slice(first);
+  if (suffix.length !== 4) throw new Error('expected slots require both --expect-look and --expect-wallpaper');
+  const flags = {};
+  for (let index = 0; index < suffix.length; index += 2) {
+    const flag = suffix[index];
+    if (!['--expect-look', '--expect-wallpaper'].includes(flag) || Object.hasOwn(flags, flag)) {
+      throw new Error('expected slots require one --expect-look and one --expect-wallpaper');
+    }
+    flags[flag] = suffix[index + 1];
+  }
+  if (!Object.hasOwn(flags, '--expect-look') || !Object.hasOwn(flags, '--expect-wallpaper')) {
+    throw new Error('expected slots require both --expect-look and --expect-wallpaper');
+  }
+  const wallpaper = flags['--expect-wallpaper'];
+  const profile = parseLookToken(flags['--expect-look']);
+  let id = null;
+  if (wallpaper !== 'none') {
+    if (!wallpaper?.startsWith('id:')) throw new Error(`invalid expected wallpaper token ${JSON.stringify(wallpaper)}`);
+    id = wallpaper.slice(3);
+    assertName(id);
+  }
+  return { args: args.slice(0, first), expected: { profile, wallpaper: id } };
+}
+
+export function assertExpectedSlots(active, expected) {
+  if (expected === null) return;
+  if ((active.profile ?? null) !== expected.profile) throw new Error('expected look slot is stale');
+  if ((active.wallpaper?.id ?? null) !== expected.wallpaper) throw new Error('expected wallpaper slot is stale');
+}
+
 export function wallpaperId(wallpaper) {
   if (typeof wallpaper !== 'string' || wallpaper.trim() === '') {
     throw new Error('wallpaper path must not be empty');
@@ -200,28 +241,28 @@ export function writeRuntime(state) {
 }
 
 // Raw profile documents are retained for diagnostics and whole-file lifecycle operations.
-export function readContextText(kind, name) {
+export function readContextText(kind, name, look) {
   assertKind(kind);
   assertName(name);
   if (kind === 'wallpaper') {
-    const pair = readPair(readActive().profile ?? null, name);
+    const pair = readPair(look === undefined ? readActive().profile ?? null : look, name);
     return pair === null ? null : stringify({ _source: pair.source, ...pair.values });
   }
   try { return fs.readFileSync(contextPath(kind, name), 'utf8'); }
   catch (err) { if (err.code === 'ENOENT') return null; throw err; }
 }
 
-export function readContext(kind, name) {
+export function readContext(kind, name, look) {
   assertKind(kind);
-  if (kind === 'wallpaper') return readPair(readActive().profile ?? null, name);
-  const look = readLook(name);
-  return look === null ? null : { source: null, values: look.values };
+  if (kind === 'wallpaper') return readPair(look === undefined ? readActive().profile ?? null : look, name);
+  const document = readLook(name);
+  return document === null ? null : { source: null, values: document.values };
 }
 
-export function inspectContext(kind, name) {
-  const text = readContextText(kind, name);
+export function inspectContext(kind, name, look) {
+  const text = readContextText(kind, name, look);
   if (text === null) return null;
-  try { return { context: readContext(kind, name), text, error: null }; }
+  try { return { context: readContext(kind, name, look), text, error: null }; }
   catch (err) { return { context: null, text, error: err.message }; }
 }
 

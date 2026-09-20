@@ -995,7 +995,8 @@ assert(clear, "a tuned wallpaper offers a clear button")
 equal(clear.props.opacity, 1.0)
 equal(clear.props.tooltip, "Clear this wallpaper's 4 nudges")
 clear.props.onClick()
-equal(commands[#commands], Shell.command({ "prism", "context", "clear", "wallpaper", "f8eb0556" }))
+equal(commands[#commands], Shell.command({ "prism", "context", "clear", "wallpaper", "f8eb0556",
+  "--expect-look", "default", "--expect-wallpaper", "id:f8eb0556" }))
 writeCallback({ exitCode = 0, stdout = "" })
 assert(commands[#commands]:find("describe", 1, true), "a completed clear re-reads the model")
 described({ exitCode = 0, stdout = "{}" })
@@ -1127,6 +1128,14 @@ assert((panelError(hiddenNoLayer) or ""):find("debug.backdrop", 1, true),
 
 -- Profile transport. Loading, clearing, and deleting are context verbs, and
 -- each leaves the model stale exactly as a parameter write does.
+equal(Queue.captureSlots({ active = {} }), { look = "default", wallpaper = "none" })
+equal(Queue.captureSlots({ active = { profile = "Default", wallpaper = { id = "w1" } } }),
+  { look = "profile:Default", wallpaper = "id:w1" })
+equal(Queue.argvFor({ verb = "commit", destination = "wallpaper", target = "w1",
+  expected = { look = "profile:Aurora", wallpaper = "id:w1" } }),
+  { "prism", "commit", "wallpaper", "w1", "--expect-look", "profile:Aurora", "--expect-wallpaper", "id:w1" })
+equal(Queue.argvFor({ verb = "clear", id = "w1", expected = { look = "default", wallpaper = "id:w1" } }),
+  { "prism", "context", "clear", "wallpaper", "w1", "--expect-look", "default", "--expect-wallpaper", "id:w1" })
 equal(Queue.argvFor({ verb = "activate", name = "dusk" }), { "prism", "context", "activate", "profile", "dusk" })
 equal(Queue.argvFor({ verb = "deactivate" }), { "prism", "context", "deactivate", "profile" })
 equal(Queue.argvFor({ verb = "delete", name = "dusk" }), { "prism", "context", "delete", "profile", "dusk" })
@@ -1246,7 +1255,8 @@ glyphButton(saveTree, "device-floppy").props.onClick()
 local nameField = collect(rendered, "input")[1]
 assert(nameField, "the save button opens a name field")
 nameField.props.onSubmit("noon")
-equal(commands[#commands], Shell.command({ "prism", "commit", "profile", "noon" }))
+equal(commands[#commands], Shell.command({ "prism", "commit", "profile", "noon",
+  "--expect-look", "default", "--expect-wallpaper", "id:f8eb0556" }))
 equal(state_activeProfile(), "noon", "the pick shows at once")
 writeCallback({ exitCode = 0, stdout = "" })
 assert(commands[#commands]:find("describe", 1, true), "a finished batch still re-reads the model")
@@ -1313,7 +1323,8 @@ equal(#commands, beforeConfirm, "cancel deletes nothing")
 equal(labelSet(rendered)["Delete profile dusk?"], nil, "cancel closes the question")
 glyphButton(rendered, "trash").props.onClick()
 textButton(rendered, "Delete").props.onClick()
-equal(commands[#commands], Shell.command({ "prism", "context", "delete", "profile", "dusk" }))
+equal(commands[#commands], Shell.command({ "prism", "context", "delete", "profile", "dusk",
+  "--expect-look", "profile:dusk", "--expect-wallpaper", "none" }))
 equal(labelSet(rendered)["Delete profile dusk?"], nil, "a confirmed delete closes the question")
 
 -- Saving under a name that already exists asks first. The loaded profile's own
@@ -1332,7 +1343,8 @@ equal(labelSet(rendered)["Replace profile dawn?"], nil, "cancel closes the quest
 glyphButton(rendered, "device-floppy").props.onClick()
 collect(rendered, "input")[1].props.onSubmit("dawn")
 textButton(rendered, "Replace").props.onClick()
-equal(commands[#commands], Shell.command({ "prism", "commit", "profile", "dawn" }))
+equal(commands[#commands], Shell.command({ "prism", "commit", "profile", "dawn",
+  "--expect-look", "default", "--expect-wallpaper", "id:f8eb0556" }))
 writeCallback({ exitCode = 0, stdout = "" })
 described({ exitCode = 0, stdout = "{}" })
 
@@ -1349,7 +1361,8 @@ editedModel.params[3].layer, editedModel.params[3].held = "scratch", { "base", "
 renderModel(editedModel)
 glyphButton(rendered, "device-floppy").props.onClick()
 collect(rendered, "input")[1].props.onSubmit("dusk")
-equal(commands[#commands], Shell.command({ "prism", "commit", "profile" }), "with edits it is the merging commit")
+equal(commands[#commands], Shell.command({ "prism", "commit", "profile",
+  "--expect-look", "profile:dusk", "--expect-wallpaper", "none" }), "with edits it is the merging commit")
 writeCallback({ exitCode = 0, stdout = "" })
 described({ exitCode = 0, stdout = "{}" })
 
@@ -1368,7 +1381,8 @@ local keep = glyphButton(editsTree, "bookmark")
 equal(keep.props.tooltip, "Keep 2 edits in profile dusk")
 equal(keep.props.opacity, 1.0)
 keep.props.onClick()
-equal(commands[#commands], Shell.command({ "prism", "commit", "profile" }))
+equal(commands[#commands], Shell.command({ "prism", "commit", "profile",
+  "--expect-look", "profile:dusk", "--expect-wallpaper", "id:f8eb0556" }))
 equal(editsModel.params[3].edited, false, "the edits clear optimistically")
 writeCallback({ exitCode = 0, stdout = "" })
 described({ exitCode = 0, stdout = "{}" })
@@ -1376,7 +1390,8 @@ local wallpaperEditsTree = renderModel(twoEdits())
 local keepWall = glyphButton(wallpaperEditsTree, "photo-check")
 equal(keepWall.props.tooltip, "Keep 2 edits for this wallpaper")
 keepWall.props.onClick()
-equal(commands[#commands], Shell.command({ "prism", "commit", "wallpaper", "f8eb0556" }))
+equal(commands[#commands], Shell.command({ "prism", "commit", "wallpaper", "f8eb0556",
+  "--expect-look", "profile:dusk", "--expect-wallpaper", "id:f8eb0556" }))
 writeCallback({ exitCode = 0, stdout = "" })
 described({ exitCode = 0, stdout = "{}" })
 local revertTree = renderModel(twoEdits())
@@ -1392,7 +1407,8 @@ defaultEdits.params[3].layer, defaultEdits.params[3].held = "scratch", { "scratc
 local defaultTree = renderModel(defaultEdits)
 equal(glyphButton(defaultTree, "bookmark").props.tooltip, "Keep 1 edit in Default")
 glyphButton(defaultTree, "bookmark").props.onClick()
-equal(commands[#commands], Shell.command({ "prism", "commit", "base" }))
+equal(commands[#commands], Shell.command({ "prism", "commit", "base",
+  "--expect-look", "default", "--expect-wallpaper", "none" }))
 writeCallback({ exitCode = 0, stdout = "" })
 described({ exitCode = 0, stdout = "{}" })
 local noWall = glyphButton(defaultTree, "photo-check")
@@ -1434,7 +1450,8 @@ equal(#commands, beforeRename, "the same name changes nothing")
 equal(#collect(rendered, "input"), 0, "and closes the field")
 glyphButton(rendered, "pencil").props.onClick()
 collect(rendered, "input")[1].props.onSubmit("noon")
-equal(commands[#commands], Shell.command({ "prism", "context", "rename", "profile", "dusk", "noon" }))
+equal(commands[#commands], Shell.command({ "prism", "context", "rename", "profile", "dusk", "noon",
+  "--expect-look", "profile:dusk", "--expect-wallpaper", "none" }))
 equal(#collect(rendered, "input"), 0, "a queued rename closes the field")
 
 -- Enter is not the only submit: it needs keyboard focus, so the check beside
@@ -1446,7 +1463,8 @@ clickSaveField.props.onChange("noon")
 local check = glyphButton(rendered, "check")
 assert(check, "the field has a submit button beside it")
 check.props.onClick()
-equal(commands[#commands], Shell.command({ "prism", "commit", "profile", "noon" }),
+equal(commands[#commands], Shell.command({ "prism", "commit", "profile", "noon",
+  "--expect-look", "default", "--expect-wallpaper", "id:f8eb0556" }),
   "the check submits what onChange tracked")
 equal(#collect(rendered, "input"), 0, "a clicked save closes the field")
 
@@ -1454,7 +1472,8 @@ local clickRename = renderModel(profileModel({ active = { profile = "dusk" } }))
 glyphButton(clickRename, "pencil").props.onClick()
 collect(rendered, "input")[1].props.onChange("noon")
 glyphButton(rendered, "check").props.onClick()
-equal(commands[#commands], Shell.command({ "prism", "context", "rename", "profile", "dusk", "noon" }),
+equal(commands[#commands], Shell.command({ "prism", "context", "rename", "profile", "dusk", "noon",
+  "--expect-look", "profile:dusk", "--expect-wallpaper", "none" }),
   "the check submits a rename too")
 
 -- While a mode's field is open its icon stops offering that mode and is a
@@ -1571,4 +1590,60 @@ equal(errorBanner(rendered), nil, "opening the panel is a fresh gesture and star
   model = profileModel({ active = { profile = "dusk" } })
   described({ exitCode = 0, stdout = "{}" })
   equal(selectWithOption(rendered, "Default").props.selectedIndex, 2)
+end)()
+
+-- Actions retain the slots represented by their rendered controls even when
+-- the mutable model changes before the click, submit, or confirmation.
+;(function()
+local staleKeepModel = profileModel({ active = { profile = "dawn", wallpaper = { id = "w1", path = "/w" } } })
+staleKeepModel.params[3].layer, staleKeepModel.params[3].held = "scratch", { "scratch" }
+local staleKeepTree = renderModel(staleKeepModel)
+staleKeepModel.active.profile = "dusk"
+glyphButton(staleKeepTree, "photo-check").props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "commit", "wallpaper", "w1",
+  "--expect-look", "profile:dawn", "--expect-wallpaper", "id:w1" }))
+
+local staleNameModel = profileModel({ active = { profile = "dawn", wallpaper = { id = "w1", path = "/w" } } })
+renderModel(staleNameModel)
+glyphButton(rendered, "pencil").props.onClick()
+local staleNameField = collect(rendered, "input")[1]
+staleNameModel.active.profile = "dusk"
+staleNameField.props.onSubmit("NewName")
+equal(commands[#commands], Shell.command({ "prism", "context", "rename", "profile", "dawn", "NewName",
+  "--expect-look", "profile:dawn", "--expect-wallpaper", "id:w1" }))
+
+local staleSaveModel = profileModel({ active = { profile = "dawn", wallpaper = { id = "w1", path = "/w" } } })
+renderModel(staleSaveModel)
+glyphButton(rendered, "device-floppy").props.onClick()
+local staleSaveField = collect(rendered, "input")[1]
+staleSaveModel.active.profile = "dusk"
+staleSaveField.props.onSubmit("NewName")
+equal(commands[#commands], Shell.command({ "prism", "commit", "profile", "NewName",
+  "--expect-look", "profile:dawn", "--expect-wallpaper", "id:w1" }))
+
+local staleReplaceModel = profileModel({ active = { profile = "dawn", wallpaper = { id = "w1", path = "/w" } } })
+renderModel(staleReplaceModel)
+glyphButton(rendered, "device-floppy").props.onClick()
+collect(rendered, "input")[1].props.onSubmit("dusk")
+local staleReplace = textButton(rendered, "Replace")
+staleReplaceModel.active.profile = nil
+staleReplace.props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "commit", "profile", "dusk",
+  "--expect-look", "profile:dawn", "--expect-wallpaper", "id:w1" }))
+
+local staleDeleteModel = profileModel({ active = { profile = "dawn", wallpaper = { id = "w1", path = "/w" } } })
+renderModel(staleDeleteModel)
+glyphButton(rendered, "trash").props.onClick()
+local staleDelete = textButton(rendered, "Delete")
+staleDeleteModel.active.profile = "dusk"
+staleDelete.props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "context", "delete", "profile", "dawn",
+  "--expect-look", "profile:dawn", "--expect-wallpaper", "id:w1" }))
+
+local staleClearModel = layeredModel()
+local staleClearTree = renderModel(staleClearModel)
+staleClearModel.active.profile = "dusk"
+glyphButton(staleClearTree, "eraser").props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "context", "clear", "wallpaper", "f8eb0556",
+  "--expect-look", "default", "--expect-wallpaper", "id:f8eb0556" }))
 end)()

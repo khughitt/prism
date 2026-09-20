@@ -65,8 +65,11 @@ result is stale and replayed only after the drag and write queue are idle.
 While the panel is open it asks the host for second ticks and re-reads describe
 every two seconds through the same stale-and-replay path, so a wallpaper
 rotation reaches the header, the edits row, and every provenance marker within
-a period; a clear or a commit aimed at a wallpaper that has since left is
-refused by id and shows in the banner.
+a period. Each rendered Keep, Save As, Clear, Rename, and Delete action captures
+both selected slots before optimistic model changes. The queue sends
+`--expect-look <default|profile:name> --expect-wallpaper <none|id:id>`; a stale
+action is refused under the store lock and appears in the banner. Selection
+commands carry no slot expectation.
 
 Noctalia API 22 exposes slider `step`, `onChange`, and `onDragEnd`, but no
 interaction-source callback. Normalized-display sliders and curved (logarithmic
@@ -164,12 +167,18 @@ The presentation module defines the panel's stable layout contract:
   a replace question that issues the same commit. The field uses `ui.input`
   and a check button so mouse users can submit it; it validates names locally.
   Rename and delete act on the loaded profile. Rename opens the same name
-  field and issues `prism context rename`; delete asks for confirmation.
+  field and issues `prism context rename`; delete asks for confirmation. A
+  confirmed delete removes the loaded profile document, including all its
+  wallpaper pairs, selects Default, and preserves scratch. Ordinary selection
+  saves pending edits to the outgoing pair when a wallpaper is active.
 - When a wallpaper is active the panel draws a header row above the sections:
   a glyph lit while the wallpaper's delta holds any visible key, the count
   (`N for this wallpaper`), and a clear button that runs
   `prism context clear wallpaper <id>` with the id from the model. The basename
   is the glyph's tooltip. With no active wallpaper there is no header row.
+  `prism context list` discovers pairs in all looks; `prism context show
+  wallpaper <id> --look profile:<name>` inspects an inactive pair, while
+  `--look default` names the unnamed look.
 - Numeric controls preserve canonical values while supporting raw, percent,
   and normalized display metadata on linear, logarithmic, and power (`exponent`)
   scales; a curved scale shapes the track and the display only the label. The

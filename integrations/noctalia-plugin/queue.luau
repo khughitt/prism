@@ -50,17 +50,35 @@ function M.finish(state)
   return { state = M.new(), launch = nil, drained = true }
 end
 
+function M.captureSlots(model)
+  local active = model.active
+  return {
+    look = active.profile == nil and "default" or "profile:" .. active.profile,
+    wallpaper = active.wallpaper == nil and "none" or "id:" .. active.wallpaper.id,
+  }
+end
+
+local function withExpected(argv, item)
+  if item.expected ~= nil then
+    argv[#argv + 1] = "--expect-look"
+    argv[#argv + 1] = item.expected.look
+    argv[#argv + 1] = "--expect-wallpaper"
+    argv[#argv + 1] = item.expected.wallpaper
+  end
+  return argv
+end
+
 function M.argvFor(item)
   if item.verb == "set" then return { "prism", "set", item.key, tostring(item.value) } end
   if item.verb == "unset" then return { "prism", "unset", item.key } end
-  if item.verb == "clear" then return { "prism", "context", "clear", "wallpaper", item.id } end
+  if item.verb == "clear" then return withExpected({ "prism", "context", "clear", "wallpaper", item.id }, item) end
   if item.verb == "commit" then
     local argv = { "prism", "commit", item.destination }
     if item.target ~= nil then argv[#argv + 1] = item.target end
-    return argv
+    return withExpected(argv, item)
   end
   if item.verb == "deactivate" then return { "prism", "context", "deactivate", "profile" } end
-  if item.verb == "rename" then return { "prism", "context", "rename", "profile", item.name, item.newName } end
+  if item.verb == "rename" then return withExpected({ "prism", "context", "rename", "profile", item.name, item.newName }, item) end
   if item.verb == "reset" then
     local argv = { "prism", "reset", item.mode }
     if item.group ~= nil then
@@ -70,7 +88,10 @@ function M.argvFor(item)
     return argv
   end
   for _, verb in ipairs({ "activate", "delete" }) do
-    if item.verb == verb then return { "prism", "context", verb, "profile", item.name } end
+    if item.verb == verb then
+      local argv = { "prism", "context", verb, "profile", item.name }
+      return verb == "delete" and withExpected(argv, item) or argv
+    end
   end
   error("unknown queue verb: " .. item.verb)
 end

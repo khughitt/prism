@@ -1,20 +1,22 @@
 import { isDeepStrictEqual } from 'node:util';
 import { withLock } from './lock.js';
 import { lockPath } from './paths.js';
-import { assertName, readLook, writeLook, writeRuntime } from './contexts.js';
+import { assertName, readLook, writeLook, writeRuntime, parseExpectedSlots, assertExpectedSlots, readRuntime } from './contexts.js';
 import { loadLayers, loadStore } from './layers.js';
 import { resolveLayered } from './resolve.js';
 
 const usage = () => new Error('usage: prism commit base | profile [<name>] | wallpaper <id>');
 
 export async function runCommit(args, { defs }) {
-  const [destination, ...rest] = args;
+  const { args: positional, expected } = parseExpectedSlots(args);
+  const [destination, ...rest] = positional;
   if (!['base', 'profile', 'wallpaper'].includes(destination)) throw usage();
   if ((destination === 'base' && rest.length !== 0)
       || (destination === 'profile' && rest.length > 1)
       || (destination === 'wallpaper' && rest.length !== 1)) throw usage();
 
   await withLock(lockPath(), async () => {
+    assertExpectedSlots(readRuntime().active, expected);
     const store = loadStore(defs);
     const { active, scratch } = store;
     const keys = Object.keys(scratch);

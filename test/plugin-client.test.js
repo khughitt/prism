@@ -176,7 +176,7 @@ test('the queue speaks only to prism', async () => {
 
   assert.match(source, /if item\.verb == "set" then return \{ "prism", "set", item\.key, tostring\(item\.value\) \} end/);
   assert.match(source, /if item\.verb == "unset" then return \{ "prism", "unset", item\.key \} end/);
-  assert.match(source, /if item\.verb == "clear" then return \{ "prism", "context", "clear", "wallpaper", item\.id \} end/);
+  assert.match(source, /if item\.verb == "clear" then return withExpected\(\{ "prism", "context", "clear", "wallpaper", item\.id \}, item\) end/);
   assert.match(source, /if item\.verb == "commit" then/);
   assert.match(source, /error\("unknown queue verb: "/);
   assert.doesNotMatch(source, /preview|niri-glass|prismGlass|"qs"/);

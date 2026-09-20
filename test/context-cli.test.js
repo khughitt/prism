@@ -65,8 +65,8 @@ test('context list shows every context by kind, marks the active ones, and shows
   assert.equal(stdout, [
     '  profile dawn',
     '* profile dusk',
-    '  wallpaper abc12345  /walls/a.jpg',
-    '* wallpaper ffff0000  /walls/z.jpg (untuned)',
+    '  wallpaper profile:dusk abc12345  /walls/a.jpg',
+    '* wallpaper profile:dusk ffff0000  /walls/z.jpg (untuned)',
     '',
   ].join('\n'));
 
@@ -82,6 +82,36 @@ test('context show prints the file contents, _source first for a wallpaper', asy
   const missing = await runCaptured(['context', 'show', 'profile', 'nope']);
   assert.notEqual(missing.code, 0);
   assert.match(missing.stderr, /profile nope: no such context/);
+});
+
+test('list discovers identical ids in every look and show can inspect an inactive pair', async () => {
+  writeLook(null, { values: {}, wallpapers: { w1: { source: '/default', values: { 'glass.ior': 1.2 } } } });
+  writeLook('Aurora', { values: {}, wallpapers: { w1: { source: '/aurora', values: { 'glass.ior': 1.3 } } } });
+  writeLook('Dark', { values: {}, wallpapers: { w1: { source: '/dark', values: { 'glass.ior': 1.4 } } } });
+  writeActive({ profile: 'Aurora', wallpaper: { id: 'w1', path: '/aurora' } });
+  const listed = await runCaptured(['context', 'list']);
+  assert.equal(listed.code, 0, listed.stderr);
+  assert.match(listed.stdout, /^  wallpaper default w1  \/default$/m);
+  assert.match(listed.stdout, /^\* wallpaper profile:Aurora w1  \/aurora$/m);
+  assert.match(listed.stdout, /^  wallpaper profile:Dark w1  \/dark$/m);
+  assert.equal((await runCaptured(['context', 'show', 'wallpaper', 'w1', '--look', 'profile:Dark'])).stdout,
+    '_source: /dark\nglass.ior: 1.4\n');
+  assert.equal((await runCaptured(['context', 'show', 'wallpaper', 'w1', '--look', 'default'])).stdout,
+    '_source: /default\nglass.ior: 1.2\n');
+  assert.match((await runCaptured(['context', 'show', 'profile', 'Aurora'])).stdout, /_wallpapers:\n  w1:/);
+});
+
+test('malformed selected look leaves healthy profiles and pairs discoverable', async () => {
+  writeLook('Good', { values: {}, wallpapers: { w1: { source: '/good', values: {} } } });
+  writeLook('Broken', { values: {}, wallpapers: {} });
+  fs.writeFileSync(contextPath('profile', 'Broken'), 'glass.ior: [\n');
+  writeActive({ profile: 'Broken', wallpaper: { id: 'w1', path: '/broken' } });
+  const result = await runCaptured(['context', 'list']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /! profile Broken.*invalid YAML/);
+  assert.match(result.stdout, /  profile Good/);
+  assert.match(result.stdout, /  wallpaper profile:Good w1  \/good/);
+  assert.doesNotMatch(result.stdout, /untuned/);
 });
 
 test('context list and show keep diagnosing malformed inactive profile documents', async () => {
@@ -564,6 +594,78 @@ function storeBytes() {
       return [file, fs.readFileSync(file, 'utf8')];
     })));
 }
+
+const expected = (look, wallpaper) => ['--expect-look', look, '--expect-wallpaper', wallpaper];
+
+for (const command of [
+  ['clear', 'wallpaper', 'w1'], ['delete', 'wallpaper', 'w1'],
+  ['delete', 'profile', 'Aurora'], ['rename', 'profile', 'Aurora', 'Morning'],
+]) {
+  test(`stale ${command.join(' ')} refuses changed look or wallpaper without writing`, async () => {
+    writeLook('Aurora', { values: {}, wallpapers: { w1: { source: '/w', values: { 'glass.roughness': 0.2 } } } });
+    writeLook('Dark', { values: {}, wallpapers: { w1: { source: '/w', values: { 'glass.roughness': 0.7 } } } });
+    for (const active of [
+      { profile: 'Dark', wallpaper: { id: 'w1', path: '/w' } },
+      { profile: 'Aurora', wallpaper: { id: 'w2', path: '/other' } },
+    ]) {
+      writeRuntime({ active, scratch: { 'glass.ior': 1.6 } });
+      const before = storeBytes();
+      const failure = await runCaptured(['context', ...command, ...expected('profile:Aurora', 'id:w1')]);
+      assert.equal(failure.code, 1, failure.stderr);
+      assert.match(failure.stderr, /expected .*slot/);
+      assert.deepEqual(storeBytes(), before);
+    }
+  });
+}
+
+test('expected slots distinguish Default, named Default, no wallpaper and require both valid flags', async () => {
+  writeLook('Default', { values: {}, wallpapers: { w1: { source: '/w', values: { 'glass.roughness': 0.2 } } } });
+  writeRuntime({ active: { profile: 'Default', wallpaper: { id: 'w1', path: '/w' } }, scratch: {} });
+  for (const guards of [expected('default', 'id:w1'), expected('profile:Default', 'none'),
+    ['--expect-look', 'profile:Default'], ['--expect-wallpaper', 'id:w1'],
+    expected('profile:Default', 'id:w1').concat(['--expect-look', 'profile:Default']),
+    expected('Default', 'id:w1')]) {
+    const before = storeBytes();
+    const failure = await runCaptured(['context', 'delete', 'profile', 'Default', ...guards]);
+    assert.equal(failure.code, 1, guards.join(' '));
+    assert.deepEqual(storeBytes(), before);
+  }
+  assert.equal((await runCaptured(['context', 'rename', 'profile', 'Default', 'Saved',
+    ...expected('profile:Default', 'id:w1')])).code, 0);
+});
+
+test('guarded clear and delete affect only the current look pair and preserve scratch', async () => {
+  for (const look of [null, 'Aurora', 'Dark']) writeLook(look, { values: {}, wallpapers: {
+    w1: { source: `/${look ?? 'default'}`, values: { 'glass.roughness': 0.2 } },
+  } });
+  writeRuntime({ active: { profile: 'Aurora', wallpaper: { id: 'w1', path: '/Aurora' } },
+    scratch: { 'glass.ior': 1.6 } });
+  const guards = expected('profile:Aurora', 'id:w1');
+  assert.equal((await runCaptured(['context', 'clear', 'wallpaper', 'w1', ...guards])).code, 0);
+  assert.equal(readPair('Aurora', 'w1'), null);
+  assert.ok(readPair(null, 'w1'));
+  assert.ok(readPair('Dark', 'w1'));
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.6 });
+  writeLook('Aurora', { values: {}, wallpapers: { w1: { source: '/Aurora', values: { 'glass.roughness': 0.2 } } } });
+  assert.equal((await runCaptured(['context', 'delete', 'wallpaper', 'w1', ...guards])).code, 0);
+  assert.equal(readPair('Aurora', 'w1'), null);
+  assert.deepEqual(readActive(), { profile: 'Aurora' });
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.6 });
+});
+
+test('guarded active profile delete removes its entire document and preserves scratch', async () => {
+  writeLook('Aurora', { values: {}, wallpapers: {
+    w1: { source: '/w1', values: { 'glass.roughness': 0.2 } },
+    w2: { source: '/w2', values: { 'glass.roughness': 0.3 } },
+  } });
+  writeRuntime({ active: { profile: 'Aurora', wallpaper: { id: 'w1', path: '/w1' } },
+    scratch: { 'glass.ior': 1.6 } });
+  const result = await runCaptured(['context', 'delete', 'profile', 'Aurora', ...expected('profile:Aurora', 'id:w1')]);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(fs.existsSync(contextPath('profile', 'Aurora')), false);
+  assert.deepEqual(readActive(), { wallpaper: { id: 'w1', path: '/w1' } });
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.6 });
+});
 
 for (const destination of ['Aurora', null]) {
   test(`explicit ${destination ?? 'Default'} selection saves every pending key, including same-look selection`, async () => {

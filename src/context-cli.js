@@ -4,8 +4,9 @@ import { isDeepStrictEqual } from 'node:util';
 import { withLock } from './lock.js';
 import { lockPath } from './paths.js';
 import {
-  VERB_KINDS, assertKind, assertName, contextPath, deleteContext, inspectContext, listContexts, readActive, readContext,
+  assertKind, assertName, contextPath, deleteContext, inspectContext, listContexts, readActive, readContext,
   readContextText, renameContext, wallpaperId, canonicalWallpaperPath, writeActive, readLook, readRuntime, writeLook, writeRuntime,
+  parseExpectedSlots, assertExpectedSlots, parseLookToken,
 } from './contexts.js';
 import { activeName, loadLayers, withScratch } from './layers.js';
 import { readScratch } from './scratch.js';
@@ -34,11 +35,12 @@ function kindAndName(rest, verb) {
 // Resolve and validate both sides before mutation. Only a named outgoing look
 // can fail during explicit selection/recovery; base and scratch never share that catch.
 async function changeSlots({ defs, manifests, runner }, mutate,
-  { commit = () => false, intent = 'wallpaper', without = null, slotBeforeCommit = false } = {}) {
+  { commit = () => false, intent = 'wallpaper', without = null, slotBeforeCommit = false, expected = null } = {}) {
   let outcome = null;
   await withLock(lockPath(), async () => {
     assertPairLayout();
     const { active, scratch } = readRuntime();
+    assertExpectedSlots(active, expected);
     const baseLook = readLook(null);
     const base = baseLook.values;
     checkLayer(defs, base, 'base');
@@ -100,34 +102,51 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
   switch (sub) {
     case 'list': {
       if (rest.length !== 0) throw usage('list');
-      const { active, all, inspected, scratch } = await withLock(lockPath(), async () => {
+      const { active, all, inspected, pairs, errors, scratch } = await withLock(lockPath(), async () => {
         for (const source of pairLayoutSources()) print(`! old pair layout: ${source} — run 'prism migrate pairs'\n`);
         const listed = listContexts();
-        listed.wallpaper = Object.keys(readLook(readActive().profile ?? null)?.wallpapers ?? {}).sort();
+        const active = readActive();
+        const pairs = [];
+        const errors = [];
+        for (const look of [null, ...listed.profile]) {
+          try {
+            const document = readLook(look);
+            for (const [id, pair] of Object.entries(document.wallpapers).sort(([left], [right]) => left.localeCompare(right))) {
+              pairs.push({ look, id, source: pair.source });
+            }
+          } catch (error) {
+            errors.push({ look, message: error.message });
+          }
+        }
         return {
-          active: readActive(),
+          active,
           all: listed,
-          inspected: Object.fromEntries(VERB_KINDS.map((kind) => [kind,
-            Object.fromEntries(listed[kind].map((name) => [name, inspectContext(kind, name)]))])),
+          inspected: Object.fromEntries(listed.profile.map((name) => {
+            try { return [name, inspectContext('profile', name)]; }
+            catch (error) { return [name, { error: error.message }]; }
+          })),
+          pairs, errors,
           scratch: readScratch(),
         };
       });
-      for (const kind of VERB_KINDS) {
-        const current = activeName(active, kind);
-        for (const name of all[kind]) {
-          const entry = inspected[kind][name];
-          if (entry === null) continue; // removed between the listing and the read
-          if (entry.error !== null) {
-            print(`! ${kind} ${name}  ${entry.error} — run 'prism doctor'\n`);
-            continue;
-          }
-          const marker = name === current ? '*' : ' ';
-          const source = kind === 'wallpaper' ? `  ${entry.context.source}` : '';
-          print(`${marker} ${kind} ${name}${source}\n`);
-        }
+      for (const name of all.profile) {
+        const entry = inspected[name];
+        if (entry === null) continue;
+        if (entry.error !== null) print(`! profile ${name}  ${entry.error} — run 'prism doctor'\n`);
+        else print(`${name === active.profile ? '*' : ' '} profile ${name}\n`);
       }
-      if (active.wallpaper && !all.wallpaper.includes(active.wallpaper.id)) {
-        print(`* wallpaper ${active.wallpaper.id}  ${active.wallpaper.path} (untuned)\n`);
+      for (const error of errors) {
+        if (error.look === null) print(`! look default  ${error.message} — run 'prism doctor'\n`);
+      }
+      for (const pair of pairs) {
+        const token = pair.look === null ? 'default' : `profile:${pair.look}`;
+        const marker = pair.look === (active.profile ?? null) && pair.id === active.wallpaper?.id ? '*' : ' ';
+        print(`${marker} wallpaper ${token} ${pair.id}  ${pair.source}\n`);
+      }
+      if (active.wallpaper && !errors.some((error) => error.look === (active.profile ?? null))
+          && !pairs.some((pair) => pair.look === (active.profile ?? null) && pair.id === active.wallpaper.id)) {
+        const token = active.profile === undefined ? 'default' : `profile:${active.profile}`;
+        print(`* wallpaper ${token} ${active.wallpaper.id}  ${active.wallpaper.path} (untuned)\n`);
       }
       const edits = Object.keys(scratch).length;
       if (edits > 0) print(`  scratch  ${edits} ${edits === 1 ? 'edit' : 'edits'}\n`);
@@ -137,10 +156,18 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
     // Showing the file is what was asked for, so a file that does not parse is
     // printed as it is, with the reason on stderr.
     case 'show': {
-      const { kind, name } = kindAndName(rest, 'show');
-      const entry = await withLock(lockPath(), async () => {
+      const lookFlag = rest[2] === '--look' && rest.length === 4;
+      const { kind, name } = kindAndName(lookFlag ? rest.slice(0, 2) : rest, 'show');
+      let look;
+      if (lookFlag) {
+        if (kind !== 'wallpaper') throw usage('show wallpaper <id> [--look <look-token>]');
+        look = parseLookToken(rest[3]);
+      }
+      const { entry, profileDoc } = await withLock(lockPath(), async () => {
         for (const source of pairLayoutSources()) eprint(`prism: old pair layout: ${source} — run 'prism migrate pairs'\n`);
-        return inspectContext(kind, name);
+        const selectedLook = lookFlag ? look : readActive().profile ?? null;
+        const entry = inspectContext(kind, name, selectedLook);
+        return { entry, profileDoc: kind === 'profile' && entry?.error === null ? readLook(name) : null };
       });
       if (entry === null) throw new Error(`${kind} ${name}: no such context`);
       if (entry.error !== null) {
@@ -149,7 +176,9 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
         return null;
       }
       const { context } = entry;
-      const doc = kind === 'wallpaper' ? { _source: context.source, ...context.values } : context.values;
+      const doc = kind === 'wallpaper' ? { _source: context.source, ...context.values } :
+        { ...profileDoc.values, ...(Object.keys(profileDoc.wallpapers).length ? { _wallpapers: Object.fromEntries(
+          Object.entries(profileDoc.wallpapers).map(([id, pair]) => [id, { _source: pair.source, ...pair.values }])) } : {}) };
       print(stringify(doc));
       return null;
     }
@@ -177,7 +206,8 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
     }
 
     case 'delete': {
-      const { kind, name } = kindAndName(rest, 'delete');
+      const { args: positional, expected } = parseExpectedSlots(rest);
+      const { kind, name } = kindAndName(positional, 'delete');
       let wasActive = false;
       return changeSlots({ defs, manifests, runner }, (active) => {
         if (readContextText(kind, name) === null) throw new Error(`${kind} ${name}: no such context`);
@@ -198,6 +228,7 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
         intent: kind === 'profile' ? 'delete-profile' : 'delete-wallpaper',
         without: kind === 'wallpaper' ? { kind, name } : null,
         slotBeforeCommit: true,
+        expected,
       });
     }
 
@@ -205,8 +236,9 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
     // is active and untuned. The id names what the caller believes is on
     // screen, so a panel drawn before a rotation cannot clear the wrong one.
     case 'clear': {
-      if (rest.length !== 2 || rest[0] !== 'wallpaper') throw usage('clear wallpaper <id>');
-      const id = rest[1];
+      const { args: positional, expected } = parseExpectedSlots(rest);
+      if (positional.length !== 2 || positional[0] !== 'wallpaper') throw usage('clear wallpaper <id>');
+      const id = positional[1];
       assertName(id);
       return changeSlots({ defs, manifests, runner }, (active) => {
         requireOnScreen(active, id);
@@ -215,6 +247,7 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
       }, {
         commit: () => { deleteContext('wallpaper', id); return true; },
         without: { kind: 'wallpaper', name: id },
+        expected,
       });
     }
 
@@ -223,8 +256,9 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
     // resolved.json and the sinks are never touched. A wallpaper's name is a
     // hash of its path, so it has nothing to rename.
     case 'rename': {
-      if (rest.length !== 3) throw usage('rename <kind> <old> <new>');
-      const [kind, from, to] = rest;
+      const { args: positional, expected } = parseExpectedSlots(rest);
+      if (positional.length !== 3) throw usage('rename <kind> <old> <new>');
+      const [kind, from, to] = positional;
       assertKind(kind);
       assertName(from);
       assertName(to);
@@ -232,6 +266,7 @@ export async function runContext(args, { defs, manifests, print, eprint, runner 
       await withLock(lockPath(), async () => {
         assertPairLayout();
         const active = readActive();
+        assertExpectedSlots(active, expected);
         if (active.profile !== from && active.profile !== to) {
           renameContext(kind, from, to);
           return;

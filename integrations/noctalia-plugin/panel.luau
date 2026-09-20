@@ -318,6 +318,7 @@ end
 -- A commit keeps every value and moves the edits into a persisted layer, so
 -- the optimistic change is only that nothing is edited any more.
 local function commitAction(item, params)
+  item.expected = item.expected or Queue.captureSlots(state.model)
   return function()
     for _, param in ipairs(params) do param.edited = false end
     if item.destination == "profile" and item.target ~= nil then
@@ -753,29 +754,29 @@ end
 
 -- Save and rename share the field. A save under a taken name becomes a
 -- question rather than a command. A rename onto a taken name is refused.
-local function commitName(text)
+local function commitName(text, naming)
   local name = trimmed(text)
-  local naming = state.naming
-  if naming == nil then return end
+  if state.naming ~= naming then return end
   if not Presentation.validProfileName(name) then
     showNameError("A profile name may use letters, digits, dot, dash, and underscore")
     return
   end
-  local active = state.model.active.profile
+  local active = naming.activeName
   if naming.mode == "rename" then
     if name ~= active then
       if Presentation.profileExists(state.model, name) then
         showNameError("A profile named " .. name .. " already exists")
         return
       end
-      enqueue({verb = "rename", name = active, newName = name})
+      enqueue({verb = "rename", name = active, newName = name, expected = naming.expected})
     end
   elseif name ~= active and Presentation.profileExists(state.model, name) then
-    state.confirm = {kind = "replace", name = name}
+    state.confirm = {kind = "replace", name = name, expected = naming.expected}
   elseif name == active and Presentation.editedCount(Presentation.visibleParams(state.model)) == 0 then
     -- Nothing to commit: the field just closes.
   else
-    commitAction({verb = "commit", destination = "profile", target = name ~= active and name or nil},
+    commitAction({verb = "commit", destination = "profile", target = name ~= active and name or nil,
+      expected = naming.expected},
       Presentation.visibleParams(state.model))()
   end
   state.naming = nil
@@ -784,19 +785,19 @@ end
 
 -- One field and one question share the space under the profile row, so
 -- opening either closes the other.
-local function toggleNaming(mode, text)
+local function toggleNaming(mode, text, expected, activeName)
   state.confirm = nil
   if state.naming ~= nil and state.naming.mode == mode then
     state.naming = nil
   else
-    state.naming = {mode = mode, text = text}
+    state.naming = {mode = mode, text = text, expected = expected, activeName = activeName}
   end
   render()
 end
 
-local function ask(kind, name)
+local function ask(kind, name, expected)
   state.naming = nil
-  state.confirm = {kind = kind, name = name}
+  state.confirm = {kind = kind, name = name, expected = expected}
   render()
 end
 
@@ -808,6 +809,7 @@ end
 local function profileRow(section)
   local loaded = section.activeName ~= nil
   local mode = state.naming ~= nil and state.naming.mode or nil
+  local expected = Queue.captureSlots(state.model)
   return ui.row({gap = 8, align = "center"}, {
     ui.label({text = "Profile", fontWeight = "medium", width = labelColumnWidth, maxLines = 1}),
     ui.select({
@@ -843,7 +845,7 @@ local function profileRow(section)
       variant = "ghost",
       controlSize = "sm",
       tooltip = mode == "save" and "Cancel" or "Save what is on screen as a profile",
-      onClick = function() toggleNaming("save", "") end,
+      onClick = function() toggleNaming("save", "", expected, section.activeName) end,
     }),
     ui.button({
       glyph = mode == "rename" and "x" or "pencil",
@@ -854,7 +856,7 @@ local function profileRow(section)
         or (loaded and ("Rename profile " .. section.activeName) or "No profile loaded to rename"),
       onClick = function()
         if section.activeName == nil then return end
-        toggleNaming("rename", section.activeName)
+        toggleNaming("rename", section.activeName, expected, section.activeName)
       end,
     }),
     ui.button({
@@ -865,7 +867,7 @@ local function profileRow(section)
       tooltip = loaded and ("Delete profile " .. section.activeName) or "No profile loaded to delete",
       onClick = function()
         if section.activeName == nil then return end
-        ask("delete", section.activeName)
+        ask("delete", section.activeName, expected)
       end,
     }),
   })
@@ -876,26 +878,27 @@ end
 -- not the only submit, since it needs keyboard focus: the check submits what
 -- onChange tracked.
 local function nameRow()
-  local renaming = state.naming.mode == "rename"
+  local naming = state.naming
+  local renaming = naming.mode == "rename"
   return ui.row({gap = 8, align = "center"}, {
     ui.spacer({width = labelColumnWidth, flexGrow = 0}),
     ui.input({
-      key = "name-" .. state.naming.mode,
-      value = state.naming.text,
+      key = "name-" .. naming.mode,
+      value = naming.text,
       placeholder = renaming and "New name" or "Profile name",
       controlSize = "sm",
       flexGrow = 1,
       focus = true,
       submitOnEnter = true,
-      onChange = function(text) state.naming.text = tostring(text or "") end,
-      onSubmit = commitName,
+      onChange = function(text) naming.text = tostring(text or "") end,
+      onSubmit = function(text) commitName(text, naming) end,
     }),
     ui.button({
       glyph = "check",
       variant = "ghost",
       controlSize = "sm",
       tooltip = renaming and "Rename to this name" or "Save under this name",
-      onClick = function() commitName(state.naming.text) end,
+      onClick = function() commitName(naming.text, naming) end,
     }),
   })
 end
@@ -910,6 +913,7 @@ local confirmActions = {
 local function confirmRow()
   local confirm = state.confirm
   local action = confirmActions[confirm.kind]
+  local params = Presentation.visibleParams(state.model)
   return ui.row({gap = 8, align = "center"}, {
     ui.spacer({width = labelColumnWidth, flexGrow = 0}),
     ui.label({text = string.format(action.question, confirm.name), flexGrow = 1, maxLines = 1}),
@@ -920,10 +924,10 @@ local function confirmRow()
       onClick = function()
         state.confirm = nil
         if confirm.kind == "replace" then
-          commitAction({verb = "commit", destination = "profile", target = confirm.name},
-            Presentation.visibleParams(state.model))()
+          commitAction({verb = "commit", destination = "profile", target = confirm.name,
+            expected = confirm.expected}, params)()
         else
-          enqueue({verb = "delete", name = confirm.name})
+          enqueue({verb = "delete", name = confirm.name, expected = confirm.expected})
         end
         render()
       end,
@@ -945,6 +949,7 @@ end
 local function wallpaperHeaderRow(header)
   local tuned = header.tuned > 0
   local plural = header.tuned == 1 and " nudge" or " nudges"
+  local expected = Queue.captureSlots(state.model)
   return ui.row({gap = 8, align = "center"}, {
     ui.button({
       glyph = tuned and "photo-filled" or "photo",
@@ -962,7 +967,7 @@ local function wallpaperHeaderRow(header)
       tooltip = tuned and ("Clear this wallpaper's " .. header.tuned .. plural) or "This wallpaper holds no nudges",
       onClick = function()
         if not tuned then return end
-        enqueue({verb = "clear", id = header.id})
+        enqueue({verb = "clear", id = header.id, expected = expected})
         render()
       end,
     }),
