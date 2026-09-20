@@ -1,15 +1,16 @@
 ---
 id: prism-eff23a
 title: Replace glass.ring.driftHz with sweepMs and migrate stored settings
-status: doing
+status: done
 priority: 2
 size: s
 complexity: mid
 process: planned
 owner: prism-eff23a
 created: 2026-09-19T02:49:26Z
-updated: 2026-09-19T23:55:00Z
+updated: 2026-09-20T00:11:06Z
 started: 2026-09-19T22:56:32Z
+completed: 2026-09-20T00:11:06Z
 depends: [material-7fd09c]
 tags: [niri, material]
 source: "material:docs/specs/2026-09-18-ring-focus-motion-design.md"
@@ -29,3 +30,6 @@ Native ring-drift-hz is retired for ring-sweep-ms (niri-material docs/specs/2026
 - 2026-09-19T23:55:00Z (prism-eff23a): resumed
   provenance: {"harness_session":"codex:01a0bc06-ea0c-7423-baec-fb8f1b8ef747","harness_session_source":"CODEX_SESSION_ID"}
 - 2026-09-19T23:55:00Z (prism-eff23a): took over session sid:3432998 (owner main, host titan, pid 3432998, worktree /mnt/ssd/Dropbox/prism, since 2026-09-19T23:54:41Z, age 19s, stale: pid 3432998 is gone)
+- 2026-09-20T00:10:45Z (prism-eff23a): sweepMs replaces driftHz; niri sink emits ring-sweep-ms; prism migrate with backup under state/migrations; doctor hint. Rollout: install niri 26.04.r436.g597aba66, prism migrate + apply, restart session.
+- 2026-09-20T00:11:06Z (prism-eff23a): done
+- 2026-09-20T00:11:06Z (prism-eff23a): glass.ring.sweepMs replaces driftHz; prism migrate rewrites every store with a backup; doctor names it

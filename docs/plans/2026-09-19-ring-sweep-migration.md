@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** draft, 2026-09-19; awaiting review before execution.
+**Status:** implemented on `prism-eff23a` (commits listed at merge); awaiting the rollout of §5 below.
 
 **Goal:** Replace `glass.ring.driftHz` with `glass.ring.sweepMs` so the niri sink emits the new compositor's `ring-sweep-ms`, and give Prism one explicit, backed-up `prism migrate` that rewrites every stored occurrence of a replaced key, with `doctor` pointing at it.
 

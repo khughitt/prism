@@ -51,6 +51,7 @@ and Directional blur, which ride its taps, and flattens Blur. Design:
 ~/.config/prism/contexts/wallpaper/<id>.yaml # per-wallpaper overrides, `_source` names the wallpaper
 ~/.local/state/prism/active.json             # which contexts are active (runtime state)
 ~/.local/state/prism/resolved.json           # the bus: every parameter's effective value
+~/.local/state/prism/migrations/<stamp>/     # byte-for-byte copies of the store files `prism migrate` rewrote
 ```
 
 Values resolve as defaults, then base, then the active wallpaper context, then
@@ -62,6 +63,16 @@ contexts: `list`, `show`, `save` and `rename` (profiles), `activate`,
 `deactivate`, `delete`, `pin` and `unpin wallpaper`, and `wallpaper <path>`, the last being
 what a Noctalia `wallpaper_changed` hook calls. Design:
 `docs/specs/2026-09-05-prism-context-layers-design.md`.
+
+A definition may replace a retired one (`replaces: <old key>` in `defs/`).
+The store is never rewritten behind your back: `prism doctor` reports a
+pending migration wherever a replaced key is still stored, and `prism migrate`
+rewrites base and every profile and wallpaper context, active or not, after
+copying each file it touches into a timestamped directory under the state
+dir. It converts what has an equivalent (`glass.ring.driftHz 0` becomes
+`glass.ring.sweepMs 0`) and falls back to the new default otherwise; a file
+that already holds the new key keeps its value. Then `prism apply`. Rollback
+is copying the backup back over the config dir.
 
 ## Starter profiles
 
