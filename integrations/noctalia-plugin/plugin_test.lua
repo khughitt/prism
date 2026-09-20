@@ -1515,3 +1515,60 @@ onClose()
 onOpen({})
 described({ exitCode = 0, stdout = "{}" })
 equal(errorBanner(rendered), nil, "opening the panel is a fresh gesture and starts without the last error")
+
+-- Following the rotation: the store is the only authority on which wallpaper
+-- is active, so the panel re-reads describe every two seconds while open,
+-- through the same stale-and-replay path as every other refresh.
+;(function()
+  local ticksWanted = nil
+  panel.setWantsSecondTicks = function(value) ticksWanted = value end
+  renderModel(profileModel())
+  equal(ticksWanted, true, "opening the panel asks for second ticks")
+  local beforeTicks = #commands
+  update()
+  equal(#commands, beforeTicks, "one tick is not yet a refresh")
+  update()
+  equal(#commands, beforeTicks + 1, "the second tick refreshes")
+  assert(commands[#commands]:find("describe", 1, true))
+  described({ exitCode = 0, stdout = "{}" })
+
+-- During a drag the tick sets one flag and the refresh replays once the
+-- panel is idle, however many ticks passed.
+  local depthSlider
+  for _, node in ipairs(collect(rendered, "slider")) do
+    if node.props.key == "glass.roughness:slider" then depthSlider = node end
+  end
+  depthSlider.props.onChange(0.3)
+  local beforeDrag = #commands
+  update() update() update() update()
+  equal(#commands, beforeDrag, "no describe lands during a drag")
+  depthSlider.props.onDragEnd()
+  equal(#commands, beforeDrag + 1, "the release writes")
+  writeCallback({ exitCode = 0, stdout = "" })
+  equal(#commands, beforeDrag + 2, "then one refresh, not four")
+  assert(commands[#commands]:find("describe", 1, true))
+  described({ exitCode = 0, stdout = "{}" })
+
+  onClose()
+  equal(ticksWanted, false, "closing the panel stops the tick")
+
+-- A describe the tick launched must not land over a write that started after
+-- it: a periodic describe now races every optimistic edit, not only drags.
+-- The write invalidates the outstanding describe, whose result is dropped and
+-- replayed once the queue drains.
+  local raceTree = renderModel(profileModel({ active = { profile = "dawn" } }))
+  update() update()
+  assert(commands[#commands]:find("describe", 1, true), "the tick launched a describe")
+  local staleDescribe = described
+  selectWithOption(raceTree, "Default").props.onChange(2)
+  equal(commands[#commands], Shell.command({ "prism", "context", "activate", "profile", "dusk" }))
+  model = profileModel({ active = { profile = "dawn" } })
+  staleDescribe({ exitCode = 0, stdout = "{}" })
+  equal(selectWithOption(rendered, "Default").props.selectedIndex, 2,
+    "an older describe must not overwrite the pick made after it launched")
+  writeCallback({ exitCode = 0, stdout = "" })
+  assert(commands[#commands]:find("describe", 1, true), "the invalidated describe is replayed once the write lands")
+  model = profileModel({ active = { profile = "dusk" } })
+  described({ exitCode = 0, stdout = "{}" })
+  equal(selectWithOption(rendered, "Default").props.selectedIndex, 2)
+end)()

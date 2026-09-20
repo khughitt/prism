@@ -16,6 +16,7 @@ local state = {
   -- A destructive action waiting for its answer: {kind, name}, or nil.
   confirm = nil,
   errorSticky = false,
+  ticks = 0,
   sampleElapsedMs = 0,
   renderedSliderCorrection = nil,
   expanded = {},
@@ -268,6 +269,10 @@ enqueue = function(item)
     state.errorText = nil
     state.errorSticky = false
   end
+  -- A describe already in flight would land over this write's optimistic
+  -- change. Mark it stale the way beginDrag does; described() then keeps the
+  -- current model and finishRefresh replays once the queue drains.
+  if describeRunning then state.describeInvalidated = true end
   local result = Queue.enqueue(state.queue, item)
   state.queue = result.state
   if result.launch then launch(result.launch) end
@@ -1016,10 +1021,13 @@ end
 
 -- Opening the panel is a fresh gesture, like starting a batch: the Luau runtime
 -- survives a close, so a sticky command error would otherwise greet the next
--- session behind a model that reconciles perfectly well.
+-- session behind a model that reconciles perfectly well. The host's second
+-- tick drives the periodic refresh that follows a wallpaper rotation.
 function onOpen(context)
   state.errorText = nil
   state.errorSticky = false
+  state.ticks = 0
+  panel.setWantsSecondTicks(true)
   refresh()
 end
 
@@ -1027,6 +1035,20 @@ function onClose()
   state.drag = nil
   state.sampleElapsedMs = 0
   panel.setNeedsFrameTick(false)
+  panel.setWantsSecondTicks(false)
+end
+
+-- Every second tick asks for a describe. A drag or a busy queue turns it into
+-- the one pending flag finishRefresh already replays, so a long drag replays
+-- one refresh rather than one per tick.
+function update()
+  state.ticks = state.ticks + 1
+  if state.ticks % 2 ~= 0 then return end
+  if state.drag or state.queue.inFlight ~= nil or describeRunning then
+    state.refreshPending = true
+    return
+  end
+  refresh()
 end
 
 function onFrameTick(deltaMs)
