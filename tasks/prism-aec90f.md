@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: main
 created: 2026-09-19T20:01:06Z
-updated: 2026-09-19T20:01:22Z
+updated: 2026-09-21T10:17:57Z
 started: 2026-09-19T20:01:22Z
 depends: []
 parent: prism-2f0b4b
@@ -22,3 +22,4 @@ Design the profile system as a fold over layers: defaults, base, profile (the lo
 
 - 2026-09-19T20:01:22Z (main): started
   provenance: {"harness_session":"claude-code:1f37680c-20bd-40a3-9a1e-849bd9e3e3f7","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-09-21T10:17:57Z (main): rollout 2026-09-21: ~/bin/prism now points at the prism-1514d3-bridge worktree (this branch + fe7b59f cherry-picked, 464/464) because the installed niri 649c731b rejects ring-sweep-ms and main cannot read _wallpapers; a plain merge of main into this branch conflicts in src/cli.js and src/context-cli.js (~900 lines, main's commands.js refactor) — merge main before finishing, reuse the bridge's test re-pointing (242e113), then remove the bridge worktree and point ~/bin/prism back at main
