@@ -1,15 +1,16 @@
 ---
 id: prism-aec90f
 title: "Compositional profile model: scratch edits, deltas above the look, typed commits"
-status: doing
+status: done
 priority: 2
 size: m
 complexity: high
 process: planned
 owner: prism-aec90f
 created: 2026-09-19T20:01:06Z
-updated: 2026-09-21T21:04:41Z
+updated: 2026-09-21T21:19:17Z
 started: 2026-09-19T20:01:22Z
+completed: 2026-09-21T21:19:17Z
 depends: []
 parent: prism-2f0b4b
 tags: [profiles, store, noctalia]
@@ -59,3 +60,7 @@ Design the profile system as a fold over layers: defaults, base, profile (the lo
 - 2026-09-21T10:17:57Z (main): rollout 2026-09-21: ~/bin/prism now points at the prism-1514d3-bridge worktree (this branch + fe7b59f cherry-picked, 464/464) because the installed niri 649c731b rejects ring-sweep-ms and main cannot read _wallpapers; a plain merge of main into this branch conflicts in src/cli.js and src/context-cli.js (~900 lines, main's commands.js refactor) — merge main before finishing, reuse the bridge's test re-pointing (242e113), then remove the bridge worktree and point ~/bin/prism back at main
 - 2026-09-21T14:40:56Z (main): HOST POINTER (2026-09-21 ~07:40): ~/d/dotfiles/bin/prism (tracked; = ~/bin/prism) edited UNCOMMITTED from exec "$HOME/d/prism/bin/prism" to exec "$HOME/d/prism/.worktrees/prism-1514d3-bridge/bin/prism" so the panel exercises this branch's profile format during the acceptance; the earlier symlink repoint was undone by dotfiles ffbedf4 (wrapper routes through ~/d). Restore at finish: git -C ~/d/dotfiles checkout -- bin/prism (original kept in the session scratchpad); also ~/.local/share/noctalia/plugins/prism -> .worktrees/prism-aec90f/integrations/noctalia-plugin (from before this session) goes back to the main checkout's integrations/noctalia-plugin
 - 2026-09-21T14:40:56Z (main): parked (waiting on user, review): Owner runs the desktop acceptance checklist (docs/notes/2026-09-20-profile-wallpaper-pairs-acceptance.md) via the bridge, records results on prism-439774; then merge main (ops cli.toml rows for commit/reset modes/migrate pairs/context clear → re-vendor → resolve 6 files → declare in commands.js → just test), land, restore BOTH host pointers (dotfiles bin/prism wrapper: git checkout -- bin/prism; ~/.local/share/noctalia/plugins/prism → main), remove prism-1514d3-bridge
+- 2026-09-21T21:19:17Z (prism-aec90f): done
+  provenance: {"harness_session":"claude-code:91b58500-0687-468f-b430-142cc24f6ede","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-09-21T21:19:17Z (prism-aec90f): compositional profile model landed: scratch layer, typed commits, look–wallpaper pairs, pair migration; merged with main's declared CLI table (ops d39c49f); accepted on the desktop 2026-09-21
+  provenance: {"harness_session":"claude-code:91b58500-0687-468f-b430-142cc24f6ede","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
