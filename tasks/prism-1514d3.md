@@ -8,7 +8,7 @@ complexity: mid
 process: direct
 owner: prism-1514d3
 created: 2026-09-20T10:11:49Z
-updated: 2026-09-20T10:17:27Z
+updated: 2026-09-21T10:12:10Z
 started: 2026-09-20T10:13:14Z
 completed: 2026-09-20T10:17:26Z
 depends: []
@@ -27,3 +27,4 @@ niri-material's ring beam (spec docs/specs/2026-09-19-ring-beam-design.md §4 th
 - 2026-09-20T10:17:26Z (prism-1514d3): glass.ring.beamSpeed replaces sweepMs; gap and glow join the Ring group; niri sink emits ring-beam-speed/ring-gap/ring-glow
   provenance: {"harness_session":"claude-code:91b58500-0687-468f-b430-142cc24f6ede","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
 - 2026-09-20T10:17:27Z (prism-1514d3): ready on branch prism-1514d3; merge at the rollout after the niri package is installed (niri-material plan Task 6 Step 6)
+- 2026-09-21T10:12:10Z (main): depends on niri-material material-e31d0d (compositor step, landed 98013739; merged to materials-26.04 at 649c731b, installed as r454); the record is not on that project's registered checkout so tasks dep cannot resolve it
