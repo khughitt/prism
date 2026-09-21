@@ -69,8 +69,8 @@ The store is never rewritten behind your back: `prism doctor` reports a
 pending migration wherever a replaced key is still stored, and `prism migrate`
 rewrites base and every profile and wallpaper context, active or not, after
 copying each file it touches into a timestamped directory under the state
-dir. It converts what has an equivalent (`glass.ring.driftHz 0` becomes
-`glass.ring.sweepMs 0`) and falls back to the new default otherwise; a file
+dir. It converts what has an equivalent (`glass.ring.sweepMs 0` becomes
+`glass.ring.beamSpeed 0`) and falls back to the new default otherwise; a file
 that already holds the new key keeps its value. Then `prism apply`. Rollback
 is copying the backup back over the config dir.
 

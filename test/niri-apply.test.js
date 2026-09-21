@@ -44,7 +44,9 @@ const PARAMS = {
   'glass.ring.focus': true,
   'glass.ring.colorSource': 'manual',
   'glass.ring.color': '#f2c14e',
-  'glass.ring.sweepMs': 1200,
+  'glass.ring.beamSpeed': 450,
+  'glass.ring.gap': 10,
+  'glass.ring.glow': 1.2,
 
 };
 
