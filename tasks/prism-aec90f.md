@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: prism-aec90f
 created: 2026-09-19T20:01:06Z
-updated: 2026-09-21T10:31:39Z
+updated: 2026-09-21T21:04:41Z
 started: 2026-09-19T20:01:22Z
 depends: []
 parent: prism-2f0b4b
@@ -53,4 +53,6 @@ Design the profile system as a fold over layers: defaults, base, profile (the lo
   provenance: {"harness_session":"claude-code:91b58500-0687-468f-b430-142cc24f6ede","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
 - 2026-09-21T10:31:39Z (prism-aec90f): 2026-09-21 merge attempt sized: beyond the 6-file conflict, main's declared command table (src/commands.js ⇔ tools/cli.toml vendored from ops, enforced by test/cli-surface.test.js) must learn commit, reset revert|symmetric|neutral [--base] [--group], migrate pairs, context clear — ops inventory rows first, then re-vendor. Order agreed: desktop acceptance on the bridge worktree (aec90f code + ring commit) first, then this merge as a scoped step, then restore ~/bin/prism and ~/.local/share/noctalia/plugins/prism to main and drop the bridge
 - 2026-09-21T10:31:39Z (prism-aec90f): parked (waiting on user, review): Owner runs the desktop acceptance checklist (docs/notes/2026-09-20-profile-wallpaper-pairs-acceptance.md) on the bridge worktree after restarting niri, records results on prism-439774; then merge main (ops cli.toml rows for commit/reset modes/migrate pairs/context clear → re-vendor → resolve 6 files → declare in commands.js → just test), land, restore the two host pointers to main, remove prism-1514d3-bridge
+  provenance: {"harness_session":"claude-code:91b58500-0687-468f-b430-142cc24f6ede","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-09-21T21:04:41Z (prism-aec90f): resumed
   provenance: {"harness_session":"claude-code:91b58500-0687-468f-b430-142cc24f6ede","harness_session_source":"CLAUDE_CODE_SESSION_ID"}

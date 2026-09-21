@@ -1,6 +1,6 @@
 # Look–wallpaper pair acceptance
 
-Status: automated checks and live migration verified 2026-09-20; desktop gesture results **unobserved**. Existing task `prism-439774`
+Status: automated checks and live migration verified 2026-09-20; desktop gestures walked by the owner on 2026-09-21 and accepted ("all manual checks look good"), on the bridge worktree that carried this branch plus the ring-beam definitions; the branch lands the same day. Existing task `prism-439774`
 consumes this note; no second acceptance task is needed. The controller owns
 live migration, the migration report, plugin installation/reload, and the user
 acceptance session. Keep the branch unmerged until that task records results.
@@ -106,7 +106,7 @@ No new control or native change belongs to this acceptance implementation.
 - Copied 45 pairs across Default and eight named looks. Active slots, all pending keys (zero at migration), and the full resolved parameter map exactly match the fresh pre-migration snapshot.
 - Completed rerun: `migrate pairs: nothing to migrate`; exactly one new backup directory exists.
 - CLI and plugin point to the reviewed worktree at product revision `9cd8031`. `prism apply` exited 0; `prism doctor` reported `doctor: ok`; describe showed the same active `glass4` look and wallpaper with zero pending keys. Plugin enable and panel-open were acknowledged after background export completed.
-- User acceptance: awaiting the desktop gesture checklist above. Branch remains unmerged; original launcher/plugin restoration awaits acceptance and integration.
+- User acceptance: 2026-09-21, the owner walked the checklist above on the desktop and accepted; per-item evidence was not written down beyond the verdict. Launcher and plugin restoration happen at the landing.
 
 Preserve the first complete backup. Later attempt backups describe later
 prefixes and do not replace it. Manual rollback copies config-relative files
