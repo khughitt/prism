@@ -8,6 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { COMMANDS } from '../src/commands.js';
+import { wallpaperId, canonicalWallpaperPath } from '../src/contexts.js';
 import * as cli from '../src/cli.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -74,22 +75,24 @@ test('usage errors exit 2 with stderr only', async () => {
 
 test('enum baselines cover every enum row', async () => {
   const wallpaper = path.join(dir, 'wallpaper.jpg'); fs.writeFileSync(wallpaper, '');
-  assert.equal((await run(['context', 'wallpaper', wallpaper])).code, 0); // pin/unpin need an active wallpaper
-  const baselines = [ // in order: save before show/activate/rename/delete
+  assert.equal((await run(['context', 'wallpaper', wallpaper])).code, 0); // commit wallpaper and clear need an active wallpaper
+  const id = wallpaperId(canonicalWallpaperPath(wallpaper));
+  const baselines = [ // in order: an edit before commit, commit before show/activate/rename/delete
     [['reset'], 'mode', ['reset', 'neutral']],
-    [['context', 'save'], 'kind', ['context', 'save', 'profile', 'dusk']],
+    [['migrate'], 'target', ['migrate', 'pairs']],
+    [['commit'], 'destination', ['set', 'glass.ior', '1.4'], ['commit', 'profile', 'dusk']],
     [['context', 'show'], 'kind', ['context', 'show', 'profile', 'dusk']],
     [['context', 'activate'], 'kind', ['context', 'activate', 'profile', 'dusk']],
     [['context', 'deactivate'], 'kind', ['context', 'deactivate', 'profile']],
     [['context', 'rename'], 'kind', ['context', 'rename', 'profile', 'dusk', 'dawn']],
     [['context', 'delete'], 'kind', ['context', 'delete', 'profile', 'dawn']],
-    [['context', 'pin'], 'kind', ['context', 'pin', 'wallpaper']],
-    [['context', 'unpin'], 'kind', ['context', 'unpin', 'wallpaper']],
+    [['context', 'clear'], 'kind', ['set', 'glass.ior', '1.6'], ['commit', 'wallpaper', id], ['context', 'clear', 'wallpaper', id]],
   ];
   const table = [...tableRows()].map((r) => JSON.parse(r)).filter((r) => r[0] === 'arg' && r[4] === 'enum').map((r) => `${r[1].join(' ')} ${r[3]}`).sort();
   assert.deepEqual(baselines.map(([p, b]) => `${p.join(' ')} ${b}`).sort(), table, 'every enum row needs a baseline');
-  for (const [path, binding, argv] of baselines) {
-    const ok = await run(argv); assert.equal(ok.code, 0, `${argv.join(' ')}: ${ok.stderr}`);
+  for (const [path, binding, ...steps] of baselines) {
+    const argv = steps.at(-1);
+    for (const step of steps) { const ok = await run(step); assert.equal(ok.code, 0, `${step.join(' ')}: ${ok.stderr}`); }
     const bad = [...argv]; bad[path.length] = '__not_in_set__';
     const r = await run(bad);
     assert.equal(r.code, 2, bad.join(' ')); assert.ok(r.stderr.includes(binding) && r.stderr.includes('__not_in_set__'), r.stderr);
@@ -125,8 +128,8 @@ test('completion callback and scripts', async () => {
   for (const cmd of COMMANDS) if (cmd.path.length === 1) assert.ok(root.includes(cmd.path[0]), cmd.path[0]);
   assert.ok((await candidates(['prism', 'context', ''], 2)).includes('deactivate'));
   assert.ok((await candidates(['prism', 'reset', '--'], 2)).includes('--base'));
-  assert.deepEqual((await candidates(['prism', 'reset', ''], 2)).sort(), ['defaults', 'neutral', 'symmetric']);
-  assert.deepEqual((await candidates(['prism', 'reset', '--base', ''], 3)).sort(), ['defaults', 'neutral', 'symmetric']);
+  assert.deepEqual((await candidates(['prism', 'reset', ''], 2)).sort(), ['neutral', 'revert', 'symmetric']);
+  assert.deepEqual((await candidates(['prism', 'reset', '--base', ''], 3)).sort(), ['neutral', 'revert', 'symmetric']);
   assert.deepEqual((await candidates(['prism', 're'], 1)).sort(), ['requirements', 'reset']);
   assert.deepEqual((await candidates(['prism', '--json', 'reset', 'n'], 3)), ['neutral']);
   assert.deepEqual(await candidates(['prism', '--color', 'never', 'context', 'dea'], 4), ['deactivate']);
@@ -151,10 +154,11 @@ test('every command without an output row emits one JSON value under --json and 
   const fixture = [ // in an order each step leaves valid for the next
     ['set', 'glass.ior', '1.4'], ['get', 'glass.ior'], ['unset', 'glass.ior'], ['reset', 'neutral'],
     ['list'], ['describe'], ['apply'], ['requirements'], ['doctor'], ['migrate'],
-    ['context', 'wallpaper', wallpaper], ['context', 'pin', 'wallpaper'], ['context', 'unpin', 'wallpaper'],
-    ['context', 'save', 'profile', 'dusk'], ['context', 'list'], ['context', 'show', 'profile', 'dusk'],
+    ['context', 'wallpaper', wallpaper], ['set', 'glass.ior', '1.4'], ['commit', 'profile', 'dusk'],
+    ['context', 'list'], ['context', 'show', 'profile', 'dusk'],
     ['context', 'activate', 'profile', 'dusk'], ['context', 'deactivate', 'profile'],
     ['context', 'rename', 'profile', 'dusk', 'dawn'], ['context', 'delete', 'profile', 'dawn'],
+    ['set', 'glass.ior', '1.6'], ['commit', 'wallpaper', wallpaperId(canonicalWallpaperPath(wallpaper))], ['context', 'clear', 'wallpaper', wallpaperId(canonicalWallpaperPath(wallpaper))],
   ];
   const isGroup = (p) => COMMANDS.some((c) => c.path.length === p.length + 1 && p.every((w, i) => c.path[i] === w));
   const runnable = commandRowsWithoutOutput().filter((p) => !isGroup(p)).map((p) => p.join(' ')).sort();

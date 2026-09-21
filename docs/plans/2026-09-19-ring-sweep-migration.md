@@ -765,7 +765,7 @@ Not plan tasks; recorded so the handoff is one place.
 2. Merge `prism-eff23a` into Prism `main` (the panel and `prism apply` run the `main` checkout), then `prism migrate`, read the report, `prism apply`. The file on disk now says `ring-sweep-ms`; the running old compositor rejects the reload and keeps its config — expected until step 3.
 3. Restart the niri session. `niri validate -c ~/.config/niri/config.kdl` passes beforehand; afterwards the ring runs its one lap on focus gain.
 
-Rollback: copy `~/.local/state/prism/migrations/<stamp>/` back over `~/.config/prism/`, reinstall the previous niri package and the previous Prism, `prism apply`, restart.
+Rollback: copy the config files from `~/.local/state/prism/migrations/<stamp>/` back over `~/.config/prism/`. If the backup has `state/scratch.yaml`, copy it back to `~/.local/state/prism/scratch.yaml`. Reinstall the previous niri package and the previous Prism, `prism apply`, restart.
 
 ## Self-review
 
@@ -774,3 +774,7 @@ Rollback: copy `~/.local/state/prism/migrations/<stamp>/` back over `~/.config/p
 - Type consistency: `migrateValues` change shape `{ from, to, old, value, kept }` is what `cli.js` prints; `planMigration` entries carry `where`, `kind`, `name`, `path`, `source`, `values`, `changes`, which `writeBackup`, `writeMigrated`, and the verb consume; `backupDir(now)` and `writeBackup(files, now)` take a `Date` in both the tests and the verb.
 - Review of 2026-09-19 (three findings, all applied): the `drift controls use whole Hz` test at `test/glass-defs.test.js:471` is in Task 1 Step 6; the backup directory is created exclusively and every copy uses `COPYFILE_EXCL`, with a collision test; the verb prints the backup before the first write, each file as it lands, and a failing write names what landed, what did not, and the undo, with a test that fails on the third file.
 - Placeholders: none; every step carries its code and command.
+
+## Integration note (2026-09-19)
+
+The compositional profiles branch added a runtime scratch layer after this plan was written. The merged migration also scans that layer, stores its original bytes at `state/scratch.yaml` inside the backup directory, and restores it separately from config files. This prevents a retired key in scratch from blocking the new resolver. Cost: rollback has two destinations when scratch was migrated.

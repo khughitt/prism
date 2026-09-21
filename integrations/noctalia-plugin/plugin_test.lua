@@ -75,8 +75,6 @@ equal(Presentation.sections(mixed)[1].rows, {
   { row = "Frosted backdrop", focused = mixed[1], unfocused = mixed[2] },
   { row = "Tint", focused = mixed[3], unfocused = mixed[4] },
 })
-equal(Presentation.overriddenCount({ { overridden = true }, { overridden = false }, { overridden = true } }), 2)
-
 -- The rack resolves describe's device list against the group's rows and keys.
 -- Every visible parameter in the group other than the header must belong to a
 -- device, so a definition added without one fails here instead of vanishing.
@@ -206,21 +204,23 @@ equal(reused[1].rows[1].focused.key, "one.f")
 equal(reused[2].rows[1].focused.key, "two.f")
 
 local counted = {
-  { key = "g.lip", value = 9, neutral = 0, overridden = true, ui = { control = "slider", group = "Glass", order = 1 } },
-  { key = "f.split", value = false, neutralize = false, overridden = true, ui = { control = "toggle", group = "Focus", order = 2, header = true } },
-  { key = "f.blur", value = 0.3, neutral = 0, overridden = false, ui = { control = "slider", group = "Focus", order = 3, state = "focused", row = "Blur" } },
-  { key = "f.blur.off", value = 0.5, neutral = 0, overridden = false, ui = { control = "slider", group = "Focus", order = 4, state = "unfocused", row = "Blur" } },
-  { key = "f.sat", value = 1, neutral = 1, overridden = false, ui = { control = "slider", group = "Focus", order = 5, state = "focused", row = "Sat" } },
-  { key = "f.sat.off", value = 1, neutral = 1, overridden = false, ui = { control = "slider", group = "Focus", order = 6, state = "unfocused", row = "Sat" } },
+  { key = "g.lip", value = 9, neutral = 0, held = { "base", "scratch" }, ui = { control = "slider", group = "Glass", order = 1 } },
+  { key = "f.split", value = false, neutralize = false, held = { "scratch" }, ui = { control = "toggle", group = "Focus", order = 2, header = true } },
+  { key = "f.blur", value = 0.3, neutral = 0, held = { "wallpaper" }, ui = { control = "slider", group = "Focus", order = 3, state = "focused", row = "Blur" } },
+  { key = "f.blur.off", value = 0.5, neutral = 0, held = {}, ui = { control = "slider", group = "Focus", order = 4, state = "unfocused", row = "Blur" } },
+  { key = "f.sat", value = 1, neutral = 1, held = {}, ui = { control = "slider", group = "Focus", order = 5, state = "focused", row = "Sat" } },
+  { key = "f.sat.off", value = 1, neutral = 1, held = {}, ui = { control = "slider", group = "Focus", order = 6, state = "unfocused", row = "Sat" } },
 }
+for _, param in ipairs(counted) do param.edited = Presentation.holds(param, "scratch") end
 equal(#Presentation.pairsOf(counted), 2, "two matrix rows")
-equal(Presentation.symmetricCount(counted), 1, "only Blur differs")
+equal(Presentation.symmetricCount(counted), 1, "one pair differs")
 equal(Presentation.neutralCount(counted), 3, "three eligible keys differ")
-equal(Presentation.overriddenCount(counted), 2, "two keys held in target")
+equal(Presentation.editedCount(counted), 2, "two keys are in scratch")
 equal(Presentation.neutralCount({counted[2]}), 0, "an exempt parameter never counts")
+equal(Presentation.holds(counted[3], "wallpaper"), true)
+equal(Presentation.holds(counted[3], "scratch"), false)
 equal(Queue.argvFor({verb = "reset", mode = "neutral"}), {"prism", "reset", "neutral"})
-equal(Queue.argvFor({verb = "reset", mode = "defaults", group = "Focus"}),
-  {"prism", "reset", "defaults", "--group", "Focus"})
+equal(Queue.argvFor({verb = "reset", mode = "revert", group = "Glass"}), {"prism", "reset", "revert", "--group", "Glass"})
 assert(Queue.affectsParams({verb = "reset", mode = "neutral"}), "a reset moves the model")
 
 -- The panel must give its scroll root the host-owned viewport height both
@@ -228,8 +228,8 @@ assert(Queue.affectsParams({verb = "reset", mode = "neutral"}), "a reset moves t
 local rendered
 local described
 -- The store's resolution order, low to high, as describe states it.
-local resolutionOrder = { "default", "base", "wallpaper", "state", "profile" }
-local model = { active = {}, profiles = {}, layers = resolutionOrder, target = "base", params = {
+local resolutionOrder = { "default", "base", "profile", "wallpaper", "state", "scratch" }
+local model = { active = {}, profiles = {}, layers = resolutionOrder, params = {
   {
     key = "glass.enabled", value = true, default = true, layer = "default", fallback = true,
     effectiveDrag = "release",
@@ -313,14 +313,15 @@ local model = { active = {}, profiles = {}, layers = resolutionOrder, target = "
 } } }
 
 for _, param in ipairs(model.params) do
-  param.heldInTarget = param.layer == model.target
+  param.held = param.layer == "default" and {} or { param.layer }
   if param.key == "glass.focusSplit" then param.neutralize = false
   elseif param.ui.control == "select" then param.neutral = param.values[1]
   elseif param.ui.control == "toggle" then param.neutral = false
   else param.neutral = 0 end
 end
-model.params[2].layer = "wallpaper"
-model.params[2].heldInTarget = true
+-- Blur is edited over base; gaps is the wallpaper's nudge.
+model.params[4].layer, model.params[4].held = "scratch", { "base", "scratch" }
+model.params[2].layer, model.params[2].held = "wallpaper", { "wallpaper" }
 
 ui = setmetatable({}, { __index = function(_, kind)
   return function(props, children) return { kind = kind, props = props or {}, children = children or {} } end
@@ -328,6 +329,7 @@ end })
 panel = {
   render = function(tree) rendered = tree end,
   setNeedsFrameTick = function() end,
+  setWantsSecondTicks = function() end,
 }
 local commands = {}
 local commandCallback
@@ -396,7 +398,7 @@ assert(labels["Noise type"] == nil, "details stay hidden until a card is expande
 -- by options rather than by position.
 local function paramSelect(tree)
   for _, node in ipairs(collect(tree, "select")) do
-    if (node.props.options or {})[1] ~= "-" then return node end
+    if (node.props.options or {})[1] ~= "Default" then return node end
   end
   return nil
 end
@@ -407,33 +409,28 @@ assert(sliderKeys["glass.roughness:slider"] and sliderKeys["glass.inactive.rough
 assert(sliderKeys["glass.saturation:slider"] and sliderKeys["glass.inactive.saturation:slider"], "saturation matrix sliders missing")
 equal(#collect(rendered, "toggle"), 2, "title and Focus header toggles")
 
--- Reset means "remove the override in the write target": present on every
--- row, opacity and tooltip carry the state, and it optimistically shows the
--- fallback value.
+-- The row reset is revert: present on every row, opacity and tooltip carry
+-- the edited state, and it optimistically shows the fallback value.
 local resetCandidates = {}
 for _, button in ipairs(collect(rendered, "button")) do
-  if button.props.tooltip == "Remove override" or button.props.tooltip == "No override to remove" then
+  if button.props.tooltip == "Revert edit" or button.props.tooltip == "Not edited" then
     resetCandidates[#resetCandidates + 1] = button
   end
 end
 equal(#resetCandidates, 9, "a reset renders for every visible cell: gaps, three mix pairs, and the extra pair")
-local overriddenResets = {}
+local editedResets = {}
 for _, button in ipairs(resetCandidates) do
-  if button.props.tooltip == "Remove override" and button.props.opacity == 1.0 then
-    overriddenResets[#overriddenResets + 1] = button
-  end
+  if button.props.tooltip == "Revert edit" and button.props.opacity == 1.0 then editedResets[#editedResets + 1] = button end
 end
-equal(#overriddenResets, 2, "roughness and held-but-shadowed gaps offer full-strength resets")
+equal(#editedResets, 1, "only the edited roughness offers a full-strength reset")
 for _, button in ipairs(resetCandidates) do
-  if button ~= overriddenResets[1] and button ~= overriddenResets[2] then
-    assert(button.props.opacity < 1.0, "resets without an override to remove stay dim")
-  end
+  if button ~= editedResets[1] then assert(button.props.opacity < 1.0, "an unedited reset stays dim") end
 end
 local sectionResets = 0
 for _, button in ipairs(collect(rendered, "button")) do
-  if button.props.tooltip == "Reset section (2); values fall back to the layer beneath" and button.props.opacity == 1.0 then sectionResets = sectionResets + 1 end
+  if button.props.tooltip == "Revert section (1)" and button.props.opacity == 1.0 then sectionResets = sectionResets + 1 end
 end
-equal(sectionResets, 1, "the Focus rack counts its two overrides")
+equal(sectionResets, 1, "the Focus rack counts its one edit")
 assert(labels["Extra"], "extra section header missing")
 
 -- Cards: one per device in rack order, each with a light whose glyph and color
@@ -445,20 +442,17 @@ local function byKey(tree, key, found)
   for _, child in ipairs(tree.children or {}) do byKey(child, key, found) end
   return found
 end
-local shadowedCell = byKey(rendered, "compositor.gaps")[1]
-local shadowedReset
-for _, button in ipairs(collect(shadowedCell, "button")) do
-  if button.props.glyph == "restore" then shadowedReset = button end
-end
 local roughnessReset
 for _, button in ipairs(collect(byKey(rendered, "glass.roughness")[1], "button")) do
   if button.props.glyph == "restore" then roughnessReset = button end
 end
-assert(shadowedReset, "held-but-shadowed gaps must carry a reset")
-equal(shadowedReset.props.tooltip, "Remove override")
-equal(shadowedReset.props.opacity, 1.0)
-shadowedReset.props.onClick()
-equal(commands[#commands], Shell.command({"prism", "unset", "compositor.gaps"}))
+assert(roughnessReset, "the edited roughness carries a reset")
+equal(roughnessReset.props.tooltip, "Revert edit")
+equal(roughnessReset.props.opacity, 1.0)
+roughnessReset.props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "unset", "glass.roughness" }))
+equal(model.params[4].value, 0.1, "the reset shows the fallback before describe reconciles")
+equal(model.params[4].edited, false)
 commandCallback({exitCode = 0, stdout = ""})
 described({exitCode = 0, stdout = "{}"})
 
@@ -571,24 +565,21 @@ local unavailableLabels = {}
 for _, label in ipairs(collect(rendered, "label")) do unavailableLabels[label.props.text or ""] = true end
 assert(unavailableLabels["Unavailable"], "a collapsed card reports its unavailable bypass")
 
--- A wallpaper can shadow only the bypass. The light and hint say so, while
--- the unshadowed mix cells stay full-strength and the ordinary write remains.
-noiseBypass.effectiveDrag, noiseBypass.layer = "release", "wallpaper"
-model.active = { wallpaper = { id = "f8eb0556", path = "/pics/Deep Field.jpg", pinned = false } }
+-- A bypass the wallpaper nudges is not dimmed and still writes; the card's
+-- hint says where the value comes from.
+noiseBypass.effectiveDrag, noiseBypass.layer, noiseBypass.held = "release", "wallpaper", { "wallpaper" }
+model.active = { wallpaper = { id = "f8eb0556", path = "/pics/Deep Field.jpg" } }
 dofile(here .. "panel.luau")
 onOpen({})
 described({ exitCode = 0, stdout = "{}" })
-local shadowedLight = light("noise")
-assert(shadowedLight.props.opacity < 1.0, "a shadowed bypass light dims")
-equal(byKey(rendered, "glass.noise")[1].props.opacity, 1.0, "the focused mix cell stays unshadowed")
-equal(byKey(rendered, "glass.inactive.noise")[1].props.opacity, 1.0, "the unfocused mix cell stays unshadowed")
-local shadowedLabels = {}
-for _, label in ipairs(collect(rendered, "label")) do shadowedLabels[label.props.text or ""] = true end
-assert(shadowedLabels["Overridden by wallpaper; pin to edit"], "a collapsed card reports its shadowed bypass")
-local commandsBeforeShadowedLight = #commands
-shadowedLight.props.onClick()
-equal(#commands, commandsBeforeShadowedLight + 1, "a shadowed bypass light still writes")
-noiseBypass.layer = "default"
+equal(light("noise").props.opacity, 1.0, "nothing is shadowed any more")
+local hintLabels = {}
+for _, label in ipairs(collect(rendered, "label")) do hintLabels[label.props.text or ""] = true end
+assert(hintLabels["wallpaper"], "a collapsed card reports the wallpaper's nudge")
+local commandsBeforeNudgedLight = #commands
+light("noise").props.onClick()
+equal(#commands, commandsBeforeNudgedLight + 1, "a nudged bypass light writes like any other")
+noiseBypass.layer, noiseBypass.held = "default", {}
 model.active = {}
 
 -- Clicking a light flips the bypass key with a plain set, whatever the layer.
@@ -669,15 +660,20 @@ for _, node in ipairs(collect(noiseCard, "column")) do
   end
 end
 equal(detailRows, { "glass.bypass.noise:row", "glass.noiseType:row" })
+model.params[12].layer, model.params[12].held = "scratch", { "base", "scratch" }
+described({ exitCode = 0, stdout = "{}" })
 chevron("saturation").props.onClick()
 local saturationCard = byKey(rendered, "saturation:card")[1]
 local bypassReset
 for _, button in ipairs(collect(saturationCard, "button")) do
-  if button.props.tooltip == "Remove override" and button.props.opacity == 1.0 then bypassReset = button end
+  if button.props.tooltip == "Revert edit" and button.props.opacity == 1.0 then bypassReset = button end
 end
-assert(bypassReset, "the bypass row of a bypassed-in-base device offers a full-strength reset")
+assert(bypassReset, "the edited bypass row offers a full-strength reset")
 bypassReset.props.onClick()
 assert(commands[#commands]:find("'unset' 'glass.bypass.saturation'", 1, true), "bypass reset enqueues prism unset")
+commandCallback({exitCode = 0, stdout = ""})
+model.params[12].layer, model.params[12].held = "base", { "base" }
+described({exitCode = 0, stdout = "{}"})
 
 -- Expansion survives close and reopen within a session.
 onClose()
@@ -703,21 +699,15 @@ local errorLabel = collect(rendered, "label")[1]
 equal(errorLabel.props.text, "prism describe returned no rack")
 model.rack = savedRack
 
--- Clicking a reset with nothing to remove must do nothing: the onClick guard
+-- Clicking a reset with nothing edited must do nothing: the onClick guard
 -- checks the live param, not just whether the button is drawn dim.
-local nonOverriddenReset
+local uneditedReset
 for _, button in ipairs(resetCandidates) do
-  if button ~= overriddenResets[1] and button ~= overriddenResets[2] then nonOverriddenReset = button break end
+  if button ~= editedResets[1] then uneditedReset = button break end
 end
 local commandCountBeforeGuard = #commands
-nonOverriddenReset.props.onClick()
-equal(#commands, commandCountBeforeGuard, "clicking a non-overridden reset enqueues nothing")
-
-roughnessReset.props.onClick()
-equal(model.params[4].value, 0.1, "reset shows the fallback, not the default, before describe reconciles")
-equal(model.params[4].overridden, false)
-assert(commands[#commands]:find("unset", 1, true) and commands[#commands]:find("glass.roughness", 1, true),
-  "reset enqueues prism unset for the row")
+uneditedReset.props.onClick()
+equal(#commands, commandCountBeforeGuard, "clicking an unedited reset enqueues nothing")
 
 local noise
 for _, param in ipairs(model.params) do
@@ -881,63 +871,36 @@ equal(Queue.isSample(unset("a.x")), false)
 equal(Shell.quote("a'b"), "'a'\"'\"'b'")
 equal(Shell.command({ "prism", "set", "name with space", "a'b" }), "'prism' 'set' 'name with space' 'a'\"'\"'b'")
 
--- Layer ranking. describe states the resolution order, so the panel ranks a
--- parameter's layer against the write target instead of carrying its own copy
--- that goes stale when a layer is added to the store.
-local order = resolutionOrder
-local ranks = Presentation.layerRanks(order)
-equal(ranks, { default = 1, base = 2, wallpaper = 3, state = 4, profile = 5 })
-
-local function layered(layer, control)
-  return { key = "k." .. layer, layer = layer, ui = { control = control or "slider" } }
+-- The wallpaper header row: which wallpaper is on screen, and how many
+-- visible keys its delta holds. Hidden keys and keys the wallpaper does not
+-- hold never count, and a key scratch covers still counts for the wallpaper.
+local function layered(held, control)
+  return { key = "k" .. #held, held = held, layer = held[#held] or "default", ui = { control = control or "slider" } }
 end
--- Shadowed means "the value comes from above where a write would land", so the
--- control is live but has no visible effect.
-equal(Presentation.isShadowed(layered("wallpaper"), ranks, "base"), true)
-equal(Presentation.isShadowed(layered("base"), ranks, "base"), false)
-equal(Presentation.isShadowed(layered("default"), ranks, "base"), false)
-equal(Presentation.isShadowed(layered("wallpaper"), ranks, "wallpaper"), false)
-equal(Presentation.isShadowed(layered("base"), ranks, "wallpaper"), false)
-equal(Presentation.isShadowed(layered("state"), ranks, "wallpaper"), true)
-
--- The advice is layer-specific: pinning the wallpaper makes it the target, but
--- it cannot outrank a state layer, so a state shadow offers no pin.
-equal(Presentation.shadowHint(layered("wallpaper")), "Overridden by wallpaper; pin to edit")
-equal(Presentation.shadowHint(layered("state")), "Overridden by state")
-
--- The wallpaper header row: what it names, how many keys it holds, and whether
--- the pin is available.
-local headerParams = {
-  layered("wallpaper"), layered("base"), layered("wallpaper", "toggle"), layered("wallpaper", "none"),
-}
-headerParams[1].key, headerParams[3].key = "a", "b"
 local header = Presentation.wallpaperHeader({
-  active = { wallpaper = { id = "f8eb0556", path = "/pics/Deep Field.jpg", pinned = false }, profile = nil },
-  layers = order, target = "base", params = headerParams,
+  active = { wallpaper = { id = "f8eb0556", path = "/pics/Deep Field.jpg" }, profile = nil },
+  params = { layered({ "wallpaper" }), layered({ "base" }), layered({ "wallpaper", "scratch" }, "toggle"), layered({ "wallpaper" }, "none") },
 })
-equal(header.name, "Deep Field.jpg")
-equal(header.overrides, 2, "the CLI-only wallpaper parameter is not a visible override")
-equal(header.pinned, false)
-equal(header.canPin, true)
-
+equal(header.id, "f8eb0556")
+equal(header.name, "Deep Field.jpg", "the header names the wallpaper by basename")
+equal(header.look, "Default")
+equal(header.tuned, 2, "the CLI-only wallpaper parameter is not a visible nudge")
 equal(Presentation.wallpaperHeader({ active = { wallpaper = nil, profile = nil }, params = {} }), nil,
-  "no wallpaper is nothing to pin")
+  "no wallpaper is no header")
 
--- A loaded profile holds the write target, so the wallpaper cannot be pinned;
--- the reason has to stay readable, because a Noctalia toggle carries no
--- tooltip and a disabled Button's tooltip is unreachable.
-local blocked = Presentation.wallpaperHeader({
-  active = { wallpaper = { id = "f8eb0556", path = "/pics/a.jpg", pinned = false }, profile = "dusk" },
-  layers = order, target = "profile", params = {},
-})
-equal(blocked.canPin, false)
-assert(blocked.tooltip:find("dusk", 1, true), "the blocked pin must name the profile holding the target")
-
--- The pin is a transport verb like set and unset, and it changes the write
--- target, so the model must be re-read after it lands.
-equal(Queue.argvFor({ verb = "pin", on = true }), { "prism", "context", "pin", "wallpaper" })
-equal(Queue.argvFor({ verb = "pin", on = false }), { "prism", "context", "unpin", "wallpaper" })
-equal(Queue.affectsParams({ verb = "pin", on = true }), true)
+-- Clear and commit name what they act on, and each moves the model.
+equal(Queue.argvFor({ verb = "clear", id = "f8eb0556" }), { "prism", "context", "clear", "wallpaper", "f8eb0556" })
+equal(Queue.argvFor({ verb = "commit", destination = "base" }), { "prism", "commit", "base" })
+equal(Queue.argvFor({ verb = "commit", destination = "profile" }), { "prism", "commit", "profile" })
+equal(Queue.argvFor({ verb = "commit", destination = "profile", target = "noon" }), { "prism", "commit", "profile", "noon" })
+equal(Queue.argvFor({ verb = "commit", destination = "wallpaper", target = "f8eb0556" }), { "prism", "commit", "wallpaper", "f8eb0556" })
+for _, item in ipairs({ { verb = "clear", id = "x" }, { verb = "commit", destination = "base" } }) do
+  assert(Queue.affectsParams(item), item.verb .. " must leave the model stale")
+end
+for _, verb in ipairs({ "pin", "save" }) do
+  local ok = pcall(Queue.argvFor, { verb = verb, name = "x" })
+  assert(not ok, verb .. " is no longer a queue verb")
+end
 
 -- Panel layer rendering. The harness records write callbacks too, so a pin can
 -- be completed and its reconciliation observed rather than only its argv.
@@ -978,10 +941,9 @@ end
 
 local function layeredModel(overrides)
   local m = {
-    active = { wallpaper = { id = "f8eb0556", path = "/pics/Deep Field.jpg", pinned = false } },
+    active = { wallpaper = { id = "f8eb0556", path = "/pics/Deep Field.jpg" } },
     profiles = {},
-    layers = order,
-    target = "base",
+    layers = resolutionOrder,
     params = {
       { key = "glass.enabled", value = true, default = true, layer = "wallpaper", fallback = true,
         effectiveDrag = "release", ui = { control = "toggle", group = "Title", order = 0, label = "Glass" } },
@@ -1010,7 +972,7 @@ local function layeredModel(overrides)
   }
   for key, value in pairs(overrides or {}) do m[key] = value end
   for _, param in ipairs(m.params) do
-    param.heldInTarget = param.layer == m.target
+    param.held = param.layer == "default" and {} or { param.layer }
     if param.ui.control ~= "none" then
       if param.key == "glass.focusSplit" then param.neutralize = false
       elseif param.ui.control == "toggle" then param.neutral = false
@@ -1020,52 +982,71 @@ local function layeredModel(overrides)
   return m
 end
 
--- The header row names the wallpaper on screen and counts what it holds.
-local tree = renderModel(layeredModel())
+-- The header row: a lit glyph while the wallpaper holds nudges, the count,
+-- and a clear that names the wallpaper it acts on.
+local tunedModel = layeredModel()
+local tree = renderModel(tunedModel)
 local shown = labelSet(tree)
-assert(shown["Deep Field.jpg"], "the header row must name the active wallpaper")
-assert(shown["4 overrides"], "the header row must count the wallpaper's visible keys")
-local pin = glyphButton(tree, "pin")
-assert(pin, "an unpinned wallpaper offers a pin button")
-equal(pin.props.tooltip, "Pin to tune this wallpaper instead of the base values")
-equal(pin.props.opacity, 1.0)
+assert(shown["4 for Default + this wallpaper"], "the header row must count the wallpaper's visible keys")
+local photo = glyphButton(tree, "photo-filled")
+assert(photo, "a tuned wallpaper shows the lit glyph")
+equal(photo.props.tooltip, "Deep Field.jpg", "the basename lives in the tooltip")
+local clear = glyphButton(tree, "eraser")
+assert(clear, "a tuned wallpaper offers a clear button")
+equal(clear.props.opacity, 1.0)
+equal(clear.props.tooltip, "Clear Default + this wallpaper's 4 adjustments")
+clear.props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "context", "clear", "wallpaper", "f8eb0556",
+  "--expect-look", "default", "--expect-wallpaper", "id:f8eb0556" }))
+writeCallback({ exitCode = 0, stdout = "" })
+assert(commands[#commands]:find("describe", 1, true), "a completed clear re-reads the model")
+described({ exitCode = 0, stdout = "{}" })
 
--- Shadowed rows: dimmed, and the hint says what covers them and what to do.
-assert(cellFor(tree, "compositor.gaps").props.opacity < 1.0, "a wallpaper-layer row is dimmed under a base target")
-equal(cellFor(tree, "glass.ior").props.opacity, 1.0, "a base-layer row is not dimmed under a base target")
-assert(shown["Overridden by wallpaper; pin to edit"], "a shadowed row must say why it has no visible effect")
+-- Nothing is dimmed: scratch is topmost, so no write can be covered. A row the
+-- wallpaper nudges carries a provenance marker instead.
+equal(cellFor(tree, "compositor.gaps").props.opacity, 1.0)
+assert(shown["wallpaper"], "a nudged row says where its value comes from")
+assert(labelSet(tree)["Overridden by wallpaper; pin to edit"] == nil, "the shadow hint is gone")
+for _, toggle in ipairs(collect(tree, "toggle")) do equal(toggle.props.opacity, nil, "no toggle dims") end
 
--- A matrix row's cells carry their own layers: dim only the shadowed half, and
--- let the shadow outrank the other half's Live marker.
-equal(cellFor(tree, "glass.roughness").props.opacity, 1.0, "the base-layer focused cell keeps full strength")
-assert(cellFor(tree, "glass.inactive.roughness").props.opacity < 1.0, "the wallpaper-layer unfocused cell dims")
-assert(not shown["Live"], "a Live marker must not hide the other cell's shadow warning")
-
--- The title and section header toggles are shadowed too, and say so.
-local toggles = collect(tree, "toggle")
-equal(#toggles, 2, "title and Focus header toggles")
-for _, toggle in ipairs(toggles) do
-  assert(toggle.props.opacity < 1.0, "a shadowed header toggle dims like any other shadowed control")
+-- An untuned wallpaper draws the hollow glyph and an inert clear.
+local untunedModel = layeredModel()
+for _, param in ipairs(untunedModel.params) do
+  if param.layer == "wallpaper" then param.layer, param.held = "default", {} end
 end
+local untunedTree = renderModel(untunedModel)
+assert(glyphButton(untunedTree, "photo"), "an untuned wallpaper shows the hollow glyph")
+local inertClear = glyphButton(untunedTree, "eraser")
+assert(inertClear.props.opacity < 1.0)
+equal(inertClear.props.tooltip, "This look + wallpaper holds no adjustments")
+local beforeInert = #commands
+inertClear.props.onClick()
+equal(#commands, beforeInert, "an inert clear enqueues nothing")
 
--- Editing base beneath a wallpaper still writes and marks the target-owned
--- override, while the value remains covered.
-local gaps = model.params[2]
+-- Editing a row the wallpaper nudges marks it edited at once.
+local editTree = renderModel(tunedModel)
+local gaps = tunedModel.params[2]
 local slider = nil
-for _, node in ipairs(collect(tree, "slider")) do
+for _, node in ipairs(collect(editTree, "slider")) do
   if node.props.key == "compositor.gaps:slider" then slider = node end
 end
 slider.props.onChange(64)
 slider.props.onDragEnd()
-equal(gaps.shadowed, true, "writing under a shadow does not lift it")
-equal(gaps.overridden, true, "the write landed in the target even though a wallpaper covers it")
+equal(gaps.edited, true, "the write landed in scratch")
+
+-- With no wallpaper there is no header row.
+local bareTree = renderModel(layeredModel({ active = {}, rack = { group = "Focus", devices = {} }, params = {
+  { key = "glass.enabled", value = true, default = true, layer = "base", fallback = true, held = { "base" },
+    effectiveDrag = "release", ui = { control = "toggle", group = "Title", order = 0, label = "Glass" } },
+} }))
+equal(glyphButton(bareTree, "eraser"), nil, "no wallpaper means no clear button")
 
 -- A color control shows the chosen color: a swatch in the value column, which
 -- a color cell has no text for.
 local tintModel = layeredModel()
 tintModel.params[#tintModel.params + 1] = {
   key = "glass.attenuationColor", value = "#3366cc", default = "#dfe8ff", layer = "base", fallback = "#dfe8ff",
-  effectiveDrag = "release", neutral = "#ffffff", heldInTarget = true,
+  effectiveDrag = "release", neutral = "#ffffff", held = { "base" },
   ui = { control = "color", group = "Glass", order = 20, label = "Tint" },
 }
 local tintTree = renderModel(tintModel)
@@ -1075,48 +1056,7 @@ local swatchColumn = tintCell.children[1]
 equal(swatchColumn.children[1].kind, "box", "a color cell's value column carries a swatch, not empty text")
 equal(swatchColumn.children[1].props.fill, "#3366cc", "the swatch shows the current color")
 
--- A loaded profile holds the target, so the pin is greyed but still hoverable:
--- a disabled Button's tooltip is unreachable, so the reason would vanish.
-local blockedTree = renderModel(layeredModel({
-  active = { wallpaper = { id = "f8eb0556", path = "/pics/a.jpg", pinned = false }, profile = "dusk" },
-  target = "profile",
-}))
-local blockedPin = glyphButton(blockedTree, "pin")
-assert(blockedPin.props.opacity < 1.0, "a blocked pin is greyed by opacity")
-assert(blockedPin.props.enabled ~= false, "a blocked pin stays enabled so its tooltip is reachable")
-assert(blockedPin.props.tooltip:find("dusk", 1, true), "the greyed pin names the profile holding the target")
-local commandsBefore = #commands
-blockedPin.props.onClick()
-equal(#commands, commandsBefore, "clicking a blocked pin enqueues nothing")
-
--- Pinning: the command goes out, and when it lands the panel re-reads the model
--- and every row that the wallpaper was covering becomes editable.
-local pinTree = renderModel(layeredModel())
-glyphButton(pinTree, "pin").props.onClick()
-equal(commands[#commands], Shell.command({ "prism", "context", "pin", "wallpaper" }))
-writeCallback({ exitCode = 0, stdout = "" })
-assert(commands[#commands]:find("describe", 1, true), "a completed pin must re-read the model")
-described({ exitCode = 0, stdout = "{}" })
-model = layeredModel({
-  active = { wallpaper = { id = "f8eb0556", path = "/pics/Deep Field.jpg", pinned = true } },
-  target = "wallpaper",
-})
-described({ exitCode = 0, stdout = "{}" })
-equal(cellFor(rendered, "compositor.gaps").props.opacity, 1.0, "pinning lifts the shadow off the wallpaper's rows")
-equal(cellFor(rendered, "glass.ior").props.opacity, 1.0,
-  "a base-layer row is below the pinned target, so a write to the wallpaper surfaces over it")
-assert(glyphButton(rendered, "pin-filled"), "a pinned wallpaper shows the pinned glyph")
-assert(labelSet(rendered)["Overridden by wallpaper; pin to edit"] == nil, "nothing is covered by the wallpaper once it is the target")
-
--- With no wallpaper there is nothing to pin and no header row to draw.
-local bareTree = renderModel(layeredModel({ active = {}, rack = { group = "Focus", devices = {} }, params = {
-  { key = "glass.enabled", value = true, default = true, layer = "base", fallback = true,
-    effectiveDrag = "release", ui = { control = "toggle", group = "Title", order = 0, label = "Glass" } },
-} }))
-equal(glyphButton(bareTree, "pin"), nil, "no wallpaper means no pin button")
-
--- The layer order is part of the contract: without it the panel cannot rank a
--- layer against the target, and must say so instead of guessing.
+-- The layer order is part of the contract: provenance must name a ranked layer.
 local function panelError(next)
   renderModel(next)
   for _, label in ipairs(collect(rendered, "label")) do
@@ -1128,7 +1068,6 @@ local missingLayers = layeredModel()
 missingLayers.layers = nil
 equal(panelError(missingLayers), "prism describe returned no layer order")
 equal(panelError(layeredModel({ layers = {} })), "prism describe returned no layer order")
-equal(panelError(layeredModel({ target = "theme" })), "prism describe reported target theme outside the layer order")
 local unrankable = layeredModel()
 unrankable.params[2].layer = "theme"
 assert((panelError(unrankable) or ""):find("compositor.gaps", 1, true),
@@ -1158,9 +1097,20 @@ local visibleNoLayer = layeredModel()
 visibleNoLayer.params[2].layer = nil
 equal(panelError(visibleNoLayer), "compositor.gaps has no layer")
 
-local noOwnership = layeredModel()
-noOwnership.params[2].heldInTarget = nil
-equal(panelError(noOwnership), "compositor.gaps has no target ownership")
+local noHeld = layeredModel()
+noHeld.params[2].held = nil
+equal(panelError(noHeld), "compositor.gaps has no held layers")
+local badHeld = layeredModel()
+badHeld.params[2].held = { "theme" }
+equal(panelError(badHeld), "compositor.gaps is held in theme, outside the layer order")
+local withTarget = layeredModel({ target = "base" })
+equal(panelError(withTarget), nil, "an older field the panel does not read is ignored")
+local hiddenNoHeld = layeredModel()
+hiddenNoHeld.params[8].held = nil
+equal(panelError(hiddenNoHeld), "debug.backdrop has no held layers")
+local hiddenMalformedHeld = layeredModel()
+hiddenMalformedHeld.params[8].held = { "wallpaper", [3] = "scratch" }
+equal(panelError(hiddenMalformedHeld), "debug.backdrop has no held layers")
 local noNeutral = layeredModel()
 noNeutral.params[2].neutral = nil
 equal(panelError(noNeutral), "compositor.gaps must declare exactly one of neutral and neutralize")
@@ -1168,7 +1118,7 @@ local badNeutralize = layeredModel()
 badNeutralize.params[4].neutralize = true
 equal(panelError(badNeutralize), "glass.focusSplit has invalid neutralize value")
 local missingDataFirst = layeredModel()
-missingDataFirst.params[2].default, missingDataFirst.params[2].heldInTarget = nil, nil
+missingDataFirst.params[2].default, missingDataFirst.params[2].held = nil, nil
 equal(panelError(missingDataFirst), "compositor.gaps has no default",
   "core parameter data is checked before reset metadata")
 
@@ -1177,18 +1127,24 @@ hiddenNoLayer.params[8].layer = nil
 assert((panelError(hiddenNoLayer) or ""):find("debug.backdrop", 1, true),
   "a hidden parameter with no layer at all is refused")
 
--- Profile transport. Loading, clearing, saving, and deleting are all context
--- verbs, and each moves the write target or the resolved values, so each leaves
--- the model stale exactly as a parameter write does.
+-- Profile transport. Loading, clearing, and deleting are context verbs, and
+-- each leaves the model stale exactly as a parameter write does.
+equal(Queue.captureSlots({ active = {} }), { look = "default", wallpaper = "none" })
+equal(Queue.captureSlots({ active = { profile = "Default", wallpaper = { id = "w1" } } }),
+  { look = "profile:Default", wallpaper = "id:w1" })
+equal(Queue.argvFor({ verb = "commit", destination = "wallpaper", target = "w1",
+  expected = { look = "profile:Aurora", wallpaper = "id:w1" } }),
+  { "prism", "commit", "wallpaper", "w1", "--expect-look", "profile:Aurora", "--expect-wallpaper", "id:w1" })
+equal(Queue.argvFor({ verb = "clear", id = "w1", expected = { look = "default", wallpaper = "id:w1" } }),
+  { "prism", "context", "clear", "wallpaper", "w1", "--expect-look", "default", "--expect-wallpaper", "id:w1" })
 equal(Queue.argvFor({ verb = "activate", name = "dusk" }), { "prism", "context", "activate", "profile", "dusk" })
 equal(Queue.argvFor({ verb = "deactivate" }), { "prism", "context", "deactivate", "profile" })
-equal(Queue.argvFor({ verb = "save", name = "dusk" }), { "prism", "context", "save", "profile", "dusk" })
 equal(Queue.argvFor({ verb = "delete", name = "dusk" }), { "prism", "context", "delete", "profile", "dusk" })
 equal(Queue.argvFor({ verb = "rename", name = "dusk", newName = "dawn" }),
   { "prism", "context", "rename", "profile", "dusk", "dawn" })
 for _, item in ipairs({
   { verb = "activate", name = "dusk" }, { verb = "deactivate" },
-  { verb = "save", name = "dusk" }, { verb = "delete", name = "dusk" },
+  { verb = "delete", name = "dusk" },
   { verb = "rename", name = "dusk", newName = "dawn" },
 }) do
   equal(Queue.affectsParams(item), true)
@@ -1202,19 +1158,17 @@ equal(Presentation.validProfileName("a b"), false)
 equal(Presentation.validProfileName(""), false)
 equal(Presentation.validProfileName("a/b"), false)
 
--- The selector doubles as the clear control: index 0 is "no profile", which
--- deactivates. It is not "base values" -- deactivating leaves the wallpaper
--- layer active, so what is on screen may still come from it; only the write
--- target returns to base.
+-- Index 0 is the Default look: the unnamed base values, truthful now that the
+-- wallpaper delta shows on top of it exactly as on top of a profile.
 local section = Presentation.profileSection({
   active = { profile = "dusk" }, profiles = { "dawn", "dusk", "noon" },
 })
-equal(section.options, { "-", "dawn", "dusk", "noon" })
+equal(section.options, { "Default", "dawn", "dusk", "noon" })
 equal(section.selectedIndex, 2)
 equal(section.activeName, "dusk")
 
 local none = Presentation.profileSection({ active = {}, profiles = { "dawn" } })
-equal(none.options, { "-", "dawn" })
+equal(none.options, { "Default", "dawn" })
 equal(none.selectedIndex, 0)
 equal(none.activeName, nil)
 
@@ -1243,16 +1197,16 @@ end
 
 -- Loading and clearing both run through the one selector.
 local profileTree = renderModel(profileModel())
-local selector = selectWithOption(profileTree, "-")
+local selector = selectWithOption(profileTree, "Default")
 assert(selector, "the panel offers a profile selector")
-equal(selector.props.options, { "-", "dawn", "dusk" })
+equal(selector.props.options, { "Default", "dawn", "dusk" })
 equal(selector.props.selectedIndex, 0)
 selector.props.onChange(2)
 equal(commands[#commands], Shell.command({ "prism", "context", "activate", "profile", "dusk" }))
 
-local loadedTree = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
-equal(selectWithOption(loadedTree, "-").props.selectedIndex, 2)
-selectWithOption(loadedTree, "-").props.onChange(0)
+local loadedTree = renderModel(profileModel({ active = { profile = "dusk" } }))
+equal(selectWithOption(loadedTree, "Default").props.selectedIndex, 2)
+selectWithOption(loadedTree, "Default").props.onChange(0)
 equal(commands[#commands], Shell.command({ "prism", "context", "deactivate", "profile" }))
 
 -- A pick is optimistic, like a slider edit: the render that follows it already
@@ -1260,87 +1214,64 @@ equal(commands[#commands], Shell.command({ "prism", "context", "deactivate", "pr
 -- so a render that still declared the old model's index would snap the
 -- selector back to the old name for the whole activate round trip, compositor
 -- reload included. The describe that follows reconciles either way.
-local pickTree = renderModel(profileModel({ active = { profile = "dawn" }, target = "profile" }))
-equal(selectWithOption(pickTree, "-").props.selectedIndex, 1)
-selectWithOption(pickTree, "-").props.onChange(2)
-equal(selectWithOption(rendered, "-").props.selectedIndex, 2, "the pick shows at once")
+local pickTree = renderModel(profileModel({ active = { profile = "dawn" } }))
+equal(selectWithOption(pickTree, "Default").props.selectedIndex, 1)
+selectWithOption(pickTree, "Default").props.onChange(2)
+equal(selectWithOption(rendered, "Default").props.selectedIndex, 2, "the pick shows at once")
 equal(commands[#commands], Shell.command({ "prism", "context", "activate", "profile", "dusk" }))
 writeCallback({ exitCode = 1, stdout = "", stderr = "profile dusk: no such context" })
 assert(commands[#commands]:find("describe", 1, true), "a failed activate still re-reads the model")
 -- The harness decodes describe output to the fixture by reference, so hand it
 -- a fresh model the way the real describe would.
-model = profileModel({ active = { profile = "dawn" }, target = "profile" })
+model = profileModel({ active = { profile = "dawn" } })
 described({ exitCode = 0, stdout = "{}" })
-equal(selectWithOption(rendered, "-").props.selectedIndex, 1,
+equal(selectWithOption(rendered, "Default").props.selectedIndex, 1,
   "a failed activate is reconciled by the describe that follows")
 
-local clearTree = renderModel(profileModel({ active = { profile = "dawn" }, target = "profile" }))
-selectWithOption(clearTree, "-").props.onChange(0)
-equal(selectWithOption(rendered, "-").props.selectedIndex, 0, "clearing shows at once too")
+local clearTree = renderModel(profileModel({ active = { profile = "dawn" } }))
+selectWithOption(clearTree, "Default").props.onChange(0)
+equal(selectWithOption(rendered, "Default").props.selectedIndex, 0, "clearing shows at once too")
 
--- Neutralizing everything with a profile loaded would write the neutral values
--- into that profile's snapshot, so the panel-wide button clears the profile
--- first, in the same FIFO, and the neutral values land beneath it. A section's
--- neutral button still edits the loaded profile: neutralizing one section of
--- a profile is a plausible edit.
-local neutralTree = renderModel(profileModel({ active = { profile = "dawn" }, target = "profile" }))
+-- Neutral lands in scratch above the profile, so nothing is cleared first.
+local neutralTree = renderModel(profileModel({ active = { profile = "dawn" } }))
 local wide = buttonsByGlyph(neutralTree, "baseline")[1]
 assert(wide.props.tooltip:find("everything", 1, true), "the first baseline button is panel-wide")
 local beforeWide = #commands
 wide.props.onClick()
-equal(commands[beforeWide + 1], Shell.command({ "prism", "context", "deactivate", "profile" }),
-  "the profile is cleared first")
-equal(selectWithOption(rendered, "-").props.selectedIndex, 0, "the selector clears at once")
-writeCallback({ exitCode = 0, stdout = "" })
-equal(commands[#commands], Shell.command({ "prism", "reset", "neutral" }), "then everything is neutralized beneath it")
-
-local sectionTree = renderModel(profileModel({ active = { profile = "dawn" }, target = "profile" }))
-local sectionNeutral = buttonsByGlyph(sectionTree, "baseline")[2]
-assert(sectionNeutral.props.tooltip:find("section", 1, true), "the second baseline button is a section's")
-local beforeSection = #commands
-sectionNeutral.props.onClick()
-equal(#commands, beforeSection + 1, "a section neutral is one command")
-assert(commands[#commands]:find("reset", 1, true), "a section neutral keeps editing the loaded profile")
-
-local bareNeutral = renderModel(profileModel())
-local beforeBare = #commands
-buttonsByGlyph(bareNeutral, "baseline")[1].props.onClick()
-equal(#commands, beforeBare + 1, "with nothing loaded there is nothing to clear")
+equal(#commands, beforeWide + 1, "one command")
 equal(commands[#commands], Shell.command({ "prism", "reset", "neutral" }))
+equal(selectWithOption(rendered, "Default").props.selectedIndex, 1, "the profile stays loaded")
+writeCallback({ exitCode = 0, stdout = "" })
+described({ exitCode = 0, stdout = "{}" })
 
--- Saving names the profile first, and entering it is a second command that only
--- runs once the save has actually landed.
+-- Save-as is one command: commit profile <name> snapshots the screen and
+-- loads the new profile, so the selector shows it at once.
+local function state_activeProfile()
+  local picked = selectWithOption(rendered, "Default")
+  return picked.props.options[picked.props.selectedIndex + 1]
+end
 local saveTree = renderModel(profileModel())
 equal(#collect(saveTree, "input"), 0, "the name field stays out of the way until asked for")
 glyphButton(saveTree, "device-floppy").props.onClick()
 local nameField = collect(rendered, "input")[1]
 assert(nameField, "the save button opens a name field")
 nameField.props.onSubmit("noon")
-equal(commands[#commands], Shell.command({ "prism", "context", "save", "profile", "noon" }))
+equal(commands[#commands], Shell.command({ "prism", "commit", "profile", "noon",
+  "--expect-look", "default", "--expect-wallpaper", "id:f8eb0556" }))
+equal(state_activeProfile(), "noon", "the pick shows at once")
 writeCallback({ exitCode = 0, stdout = "" })
-equal(commands[#commands], Shell.command({ "prism", "context", "activate", "profile", "noon" }),
-  "a landed save is entered, so the next edit goes into the profile just named")
+assert(commands[#commands]:find("describe", 1, true), "a finished batch still re-reads the model")
+described({ exitCode = 0, stdout = "{}" })
 
--- A failed save must not be followed by an activate: the FIFO keeps going after
--- a failure, so an unconditional pair would enter a profile whose overwrite
--- never happened.
+-- A command error has to survive the refresh that follows it.
 local failTree = renderModel(profileModel())
 glyphButton(failTree, "device-floppy").props.onClick()
 collect(rendered, "input")[1].props.onSubmit("noon")
-equal(commands[#commands], Shell.command({ "prism", "context", "save", "profile", "noon" }))
-local afterFailedSave = #commands
 writeCallback({ exitCode = 1, stdout = "", stderr = "disk full" })
-for index = afterFailedSave + 1, #commands do
-  assert(not commands[index]:find("activate", 1, true), "a failed save must not activate")
-end
-
--- A command error has to survive the refresh that follows it, or the reason a
--- profile would not load flashes past and the panel looks fine.
-assert(commands[#commands]:find("describe", 1, true), "a finished batch still re-reads the model")
 described({ exitCode = 0, stdout = "{}" })
 local banner
 for _, label in ipairs(collect(rendered, "label")) do
-  if label.props.color == "error" and (label.props.text or "") ~= "" then banner = label.props.text end
+  if label.props.color == "error" and label.props.visible then banner = label.props.text end
 end
 equal(banner, "disk full", "a successful describe must not erase why the last command failed")
 
@@ -1381,7 +1312,7 @@ end
 
 -- Deleting is asked about in place: Noctalia has no dialog, so the question is
 -- a row where the name field would be, and only ever about the loaded profile.
-local loadedDelete = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
+local loadedDelete = renderModel(profileModel({ active = { profile = "dusk" } }))
 local liveTrash = glyphButton(loadedDelete, "trash")
 equal(liveTrash.props.opacity, 1.0)
 local beforeConfirm = #commands
@@ -1393,7 +1324,8 @@ equal(#commands, beforeConfirm, "cancel deletes nothing")
 equal(labelSet(rendered)["Delete profile dusk?"], nil, "cancel closes the question")
 glyphButton(rendered, "trash").props.onClick()
 textButton(rendered, "Delete").props.onClick()
-equal(commands[#commands], Shell.command({ "prism", "context", "delete", "profile", "dusk" }))
+equal(commands[#commands], Shell.command({ "prism", "context", "delete", "profile", "dusk",
+  "--expect-look", "profile:dusk", "--expect-wallpaper", "none" }))
 equal(labelSet(rendered)["Delete profile dusk?"], nil, "a confirmed delete closes the question")
 
 -- Saving under a name that already exists asks first. The loaded profile's own
@@ -1412,16 +1344,85 @@ equal(labelSet(rendered)["Replace profile dawn?"], nil, "cancel closes the quest
 glyphButton(rendered, "device-floppy").props.onClick()
 collect(rendered, "input")[1].props.onSubmit("dawn")
 textButton(rendered, "Replace").props.onClick()
-equal(commands[#commands], Shell.command({ "prism", "context", "save", "profile", "dawn" }))
+equal(commands[#commands], Shell.command({ "prism", "commit", "profile", "dawn",
+  "--expect-look", "default", "--expect-wallpaper", "id:f8eb0556" }))
 writeCallback({ exitCode = 0, stdout = "" })
-equal(commands[#commands], Shell.command({ "prism", "context", "activate", "profile", "dawn" }),
-  "a confirmed replace is entered like any other save")
+described({ exitCode = 0, stdout = "{}" })
 
-local resaveTree = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
+-- Saving the loaded profile under its own name is the merging commit when
+-- there are edits, and closes the field without a command when there are none.
+local resaveTree = renderModel(profileModel({ active = { profile = "dusk" } }))
+local beforeResave = #commands
 glyphButton(resaveTree, "device-floppy").props.onClick()
 collect(rendered, "input")[1].props.onSubmit("dusk")
-equal(commands[#commands], Shell.command({ "prism", "context", "save", "profile", "dusk" }),
-  "saving the loaded profile under its own name asks nothing")
+equal(#commands, beforeResave, "nothing edited, nothing to commit")
+equal(#collect(rendered, "input"), 0, "the field closes")
+local editedModel = profileModel({ active = { profile = "dusk" } })
+editedModel.params[3].layer, editedModel.params[3].held = "scratch", { "base", "scratch" }
+renderModel(editedModel)
+glyphButton(rendered, "device-floppy").props.onClick()
+collect(rendered, "input")[1].props.onSubmit("dusk")
+equal(commands[#commands], Shell.command({ "prism", "commit", "profile",
+  "--expect-look", "profile:dusk", "--expect-wallpaper", "none" }), "with edits it is the merging commit")
+writeCallback({ exitCode = 0, stdout = "" })
+described({ exitCode = 0, stdout = "{}" })
+
+-- The edits row: the count, keep-in-look, keep-for-wallpaper, revert,
+-- symmetric, neutral. Every button keeps the reset idiom.
+local function twoEdits()
+  local m = profileModel({ active = { profile = "dusk", wallpaper = { id = "f8eb0556", path = "/pics/a.jpg" } } })
+  m.params[3].layer, m.params[3].held = "scratch", { "base", "scratch" }
+  m.params[5].layer, m.params[5].held = "scratch", { "base", "scratch" }
+  return m
+end
+local editsModel = twoEdits()
+local editsTree = renderModel(editsModel)
+assert(labelSet(editsTree)["2 edits"], "the edits row counts scratch")
+local keep = glyphButton(editsTree, "bookmark")
+equal(keep.props.tooltip, "Keep 2 edits in profile dusk")
+equal(keep.props.opacity, 1.0)
+keep.props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "commit", "profile",
+  "--expect-look", "profile:dusk", "--expect-wallpaper", "id:f8eb0556" }))
+equal(editsModel.params[3].edited, false, "the edits clear optimistically")
+writeCallback({ exitCode = 0, stdout = "" })
+described({ exitCode = 0, stdout = "{}" })
+local wallpaperEditsTree = renderModel(twoEdits())
+local keepWall = glyphButton(wallpaperEditsTree, "photo-check")
+equal(keepWall.props.tooltip, "Keep 2 edits for dusk + this wallpaper")
+keepWall.props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "commit", "wallpaper", "f8eb0556",
+  "--expect-look", "profile:dusk", "--expect-wallpaper", "id:f8eb0556" }))
+writeCallback({ exitCode = 0, stdout = "" })
+described({ exitCode = 0, stdout = "{}" })
+local revertTree = renderModel(twoEdits())
+local revert = buttonsByGlyph(revertTree, "restore")[1]
+equal(revert.props.tooltip, "Revert 2 edits")
+revert.props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "reset", "revert" }))
+writeCallback({ exitCode = 0, stdout = "" })
+described({ exitCode = 0, stdout = "{}" })
+
+local defaultEdits = profileModel({ active = {} })
+defaultEdits.params[3].layer, defaultEdits.params[3].held = "scratch", { "scratch" }
+local defaultTree = renderModel(defaultEdits)
+equal(glyphButton(defaultTree, "bookmark").props.tooltip, "Keep 1 edit in Default")
+glyphButton(defaultTree, "bookmark").props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "commit", "base",
+  "--expect-look", "default", "--expect-wallpaper", "none" }))
+writeCallback({ exitCode = 0, stdout = "" })
+described({ exitCode = 0, stdout = "{}" })
+local noWall = glyphButton(defaultTree, "photo-check")
+assert(noWall.props.opacity < 1.0, "no wallpaper on screen, so keep-for-wallpaper is inert")
+equal(noWall.props.tooltip, "No wallpaper on screen")
+local beforeNoWall = #commands
+noWall.props.onClick()
+equal(#commands, beforeNoWall)
+
+local cleanTree = renderModel(profileModel({ active = {} }))
+assert(labelSet(cleanTree)["No edits"], "an empty scratch says so")
+assert(glyphButton(cleanTree, "bookmark").props.opacity < 1.0)
+equal(glyphButton(cleanTree, "bookmark").props.tooltip, "Nothing to keep")
 
 -- Rename follows the reset idiom and reuses the name field, seeded with the
 -- current name. A taken name is refused here, the way the store refuses it,
@@ -1433,7 +1434,7 @@ assert(pencil.props.opacity < 1.0, "rename is dim with no profile loaded")
 pencil.props.onClick()
 equal(#collect(rendered, "input"), 0, "rename with nothing loaded opens nothing")
 
-local loadedRename = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
+local loadedRename = renderModel(profileModel({ active = { profile = "dusk" } }))
 local livePencil = glyphButton(loadedRename, "pencil")
 equal(livePencil.props.opacity, 1.0)
 local beforeRename = #commands
@@ -1450,7 +1451,8 @@ equal(#commands, beforeRename, "the same name changes nothing")
 equal(#collect(rendered, "input"), 0, "and closes the field")
 glyphButton(rendered, "pencil").props.onClick()
 collect(rendered, "input")[1].props.onSubmit("noon")
-equal(commands[#commands], Shell.command({ "prism", "context", "rename", "profile", "dusk", "noon" }))
+equal(commands[#commands], Shell.command({ "prism", "context", "rename", "profile", "dusk", "noon",
+  "--expect-look", "profile:dusk", "--expect-wallpaper", "none" }))
 equal(#collect(rendered, "input"), 0, "a queued rename closes the field")
 
 -- Enter is not the only submit: it needs keyboard focus, so the check beside
@@ -1462,20 +1464,22 @@ clickSaveField.props.onChange("noon")
 local check = glyphButton(rendered, "check")
 assert(check, "the field has a submit button beside it")
 check.props.onClick()
-equal(commands[#commands], Shell.command({ "prism", "context", "save", "profile", "noon" }),
+equal(commands[#commands], Shell.command({ "prism", "commit", "profile", "noon",
+  "--expect-look", "default", "--expect-wallpaper", "id:f8eb0556" }),
   "the check submits what onChange tracked")
 equal(#collect(rendered, "input"), 0, "a clicked save closes the field")
 
-local clickRename = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
+local clickRename = renderModel(profileModel({ active = { profile = "dusk" } }))
 glyphButton(clickRename, "pencil").props.onClick()
 collect(rendered, "input")[1].props.onChange("noon")
 glyphButton(rendered, "check").props.onClick()
-equal(commands[#commands], Shell.command({ "prism", "context", "rename", "profile", "dusk", "noon" }),
+equal(commands[#commands], Shell.command({ "prism", "context", "rename", "profile", "dusk", "noon",
+  "--expect-look", "profile:dusk", "--expect-wallpaper", "none" }),
   "the check submits a rename too")
 
 -- While a mode's field is open its icon stops offering that mode and is a
 -- plain cancel instead; the other mode's icon still switches.
-local cancelTree = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
+local cancelTree = renderModel(profileModel({ active = { profile = "dusk" } }))
 glyphButton(cancelTree, "device-floppy").props.onClick()
 local openCancel = glyphButton(rendered, "x")
 assert(openCancel, "the open mode's icon becomes a cancel")
@@ -1494,7 +1498,7 @@ equal(#collect(rendered, "input"), 0, "and closes the rename field")
 -- other, and either closes a pending question. The field's key carries the
 -- mode: Noctalia seeds an uncontrolled input once per slot, so the switch
 -- must create a fresh slot or rename would keep save's buffer.
-local switchTree = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
+local switchTree = renderModel(profileModel({ active = { profile = "dusk" } }))
 glyphButton(switchTree, "trash").props.onClick()
 assert(labelSet(rendered)["Delete profile dusk?"])
 glyphButton(rendered, "device-floppy").props.onClick()
@@ -1521,7 +1525,7 @@ local function errorBanner(tree)
   return nil
 end
 
-local reopenTree = renderModel(profileModel({ active = { profile = "dusk" }, target = "profile" }))
+local reopenTree = renderModel(profileModel({ active = { profile = "dusk" } }))
 glyphButton(reopenTree, "trash").props.onClick()
 writeCallback({ exitCode = 1, stdout = "", stderr = "profile in use" })
 described({ exitCode = 0, stdout = "{}" })
@@ -1531,3 +1535,116 @@ onClose()
 onOpen({})
 described({ exitCode = 0, stdout = "{}" })
 equal(errorBanner(rendered), nil, "opening the panel is a fresh gesture and starts without the last error")
+
+-- Following the rotation: the store is the only authority on which wallpaper
+-- is active, so the panel re-reads describe every two seconds while open,
+-- through the same stale-and-replay path as every other refresh.
+;(function()
+  local ticksWanted = nil
+  panel.setWantsSecondTicks = function(value) ticksWanted = value end
+  renderModel(profileModel())
+  equal(ticksWanted, true, "opening the panel asks for second ticks")
+  local beforeTicks = #commands
+  update()
+  equal(#commands, beforeTicks, "one tick is not yet a refresh")
+  update()
+  equal(#commands, beforeTicks + 1, "the second tick refreshes")
+  assert(commands[#commands]:find("describe", 1, true))
+  described({ exitCode = 0, stdout = "{}" })
+
+-- During a drag the tick sets one flag and the refresh replays once the
+-- panel is idle, however many ticks passed.
+  local depthSlider
+  for _, node in ipairs(collect(rendered, "slider")) do
+    if node.props.key == "glass.roughness:slider" then depthSlider = node end
+  end
+  depthSlider.props.onChange(0.3)
+  local beforeDrag = #commands
+  update() update() update() update()
+  equal(#commands, beforeDrag, "no describe lands during a drag")
+  depthSlider.props.onDragEnd()
+  equal(#commands, beforeDrag + 1, "the release writes")
+  writeCallback({ exitCode = 0, stdout = "" })
+  equal(#commands, beforeDrag + 2, "then one refresh, not four")
+  assert(commands[#commands]:find("describe", 1, true))
+  described({ exitCode = 0, stdout = "{}" })
+
+  onClose()
+  equal(ticksWanted, false, "closing the panel stops the tick")
+
+-- A describe the tick launched must not land over a write that started after
+-- it: a periodic describe now races every optimistic edit, not only drags.
+-- The write invalidates the outstanding describe, whose result is dropped and
+-- replayed once the queue drains.
+  local raceTree = renderModel(profileModel({ active = { profile = "dawn" } }))
+  update() update()
+  assert(commands[#commands]:find("describe", 1, true), "the tick launched a describe")
+  local staleDescribe = described
+  selectWithOption(raceTree, "Default").props.onChange(2)
+  equal(commands[#commands], Shell.command({ "prism", "context", "activate", "profile", "dusk" }))
+  model = profileModel({ active = { profile = "dawn" } })
+  staleDescribe({ exitCode = 0, stdout = "{}" })
+  equal(selectWithOption(rendered, "Default").props.selectedIndex, 2,
+    "an older describe must not overwrite the pick made after it launched")
+  writeCallback({ exitCode = 0, stdout = "" })
+  assert(commands[#commands]:find("describe", 1, true), "the invalidated describe is replayed once the write lands")
+  model = profileModel({ active = { profile = "dusk" } })
+  described({ exitCode = 0, stdout = "{}" })
+  equal(selectWithOption(rendered, "Default").props.selectedIndex, 2)
+end)()
+
+-- Actions retain the slots represented by their rendered controls even when
+-- the mutable model changes before the click, submit, or confirmation.
+;(function()
+local staleKeepModel = profileModel({ active = { profile = "dawn", wallpaper = { id = "w1", path = "/w" } } })
+staleKeepModel.params[3].layer, staleKeepModel.params[3].held = "scratch", { "scratch" }
+local staleKeepTree = renderModel(staleKeepModel)
+staleKeepModel.active.profile = "dusk"
+glyphButton(staleKeepTree, "photo-check").props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "commit", "wallpaper", "w1",
+  "--expect-look", "profile:dawn", "--expect-wallpaper", "id:w1" }))
+
+local staleNameModel = profileModel({ active = { profile = "dawn", wallpaper = { id = "w1", path = "/w" } } })
+renderModel(staleNameModel)
+glyphButton(rendered, "pencil").props.onClick()
+local staleNameField = collect(rendered, "input")[1]
+staleNameModel.active.profile = "dusk"
+staleNameField.props.onSubmit("NewName")
+equal(commands[#commands], Shell.command({ "prism", "context", "rename", "profile", "dawn", "NewName",
+  "--expect-look", "profile:dawn", "--expect-wallpaper", "id:w1" }))
+
+local staleSaveModel = profileModel({ active = { profile = "dawn", wallpaper = { id = "w1", path = "/w" } } })
+renderModel(staleSaveModel)
+glyphButton(rendered, "device-floppy").props.onClick()
+local staleSaveField = collect(rendered, "input")[1]
+staleSaveModel.active.profile = "dusk"
+staleSaveField.props.onSubmit("NewName")
+equal(commands[#commands], Shell.command({ "prism", "commit", "profile", "NewName",
+  "--expect-look", "profile:dawn", "--expect-wallpaper", "id:w1" }))
+
+local staleReplaceModel = profileModel({ active = { profile = "dawn", wallpaper = { id = "w1", path = "/w" } } })
+renderModel(staleReplaceModel)
+glyphButton(rendered, "device-floppy").props.onClick()
+collect(rendered, "input")[1].props.onSubmit("dusk")
+local staleReplace = textButton(rendered, "Replace")
+staleReplaceModel.active.profile = nil
+staleReplace.props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "commit", "profile", "dusk",
+  "--expect-look", "profile:dawn", "--expect-wallpaper", "id:w1" }))
+
+local staleDeleteModel = profileModel({ active = { profile = "dawn", wallpaper = { id = "w1", path = "/w" } } })
+renderModel(staleDeleteModel)
+glyphButton(rendered, "trash").props.onClick()
+local staleDelete = textButton(rendered, "Delete")
+staleDeleteModel.active.profile = "dusk"
+staleDelete.props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "context", "delete", "profile", "dawn",
+  "--expect-look", "profile:dawn", "--expect-wallpaper", "id:w1" }))
+
+local staleClearModel = layeredModel()
+local staleClearTree = renderModel(staleClearModel)
+staleClearModel.active.profile = "dusk"
+glyphButton(staleClearTree, "eraser").props.onClick()
+equal(commands[#commands], Shell.command({ "prism", "context", "clear", "wallpaper", "f8eb0556",
+  "--expect-look", "default", "--expect-wallpaper", "id:f8eb0556" }))
+end)()

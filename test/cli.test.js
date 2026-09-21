@@ -27,7 +27,8 @@ process.env.PRISM_INTEGRATIONS_DIR = integ;
 
 const cli = await import('../src/cli.js');
 const { readValues } = await import('../src/values.js');
-const { lockPath, resolvedPath, valuesPath, generatedPath } = await import('../src/paths.js');
+const { readScratch, writeScratch } = await import('../src/scratch.js');
+const { lockPath, resolvedPath, valuesPath, generatedPath, scratchPath, activePath } = await import('../src/paths.js');
 const { writeActive, writeContext, contextPath, readContext } = await import('../src/contexts.js');
 const { VERB_KINDS } = await import('../src/contexts.js');
 const { MODES } = await import('../src/reset.js');
@@ -138,7 +139,7 @@ test('describe emits bindings and slowest effectiveLiveness', async (t) => {
   await cli.run(['describe', '--json'], { runner: () => {}, print: (s) => { out += s; } });
   const d = JSON.parse(out);
   const p = d.params.find((x) => x.key === 'terminal.background.opacity.inactive');
-  assert.equal(p.layer, 'base');
+  assert.equal(p.layer, 'scratch');
   assert.equal(p.value, 0.6);
   assert.equal(p.effectiveLiveness, 'reload'); // slowest of live+reload
   assert.deepEqual(d.params.find((x) => x.key === 'glass.jellyRipple').effectiveDrag, 'live');
@@ -158,14 +159,13 @@ test('describe emits only the public counter-free JSON shape', async () => {
   let out = '';
   assert.equal(await cli.run(['describe', '--json'], { print: (s) => { out += s; } }), 0);
   const described = JSON.parse(out);
-  assert.deepEqual(Object.keys(described), ['active', 'profiles', 'layers', 'target', 'rack', 'params']);
+  assert.deepEqual(Object.keys(described), ['active', 'profiles', 'layers', 'rack', 'params']);
   assert.deepEqual(described.active, { wallpaper: null, profile: null });
   assert.deepEqual(described.profiles, [], 'no saved profiles is an empty list, not an absent field');
-  assert.deepEqual(described.layers, ['default', 'base', 'wallpaper', 'state', 'profile']);
-  assert.equal(described.target, 'base');
+  assert.deepEqual(described.layers, ['default', 'base', 'profile', 'wallpaper', 'state', 'scratch']);
   const p = described.params.find((item) => item.key === 'glass.ior');
   assert.deepEqual(Object.keys(p), [
-    'key', 'type', 'range', 'default', 'neutral', 'heldInTarget', 'value', 'layer', 'fallback', 'ui', 'description',
+    'key', 'type', 'range', 'default', 'neutral', 'held', 'value', 'layer', 'fallback', 'ui', 'description',
     'bindings', 'effectiveLiveness', 'effectiveDrag',
   ]);
   assert.equal(p.layer, 'default');
@@ -189,8 +189,9 @@ test('describe carries the rack verbatim', async () => {
 
 test('get, list, and describe read through the active layers', async () => {
   fs.writeFileSync(valuesPath(), 'glass.paneLip: 8\nglass.ior: 1.24\n');
-  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'glass.ior': 1.3 } });
   writeContext('profile', 'dusk', { source: null, values: { 'glass.paneLip': 6 } });
+  writeActive({ profile: 'dusk' });
+  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'glass.ior': 1.3 } });
   writeActive({ wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' });
 
   let out = '';
@@ -204,12 +205,13 @@ test('get, list, and describe read through the active layers', async () => {
   out = '';
   await cli.run(['describe', '--json'], { print: (s) => { out += s; } });
   const d = JSON.parse(out);
-  assert.deepEqual(d.active, { wallpaper: { id: 'abc12345', path: '/w', pinned: false }, profile: 'dusk' });
-  assert.equal(d.target, 'profile');
+  assert.deepEqual(d.active, { wallpaper: { id: 'abc12345', path: '/w' }, profile: 'dusk' });
+  assert.equal(d.target, undefined, 'the target is always scratch and is not stated');
+  assert.deepEqual(d.layers, ['default', 'base', 'profile', 'wallpaper', 'state', 'scratch']);
   const lip = d.params.find((x) => x.key === 'glass.paneLip');
-  assert.deepEqual([lip.value, lip.layer, lip.fallback], [6, 'profile', 8]);
+  assert.deepEqual([lip.value, lip.layer, lip.fallback, lip.held], [6, 'profile', 6, ['base', 'profile']]);
   const ior = d.params.find((x) => x.key === 'glass.ior');
-  assert.deepEqual([ior.value, ior.layer, ior.fallback], [1.3, 'wallpaper', 1.3]);
+  assert.deepEqual([ior.value, ior.layer, ior.fallback, ior.held], [1.3, 'wallpaper', 1.3, ['base', 'wallpaper']]);
 });
 
 test('a missing active profile fails every reading verb, describe included', async () => {
@@ -239,13 +241,15 @@ test('doctor reports a missing active profile, a broken context file, and contex
   writeActive({});
   fs.mkdirSync(path.dirname(contextPath('profile', 'bad')), { recursive: true });
   fs.writeFileSync(contextPath('profile', 'bad'), '- not\n- flat\n');
+  writeActive({});
   writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'gone.away': 1 } });
+  writeActive({ profile: 'vanished' });
   // an inactive context with a known key holding an invalid value must not pass diagnosis
   writeContext('profile', 'hot', { source: null, values: { 'glass.ior': 99 } });
   out = '';
   assert.equal(await cli.run(['doctor'], { runner: () => {}, print: (s) => { out += s; } }), 1);
-  assert.match(out, /doctor: profile bad: context must be a flat object/);
-  assert.match(out, /doctor: orphan value gone\.away in wallpaper abc12345: no definition — edit /);
+  assert.match(out, /doctor: profile bad: .*look must be a mapping/);
+  assert.match(out, /doctor: orphan value gone\.away in base \/ wallpaper abc12345: no definition — edit /);
   assert.match(out, /doctor: profile hot: glass\.ior: 99 outside range/);
 });
 
@@ -269,6 +273,20 @@ test('reading verbs take the store lock, so they wait for an in-flight write', a
   await held;
   await reader;
   assert.equal(finished, true);
+});
+
+test('requirements takes the store lock too, so the pinned repair never writes outside it', async () => {
+  const { withLock } = await import('../src/lock.js');
+  let order = [];
+  const holding = withLock(lockPath(), async () => {
+    order.push('locked');
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    order.push('released');
+  });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  const reading = cli.run(['requirements'], { print: () => {} }).then(() => order.push('read'));
+  await Promise.all([holding, reading]);
+  assert.deepEqual(order, ['locked', 'released', 'read']);
 });
 
 test('entrypoint flushes complete describe JSON to piped stdout', () => {
@@ -482,8 +500,17 @@ test('doctor: an orphan values key is reported by name with its remedy', async (
   let out = '';
   const code = await cli.run(['doctor'], { runner: () => {}, print: (s) => { out += s; } });
   assert.equal(code, 1);
-  assert.match(out, /gone\.away/);
-  assert.match(out, /unset/, 'doctor must name the way out');
+  assert.match(out, /doctor: orphan value gone\.away: no definition — run 'prism unset --base gone\.away'/);
+});
+
+test('doctor screens scratch.yaml for orphans and invalid values, naming the file', async () => {
+  await cli.run(['apply'], { runner: () => {} });
+  writeScratch({ 'gone.away': 1, 'glass.ior': 99 });
+  let out = '';
+  const code = await cli.run(['doctor'], { print: (t) => { out += t; }, runner: () => {} });
+  assert.equal(code, 1);
+  assert.match(out, /doctor: orphan value gone\.away in scratch: no definition — run 'prism unset gone\.away'/);
+  assert.match(out, /doctor: scratch: glass\.ior: 99 outside range/);
 });
 
 test('orphan keys: unset digs out, every other verb fails loudly', async () => {
@@ -502,7 +529,7 @@ test('orphan keys: unset digs out, every other verb fails loudly', async () => {
   }
 
   // the one escape hatch
-  assert.equal(await cli.run(['unset', 'gone.away'], { runner: () => {} }), 0);
+  assert.equal(await cli.run(['unset', '--base', 'gone.away'], { runner: () => {} }), 0);
   assert.equal(fs.readFileSync(valuesPath(), 'utf8').includes('gone.away'), false);
   assert.equal(await cli.run(['list'], { runner: () => {}, print: () => {} }), 0);
 
@@ -512,7 +539,7 @@ test('orphan keys: unset digs out, every other verb fails loudly', async () => {
   assert.match(absent.stderr, /unknown param never\.existed/);
 });
 
-test('orphans block mutation; orphan unsets remove exactly one per invocation', async () => {
+test('orphan unset validates the whole next base state before writing', async () => {
   await cli.run(['apply'], { runner: () => {} });
   const resolvedBefore = fs.readFileSync(resolvedPath(), 'utf8');
   fs.writeFileSync(valuesPath(), 'first.orphan: 1\nsecond.orphan: 2\n');
@@ -523,13 +550,14 @@ test('orphans block mutation; orphan unsets remove exactly one per invocation', 
   assert.deepEqual(fs.readFileSync(valuesPath(), 'utf8'), 'first.orphan: 1\nsecond.orphan: 2\n');
   assert.equal(fs.readFileSync(resolvedPath(), 'utf8'), resolvedBefore);
 
-  const firstUnset = await runCaptured(['unset', 'first.orphan'], { runner: () => {} });
+  const firstUnset = await runCaptured(['unset', '--base', 'first.orphan'], { runner: () => {} });
   assert.notEqual(firstUnset.code, 0);
   assert.match(firstUnset.stderr, /unknown param second\.orphan in values/);
-  assert.deepEqual(fs.readFileSync(valuesPath(), 'utf8'), 'second.orphan: 2\n');
+  assert.deepEqual(fs.readFileSync(valuesPath(), 'utf8'), 'first.orphan: 1\nsecond.orphan: 2\n');
   assert.equal(fs.readFileSync(resolvedPath(), 'utf8'), resolvedBefore);
 
-  assert.equal(await cli.run(['unset', 'second.orphan'], { runner: () => {} }), 0);
+  fs.writeFileSync(valuesPath(), 'second.orphan: 2\n');
+  assert.equal(await cli.run(['unset', '--base', 'second.orphan'], { runner: () => {} }), 0);
   assert.deepEqual(fs.readFileSync(valuesPath(), 'utf8'), '{}\n');
 });
 
@@ -553,88 +581,84 @@ test('every public verb enforces its required and stray arguments as usage error
   // describe no longer needs --json: the global output mode picks the rendering
   let pretty = '';
   assert.equal(await cli.run(['describe'], { print: (text) => { pretty += text; } }), 0);
-  assert.match(pretty, /^wallpaper: none\nprofile: none\ntarget: base\n/);
+  assert.match(pretty, /^wallpaper: none\nprofile: none\nedits: 0\n/);
   assert.throws(() => JSON.parse(pretty));
 });
 
-test('set under an unpinned wallpaper writes base: an automatic layer never captures edits', async () => {
+test('set writes scratch above every layer, and a wallpaper on screen never captures it', async () => {
   fs.writeFileSync(valuesPath(), 'glass.ior: 1.24\n');
-  writeActive({ wallpaper: { id: 'abc12345', path: '/walls/a.jpg' } });
-  assert.equal(await cli.run(['set', 'glass.ior', '1.3'], { runner: () => {} }), 0);
-  assert.equal(readContext('wallpaper', 'abc12345'), null, 'no wallpaper file appears');
-  assert.match(fs.readFileSync(valuesPath(), 'utf8'), /glass\.ior: 1\.3/);
-});
-
-test('set writes into the pinned wallpaper and creates an untuned wallpaper file with _source', async () => {
-  fs.writeFileSync(valuesPath(), 'glass.ior: 1.24\n');
-  writeActive({ wallpaper: { id: 'abc12345', path: '/walls/a.jpg', pinned: true } });
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.3 } });
+  writeActive({ wallpaper: { id: 'abc12345', path: '/walls/a.jpg' }, profile: 'dusk' });
   const calls = [];
-  assert.equal(await cli.run(['set', 'glass.ior', '1.3'], { runner: (m, f, keys) => calls.push(keys) }), 0);
-  assert.deepEqual(readContext('wallpaper', 'abc12345'), { source: '/walls/a.jpg', values: { 'glass.ior': 1.3 } });
+  assert.equal(await cli.run(['set', 'glass.ior', '1.7'], { runner: (m, f, keys) => calls.push(keys) }), 0);
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.7 });
+  assert.equal(readContext('wallpaper', 'abc12345'), null, 'no wallpaper file appears');
+  assert.deepEqual(readContext('profile', 'dusk').values, { 'glass.ior': 1.3 }, 'the profile is untouched');
   assert.equal(fs.readFileSync(valuesPath(), 'utf8'), 'glass.ior: 1.24\n', 'base untouched');
-  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.3);
-
-  // a default-valued key is kept in a context, because the layer below differs
-  assert.equal(await cli.run(['set', 'glass.ior', '1.5'], { runner: () => {} }), 0);
-  assert.equal(readContext('wallpaper', 'abc12345').values['glass.ior'], 1.5);
+  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.7);
+  assert.deepEqual(calls, [], 'no fixture sink binds glass.ior');
 });
 
-test('set --base writes through to values.yaml under an active context', async () => {
+test('set normalizes: a value the fold beneath already shows is no edit', async () => {
+  writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.ior': 1.3 } });
+  writeActive({ wallpaper: { id: 'w1', path: '/w.png' } });
+  assert.equal(await cli.run(['set', 'glass.ior', '1.5'], { runner: () => {} }), 0);
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.5 });
+  assert.equal(await cli.run(['set', 'glass.ior', '1.3'], { runner: () => {} }), 0);
+  assert.deepEqual(readScratch(), {});
+  assert.equal(fs.existsSync(scratchPath()), false);
+  assert.equal(await cli.run(['set', 'glass.ior', '1.5'], { runner: () => {} }), 0);
+  writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.ior': 1.4 } });
+  assert.equal(await cli.run(['set', 'glass.ior', '1.5'], { runner: () => {} }), 0);
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.5 });
+});
+
+test('set --base writes through to values.yaml, bypassing scratch', async () => {
   writeContext('profile', 'dusk', { source: null, values: {} });
   writeActive({ profile: 'dusk' });
   assert.equal(await cli.run(['set', '--base', 'glass.ior', '1.1'], { runner: () => {} }), 0);
   assert.match(fs.readFileSync(valuesPath(), 'utf8'), /glass\.ior: 1\.1/);
+  assert.deepEqual(readScratch(), {});
   assert.deepEqual(readContext('profile', 'dusk').values, {});
 });
 
-test('unset removes the override from the write target and refuses a key it does not hold', async () => {
+test('unset removes the edit from scratch and refuses a key that is not edited', async () => {
   fs.writeFileSync(valuesPath(), 'glass.ior: 1.24\n');
-  writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.5 } });
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.3 } });
   writeActive({ profile: 'dusk' });
+  await cli.run(['set', 'glass.ior', '1.7'], { runner: () => {} });
 
   const calls = [];
   assert.equal(await cli.run(['unset', 'glass.ior'], { runner: (m, f, keys) => calls.push(keys) }), 0);
-  assert.deepEqual(readContext('profile', 'dusk').values, {});
-  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.24, 'base shows through');
-  assert.match(fs.readFileSync(valuesPath(), 'utf8'), /glass\.ior: 1\.24/, 'base untouched');
+  assert.deepEqual(readScratch(), {});
+  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.3, 'the profile shows through');
+  assert.deepEqual(readContext('profile', 'dusk').values, { 'glass.ior': 1.3 }, 'a revert never touches the profile');
 
   const absent = await runCaptured(['unset', 'glass.ior'], { runner: () => {} });
   assert.notEqual(absent.code, 0);
-  assert.match(absent.stderr, /glass\.ior: not set in profile dusk/);
+  assert.match(absent.stderr, /glass\.ior: not edited/);
 
+  await cli.run(['set', '--base', 'glass.ior', '1.1'], { runner: () => {} });
   assert.equal(await cli.run(['unset', '--base', 'glass.ior'], { runner: () => {} }), 0);
   assert.equal(fs.readFileSync(valuesPath(), 'utf8'), '{}\n');
-  const absentBase = await runCaptured(['unset', 'glass.ior'], { runner: () => {} });
-  assert.match(absentBase.stderr, /glass\.ior: not set in profile dusk/);
   const absentBaseFlag = await runCaptured(['unset', '--base', 'glass.ior'], { runner: () => {} });
   assert.match(absentBaseFlag.stderr, /glass\.ior: not set in base/);
 });
 
-test('unset digs an orphan out of the active context the way it does for base', async () => {
-  writeContext('profile', 'dusk', { source: null, values: { 'gone.away': 1 } });
-  writeActive({ profile: 'dusk' });
+test('unset digs an orphan out of scratch the way it does for base', async () => {
+  writeScratch({ 'gone.away': 1 });
   const blocked = await runCaptured(['set', 'glass.paneLip', '10'], { runner: () => {} });
-  assert.match(blocked.stderr, /unknown param gone\.away in profile dusk/);
+  assert.match(blocked.stderr, /unknown param gone\.away in scratch null/);
   assert.equal(await cli.run(['unset', 'gone.away'], { runner: () => {} }), 0);
-  assert.deepEqual(readContext('profile', 'dusk').values, {});
+  assert.deepEqual(readScratch(), {});
 });
 
-test('unset of the last key in a wallpaper context deletes the file instead of leaving it empty', async () => {
-  writeActive({ wallpaper: { id: 'abc12345', path: '/walls/a.jpg', pinned: true } });
-  assert.equal(await cli.run(['set', 'glass.ior', '1.3'], { runner: () => {} }), 0);
-  assert.notEqual(readContext('wallpaper', 'abc12345'), null);
-  assert.equal(await cli.run(['unset', 'glass.ior'], { runner: () => {} }), 0);
-  assert.equal(readContext('wallpaper', 'abc12345'), null,
-    'an untuned wallpaper must leave no file behind');
-  assert.equal(fs.existsSync(contextPath('wallpaper', 'abc12345')), false);
-});
-
-test('unset of the last key in a profile context still leaves an empty file: a profile is a deliberate snapshot', async () => {
-  writeContext('profile', 'dusk', { source: null, values: { 'glass.ior': 1.3 } });
-  writeActive({ profile: 'dusk' });
-  assert.equal(await cli.run(['unset', 'glass.ior'], { runner: () => {} }), 0);
-  assert.deepEqual(readContext('profile', 'dusk'), { source: null, values: {} });
-  assert.equal(fs.existsSync(contextPath('profile', 'dusk')), true);
+test('orphan unset validates the next scratch state before writing', async () => {
+  writeScratch({ 'gone.away': 1, 'still.gone': 2 });
+  const before = fs.readFileSync(activePath(), 'utf8');
+  const blocked = await runCaptured(['unset', 'gone.away'], { runner: () => {} });
+  assert.match(blocked.stderr, /unknown param still\.gone in scratch null/);
+  assert.equal(fs.readFileSync(activePath(), 'utf8'), before);
 });
 
 // Every machine runs bin/prism before `npm ci` has ever run there: node_modules
@@ -659,7 +683,7 @@ test('entrypoint names the dependency install when node_modules is absent', () =
   assert.doesNotMatch(child.stderr, /ERR_MODULE_NOT_FOUND/);
 });
 
-test('describe carries the neutral contract and target ownership', async () => {
+test('describe carries the neutral contract and held layers', async () => {
   let out = '';
   await cli.run(['set', '--base', 'glass.paneLip', '9'], { runner: () => {} });
   const code = await cli.run(['describe', '--json'], { print: (t) => { out += t; }, runner: () => {} });
@@ -673,23 +697,24 @@ test('describe carries the neutral contract and target ownership', async () => {
   assert.equal(byKey['glass.focusSplit'].neutral, undefined);
   assert.equal(byKey['terminal.apps'].neutral, undefined);
 
-  assert.equal(byKey['glass.paneLip'].heldInTarget, true);
-  assert.equal(byKey['glass.paneShiftX'].heldInTarget, false);
+  assert.deepEqual(byKey['glass.paneLip'].held, ['base']);
+  assert.deepEqual(byKey['glass.paneShiftX'].held, []);
+  assert.equal(byKey['glass.paneLip'].heldInTarget, undefined);
 });
 
-test('a base override hidden by a wallpaper is still held in the target', async () => {
+test('an edited key reports every layer holding it, scratch last, and its fallback is the fold beneath', async () => {
   await cli.run(['set', '--base', 'glass.paneLip', '9'], { runner: () => {} });
   writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.paneLip': 30 } });
-  writeActive({ wallpaper: { id: 'w1', path: '/w.png', pinned: false } });
+  writeActive({ wallpaper: { id: 'w1', path: '/w.png' } });
+  await cli.run(['set', 'glass.paneLip', '12'], { runner: () => {} });
 
   let out = '';
   await cli.run(['describe', '--json'], { print: (t) => { out += t; }, runner: () => {} });
   const param = JSON.parse(out).params.find((p) => p.key === 'glass.paneLip');
-  // The value comes from the wallpaper, so the row is shadowed; but base -- the
-  // write target -- does hold the key, so there is something there to reset.
-  assert.equal(param.layer, 'wallpaper');
-  assert.equal(param.value, 30);
-  assert.equal(param.heldInTarget, true);
+  assert.equal(param.layer, 'scratch');
+  assert.equal(param.value, 12);
+  assert.deepEqual(param.held, ['base', 'wallpaper', 'scratch']);
+  assert.equal(param.fallback, 30, 'revert reveals the wallpaper, not base');
 });
 
 test('reset neutral writes the curated values once and fans out once', async () => {
@@ -724,53 +749,77 @@ test('reset symmetric mirrors focused onto unfocused', async () => {
 test('symmetric copies what is on screen, or the base value under --base', async () => {
   await cli.run(['set', '--base', 'glass.roughness', '0.3'], { runner: () => {} });
   writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.roughness': 0.7 } });
-  writeActive({ wallpaper: { id: 'w1', path: '/w.png', pinned: false } });
+  writeActive({ wallpaper: { id: 'w1', path: '/w.png' } });
 
-  // Unpinned, so the target is still base -- but the source differs.
+  // The source is the on-screen wallpaper; --base selects the base value instead.
   await cli.run(['reset', 'symmetric', '--group', 'Focus'], { runner: () => {} });
-  assert.equal(readValues()['glass.inactive.roughness'], 0.7, 'mirrors the resolved value');
+  assert.equal(readScratch()['glass.inactive.roughness'], 0.7, 'mirrors the resolved value into scratch');
 
   await cli.run(['reset', 'symmetric', '--base', '--group', 'Focus'], { runner: () => {} });
   assert.equal(readValues()['glass.inactive.roughness'], 0.3, 'mirrors the base value alone');
 });
 
-test('reset defaults removes a base override hidden by a wallpaper', async () => {
-  await cli.run(['set', '--base', 'glass.paneLip', '9'], { runner: () => {} });
-  writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.paneLip': 30 } });
-  writeActive({ wallpaper: { id: 'w1', path: '/w.png', pinned: false } });
-  await cli.run(['reset', 'defaults', '--group', 'Glass'], { runner: () => {} });
-  assert.equal('glass.paneLip' in readValues(), false);
+test('reset revert removes scratch keys in scope and leaves every persisted layer alone', async () => {
+  fs.writeFileSync(valuesPath(), 'glass.paneLip: 9\n');
+  writeContext('profile', 'p1', { source: null, values: { 'glass.paneLip': 12 } });
+  writeActive({ profile: 'p1' });
+  await cli.run(['set', 'glass.paneLip', '30'], { runner: () => {} });
+  await cli.run(['set', 'glass.roughness', '0.4'], { runner: () => {} });
+  await cli.run(['reset', 'revert', '--group', 'Glass'], { runner: () => {} });
+  assert.deepEqual(readScratch(), { 'glass.roughness': 0.4 }, 'only the Glass edit is reverted');
+  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.paneLip'], 12, 'the profile shows through');
+  assert.deepEqual(readContext('profile', 'p1').values, { 'glass.paneLip': 12 });
+  assert.equal(readValues()['glass.paneLip'], 9);
 });
 
-test('reset defaults deletes a pinned wallpaper context it empties', async () => {
+test('reset revert --base removes base overrides: the way back to the shipped defaults', async () => {
+  await cli.run(['set', '--base', 'glass.paneLip', '9'], { runner: () => {} });
   writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.paneLip': 30 } });
-  writeActive({ wallpaper: { id: 'w1', path: '/w.png', pinned: true } });
-  await cli.run(['reset', 'defaults', '--group', 'Glass'], { runner: () => {} });
-  // Same rule unset follows: an emptied wallpaper context is not left behind.
-  assert.equal(readContext('wallpaper', 'w1'), null);
-  assert.equal(fs.existsSync(contextPath('wallpaper', 'w1')), false);
+  writeActive({ wallpaper: { id: 'w1', path: '/w.png' } });
+  await cli.run(['reset', 'revert', '--base', '--group', 'Glass'], { runner: () => {} });
+  assert.equal('glass.paneLip' in readValues(), false);
+  assert.equal(readContext('wallpaper', 'w1').values['glass.paneLip'], 30, 'a base reset leaves the delta alone');
+});
+
+test('neutral writes scratch above a loaded profile and leaves its file byte-identical', async () => {
+  fs.writeFileSync(valuesPath(), 'glass.roughness: 0.3\n');
+  writeContext('profile', 'p1', { source: null, values: { 'glass.ior': 1.3 } });
+  writeActive({ profile: 'p1' });
+  writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.roughness': 0.7 } });
+  writeActive({ profile: 'p1', wallpaper: { id: 'w1', path: '/w.png' } });
+  const before = fs.readFileSync(contextPath('profile', 'p1'), 'utf8');
+  const result = await runCaptured(['reset', 'neutral', '--group', 'Focus'], { runner: () => {} });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(readScratch()['glass.roughness'], 0);
+  assert.equal(readScratch()['glass.ior'], 1, 'the profile value is not neutral, so scratch overrides it');
+  assert.equal(fs.readFileSync(contextPath('profile', 'p1'), 'utf8'), before);
+  assert.equal(readContext('wallpaper', 'w1').values['glass.roughness'], 0.7);
+  assert.equal(readValues()['glass.roughness'], 0.3);
+});
+
+test('a neutral value the fold beneath already supplies is not stored in scratch', async () => {
+  writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.roughness': 0 } });
+  writeActive({ wallpaper: { id: 'w1', path: '/w.png' } });
+  await cli.run(['set', 'glass.roughness', '0.4'], { runner: () => {} });
+  await cli.run(['reset', 'neutral', '--group', 'Focus'], { runner: () => {} });
+  assert.equal('glass.roughness' in readScratch(), false, 'the delta is already neutral, so the edit simply goes');
 });
 
 test('a reset that changes no contents writes nothing and calls no sink', async () => {
-  // The trap: the wallpaper supplies 30, base holds nothing, and defaults
-  // deletes base's overrides. The deletion selects the key; the base rule
-  // then deletes one that was never there.
+  // Nothing is edited, so revert has nothing to remove.
   writeContext('wallpaper', 'w1', {
     source: '/w.png',
     values: { 'glass.paneLip': 30 },
   });
-  writeActive({ wallpaper: { id: 'w1', path: '/w.png', pinned: false } });
+  writeActive({ wallpaper: { id: 'w1', path: '/w.png' } });
   fs.rmSync(resolvedPath(), { force: true });
 
   const calls = [];
-  const code = await cli.run(['reset', 'defaults', '--group', 'Glass'],
+  const code = await cli.run(['reset', 'revert', '--group', 'Glass'],
     { runner: (m) => calls.push(m.sink) });
   assert.equal(code, 0);
   assert.deepEqual(calls, []);
   assert.equal(fs.existsSync(resolvedPath()), false, 'resolved.json is not rewritten');
-  assert.equal('glass.paneLip' in readValues(), false);
-  assert.equal(readContext('wallpaper', 'w1').values['glass.paneLip'], 30,
-    'a base reset leaves the overlay alone');
 });
 
 test('reset refuses a store it cannot resolve, and writes nothing', async () => {
@@ -790,9 +839,10 @@ test('reset refuses a store it cannot resolve, and writes nothing', async () => 
 // the verbs implement against, or the table would admit a mode or kind the code refuses.
 test('the declared enums are the runtime constants', () => {
   assert.deepEqual(findCommand(['reset']).args[0].values, MODES);
-  for (const verb of ['show', 'save', 'activate', 'deactivate', 'delete', 'rename', 'pin', 'unpin']) {
+  for (const verb of ['show', 'activate', 'deactivate', 'delete', 'rename']) {
     assert.deepEqual(findCommand(['context', verb]).args[0].values, VERB_KINDS, verb);
   }
+  assert.deepEqual(findCommand(['context', 'clear']).args[0].values, ['wallpaper']);
 });
 
 test('reset rejects an unknown group and a bad mode', async () => {
@@ -803,12 +853,12 @@ test('reset rejects an unknown group and a bad mode', async () => {
 
   const mode = await runCaptured(['reset', 'sideways'], { runner: () => {} });
   assert.equal(mode.code, 2);
-  assert.match(mode.stderr, /mode must be one of defaults, symmetric, neutral, got "sideways"/);
+  assert.match(mode.stderr, /mode must be one of revert, symmetric, neutral, got "sideways"/);
 });
 
 test('reset --base writes beneath an overlay', async () => {
   writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.paneLip': 8 } });
-  writeActive({ wallpaper: { id: 'w1', path: '/w.png', pinned: false } });
+  writeActive({ wallpaper: { id: 'w1', path: '/w.png' } });
   await cli.run(['set', '--base', 'glass.paneLip', '30'], { runner: () => {} });
   // The overlay already sits at the neutral; --base must still act on base.
   await cli.run(['reset', 'neutral', '--base', '--group', 'Glass'], { runner: () => {} });
@@ -825,31 +875,18 @@ test('reset rejects a group with only hidden parameters', async () => {
 });
 
 test('reset visits each affected sink once and leaves hidden values alone', async () => {
-  fs.writeFileSync(valuesPath(), 'glass.paneLip: 30\ndebug.backdrop: true\nterminal.background.opacity.inactive: 0.5\n');
+  await cli.run(['set', 'glass.paneLip', '30'], { runner: () => {} });
+  await cli.run(['set', 'debug.backdrop', 'true'], { runner: () => {} });
   const calls = [];
-  const result = await runCaptured(['reset', 'defaults'], {
+  const result = await runCaptured(['reset', 'revert'], {
     runner: (manifest, file, keys) => calls.push({ sink: manifest.sink, keys }),
   });
   assert.equal(result.code, 0, result.stderr);
   assert.deepEqual(calls.map((call) => call.sink), ['gensink']);
   for (const call of calls) assert.deepEqual(call.keys, ['glass.paneLip']);
-  assert.deepEqual(readValues(), {
-    'debug.backdrop': true,
-    'terminal.background.opacity.inactive': 0.5,
-  });
+  assert.deepEqual(readScratch(), { 'debug.backdrop': true });
 });
 
-test('neutral writes the active profile while preserving its lower layers', async () => {
-  fs.writeFileSync(valuesPath(), 'glass.roughness: 0.3\n');
-  writeContext('wallpaper', 'w1', { source: '/w.png', values: { 'glass.roughness': 0.7 } });
-  writeContext('profile', 'p1', { source: null, values: {} });
-  writeActive({ profile: 'p1', wallpaper: { id: 'w1', path: '/w.png', pinned: true } });
-  const result = await runCaptured(['reset', 'neutral', '--group', 'Focus'], { runner: () => {} });
-  assert.equal(result.code, 0, result.stderr);
-  assert.equal(readContext('profile', 'p1').values['glass.roughness'], 0);
-  assert.equal(readContext('wallpaper', 'w1').values['glass.roughness'], 0.7);
-  assert.equal(readValues()['glass.roughness'], 0.3);
-});
 
 for (const mode of ['neutral', 'symmetric']) {
   test(`an already-${mode} reset leaves both files and sinks untouched`, async () => {
@@ -877,7 +914,6 @@ test('migrate rewrites the replaced ring key everywhere, backs the files up, rep
   const originals = [
     [valuesPath(), base, 'values.yaml'],
     [contextPath('profile', 'dusk'), fs.readFileSync(contextPath('profile', 'dusk')), 'contexts/profile/dusk.yaml'],
-    [contextPath('wallpaper', 'abc12345'), fs.readFileSync(contextPath('wallpaper', 'abc12345')), 'contexts/wallpaper/abc12345.yaml'],
   ];
 
   let out = '';
@@ -894,7 +930,7 @@ test('migrate rewrites the replaced ring key everywhere, backs the files up, rep
   assert.ok(backup.startsWith(path.join(process.env.PRISM_STATE_DIR, 'migrations', '')), backup);
   assert.match(out, /^migrate: base: glass\.ring\.sweepMs 9000 -> glass\.ring\.beamSpeed 300$/m);
   assert.match(out, /^migrate: profile dusk: glass\.ring\.sweepMs 0 -> glass\.ring\.beamSpeed 0$/m);
-  assert.match(out, /^migrate: wallpaper abc12345: glass\.ring\.sweepMs 1200 removed; glass\.ring\.beamSpeed 450 kept$/m);
+  assert.match(out, /^migrate: base \/ wallpaper abc12345: glass\.ring\.sweepMs 1200 removed; glass\.ring\.beamSpeed 450 kept$/m);
   assert.match(out, /^migrate: done — run 'prism apply' to hand the new keys to the sinks$/m);
   assert.doesNotMatch(out, /plain/);
   assert.deepEqual(fs.readFileSync(path.join(backup, 'values.yaml')), base);
@@ -907,45 +943,75 @@ test('migrate rewrites the replaced ring key everywhere, backs the files up, rep
   assert.equal(fs.readdirSync(path.join(process.env.PRISM_STATE_DIR, 'migrations')).length, 1);
 });
 
+test('migrate includes scratch with a backup inside the migration directory', async () => {
+  writeScratch({ 'glass.ring.sweepMs': 0, 'glass.ior': 1.4 });
+  const original = fs.readFileSync(activePath(), 'utf8');
+  let doctor = '';
+  assert.equal(await cli.run(['doctor'], { print: (s) => { doctor += s; }, runner: () => {} }), 1);
+  assert.match(doctor, /pending migration: glass\.ring\.sweepMs in scratch is replaced by glass\.ring\.beamSpeed/);
+
+  let out = '';
+  assert.equal(await cli.run(['migrate'], { print: (s) => { out += s; } }), 0);
+  const backup = out.match(/^migrate: backup (.+)$/m)[1];
+  assert.deepEqual(fs.readFileSync(path.join(backup, 'state', 'active.json'), 'utf8'), original);
+  assert.deepEqual(readScratch(), { 'glass.ring.beamSpeed': 0, 'glass.ior': 1.4 });
+  assert.match(out, /^migrate: scratch: glass\.ring\.sweepMs 0 -> glass\.ring\.beamSpeed 0$/m);
+  assert.deepEqual(fs.readdirSync(backup), ['state']);
+});
+
+test('scratch-only migration failure names only its state restore destination', async (t) => {
+  writeScratch({ 'glass.ring.sweepMs': 0 });
+  const originalWrite = fs.writeFileSync;
+  t.after(() => { fs.writeFileSync = originalWrite; });
+
+  let backup;
+  const failure = await runCaptured(['migrate'], { print: (s) => {
+    backup = s.match(/^migrate: backup ([^\n]+)/)?.[1] ?? backup;
+    if (backup) fs.writeFileSync = (file, ...args) => {
+      if (path.basename(String(file)).startsWith('.active.json.')) throw new Error('injected scratch write failure');
+      return originalWrite(file, ...args);
+    };
+  } });
+  assert.equal(failure.code, 1);
+  assert.ok(backup);
+  assert.ok(failure.stderr.includes('copy state/active.json back to the runtime document to undo'), failure.stderr);
+  assert.doesNotMatch(failure.stderr, /copy config files/);
+});
+
 test('migrate takes no arguments and aborts whole on a context that does not parse', async () => {
   const usage = await runCaptured(['migrate', 'now']);
   assert.equal(usage.code, 2);
-  assert.match(usage.stderr, /unexpected argument "now"; usage: prism migrate/);
+  assert.match(usage.stderr, /target must be one of pairs, got "now"/);
 
   fs.writeFileSync(valuesPath(), 'glass.ring.sweepMs: 9000\n');
   fs.mkdirSync(path.dirname(contextPath('profile', 'bad')), { recursive: true });
   fs.writeFileSync(contextPath('profile', 'bad'), '- not\n- flat\n');
   const failure = await runCaptured(['migrate'], { print: () => {} });
   assert.equal(failure.code, 1);
-  assert.match(failure.stderr, /profile bad: context must be a flat object/);
+  assert.match(failure.stderr, /look must be a mapping/);
   assert.equal(fs.readFileSync(valuesPath(), 'utf8'), 'glass.ring.sweepMs: 9000\n', 'base untouched');
   assert.equal(fs.existsSync(path.join(process.env.PRISM_STATE_DIR, 'migrations')), false, 'no backup made');
 });
 
-test('migrate reports the backup before writing, and a failure part way names what landed and how to undo', async (t) => {
+test('migrate reports the backup before a later physical-file write fails', async (t) => {
   fs.writeFileSync(valuesPath(), 'glass.ring.sweepMs: 9000\n');
   writeContext('profile', 'dusk', { source: null, values: { 'glass.ring.sweepMs': 0 } });
-  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'glass.ring.sweepMs': 1200 } });
-  const wallpaperFile = fs.readFileSync(contextPath('wallpaper', 'abc12345'));
-  // The third file's directory refuses new files: the tmp-and-rename write fails there.
-  const wallpaperDir = path.dirname(contextPath('wallpaper', 'abc12345'));
-  fs.chmodSync(wallpaperDir, 0o555);
-  t.after(() => fs.chmodSync(wallpaperDir, 0o755));
-  if (process.getuid?.() === 0) { t.skip('root ignores directory modes'); return; }
-
+  const original = fs.readFileSync(contextPath('profile', 'dusk'));
+  const rename = fs.renameSync;
+  t.after(() => { fs.renameSync = rename; });
+  fs.renameSync = (from, to) => {
+    if (to === contextPath('profile', 'dusk')) throw new Error('injected profile failure');
+    return rename(from, to);
+  };
   let out = '';
   const failure = await runCaptured(['migrate'], { print: (s) => { out += s; } });
   assert.equal(failure.code, 1);
   const backup = out.match(/^migrate: backup (.+)$/m)[1];
   assert.match(out, /^migrate: base: glass\.ring\.sweepMs 9000 -> glass\.ring\.beamSpeed 300$/m);
-  assert.match(out, /^migrate: profile dusk: glass\.ring\.sweepMs 0 -> glass\.ring\.beamSpeed 0$/m);
-  assert.doesNotMatch(out, /abc12345|done/);
-  assert.match(failure.stderr, /^prism: migrate: wallpaper abc12345: .*EACCES.*; the files reported above are migrated, this one and those after it are not; the originals are in /m);
-  assert.ok(failure.stderr.includes(backup) && failure.stderr.includes(`copy them back over ${process.env.PRISM_CONFIG_DIR} to undo`), failure.stderr);
-
+  assert.match(failure.stderr, /migrate: profile dusk: injected profile failure/);
+  assert.ok(failure.stderr.includes(backup));
   assert.deepEqual(readValues(), { 'glass.ring.beamSpeed': 300 });
-  assert.deepEqual(readContext('profile', 'dusk').values, { 'glass.ring.beamSpeed': 0 });
-  assert.deepEqual(fs.readFileSync(contextPath('wallpaper', 'abc12345')), wallpaperFile, 'the failed file is untouched');
+  assert.deepEqual(fs.readFileSync(contextPath('profile', 'dusk')), original);
   assert.deepEqual(fs.readFileSync(path.join(backup, 'values.yaml'), 'utf8'), 'glass.ring.sweepMs: 9000\n');
 });
 

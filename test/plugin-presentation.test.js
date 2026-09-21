@@ -141,3 +141,30 @@ end
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
 });
+
+
+test('wallpaper headers name the look and count only saved visible keys', () => {
+  const script = String.raw`
+local P = dofile(arg[1])
+local model = {active = {wallpaper = {id = "w1", path = "/pics/W.jpg"}}, params = {
+  {ui = {control = "slider"}, held = {"profile", "wallpaper"}},
+  {ui = {control = "toggle"}, held = {"wallpaper", "scratch"}},
+  {ui = {control = "none"}, held = {"wallpaper", "scratch"}},
+  {ui = {control = "slider"}, held = {"profile"}},
+}}
+for _, look in ipairs({"Aurora", "Default"}) do
+  model.active.profile = look == "Aurora" and look or nil
+  local header = P.wallpaperHeader(model)
+  assert(header.look == look and header.tuned == 2 and header.name == "W.jpg")
+  assert(P.editedCount(P.visibleParams(model)) == 0, "saved keys never count as pending")
+end
+for _, param in ipairs(model.params) do param.held = {"profile"} end
+assert(P.wallpaperHeader(model).tuned == 0)
+model.active.wallpaper = nil
+assert(P.wallpaperHeader(model) == nil)
+`;
+  const result = spawnSync('lua', ['-', fileURLToPath(new URL(
+    '../integrations/noctalia-plugin/presentation.luau', import.meta.url,
+  ))], { input: script, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+});

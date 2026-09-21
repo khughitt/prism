@@ -2,7 +2,7 @@ import { validateValue } from './values.js';
 import { writeJsonAtomic } from './store.js';
 import { resolvedPath } from './paths.js';
 
-function checkLayer(defs, values, where) {
+export function checkLayer(defs, values, where) {
   for (const key of Object.keys(values)) {
     const def = defs.get(key);
     if (!def) throw new Error(`unknown param ${key} in ${where}`);

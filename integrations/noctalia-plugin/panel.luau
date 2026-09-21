@@ -4,6 +4,7 @@ local Shell = require("./shell.luau")
 
 local state = {
   model = nil,
+  selectionPending = false,
   errorText = nil,
   queue = Queue.new(),
   batchAffectsParams = false,
@@ -16,6 +17,7 @@ local state = {
   -- A destructive action waiting for its answer: {kind, name}, or nil.
   confirm = nil,
   errorSticky = false,
+  ticks = 0,
   sampleElapsedMs = 0,
   renderedSliderCorrection = nil,
   expanded = {},
@@ -32,9 +34,8 @@ local headColumnWidth = 190
 local valueColumnWidth = 56
 local cardPadding = 6
 local inertOpacity = 0.35
--- A shadowed control still writes; it is the value that cannot surface. Dimmer
--- than full strength, lighter than inert, because the control is still live.
-local shadowedOpacity = 0.55
+-- A control that is unavailable, or a bypassed card, dims without going inert.
+local dimOpacity = 0.55
 local render
 local refresh
 local enqueue
@@ -58,13 +59,24 @@ local function resultError(result, label)
   return nil
 end
 
+local function denseStringArray(value)
+  if type(value) ~= "table" then return false end
+  local count = 0
+  for _ in pairs(value) do count = count + 1 end
+  if count ~= #value then return false end
+  for index = 1, #value do
+    if type(value[index]) ~= "string" or value[index] == "" then return false end
+  end
+  return true
+end
+
 local function visibleParamError(param, index)
   if type(param.key) ~= "string" or param.key == "" then return "parameter " .. index .. " has no key" end
   if param.value == nil then return param.key .. " has no value" end
   if param.default == nil then return param.key .. " has no default" end
   if type(param.layer) ~= "string" then return param.key .. " has no layer" end
   if param.fallback == nil then return param.key .. " has no fallback" end
-  if type(param.heldInTarget) ~= "boolean" then return param.key .. " has no target ownership" end
+  if not denseStringArray(param.held) then return param.key .. " has no held layers" end
   if (param.neutral ~= nil) == (param.neutralize ~= nil) then
     return param.key .. " must declare exactly one of neutral and neutralize"
   end
@@ -89,20 +101,8 @@ local function visibleParamError(param, index)
   return nil
 end
 
-local function denseStringArray(value)
-  if type(value) ~= "table" then return false end
-  local count = 0
-  for _ in pairs(value) do count = count + 1 end
-  if count ~= #value then return false end
-  for index = 1, #value do
-    if type(value[index]) ~= "string" or value[index] == "" then return false end
-  end
-  return true
-end
-
 -- The order is a ranking, so it has to be a dense list of distinct names. A
--- hole, a stray key, a non-string entry, or a repeat each rank silently wrong,
--- and a wrong rank shadows the columns a user is trying to edit.
+-- hole, a stray key, a non-string entry, or a repeat breaks provenance.
 local function layerOrderError(layers)
   if type(layers) ~= "table" then return "prism describe returned no layer order" end
   if next(layers) == nil then return "prism describe returned no layer order" end
@@ -132,7 +132,6 @@ local function validateModel(model)
       return "prism describe returned an invalid parameter array"
     end
   end
-  if type(model.target) ~= "string" then return "prism describe returned no write target" end
   local orderError = layerOrderError(model.layers)
   if orderError then return orderError end
   local profileError = profileListError(model.profiles)
@@ -140,10 +139,8 @@ local function validateModel(model)
   -- describe always states the active slots, empty or not, so an absent object
   -- is a broken contract rather than "nothing is active".
   if type(model.active) ~= "table" then return "prism describe returned no active contexts" end
-  local ranks = Presentation.layerRanks(model.layers)
-  if ranks[model.target] == nil then
-    return "prism describe reported target " .. model.target .. " outside the layer order"
-  end
+  local ranks = {}
+  for index, name in ipairs(model.layers) do ranks[name] = index end
   for index, param in ipairs(model.params) do
     if type(param) ~= "table" or type(param.ui) ~= "table" or type(param.ui.control) ~= "string" then
       return "parameter " .. index .. " has invalid UI metadata"
@@ -159,6 +156,12 @@ local function validateModel(model)
     -- names.
     if ranks[param.layer] == nil then
       return tostring(param.key) .. " reports layer " .. tostring(param.layer) .. " outside the layer order"
+    end
+    if not denseStringArray(param.held) then return tostring(param.key) .. " has no held layers" end
+    for _, name in ipairs(param.held) do
+      if ranks[name] == nil then
+        return tostring(param.key) .. " is held in " .. tostring(name) .. ", outside the layer order"
+      end
     end
   end
   local titleOk, titleError = pcall(Presentation.titleParam, model.params)
@@ -179,14 +182,14 @@ local function finishRefresh()
   end
 end
 
--- Overridden means the write target holds the key, even if a higher layer
--- supplies its visible value. That higher layer also makes the row shadowed.
-local function markLayers(model)
-  local ranks = Presentation.layerRanks(model.layers)
+-- Edited means scratch holds the key. Nothing is ever shadowed: scratch is
+-- the topmost layer, so every write shows. A row the wallpaper nudges is
+-- marked so the user can see which rows a wallpaper changes.
+local function markEdits(model)
   for _, param in ipairs(model.params) do
     local visible = param.ui.control ~= "none"
-    param.overridden = visible and param.heldInTarget == true
-    param.shadowed = visible and Presentation.isShadowed(param, ranks, model.target)
+    param.edited = visible and Presentation.holds(param, "scratch")
+    param.fromWallpaper = visible and param.layer == "wallpaper"
   end
 end
 
@@ -207,8 +210,9 @@ local function described(result)
   if invalidated then
     state.refreshAfterDrag = true
   elseif not message then
-    markLayers(model)
+    markEdits(model)
     state.model = model
+    state.selectionPending = false
     -- A command's error outlives the refresh it triggers. Clearing it here
     -- would flash the reason a profile would not load past the user and leave
     -- the panel looking fine.
@@ -219,7 +223,8 @@ local function described(result)
 end
 
 refresh = function()
-  if describeRunning then
+  -- A reopen must not snapshot an outstanding write; replay once after drain.
+  if describeRunning or state.queue.inFlight ~= nil then
     state.refreshPending = true
     return
   end
@@ -243,12 +248,6 @@ local function finishWrite(result, launchError)
 
   local completed = state.queue.inFlight
   local shouldRefresh = Queue.shouldRefresh(state.batchAffectsParams, completed)
-  -- A follow-up runs only once the command it depends on has landed. The FIFO
-  -- keeps going after a failure, so an unconditional pair would enter a profile
-  -- whose save never happened.
-  if not message and completed and completed.activateAfter then
-    enqueue({verb = "activate", name = completed.name})
-  end
   local next = Queue.finish(state.queue)
   state.queue = next.state
   if next.launch then
@@ -273,6 +272,10 @@ enqueue = function(item)
     state.errorText = nil
     state.errorSticky = false
   end
+  -- A describe already in flight would land over this write's optimistic
+  -- change. Mark it stale the way beginDrag does; described() then keeps the
+  -- current model and finishRefresh replays once the queue drains.
+  if describeRunning then state.describeInvalidated = true end
   local result = Queue.enqueue(state.queue, item)
   state.queue = result.state
   if result.launch then launch(result.launch) end
@@ -280,7 +283,7 @@ end
 
 local function updateParam(param, value)
   param.value = value
-  param.overridden = true
+  param.edited = true
 end
 
 local function writeParam(param, value)
@@ -291,7 +294,7 @@ end
 
 local function unsetParam(param)
   param.value = param.fallback
-  param.overridden = false
+  param.edited = false
   enqueue({verb = "unset", key = param.key})
   render()
 end
@@ -299,8 +302,8 @@ end
 local function resetAction(mode, group, params)
   return function()
     for _, param in ipairs(params) do
-      if mode == "defaults" then
-        if param.overridden then param.value, param.overridden = param.fallback, false end
+      if mode == "revert" then
+        if param.edited then param.value, param.edited = param.fallback, false end
       elseif mode == "neutral" and param.neutralize ~= false and param.value ~= param.neutral then
         updateParam(param, param.neutral)
       end
@@ -310,20 +313,36 @@ local function resetAction(mode, group, params)
         if row.focused.value ~= row.unfocused.value then updateParam(row.unfocused, row.focused.value) end
       end
     end
-    -- Neutralizing everything under a loaded profile would write the neutral
-    -- values into that profile's snapshot. Clear it first, in the same FIFO,
-    -- so they land beneath it and the profile keeps its values; the selector
-    -- clears optimistically the way a pick does.
-    if mode == "neutral" and group == nil and state.model.active.profile ~= nil then
-      state.model.active.profile = nil
-      enqueue({verb = "deactivate"})
-    end
     enqueue({verb = "reset", mode = mode, group = group})
     render()
   end
 end
 
+-- A commit keeps every value and moves the edits into a persisted layer, so
+-- the optimistic change is only that nothing is edited any more.
+local function commitAction(item, params)
+  item.expected = item.expected or Queue.captureSlots(state.model)
+  return function()
+    if state.selectionPending then return end
+    for _, param in ipairs(params) do param.edited = false end
+    if item.destination == "profile" and item.target ~= nil then
+      state.selectionPending = true
+      if not Presentation.profileExists(state.model, item.target) then
+        state.model.profiles[#state.model.profiles + 1] = item.target
+        table.sort(state.model.profiles)
+      end
+      state.model.active.profile = item.target
+    end
+    enqueue(item)
+    render()
+  end
+end
+
 local function beginDrag(param, sliderValue)
+  -- Synchronous reconciliation can call the previous render's closure.
+  for _, current in ipairs(state.model.params) do
+    if current.key == param.key then param = current; break end
+  end
   sliderValue = tonumber(sliderValue)
   local correction = state.renderedSliderCorrection
   if correction and correction.key == param.key
@@ -331,6 +350,8 @@ local function beginDrag(param, sliderValue)
     state.renderedSliderCorrection = nil
     return
   end
+  -- Noctalia emits onChange when reconciliation applies the value we rendered.
+  if math.abs(sliderValue - Presentation.toSliderValue(param.value, param)) < hostSliderEpsilon then return end
   local canonical = Presentation.canonicalFromSlider(sliderValue, param)
   if not state.drag or state.drag.key ~= param.key then
     state.drag = {
@@ -391,18 +412,16 @@ local function selectOptions(param)
   return options
 end
 
--- Always in the tree, dim while the parameter already holds its default. A
--- reset that appears with `modified` re-solves the row every time a drag
--- crosses the default, which resizes the slider under the pointer.
+-- Always in the tree so the slider keeps its geometry during a drag.
 local function resetButton(param, available)
   return ui.button({
     glyph = "restore",
     variant = "ghost",
     controlSize = "sm",
-    opacity = param.overridden and 1.0 or inertOpacity,
-    tooltip = param.overridden and "Remove override" or "No override to remove",
+    opacity = param.edited and 1.0 or inertOpacity,
+    tooltip = param.edited and "Revert edit" or "Not edited",
     enabled = available,
-    onClick = function() if param.overridden then unsetParam(param) end end,
+    onClick = function() if param.edited then unsetParam(param) end end,
   })
 end
 
@@ -472,12 +491,8 @@ local function nameButton(text, param, onClick)
   })
 end
 
--- Only exceptions are marked. Writing on release is the norm here, so saying it
--- on every row costs a line per row and distinguishes nothing. One row can hold
--- two parameters with different layers, so the hint is chosen across the whole
--- row: an unavailable consumer is an error and outranks everything, a shadow
--- explains why a working control has no visible effect, and Live is the mildest
--- of the three -- it must never crowd out the other cell's shadow.
+-- A wallpaper's nudge says where a value comes from, and Live is the mildest
+-- of the three hints.
 local function rowHint(params)
   for _, param in ipairs(params) do
     if param.effectiveDrag == nil then
@@ -485,8 +500,8 @@ local function rowHint(params)
     end
   end
   for _, param in ipairs(params) do
-    if param.shadowed then
-      return ui.label({text = Presentation.shadowHint(param), fontSize = 11, color = "on_surface_variant"})
+    if param.fromWallpaper then
+      return ui.label({text = "wallpaper", fontSize = 11, color = "on_surface_variant"})
     end
   end
   for _, param in ipairs(params) do
@@ -500,12 +515,12 @@ end
 -- The leading column reserves one fixed span for the name and its help
 -- target, shared by ordinary rows, cards, and the matrix header. Sized
 -- spacers need explicit zero growth: the native spacer defaults to grow=1.
-local function headCell(text, param, dimmed, indent)
+local function headCell(text, param, indent)
   indent = indent or 0
   local children = {}
   if indent > 0 then children[#children + 1] = ui.spacer({width = indent, flexGrow = 0}) end
   children[#children + 1] = nameButton(text, param)
-  return ui.row({width = headColumnWidth, gap = 6, align = "center", opacity = dimmed and shadowedOpacity or 1.0}, children)
+  return ui.row({width = headColumnWidth, gap = 6, align = "center", opacity = 1.0}, children)
 end
 
 -- A control cell: formatted value, native control, and reset. Shared by the
@@ -534,7 +549,7 @@ local function controlCell(param, grow)
   children[#children + 1] = resetButton(param, available)
   return ui.row({
     key = param.key, gap = 6, align = "center", flexGrow = grow,
-    opacity = param.shadowed and shadowedOpacity or 1.0,
+    opacity = 1.0,
   }, children)
 end
 
@@ -546,15 +561,15 @@ end
 
 local function singleRow(param, indent)
   return paramRow(param.key .. ":row", {
-    headCell(param.ui.label or param.key, param, param.shadowed, indent),
+    headCell(param.ui.label or param.key, param, indent),
     controlCell(param, 1),
   }, rowHint({param}))
 end
 
--- The label heads both cells, so it only dims when the whole row is covered.
+-- The label heads both cells.
 local function matrixRow(row, indent)
   return paramRow(row.row .. ":row", {
-    headCell(row.row, row.focused, row.focused.shadowed and row.unfocused.shadowed, indent),
+    headCell(row.row, row.focused, indent),
     controlCell(row.unfocused, 1),
     ui.separator({orientation = "vertical", spacing = 4}),
     controlCell(row.focused, 1),
@@ -579,15 +594,14 @@ local lightWidth = 20
 -- its own bypass is set, hollow in the category color while the device it
 -- requires is bypassed. A glyph in a clickable row, because a toggle carries
 -- no tooltip and a button no color at the API this plugin declares. The click
--- is a plain set when available: the bypass row inside the card carries the
--- reset, and shadowing dims and explains the write without disabling it.
+-- is a plain set when available: the bypass row inside the card carries the reset.
 local function lightRow(card)
   local available = card.bypass.effectiveDrag ~= nil
   local color = card.bypassed and "on_surface_variant" or Presentation.categoryColors[card.category]
   local name = (card.bypassed or card.silenced) and "circle" or "circle-filled"
   return ui.row({
     key = card.device .. ":light", width = lightWidth, align = "center", justify = "center",
-    opacity = (not available or card.bypass.shadowed) and shadowedOpacity or 1.0,
+    opacity = available and 1.0 or dimOpacity,
     onClick = available and function() writeParam(card.bypass, not (card.bypass.value == true)) end or nil,
   }, {
     ui.glyph({name = name, size = 12, color = color}),
@@ -602,7 +616,7 @@ local function cardHead(card, expanded)
     state.expanded[card.device] = not expanded
     render()
   end
-  return ui.row({width = headColumnWidth, gap = 6, align = "center", opacity = (mix.focused.shadowed and mix.unfocused.shadowed) and shadowedOpacity or 1.0}, {
+  return ui.row({width = headColumnWidth, gap = 6, align = "center", opacity = 1.0}, {
     lightRow(card),
     ui.button({
       glyph = expanded and "chevron-down" or "chevron-right",
@@ -636,7 +650,7 @@ local function deviceCard(card)
   return ui.column({
     key = card.device .. ":card", gap = 2, paddingV = 4, paddingH = cardPadding, radius = 8,
     fill = Presentation.categoryColors[card.category] .. "1f",
-    opacity = card.bypassed and shadowedOpacity or 1.0,
+    opacity = card.bypassed and dimOpacity or 1.0,
   }, children)
 end
 
@@ -645,19 +659,21 @@ local function resetModeButton(spec)
     glyph = spec.glyph,
     variant = "ghost",
     controlSize = "sm",
+    enabled = spec.enabled ~= false,
     opacity = spec.count > 0 and 1.0 or inertOpacity,
     tooltip = spec.count > 0 and spec.active or spec.inert,
-    onClick = function() if spec.count > 0 then spec.act() end end,
+    onClick = function() if spec.enabled ~= false and spec.count > 0 then spec.act() end end,
   })
 end
 
 local function resetModeButtons(scope, group, params)
-  local held = Presentation.overriddenCount(params)
+  local edited = Presentation.editedCount(params)
   local buttons = {resetModeButton({
-    glyph = "restore", count = held,
-    active = "Reset " .. scope .. " (" .. held .. "); values fall back to the layer beneath",
-    inert = "No overrides in this " .. scope,
-    act = resetAction("defaults", group, params),
+    glyph = "restore", count = edited,
+    active = scope == "everything" and ("Revert " .. edited .. (edited == 1 and " edit" or " edits"))
+      or ("Revert " .. scope .. " (" .. edited .. ")"),
+    inert = "No edits in this " .. scope,
+    act = resetAction("revert", group, params),
   })}
   if #Presentation.pairsOf(params) > 0 then
     local differing = Presentation.symmetricCount(params)
@@ -682,14 +698,9 @@ local function sectionHeader(name, toggle, sectionParams, color)
   local children = {
     ui.label({text = name, fontSize = 15, fontWeight = "bold", flexGrow = 1, color = color}),
     ui.label({text = toggle and (toggle.ui.label or toggle.key) or "", fontSize = 12, color = "on_surface_variant", visible = toggle ~= nil}),
-    ui.label({
-      text = toggle and toggle.shadowed and Presentation.shadowHint(toggle) or "",
-      fontSize = 11, color = "on_surface_variant", visible = toggle ~= nil and toggle.shadowed == true,
-    }),
     toggle and ui.toggle({
       checked = toggle.value == true,
       enabled = toggle.effectiveDrag ~= nil,
-      opacity = toggle.shadowed and shadowedOpacity or 1.0,
       onChange = function(value) writeParam(toggle, value == true or value == "true") end,
     }) or ui.spacer({}),
   }
@@ -697,11 +708,30 @@ local function sectionHeader(name, toggle, sectionParams, color)
   return ui.row({gap = 8, align = "center"}, children)
 end
 
-local function allRow(model)
-  local children = {ui.label({text = "All", fontSize = 12, color = "on_surface_variant", flexGrow = 1})}
-  for _, button in ipairs(resetModeButtons("everything", nil, Presentation.visibleParams(model))) do
-    children[#children + 1] = button
-  end
+-- The edits row: what scratch holds, where to keep it, and the three resets
+-- over everything. Keep-in-look goes to the loaded profile, else to Default.
+local function editsRow(model)
+  local params = Presentation.visibleParams(model)
+  local edited = Presentation.editedCount(params)
+  local plural = edited == 1 and " edit" or " edits"
+  local look = model.active.profile ~= nil and ("profile " .. model.active.profile) or "Default"
+  local wallpaper = model.active.wallpaper
+  local children = {
+    ui.label({text = edited > 0 and (edited .. plural) or "No edits", fontSize = 12, color = "on_surface_variant", flexGrow = 1}),
+    resetModeButton({
+      glyph = "bookmark", count = edited, enabled = not state.selectionPending,
+      active = "Keep " .. edited .. plural .. " in " .. look,
+      inert = "Nothing to keep",
+      act = commitAction({verb = "commit", destination = model.active.profile ~= nil and "profile" or "base"}, params),
+    }),
+    resetModeButton({
+      glyph = "photo-check", count = wallpaper ~= nil and edited or 0, enabled = not state.selectionPending,
+      active = "Keep " .. edited .. plural .. " for " .. (model.active.profile or "Default") .. " + this wallpaper",
+      inert = wallpaper == nil and "No wallpaper on screen" or "Nothing to keep",
+      act = commitAction({verb = "commit", destination = "wallpaper", target = wallpaper and wallpaper.id}, params),
+    }),
+  }
+  for _, button in ipairs(resetModeButtons("everything", nil, params)) do children[#children + 1] = button end
   return ui.row({gap = 8, align = "center"}, children)
 end
 
@@ -733,30 +763,31 @@ local function showNameError(text)
 end
 
 -- Save and rename share the field. A save under a taken name becomes a
--- question rather than a command; the loaded profile's own name is exempt,
--- since every edit already lands there. A rename onto a taken name is refused
--- outright, the way the store refuses it, and onto its own name is a no-op.
-local function commitName(text)
+-- question rather than a command. A rename onto a taken name is refused.
+local function commitName(text, naming)
   local name = trimmed(text)
-  local naming = state.naming
-  if naming == nil then return end
+  if state.selectionPending or state.naming ~= naming then return end
   if not Presentation.validProfileName(name) then
     showNameError("A profile name may use letters, digits, dot, dash, and underscore")
     return
   end
-  local active = state.model.active.profile
+  local active = naming.activeName
   if naming.mode == "rename" then
     if name ~= active then
       if Presentation.profileExists(state.model, name) then
         showNameError("A profile named " .. name .. " already exists")
         return
       end
-      enqueue({verb = "rename", name = active, newName = name})
+      enqueue({verb = "rename", name = active, newName = name, expected = naming.expected})
     end
   elseif name ~= active and Presentation.profileExists(state.model, name) then
-    state.confirm = {kind = "replace", name = name}
+    state.confirm = {kind = "replace", name = name, expected = naming.expected}
+  elseif name == active and Presentation.editedCount(Presentation.visibleParams(state.model)) == 0 then
+    -- Nothing to commit: the field just closes.
   else
-    enqueue({verb = "save", name = name, activateAfter = true})
+    commitAction({verb = "commit", destination = "profile", target = name ~= active and name or nil,
+      expected = naming.expected},
+      Presentation.visibleParams(state.model))()
   end
   state.naming = nil
   render()
@@ -764,30 +795,33 @@ end
 
 -- One field and one question share the space under the profile row, so
 -- opening either closes the other.
-local function toggleNaming(mode, text)
+local function toggleNaming(mode, text, expected, activeName)
+  if state.selectionPending then return end
   state.confirm = nil
   if state.naming ~= nil and state.naming.mode == mode then
     state.naming = nil
   else
-    state.naming = {mode = mode, text = text}
+    state.naming = {mode = mode, text = text, expected = expected, activeName = activeName}
   end
   render()
 end
 
-local function ask(kind, name)
+local function ask(kind, name, expected)
+  if state.selectionPending then return end
   state.naming = nil
-  state.confirm = {kind = kind, name = name}
+  state.confirm = {kind = kind, name = name, expected = expected}
   render()
 end
 
 -- One selector loads and clears: index 0 is "no profile", which deactivates.
 -- Save, rename, and delete follow the reset idiom - always in the tree, state
--- carried by opacity and tooltip, and the guard in the handler rather than
--- `enabled`. While a mode's field is open its icon turns into a plain cancel:
+-- carried by opacity and tooltip. Pair actions are disabled until selection
+-- reconciles. While a mode's field is open its icon turns into a plain cancel:
 -- a floppy that closes the field reads as a broken save.
 local function profileRow(section)
   local loaded = section.activeName ~= nil
   local mode = state.naming ~= nil and state.naming.mode or nil
+  local expected = Queue.captureSlots(state.model)
   return ui.row({gap = 8, align = "center"}, {
     ui.label({text = "Profile", fontWeight = "medium", width = labelColumnWidth, maxLines = 1}),
     ui.select({
@@ -802,31 +836,31 @@ local function profileRow(section)
       onChange = function(index)
         index = tonumber(index) or -1
         if index == section.selectedIndex then return end
-        if index == 0 then
-          state.model.active.profile = nil
-          enqueue({verb = "deactivate"})
-        else
-          local name = section.options[index + 1]
-          if name == nil then
-            state.errorText = "Prism returned an invalid selection index"
-            render()
-            return
-          end
-          state.model.active.profile = name
-          enqueue({verb = "activate", name = name})
+        local name = section.options[index + 1]
+        if name == nil then
+          state.errorText = "Prism returned an invalid selection index"
+          render()
+          return
         end
+        state.selectionPending = true
+        state.naming, state.confirm = nil, nil
+        for _, param in ipairs(state.model.params) do param.edited = false end
+        state.model.active.profile = index ~= 0 and name or nil
+        enqueue(index == 0 and {verb = "deactivate"} or {verb = "activate", name = name})
         render()
       end,
     }),
     ui.button({
       glyph = mode == "save" and "x" or "device-floppy",
+      enabled = not state.selectionPending,
       variant = "ghost",
       controlSize = "sm",
-      tooltip = mode == "save" and "Cancel" or "Save the current values as a profile",
-      onClick = function() toggleNaming("save", "") end,
+      tooltip = mode == "save" and "Cancel" or "Save what is on screen as a profile",
+      onClick = function() toggleNaming("save", "", expected, section.activeName) end,
     }),
     ui.button({
       glyph = mode == "rename" and "x" or "pencil",
+      enabled = not state.selectionPending,
       variant = "ghost",
       controlSize = "sm",
       opacity = loaded and 1.0 or inertOpacity,
@@ -834,18 +868,19 @@ local function profileRow(section)
         or (loaded and ("Rename profile " .. section.activeName) or "No profile loaded to rename"),
       onClick = function()
         if section.activeName == nil then return end
-        toggleNaming("rename", section.activeName)
+        toggleNaming("rename", section.activeName, expected, section.activeName)
       end,
     }),
     ui.button({
       glyph = "trash",
+      enabled = not state.selectionPending,
       variant = "ghost",
       controlSize = "sm",
       opacity = loaded and 1.0 or inertOpacity,
       tooltip = loaded and ("Delete profile " .. section.activeName) or "No profile loaded to delete",
       onClick = function()
         if section.activeName == nil then return end
-        ask("delete", section.activeName)
+        ask("delete", section.activeName, expected)
       end,
     }),
   })
@@ -856,26 +891,28 @@ end
 -- not the only submit, since it needs keyboard focus: the check submits what
 -- onChange tracked.
 local function nameRow()
-  local renaming = state.naming.mode == "rename"
+  local naming = state.naming
+  local renaming = naming.mode == "rename"
   return ui.row({gap = 8, align = "center"}, {
     ui.spacer({width = labelColumnWidth, flexGrow = 0}),
     ui.input({
-      key = "name-" .. state.naming.mode,
-      value = state.naming.text,
+      key = "name-" .. naming.mode,
+      value = naming.text,
       placeholder = renaming and "New name" or "Profile name",
       controlSize = "sm",
       flexGrow = 1,
       focus = true,
       submitOnEnter = true,
-      onChange = function(text) state.naming.text = tostring(text or "") end,
-      onSubmit = commitName,
+      onChange = function(text) naming.text = tostring(text or "") end,
+      onSubmit = function(text) commitName(text, naming) end,
     }),
     ui.button({
       glyph = "check",
+      enabled = not state.selectionPending,
       variant = "ghost",
       controlSize = "sm",
       tooltip = renaming and "Rename to this name" or "Save under this name",
-      onClick = function() commitName(state.naming.text) end,
+      onClick = function() commitName(naming.text, naming) end,
     }),
   })
 end
@@ -890,19 +927,23 @@ local confirmActions = {
 local function confirmRow()
   local confirm = state.confirm
   local action = confirmActions[confirm.kind]
+  local params = Presentation.visibleParams(state.model)
   return ui.row({gap = 8, align = "center"}, {
     ui.spacer({width = labelColumnWidth, flexGrow = 0}),
     ui.label({text = string.format(action.question, confirm.name), flexGrow = 1, maxLines = 1}),
     ui.button({
       text = action.label,
+      enabled = not state.selectionPending,
       variant = "destructive",
       controlSize = "sm",
       onClick = function()
+        if state.selectionPending then return end
         state.confirm = nil
         if confirm.kind == "replace" then
-          enqueue({verb = "save", name = confirm.name, activateAfter = true})
+          commitAction({verb = "commit", destination = "profile", target = confirm.name,
+            expected = confirm.expected}, params)()
         else
-          enqueue({verb = "delete", name = confirm.name})
+          enqueue({verb = "delete", name = confirm.name, expected = confirm.expected})
         end
         render()
       end,
@@ -919,28 +960,31 @@ local function confirmRow()
   })
 end
 
--- The wallpaper on screen, what it holds, and the pin that makes it the write
--- target. The pin stays enabled even when a profile blocks it: Noctalia gates a
--- Button's hit area on `enabled`, and the tooltip lives on that hit area, so a
--- disabled pin could not say why it is unavailable. Greyed by opacity, guarded
--- in the handler -- the same bargain every reset in this panel makes.
+-- The wallpaper on screen: a lit glyph while its delta holds nudges, the
+-- count, and a clear that names the wallpaper so a stale panel is refused.
 local function wallpaperHeaderRow(header)
+  local tuned = header.tuned > 0
+  local plural = header.tuned == 1 and " adjustment" or " adjustments"
+  local expected = Queue.captureSlots(state.model)
   return ui.row({gap = 8, align = "center"}, {
-    ui.label({text = header.name, fontWeight = "medium", maxWidth = labelColumnWidth, maxLines = 1}),
+    ui.button({
+      glyph = tuned and "photo-filled" or "photo",
+      variant = "ghost", controlSize = "sm",
+      tooltip = header.name,
+      onClick = function() end,
+    }),
     ui.label({
-      text = header.overrides .. (header.overrides == 1 and " override" or " overrides"),
+      text = header.tuned .. " for " .. header.look .. " + this wallpaper",
       fontSize = 12, color = "on_surface_variant", flexGrow = 1,
     }),
     ui.button({
-      glyph = header.pinned and "pin-filled" or "pin",
-      variant = "ghost",
-      controlSize = "sm",
-      selected = header.pinned,
-      opacity = header.canPin and 1.0 or inertOpacity,
-      tooltip = header.tooltip,
+      glyph = "eraser", variant = "ghost", controlSize = "sm",
+      enabled = not state.selectionPending,
+      opacity = tuned and 1.0 or inertOpacity,
+      tooltip = tuned and ("Clear " .. header.look .. " + this wallpaper's " .. header.tuned .. plural) or "This look + wallpaper holds no adjustments",
       onClick = function()
-        if not header.canPin then return end
-        enqueue({verb = "pin", on = not header.pinned})
+        if state.selectionPending or not tuned then return end
+        enqueue({verb = "clear", id = header.id, expected = expected})
         render()
       end,
     }),
@@ -962,25 +1006,19 @@ render = function()
     local title = Presentation.titleParam(state.model.params)
     children[#children + 1] = ui.row({gap = 10, align = "center"}, {
       ui.label({text = "Prism", fontSize = 18, fontWeight = "bold", flexGrow = 1}),
-      ui.label({
-        text = title.shadowed and Presentation.shadowHint(title) or "",
-        fontSize = 11, color = "on_surface_variant", visible = title.shadowed == true,
-      }),
       ui.toggle({
         checked = title.value == true,
         enabled = title.effectiveDrag ~= nil,
-        opacity = title.shadowed and shadowedOpacity or 1.0,
         onChange = function(value) writeParam(title, value == true or value == "true") end,
       }),
     })
-    -- Profile sits above wallpaper in the resolution order, so it sits above it
-    -- here too.
+    -- The profile selector and wallpaper header stay together above the edits.
     children[#children + 1] = profileRow(Presentation.profileSection(state.model))
     if state.naming ~= nil then children[#children + 1] = nameRow() end
     if state.confirm ~= nil then children[#children + 1] = confirmRow() end
     local header = Presentation.wallpaperHeader(state.model)
     if header then children[#children + 1] = wallpaperHeaderRow(header) end
-    children[#children + 1] = allRow(state.model)
+    children[#children + 1] = editsRow(state.model)
     local rack = Presentation.rack(state.model)
     local sections = Presentation.sections(state.model.params, rack.group)
     local rackPlaced = false
@@ -1007,10 +1045,13 @@ end
 
 -- Opening the panel is a fresh gesture, like starting a batch: the Luau runtime
 -- survives a close, so a sticky command error would otherwise greet the next
--- session behind a model that reconciles perfectly well.
+-- session behind a model that reconciles perfectly well. The host's second
+-- tick drives the periodic refresh that follows a wallpaper rotation.
 function onOpen(context)
   state.errorText = nil
   state.errorSticky = false
+  state.ticks = 0
+  panel.setWantsSecondTicks(true)
   refresh()
 end
 
@@ -1018,6 +1059,20 @@ function onClose()
   state.drag = nil
   state.sampleElapsedMs = 0
   panel.setNeedsFrameTick(false)
+  panel.setWantsSecondTicks(false)
+end
+
+-- Every second tick asks for a describe. A drag or a busy queue turns it into
+-- the one pending flag finishRefresh already replays, so a long drag replays
+-- one refresh rather than one per tick.
+function update()
+  state.ticks = state.ticks + 1
+  if state.ticks % 2 ~= 0 then return end
+  if state.drag or state.queue.inFlight ~= nil or describeRunning then
+    state.refreshPending = true
+    return
+  end
+  refresh()
 end
 
 function onFrameTick(deltaMs)

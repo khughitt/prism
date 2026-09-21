@@ -6,7 +6,7 @@ priority: 2
 size: l
 complexity: high
 created: 2026-09-05T18:50:21Z
-updated: 2026-09-12T16:46:10Z
+updated: 2026-09-19T21:15:37Z
 depends: [dots-88dc34]
 tags: [profiles, noctalia, store]
 ---
@@ -23,3 +23,4 @@ Related: prism-b5cb1e (an auto-derived attenuation color shrinks what a wallpape
 
 - 2026-09-08T22:56:56Z (main): A context now has five more glass.inactive.* keys to snapshot (prism-a4ef9a: backdropBlur, attenuationColor, ior, thickness, distortionScale). If prism-7e4766 lands, decide whether a context that sets only the focused half should carry the unfocused one with it.
 - 2026-09-08T23:16:00Z (panel-layers): Panel layer rendering landed 2026-09-08 (58da311). describe --json now also states the resolution order as 'layers', so a future state layer ranks correctly in the panel with no panel change.
+- 2026-09-19T21:15:37Z (prism-aec90f): The compositional profiles design (docs/specs/2026-09-19-compositional-profiles-design.md, prism-aec90f) settles the write rule, wallpaper autosave, and reset; its plan closes bf3ae9, ad2b12, b8b589, b6d7ee, 49a068, 8a8eac at acceptance. Remaining: the state kind and the unloaded-profile picker

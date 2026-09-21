@@ -1,7 +1,7 @@
 # Prism context layers: design
 
 **Date:** 2026-09-05
-**Status:** implemented on `feat/prism-6fd864` at 4bd0ebb, suite passing.
+**Status:** Superseded 2026-09-19 for the resolution order, the write target, the pin, and save by [compositional profiles](2026-09-19-compositional-profiles-design.md); the file layout, the verbs it keeps, and the describe fields it introduced remain as revised there. Implemented on `feat/prism-6fd864` at 4bd0ebb, suite passing.
 Revised 2026-09-06 for `prism-fc8491`: the write target is the topmost
 *explicit* layer and a wallpaper is a target only while pinned; `save` is
 for profiles; the wallpaper path is canonicalised.

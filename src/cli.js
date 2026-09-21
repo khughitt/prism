@@ -7,13 +7,15 @@ import { resolveLayered, writeResolved } from './resolve.js';
 import { fanOut, boundParams, unmetRequirement } from './fanout.js';
 import { readJson } from './store.js';
 import { withLock } from './lock.js';
-import { loadStore, loadLayers, writeTarget, activeJson, RESOLUTION_ORDER } from './layers.js';
-import { listContexts, readContext, readActive, writeContext, deleteContext, contextPath, VERB_KINDS } from './contexts.js';
+import { loadStore, loadLayers, withScratch, activeJson, RESOLUTION_ORDER } from './layers.js';
+import { listContexts, readLook, readActive, lookPath } from './contexts.js';
+import { readScratch, writeScratch } from './scratch.js';
+import { runCommit } from './commit.js';
 import { runContext } from './context-cli.js';
 import { UsageError, parseInvocation, helpText, rootHelp, candidatesFor, completionScript } from './commands.js';
 import { loadRack } from './rack.js';
 import { planReset, visibleGroups } from './reset.js';
-import { planMigration, replacements, writeBackup, writeMigrated } from './migrate.js';
+import { planMigration, replacements, writeBackup, writeMigrated, runPairMigration, assertPairLayout, pairLayoutSources } from './migrate.js';
 import {
   configDir,
   defsDir,
@@ -29,10 +31,6 @@ const VERSION = JSON.parse(fs.readFileSync(new URL('../package.json', import.met
 function load() {
   const defs = loadDefs(defsDir());
   return { defs, manifests: loadManifests(integrationsDir(), defs) };
-}
-
-function contextSource(active, target) {
-  return target.kind === 'wallpaper' ? active.wallpaper.path : null;
 }
 
 // Every read of the store happens under the store lock: a slot and the file it
@@ -64,12 +62,26 @@ function report({ applied, failed }, { print, eprint, json, fail }, changedKeys)
 
 const UNCHANGED = { applied: [], failed: [] };
 
+// The declared table validates the options; the verbs still read the expected-slot
+// pair and `--look` positionally, as the panel sends them.
+function expectedArgs(positionals, options) {
+  const args = [...positionals];
+  if (options['expect-look'] !== undefined) args.push('--expect-look', options['expect-look']);
+  if (options['expect-wallpaper'] !== undefined) args.push('--expect-wallpaper', options['expect-wallpaper']);
+  return args;
+}
+
+function contextArgs(verb, positionals, options) {
+  if (verb === 'show') return options.look !== undefined ? [...positionals, '--look', options.look] : [...positionals];
+  return expectedArgs(positionals, options);
+}
+
 function describeText(store, rack) {
   const active = activeJson(store.active);
   const lines = [
     `wallpaper: ${active.wallpaper === null ? 'none' : `${active.wallpaper.id}  ${active.wallpaper.path}${active.wallpaper.pinned ? ' (pinned)' : ''}`}`,
     `profile: ${active.profile ?? 'none'}`,
-    `target: ${store.target.kind}`,
+    `edits: ${Object.keys(store.scratch).length}`,
     `profiles: ${store.profiles.length === 0 ? 'none' : store.profiles.join(', ')}`,
     `layers: ${RESOLUTION_ORDER.join(', ')}`,
     `rack: ${rack.group}: ${rack.devices.map((device) => device.device).join(', ')}`,
@@ -123,18 +135,18 @@ export async function run(argv, opts = {}) {
         let resolved;
         await withLock(lockPath(), async () => {
           const store = loadStore(defs);
-          const target = toBase ? { kind: 'base', name: null } : store.target;
-          if (target.kind === 'base') {
+          if (toBase) {
             const values = { ...store.base };
             if (isDeepStrictEqual(value, def.default)) delete values[key];
             else values[key] = value;
             writeValues(values);
           } else {
-            const layer = store.layers.find((l) => l.kind === target.kind && l.name === target.name);
-            writeContext(target.kind, target.name, {
-              source: contextSource(store.active, target),
-              values: { ...layer.values, [key]: value },
-            });
+            // Normalized: a value the fold beneath already shows is no edit,
+            // so dragging back to where a slider started leaves nothing behind.
+            const scratch = { ...store.scratch };
+            if (isDeepStrictEqual(value, store.beneath[key])) delete scratch[key];
+            else scratch[key] = value;
+            writeScratch(scratch);
           }
           resolved = writeResolved(loadStore(defs).params);
         });
@@ -148,24 +160,22 @@ export async function run(argv, opts = {}) {
         let resolved;
 
         await withLock(lockPath(), async () => {
+          assertPairLayout();
           const active = readActive();
           const layers = loadLayers(active);
-          const target = toBase ? { kind: 'base', name: null } : writeTarget(active);
           const base = readValues();
-          const held = target.kind === 'base'
-            ? base
-            : layers.find((l) => l.kind === target.kind && l.name === target.name).values;
-          const where = target.kind === 'base' ? 'base' : `${target.kind} ${target.name}`;
+          const scratch = readScratch();
+          const held = toBase ? base : scratch;
           const orphan = !defs.has(key) && Object.hasOwn(held, key);
           if (!defs.has(key) && !orphan) throw new Error(`unknown param ${key}`);
-          if (!Object.hasOwn(held, key)) throw new Error(`${key}: not set in ${where}`);
-          if (!orphan) resolveLayered(defs, base, layers);
+          if (!Object.hasOwn(held, key)) {
+            throw new Error(toBase ? `${key}: not set in base` : `${key}: not edited`);
+          }
           const values = { ...held };
           delete values[key];
-          if (target.kind === 'base') writeValues(values);
-          else if (target.kind === 'wallpaper' && Object.keys(values).length === 0) {
-            deleteContext(target.kind, target.name);
-          } else writeContext(target.kind, target.name, { source: contextSource(active, target), values });
+          resolveLayered(defs, toBase ? values : base, withScratch(layers, toBase ? scratch : values));
+          if (toBase) writeValues(values);
+          else writeScratch(values);
           resolved = writeResolved(loadStore(defs).params);
         });
 
@@ -185,28 +195,17 @@ export async function run(argv, opts = {}) {
         let changedKeys = [];
         await withLock(lockPath(), async () => {
           const store = loadStore(defs);
-          const target = toBase ? { kind: 'base', name: null } : store.target;
-          const held = target.kind === 'base'
-            ? store.base
-            : store.layers.find((layer) => layer.kind === target.kind && layer.name === target.name).values;
-          // --base compares against, and copies from, the base layer alone: an
-          // overlay that happens to sit at the neutral must not block a base
-          // change the user asked for by name.
+          // --base targets base and compares against base alone: an overlay
+          // that happens to sit at the neutral must not block a base change
+          // the user asked for by name. Otherwise the target is scratch.
+          const held = toBase ? store.base : store.scratch;
           const effective = toBase ? resolveLayered(defs, store.base, []).params : store.params;
-          const plan = planReset({
-            defs, mode, group, held, effective, normalizeToDefault: target.kind === 'base',
-          });
+          const beneath = toBase ? resolveLayered(defs, {}, []).params : store.beneath;
+          const plan = planReset({ defs, mode, group, held, effective, beneath });
           changedKeys = plan.changedKeys;
           if (changedKeys.length === 0) return;
-          if (target.kind === 'base') writeValues(plan.values);
-          else if (target.kind === 'wallpaper' && Object.keys(plan.values).length === 0) {
-            deleteContext(target.kind, target.name);
-          } else {
-            writeContext(target.kind, target.name, {
-              source: contextSource(store.active, target),
-              values: plan.values,
-            });
-          }
+          if (toBase) writeValues(plan.values);
+          else writeScratch(plan.values);
           resolved = writeResolved(loadStore(defs).params);
         });
 
@@ -268,7 +267,7 @@ export async function run(argv, opts = {}) {
             default: def.default,
             neutral: def.neutral,
             neutralize: def.neutralize,
-            heldInTarget: store.heldInTarget[key],
+            held: store.held[key],
             value: store.params[key],
             layer: store.layerOf[key],
             fallback: store.fallback[key],
@@ -280,7 +279,7 @@ export async function run(argv, opts = {}) {
           });
         }
 
-        print(`${JSON.stringify({ active: activeJson(store.active), profiles: store.profiles, layers: RESOLUTION_ORDER, target: store.target.kind, rack, params: described }, null, 2)}\n`);
+        print(`${JSON.stringify({ active: activeJson(store.active), profiles: store.profiles, layers: RESOLUTION_ORDER, rack, params: described }, null, 2)}\n`);
         return 0;
       }
 
@@ -313,7 +312,7 @@ export async function run(argv, opts = {}) {
       // resolves to the defaults, so `when` evaluates on a fresh machine.
       case 'requirements': {
         const { defs, manifests } = load();
-        const { params } = loadStore(defs);
+        const { params } = await snapshot(defs);
         const unmet = manifests
           .map((manifest) => ({ sink: manifest.sink, requirement: unmetRequirement(manifest, { params }) }))
           .filter((entry) => entry.requirement);
@@ -345,68 +344,56 @@ export async function run(argv, opts = {}) {
         }
 
         const { params, blocked } = await withLock(lockPath(), async () => {
-          const values = readValues();
-          const replaced = replacements(defs);
-          const orphans = Object.keys(values).filter((key) => !defs.has(key));
-          for (const key of orphans) {
-            if (replaced.has(key)) {
-              problems.push(`pending migration: ${key} in base is replaced by ${replaced.get(key).key} — run 'prism migrate'`);
-            } else {
-              problems.push(`orphan value ${key}: no definition — run 'prism unset ${key}'`);
-            }
-          }
-
           let contextProblems = 0;
-          for (const [key, value] of Object.entries(values)) {
-            const def = defs.get(key);
-            if (!def) continue; // orphan, already reported above
-            try {
-              validateValue(def, value);
-            } catch (error) {
-              problems.push(`base: ${error.message}`);
-              contextProblems++;
-            }
+          const replaced = replacements(defs);
+          for (const source of pairLayoutSources()) {
+            problems.push(`old pair layout: ${source} — run 'prism migrate pairs'`);
+            contextProblems++;
           }
-
-          const active = readActive();
-          if (active.profile !== undefined && readContext('profile', active.profile) === null) {
+          let active = {};
+          let scratch = {};
+          try { active = readActive(); scratch = readScratch(); }
+          catch (error) { problems.push(error.message); contextProblems++; }
+          const diagnose = (values, where, remedy) => {
+            let invalid = false;
+            for (const [key, value] of Object.entries(values)) {
+              const def = defs.get(key);
+              let message;
+              if (!def) {
+                message = replaced.has(key)
+                  ? `pending migration: ${key} in ${where} is replaced by ${replaced.get(key).key} — run 'prism migrate'`
+                  : `orphan value ${key}${where === 'base' ? '' : ` in ${where}`}: no definition — ${remedy.replace('<key>', key)}`;
+              } else {
+                try { validateValue(def, value); }
+                catch (error) { message = `${where}: ${error.message}`; }
+              }
+              if (message) { problems.push(message); contextProblems++; invalid = true; }
+            }
+            return invalid;
+          };
+          const names = listContexts().profile;
+          if (active.profile !== undefined && !names.includes(active.profile)) {
             problems.push(`profile ${active.profile}: active context is missing — run 'prism context deactivate profile'`);
             contextProblems++;
           }
-          const all = listContexts();
-          for (const kind of VERB_KINDS) {
-            for (const name of all[kind]) {
-              let context;
-              try {
-                context = readContext(kind, name);
-              } catch (error) {
-                problems.push(error.message);
-                contextProblems++;
-                continue;
+          for (const name of [null, ...names]) {
+            const where = name === null ? 'base' : `profile ${name}`;
+            let broken = false;
+            try {
+              const look = readLook(name);
+              broken = diagnose(look.values, where, name === null ? "run 'prism unset --base <key>'" : `edit ${lookPath(name)}`);
+              for (const [id, pair] of Object.entries(look.wallpapers)) {
+                const invalid = diagnose(pair.values, `${where} / wallpaper ${id}`, `edit ${lookPath(name)}`);
+                if (id === active.wallpaper?.id) broken ||= invalid;
               }
-              for (const [key, value] of Object.entries(context.values)) {
-                const def = defs.get(key);
-                if (!def) {
-                  if (replaced.has(key)) {
-                    problems.push(`pending migration: ${key} in ${kind} ${name} is replaced by ${replaced.get(key).key} — run 'prism migrate'`);
-                  } else {
-                    problems.push(`orphan value ${key} in ${kind} ${name}: no definition — edit ${contextPath(kind, name)}`);
-                  }
-                  contextProblems++;
-                  continue;
-                }
-                try {
-                  validateValue(def, value);   // inactive contexts are never resolved, so check them here
-                } catch (error) {
-                  problems.push(`${kind} ${name}: ${error.message}`);
-                  contextProblems++;
-                }
-              }
+            } catch (error) { problems.push(`${where}: ${error.message}`); contextProblems++; broken = true; }
+            if (broken && name !== null && name === active.profile) {
+              problems.push(`profile ${name}: active look is broken — run 'prism context deactivate profile'`);
             }
           }
-          if (orphans.length > 0 || contextProblems > 0) return { params: null, blocked: true };
-          const { params } = loadStore(defs);
-          return { params, blocked: false };
+          diagnose(scratch, 'scratch', "run 'prism unset <key>'");
+          if (contextProblems > 0) return { params: null, blocked: true };
+          return { params: loadStore(defs).params, blocked: false };
         });
 
         if (blocked) return finish();
@@ -431,20 +418,35 @@ export async function run(argv, opts = {}) {
         return finish();
       }
 
+      case 'commit': {
+        const { defs } = load();
+        const committed = await runCommit(expectedArgs(positionals, options), { defs });
+        emit(committed, '');
+        return 0;
+      }
+
       case 'migrate': {
         const { defs } = load();
+        if (positionals[0] === 'pairs') {
+          await withLock(lockPath(), async () => runPairMigration(defs, { print: (text) => { if (!json) print(text); } }));
+          return 0;
+        }
         // Pretty mode streams: the backup line lands before any write, then each file as
         // it is rewritten, so a failure part-way leaves what landed on the screen. Under
         // --json the one object is emitted after the lock, and a failure names the
         // migrated files in its detail instead.
         const line = (text) => { if (!json) print(text); };
         const changeLine = (where, change) => (change.kept
-          ? `migrate: ${where}: ${change.from} ${JSON.stringify(change.old)} removed; ${change.to} ${JSON.stringify(change.value)} kept\n`
-          : `migrate: ${where}: ${change.from} ${JSON.stringify(change.old)} -> ${change.to} ${JSON.stringify(change.value)}\n`);
+          ? `migrate: ${change.where ?? where}: ${change.from} ${JSON.stringify(change.old)} removed; ${change.to} ${JSON.stringify(change.value)} kept\n`
+          : `migrate: ${change.where ?? where}: ${change.from} ${JSON.stringify(change.old)} -> ${change.to} ${JSON.stringify(change.value)}\n`);
         const migrated = await withLock(lockPath(), async () => {
           const files = planMigration(defs);
           if (files.length === 0) return { backup: null, files: [] };
           const backup = writeBackup(files, new Date());
+          const restore = 'copy ' + [
+            files.some((file) => file.kind === 'look') && `config files back over ${configDir()}`,
+            files.some((file) => file.kind === 'runtime') && 'state/active.json back to the runtime document',
+          ].filter(Boolean).join(' and ') + ' to undo';
           line(`migrate: backup ${backup}\n`);
           const done = [];
           for (const file of files) {
@@ -455,7 +457,7 @@ export async function run(argv, opts = {}) {
                 ? (done.length === 0 ? 'no file is migrated;' : `migrated: ${done.map((f) => f.where).join(', ')};`)
                 : 'the files reported above are migrated,';
               throw new Error(`migrate: ${file.where}: ${error.message}; ${landed} this one and those after it are not; `
-                + `the originals are in ${backup} — copy them back over ${configDir()} to undo`);
+                + `the originals are in ${backup} — ${restore}`);
             }
             done.push({ where: file.where, changes: file.changes });
             for (const change of file.changes) line(changeLine(file.where, change));
@@ -474,7 +476,7 @@ export async function run(argv, opts = {}) {
         const { defs, manifests } = load();
         // A verb that changed the slots returns { changedKeys, result }; one that printed
         // its own value through emit returns null.
-        const change = await runContext(inv.cmd.path[1], positionals, { defs, manifests, emit, eprint, json, runner: opts.runner });
+        const change = await runContext(inv.cmd.path[1], contextArgs(inv.cmd.path[1], positionals, options), { defs, manifests, emit, print, eprint, json, runner: opts.runner });
         return change === null ? 0 : report(change.result ?? UNCHANGED, output, change.changedKeys);
       }
 

@@ -1,31 +1,11 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { parse, stringify } from 'yaml';
-import { valuesPath } from './paths.js';
-
-function ensureValuesObject(values) {
-  if (typeof values !== 'object' || values === null || Array.isArray(values)) {
-    throw new Error('values must be an object');
-  }
-  return values;
-}
+import { readLook, writeLook } from './contexts.js';
 
 export function readValues() {
-  try {
-    return ensureValuesObject(parse(fs.readFileSync(valuesPath(), 'utf8')) ?? {});
-  } catch (err) {
-    if (err.code === 'ENOENT') return {};
-    throw err;
-  }
+  return readLook(null).values;
 }
 
 export function writeValues(values) {
-  ensureValuesObject(values);
-  const file = valuesPath();
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  const tmp = `${file}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, stringify(values));
-  fs.renameSync(tmp, file);
+  writeLook(null, { ...readLook(null), values });
 }
 
 export function parseCliValue(def, str) {

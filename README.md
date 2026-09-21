@@ -46,33 +46,143 @@ and Directional blur, which ride its taps, and flattens Blur. Design:
 ## Configuration layout
 
 ```
-~/.config/prism/values.yaml                  # base values, dotfiles-tracked per host
-~/.config/prism/contexts/profile/<name>.yaml # named profiles, full snapshots
-~/.config/prism/contexts/wallpaper/<id>.yaml # per-wallpaper overrides, `_source` names the wallpaper
-~/.local/state/prism/active.json             # which contexts are active (runtime state)
+~/.config/prism/values.yaml                  # Default settings and its wallpaper pairs
+~/.config/prism/contexts/profile/<name>.yaml # named look settings and its wallpaper pairs
+~/.local/state/prism/active.json             # active slots and pending edits in _scratch
 ~/.local/state/prism/resolved.json           # the bus: every parameter's effective value
-~/.local/state/prism/migrations/<stamp>/     # byte-for-byte copies of the store files `prism migrate` rewrote
+~/.local/state/prism/migrations/<stamp>/     # byte-for-byte originals before parameter migration
+~/.local/state/prism/migrations/<stamp>-*/   # immutable originals for each layout-migration attempt
 ```
 
-Values resolve as defaults, then base, then the active wallpaper context, then
-the active profile. `prism set` writes into the topmost explicit layer: the
-loaded profile, else the wallpaper while it is pinned, else base; a wallpaper
-the hook activated on its own is an overlay and never captures edits.
-`prism set --base` writes the base file regardless. `prism context` manages
-contexts: `list`, `show`, `save` and `rename` (profiles), `activate`,
-`deactivate`, `delete`, `pin` and `unpin wallpaper`, and `wallpaper <path>`, the last being
-what a Noctalia `wallpaper_changed` hook calls. Design:
-`docs/specs/2026-09-05-prism-context-layers-design.md`.
+Default and named looks keep flat parameter keys. Their optional `_wallpapers`
+map holds sparse absolute adjustments, keyed by wallpaper id:
 
-A definition may replace a retired one (`replaces: <old key>` in `defs/`).
-The store is never rewritten behind your back: `prism doctor` reports a
-pending migration wherever a replaced key is still stored, and `prism migrate`
-rewrites base and every profile and wallpaper context, active or not, after
-copying each file it touches into a timestamped directory under the state
-dir. It converts what has an equivalent (`glass.ring.sweepMs 0` becomes
-`glass.ring.beamSpeed 0`) and falls back to the new default otherwise; a file
-that already holds the new key keeps its value. Then `prism apply`. Rollback
-is copying the backup back over the config dir.
+```yaml
+glass.roughness: 0.4
+_wallpapers:
+  abc12345:
+    _source: /pictures/example.jpg
+    glass.roughness: 0.2
+```
+
+Values resolve as defaults, base, loaded profile, that look's wallpaper pair,
+reserved state, then scratch. A missing pair is untuned; another look's pair
+never supplies its values. active.json stores `profile`, `wallpaper` (an
+`{id, path}` object), and optional `_scratch`. Clearing scratch preserves the
+active slots. All mutations use the existing store lock.
+
+Every `prism set` writes scratch; a value already shown beneath scratch is
+omitted. Selecting a profile or Default saves **all** pending keys to the
+outgoing look–wallpaper pair and loads the selected look with zero pending
+edits. Selecting the already active look does the same. With no wallpaper,
+explicit selection discards pending edits. A wallpaper rotation saves the
+outgoing pair; the first wallpaper activation and repeated observations of the
+same wallpaper preserve scratch. Panel counts and resets retain their
+visible-control scope, while transitions and commits move every scratch key.
+The panel names saved adjustments as `N for Aurora + this wallpaper` (or
+`Default`), separate from pending edits. Selection shows zero pending edits
+immediately, then reconciles the selected look's values and saved count.
+Keep, Clear, Rename, Delete, and Save As wait for that reconciliation; sliders
+and rapid selections remain available.
+
+Same-look activation works through the CLI (`prism context activate profile
+Aurora`, or `prism context deactivate profile` for Default). The installed
+Noctalia dropdown does not emit a same-option click to Lua; existing Keep for
+wallpaper saves the current pair in the panel. The native capability is tracked
+as `prism-02befb`. Desktop validation is recorded separately in
+[the acceptance checklist](docs/notes/2026-09-20-profile-wallpaper-pairs-acceptance.md).
+
+`commit base` keeps edits in Default; `commit profile` keeps them in the loaded
+look. Both remove just the committed keys from that look's active pair in the
+same file replacement. `commit wallpaper <id>` keeps edits in the active pair.
+`commit profile <name>` saves the current appearance as a full snapshot and
+loads it: it removes the destination's current-wallpaper pair, retains its
+other pairs, and leaves the outgoing look untouched. A commit never changes
+what is on screen or rewrites the resolved bus. `prism reset revert` forgets
+pending edits and reveals the saved look plus pair. `prism set --base` writes
+Default settings directly without replacing its pairs.
+
+`prism context` supports `list`, `show`, `rename` (profiles), `activate`,
+`deactivate`, `delete`, `clear wallpaper <id>`, and `wallpaper <path>` (the
+Noctalia hook). `context list` prints saved wallpaper pairs from every look as
+`wallpaper <look-token> <id> <source>` and marks only the selected pair.
+`context show wallpaper <id> --look <look-token>` inspects an inactive look;
+without `--look` it uses the selected look. `context show profile <name>` prints
+the full document, including its pairs. Look tokens are `default` or
+`profile:<name>`; wallpaper tokens are `none` or `id:<id>`.
+Wallpaper commands operate on the selected look. Clear removes
+its active pair and retains the wallpaper slot; delete removes the pair and
+clears that slot when active. Renaming a profile carries all its pairs.
+Deleting the active profile removes its settings and pairs, selects Default,
+and **preserves scratch**; this differs from ordinary explicit selection.
+Panel Keep, Save As, Clear, Rename, and Delete actions append
+`--expect-look <look-token> --expect-wallpaper <wallpaper-token>`. Both flags
+are required together; stale actions fail before changing files. Direct CLI
+calls may omit them to act on the current store. Explicit profile selection
+remains unguarded so it can select the requested destination.
+
+Explicitly selecting a valid look can recover from a missing or broken active
+named profile, including its selected pair. `prism doctor` recommends
+`prism context deactivate profile` to select Default. Recovery preserves
+scratch and writes no outgoing pair, validates Default/base, runtime, scratch,
+and the incoming look independently, then applies every bound key. A wallpaper
+rotation cannot recover a still-selected broken look. A parameter-invalid pair
+can be cleared when its containing document is structurally readable; malformed
+shared YAML is refused without changing its bytes. Repair that document or
+select away from a broken named look. Ordinary reads never repair the store.
+Design: `docs/specs/2026-09-20-profile-wallpaper-pairs-design.md`.
+
+Before using an older store, run **`prism migrate pairs`**. It copies every old
+`contexts/wallpaper/*.yaml` adjustment to Default and every existing profile,
+moves old scratch.yaml into runtime `_scratch`, and drops retired `pinned`.
+No sink runs and no pending value is normalized or committed. Profiles created
+after migration inherit no pairs. Remaining old sources block ordinary commands
+with this migration remedy; doctor and discovery remain read-only diagnostics.
+
+Migration plans from current files under the lock, validates everything before
+mutation, accepts identical existing copies, and refuses conflicting pairs or
+scratch without overwriting them. Every modifying attempt first creates a
+fresh backup, preserving YAML comments and all original bytes. Config originals
+retain their config-relative paths; runtime originals are under state/.
+originally-absent.txt lists new output paths using config/ or state/ prefixes
+for manual removal during rollback. Migration never reads that list. All look
+writes finish before runtime, and all destination writes finish before old
+sources are deleted. Rerun an interrupted migration: it rereads current files,
+preserves unrelated edits, and refuses conflicting hand edits. Completed reruns
+make no changes and no backup.
+
+Keep the **first complete backup**. To undo the entire layout conversion, copy
+its config-relative originals over the config directory, copy its state/
+originals over the state directory, and remove the outputs listed in its
+originally-absent.txt. Later attempt backups describe later write prefixes
+and do not replace the original backup. This restores the old layout for old
+code or a fresh migration. Do not copy the backup directory wholesale into
+config: state/ and the restoration list belong elsewhere.
+
+Plain `prism migrate` remains parameter replacement, after layout migration.
+It traverses Default, every named look and every pair (active or inactive),
+and runtime scratch, grouping changes into one replacement per physical file.
+It first backs up each changed file. Equivalent values carry over
+(`glass.ring.sweepMs 0` becomes `glass.ring.beamSpeed 0`); other old values take
+the new default, and an already present replacement key keeps its value.
+Then run `prism apply`. Restore config-relative originals to config and
+state/active.json to state to undo parameter migration.
+
+| Operation | Durable write order | Interruption recovery |
+|---|---|---|
+| Select a look or rotate wallpaper with outgoing edits | Outgoing look/pair; runtime with next slots and empty scratch; bus | Before runtime, scratch still covers the saved values. Retry preserves ownership; after runtime, apply repairs a stale bus. |
+| Select without wallpaper | Runtime with selected look and empty scratch; bus | Runtime publishes selection and discard together. |
+| Recover a broken named look | Runtime with valid incoming look and preserved scratch; bus | Retry before runtime. After it, use `prism apply`; repeating selection is a new ordinary save/discard action. |
+| Keep in look / Keep for wallpaper | Whole look document; runtime with empty scratch | Scratch covers intermediate writes; completed retry can report nothing to commit. |
+| Save As | Destination snapshot with current pair removed; runtime selecting it with empty scratch | Source is unchanged before runtime; destination snapshot supplies the same screen afterward. |
+| Clear pair | Whole look without pair; bus | One intended appearance change; completed retry can report untuned. |
+| Delete active profile | Runtime selecting Default with scratch preserved; unlink profile; bus | Retry can remove the now-inactive file; apply repairs the bus. |
+| Rename active profile | Hard-link complete file; runtime names new profile; unlink old name | Existing inode checks permit retry; appearance and bus remain unchanged. |
+| Migrate pairs | Fresh immutable backup and absence list; looks; runtime; delete old sources | Retry from current files; old sources remain until every destination contains their data. |
+
+These guarantees cover process interruption and atomic file replacement, not
+power-loss durability. A stale resolved bus or interrupted sink application is
+repaired with `prism apply`.
 
 ## Command line
 
@@ -130,12 +240,12 @@ probe checks this before applying glass.
 ## Reset modes
 
 ```sh
-prism reset defaults|symmetric|neutral [--base] [--group <name>]
+prism reset revert|symmetric|neutral [--base] [--group <name>]
 ```
 
 The panel offers the same actions per section and across all visible controls.
-`defaults` removes overrides held by the write target, including shadowed ones;
-the value revealed may come from another layer. `symmetric` copies each focused
+`revert` forgets the edits in scope; the value revealed comes from the layers
+beneath. `symmetric` copies each focused
 value onto its unfocused twin. `neutral` writes the curated quiet baseline,
 leaving `glass.focusSplit` unchanged. Edge bevel stays at 8 pixels so the
 native material ring fits with zero pane offsets. Effect dependencies still apply: raise
@@ -143,8 +253,8 @@ Refraction above 1 before exploring Blur or Directional blur.
 
 Without `--base`, comparisons and symmetric's source use resolved values.
 With `--base`, they use base values over def defaults; active overlays may still
-hide the result. Each reset changes one target layer and invokes each affected
-sink at most once. A reset with no target changes writes nothing.
+hide the result. Each reset changes scratch (base with `--base`) and invokes each
+affected sink at most once. A reset with no changes writes nothing.
 
 ## Development prerequisites
 

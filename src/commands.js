@@ -3,13 +3,16 @@
 // dispatching, and test/cli-surface.test.js compares it with tools/cli.toml.
 const KIND = { name: 'kind', value: 'enum', values: ['profile', 'wallpaper'], required: true };
 const NAME = { name: 'name', value: 'string', required: true };
+// A panel action names the slots it was drawn against, so an action from before a
+// rotation or a selection is refused rather than applied to the wrong pair.
+const EXPECT = [{ names: ['--expect-look'], value: 'string' }, { names: ['--expect-wallpaper'], value: 'string' }];
 export const COMMANDS = [
-  { path: ['set'], summary: 'Set a parameter in the active profile, or the base layer with --base',
+  { path: ['set'], summary: 'Edit a parameter in scratch, or set it in the base layer with --base',
     args: [{ name: 'key', value: 'string', required: true }, { name: 'value', value: 'string', required: true }], options: [{ names: ['--base'], value: 'none' }] },
-  { path: ['unset'], summary: 'Remove a parameter from the active profile, or the base layer with --base',
+  { path: ['unset'], summary: 'Drop a pending edit from scratch, or a parameter from the base layer with --base',
     args: [{ name: 'key', value: 'string', required: true }], options: [{ names: ['--base'], value: 'none' }] },
-  { path: ['reset'], summary: 'Reset parameters to defaults, symmetric, or neutral values',
-    args: [{ name: 'mode', value: 'enum', values: ['defaults', 'symmetric', 'neutral'], required: true }],
+  { path: ['reset'], summary: 'Revert pending edits, or move parameters to symmetric or neutral values',
+    args: [{ name: 'mode', value: 'enum', values: ['revert', 'symmetric', 'neutral'], required: true }],
     options: [{ names: ['--base'], value: 'none' }, { names: ['--group'], value: 'string' }] },
   { path: ['get'], summary: 'Print one resolved parameter', args: [{ name: 'key', value: 'string', required: true }] },
   { path: ['list'], summary: 'List every resolved parameter' },
@@ -17,17 +20,21 @@ export const COMMANDS = [
   { path: ['apply'], summary: 'Render the resolved state into every sink, or the named sinks', args: [{ name: 'sink', value: 'string', required: false, variadic: true }] },
   { path: ['requirements'], summary: 'What each sink needs installed' },
   { path: ['doctor'], summary: 'Check the installation and the sinks' },
-  { path: ['migrate'], summary: 'Migrate the store to the current layout' },
+  { path: ['migrate'], summary: 'Migrate the store to the current definitions, or its pairs to the current layout',
+    args: [{ name: 'target', value: 'enum', values: ['pairs'], required: false }] },
+  { path: ['commit'], summary: 'Save the pending edits into base, the loaded profile (or a new one by name), or the on-screen wallpaper pair',
+    args: [{ name: 'destination', value: 'enum', values: ['base', 'profile', 'wallpaper'], required: true }, { name: 'name', value: 'string', required: false }],
+    options: EXPECT },
   { path: ['context'], summary: 'Context slots: the wallpaper and profile the resolved state follows' },
   { path: ['context', 'list'], summary: 'List every saved context and the active slots' },
-  { path: ['context', 'show'], summary: 'Show one saved context', args: [KIND, NAME] },
-  { path: ['context', 'save'], summary: 'Save the active profile layer under a name', args: [KIND, NAME] },
+  { path: ['context', 'show'], summary: 'Show one saved context: a profile with its wallpaper pairs, or one pair under the loaded look', args: [KIND, NAME],
+    options: [{ names: ['--look'], value: 'string' }] },
   { path: ['context', 'activate'], summary: 'Make a saved context the active one for its kind', args: [KIND, NAME] },
   { path: ['context', 'deactivate'], summary: 'Clear the active slot of one kind', args: [KIND] },
-  { path: ['context', 'delete'], summary: 'Delete a saved context', args: [KIND, NAME] },
-  { path: ['context', 'rename'], summary: 'Rename a saved context', args: [KIND, { name: 'old', value: 'string', required: true }, { name: 'new', value: 'string', required: true }] },
-  { path: ['context', 'pin'], summary: 'Pin the wallpaper slot so wallpaper changes do not move it', args: [KIND] },
-  { path: ['context', 'unpin'], summary: 'Unpin the wallpaper slot', args: [KIND] },
+  { path: ['context', 'delete'], summary: 'Delete a saved profile, or the on-screen wallpaper pair under the loaded look', args: [KIND, NAME], options: EXPECT },
+  { path: ['context', 'clear'], summary: 'Remove the on-screen wallpaper pair and keep the slot: active and untuned',
+    args: [{ name: 'kind', value: 'enum', values: ['wallpaper'], required: true }, { name: 'id', value: 'string', required: true }], options: EXPECT },
+  { path: ['context', 'rename'], summary: 'Rename a saved profile; its pairs follow it', args: [KIND, { name: 'old', value: 'string', required: true }, { name: 'new', value: 'string', required: true }], options: EXPECT },
   { path: ['context', 'wallpaper'], summary: 'Follow this wallpaper: set the wallpaper slot from a path', args: [{ name: 'path', value: 'path', required: true }] },
 ];
 
@@ -91,6 +98,7 @@ export function parseInvocation(argv, env) {
       const opt = (cmd.options ?? []).find((o) => o.names.includes(w));
       if (!opt) throw new UsageError(`unknown option ${w} for prism ${cmd.path.join(' ')}; ${usage(cmd)}`);
       const name = w.slice(2);
+      if (Object.hasOwn(options, name) && !opt.repeatable) throw new UsageError(`${w} given twice; ${usage(cmd)}`);
       if (opt.value === 'none') {
         if (inline !== undefined) throw new UsageError(`${w} takes no value`);
         options[name] = true;

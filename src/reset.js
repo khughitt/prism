@@ -1,7 +1,7 @@
 import { isDeepStrictEqual } from 'node:util';
 import { validateValue } from './values.js';
 
-export const MODES = ['defaults', 'symmetric', 'neutral'];
+export const MODES = ['revert', 'symmetric', 'neutral'];
 
 const isVisible = (def) => def.ui.control !== 'none';
 
@@ -28,17 +28,21 @@ function pairsOf(scoped) {
   return [...rows.values()].filter((row) => row.focused !== undefined && row.unfocused !== undefined);
 }
 
-export function planReset({ defs, mode, group, held, effective, normalizeToDefault }) {
+// `held` is the target layer's contents (scratch, or base under --base);
+// `effective` is what the skip rules compare against; `beneath` is the fold
+// the target sits on, so a value it already supplies is a deletion, not a
+// store. That keeps a reset from leaving redundant overrides behind.
+export function planReset({ defs, mode, group, held, effective, beneath }) {
   const scoped = scopeOf(defs, group);
   const values = { ...held };
 
   const put = (def, value) => {
     validateValue(def, value);
-    if (normalizeToDefault && isDeepStrictEqual(value, def.default)) delete values[def.key];
+    if (isDeepStrictEqual(value, beneath[def.key])) delete values[def.key];
     else values[def.key] = value;
   };
 
-  if (mode === 'defaults') {
+  if (mode === 'revert') {
     for (const def of scoped) delete values[def.key];
   } else if (mode === 'neutral') {
     for (const def of scoped) {

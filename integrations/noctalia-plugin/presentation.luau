@@ -216,68 +216,36 @@ function M.sectionParams(section)
   return list
 end
 
-function M.overriddenCount(params)
+-- Which layers hold a key is the store's knowledge, stated per parameter in
+-- `held`. The panel derives every count from it rather than from the value.
+function M.holds(param, layer)
+  for _, name in ipairs(param.held or {}) do
+    if name == layer then return true end
+  end
+  return false
+end
+
+function M.editedCount(params)
   local count = 0
-  for _, param in ipairs(params) do if param.overridden then count = count + 1 end end
+  for _, param in ipairs(params) do if param.edited then count = count + 1 end end
   return count
 end
 
--- describe states the store's resolution order, low to high. The panel ranks
--- against what it is told rather than carrying a copy that goes stale the day
--- the store gains a layer.
-function M.layerRanks(layers)
-  local ranks = {}
-  for index, name in ipairs(layers) do ranks[name] = index end
-  return ranks
-end
-
--- Shadowed means the value comes from a layer above the write target: the
--- control still writes, but into a layer the shadowing one covers, so the
--- gesture has no visible effect. The model is validated before this runs, so an
--- unrankable name is a broken contract rather than a case to absorb.
-function M.isShadowed(param, ranks, target)
-  local layerRank = ranks[param.layer] or error("unrankable layer " .. tostring(param.layer))
-  local targetRank = ranks[target] or error("unrankable target " .. tostring(target))
-  return layerRank > targetRank
-end
-
--- Only the wallpaper offers a way out: pinning it makes it the write target. A
--- pin cannot lift the wallpaper above a state layer, so every other shadow
--- names itself and stops there rather than giving advice that would not work.
-local shadowAdvice = { wallpaper = "; pin to edit" }
-
-function M.shadowHint(param)
-  return "Overridden by " .. param.layer .. (shadowAdvice[param.layer] or "")
-end
-
--- The active wallpaper as a header row: what it is, how many visible keys it
--- holds, and whether it can become the write target. A loaded profile is always
--- topmost, so it blocks the pin; the reason travels with the row because a
--- Noctalia toggle takes no tooltip and a disabled Button's tooltip is
--- unreachable.
+-- The active wallpaper as a header row: which one, and how many visible keys
+-- its delta holds. The id travels with the row so clear and commit name what
+-- they act on and a panel drawn before a rotation is refused, not obeyed.
 function M.wallpaperHeader(model)
   local wallpaper = model.active.wallpaper
   if wallpaper == nil then return nil end
-  local overrides = 0
+  local tuned = 0
   for _, param in ipairs(model.params) do
-    if param.ui.control ~= "none" and param.layer == "wallpaper" then overrides = overrides + 1 end
-  end
-  local profile = model.active.profile
-  local pinned = wallpaper.pinned == true
-  local tooltip
-  if profile ~= nil then
-    tooltip = "Profile " .. profile .. " is loaded and holds the write target; clear it to tune this wallpaper"
-  elseif pinned then
-    tooltip = "Editing this wallpaper; unpin to edit the base values again"
-  else
-    tooltip = "Pin to tune this wallpaper instead of the base values"
+    if param.ui.control ~= "none" and M.holds(param, "wallpaper") then tuned = tuned + 1 end
   end
   return {
+    id = wallpaper.id,
+    look = model.active.profile or "Default",
     name = tostring(wallpaper.path):match("([^/]+)$") or tostring(wallpaper.path),
-    overrides = overrides,
-    pinned = pinned,
-    canPin = profile == nil,
-    tooltip = tooltip,
+    tuned = tuned,
   }
 end
 
@@ -294,12 +262,11 @@ function M.profileExists(model, name)
   return false
 end
 
--- The selector doubles as the clear control, so index 0 is "no profile". It is
--- deliberately not "base values": deactivating a profile leaves the wallpaper
--- layer active, so what is on screen may still come from it. Only the write
--- target returns to base.
+-- The selector doubles as the clear control: index 0 is the Default look, the
+-- unnamed base values. It is truthful now that the wallpaper delta shows on
+-- top of Default exactly as it shows on top of any profile.
 function M.profileSection(model)
-  local options = { "-" }
+  local options = { "Default" }
   local selectedIndex = 0
   for index, name in ipairs(model.profiles) do
     options[index + 1] = name

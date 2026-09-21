@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
+import { parse as parseYaml } from 'yaml';
 
 const pluginDir = new URL('./', import.meta.url);
 
@@ -72,9 +73,47 @@ function luaLiteral(value) {
 
 const prismBin = fileURLToPath(new URL('../../bin/prism', pluginDir));
 
+test('every queue argv shape reaches a CLI command rather than usage parsing', () => {
+  const script = String.raw`
+local Queue = dofile(arg[1])
+local expected = { look = "default", wallpaper = "none" }
+local items = {
+  { verb = "set", key = "glass.ior", value = 1.6 },
+  { verb = "unset", key = "glass.ior" },
+  { verb = "reset", mode = "revert" },
+  { verb = "reset", mode = "neutral", group = "Focus" },
+  { verb = "commit", destination = "base", expected = expected },
+  { verb = "commit", destination = "profile", target = "Saved", expected = expected },
+  { verb = "commit", destination = "wallpaper", target = "w1", expected = expected },
+  { verb = "clear", id = "w1", expected = expected },
+  { verb = "activate", name = "Saved" },
+  { verb = "deactivate" },
+  { verb = "rename", name = "Saved", newName = "New", expected = expected },
+  { verb = "delete", name = "Saved", expected = expected },
+}
+for _, item in ipairs(items) do print(table.concat(Queue.argvFor(item), "\t")) end
+`;
+  const generated = spawnSync('lua', ['-', fileURLToPath(new URL('queue.luau', pluginDir))],
+    { input: script, encoding: 'utf8' });
+  assert.equal(generated.status, 0, generated.stderr);
+  const commands = generated.stdout.trim().split('\n').map((line) => line.split('\t'));
+  assert.equal(commands.length, 12);
+  const integrations = mkdtempSync(join(tmpdir(), 'prism-contract-integ-'));
+  for (const argv of commands) {
+    const configDir = mkdtempSync(join(tmpdir(), 'prism-contract-cfg-'));
+    const stateDir = mkdtempSync(join(tmpdir(), 'prism-contract-state-'));
+    writeFileSync(join(configDir, 'values.yaml'), '{}\n');
+    const result = spawnSync(prismBin, argv.slice(1), { encoding: 'utf8',
+      env: { ...process.env, PRISM_CONFIG_DIR: configDir, PRISM_STATE_DIR: stateDir,
+        PRISM_INTEGRATIONS_DIR: integrations } });
+    assert.doesNotMatch(result.stderr, /usage:|invalid expected|expected slots require|unknown kind|invalid context name/,
+      `${argv.join(' ')}: ${result.stderr}`);
+  }
+});
+
 // A store the CLI reads but no sink writes: describe is read-only, so the
 // contexts can be laid down as files instead of driven through `prism set`.
-function describeStore(contexts) {
+function describeStore(contexts, exercise) {
   const configDir = mkdtempSync(join(tmpdir(), 'prism-contract-cfg-'));
   const stateDir = mkdtempSync(join(tmpdir(), 'prism-contract-state-'));
   // JSON is YAML, so the fixtures need no writer of their own.
@@ -85,14 +124,15 @@ function describeStore(contexts) {
   }
   if (contexts.active) writeFileSync(join(stateDir, 'active.json'), JSON.stringify(contexts.active));
 
-  const result = spawnSync(prismBin, ['describe', '--json'], {
-    encoding: 'utf8',
-    env: { ...process.env, PRISM_CONFIG_DIR: configDir, PRISM_STATE_DIR: stateDir },
-  });
+  const env = { ...process.env, PRISM_CONFIG_DIR: configDir, PRISM_STATE_DIR: stateDir,
+    PRISM_INTEGRATIONS_DIR: mkdtempSync(join(tmpdir(), 'prism-contract-integ-')) };
+  const run = (args) => spawnSync(prismBin, args, { encoding: 'utf8', env });
+  if (exercise) exercise(run, configDir, stateDir);
+  const result = run(['describe', '--json']);
   assert.equal(result.status, 0, result.stderr);
   const model = JSON.parse(result.stdout);
   for (const param of model.params) {
-    assert.equal(typeof param.heldInTarget, 'boolean', `${param.key} heldInTarget`);
+    assert.ok(Array.isArray(param.held), `${param.key} held`);
     if (param.ui.control === 'none') continue;
     assert.notEqual(Object.hasOwn(param, 'neutral'), Object.hasOwn(param, 'neutralize'),
       `${param.key} declares exactly one of neutral and neutralize`);
@@ -119,7 +159,7 @@ local function inspect(model)
   local ui = setmetatable({}, {__index = function(_, kind)
     return function(props, children) return {kind = kind, props = props or {}, children = children or {}} end
   end})
-  local panel = {render = function(tree) rendered = tree end, setNeedsFrameTick = function() end}
+  local panel = {render = function(tree) rendered = tree end, setNeedsFrameTick = function() end, setWantsSecondTicks = function() end}
   local described
   local noctalia = {
     json = {decode = function() return model end},
@@ -149,10 +189,11 @@ local function inspect(model)
   -- render() puts the error label first and hides it when there is nothing to
   -- say, so its text is exactly what validateModel returned.
   local errorLabel = rendered.children[1]
-  local report = {error = errorLabel.props.visible and errorLabel.props.text or nil, cells = {}}
+  local report = {error = errorLabel.props.visible and errorLabel.props.text or nil, cells = {}, labels = {}}
   local byKey = {}
   for _, param in ipairs(model.params) do byKey[param.key] = true end
   for _, node in ipairs(collect(rendered)) do
+    if node.kind == "label" and node.props.text then report.labels[node.props.text] = true end
     -- controlCell keys its row with the bare parameter key; the row column and
     -- the slider inside it both suffix theirs.
     if node.kind == "row" and byKey[node.props.key] then
@@ -202,21 +243,17 @@ const controlNode = { slider: 'slider', toggle: 'toggle', select: 'select', colo
 
 test('real describe output satisfies the panel model validator', () => {
   const fresh = describeStore({});
-  // A profile shifts the write target off `base` and shadows the override
-  // below it, which is where the panel reads `layers`, `target` and `active`.
+  // A profile shadows the override below it, which is where the panel reads
+  // `layers` and `active`.
   const tuned = describeStore({
     base: { 'glass.roughness': 0.3 },
     profiles: { night: { 'glass.roughness': 0.7 } },
-    active: { profile: 'night', wallpaper: { id: 'abc12345', path: '/nonexistent/wall.png', pinned: false } },
+    active: { profile: 'night', wallpaper: { id: 'abc12345', path: '/nonexistent/wall.png' } },
   });
-  assert.equal(fresh.target, 'base');
-  assert.equal(tuned.target, 'profile');
-  // Pin what the fixtures arranged: a renamed parameter would otherwise leave a
-  // store with no contexts in it and quietly stop exercising the layer ranks.
   assert.deepEqual(
     tuned.params.filter((param) => param.layer === 'profile')
       .map(({ key, value, fallback }) => ({ key, value, fallback })),
-    [{ key: 'glass.roughness', value: 0.7, fallback: 0.3 }],
+    [{ key: 'glass.roughness', value: 0.7, fallback: 0.7 }],
   );
 
   const [freshReport, tunedReport] = inspectModels([fresh, tuned]);
@@ -245,4 +282,99 @@ test('real describe output satisfies the panel model validator', () => {
     assert.deepEqual([...emitted].filter((control) => !drawn.has(control)), [],
       'control kinds describe emits that no parameter row drew');
   }
+});
+
+
+test('pair controls reconcile real CLI transitions, locality, guards, and replacement', () => {
+  const pair = (values, source = '/W.jpg') => ({ _source: source, ...values });
+  const profiles = {
+    Aurora: { 'glass.roughness': 0.4, 'glass.noise': 0.1,
+      _wallpapers: { other: pair({ 'glass.noise': 0.6 }, '/other.jpg') } },
+    Dark: { 'glass.roughness': 0.8, 'glass.noise': 0.3,
+      _wallpapers: { w1: pair({ 'glass.noise': 0.35 }), other: pair({ 'glass.noise': 0.7 }, '/other.jpg') } },
+  };
+  describeStore({ profiles, active: { profile: 'Aurora', wallpaper: { id: 'w1', path: '/W.jpg' } } },
+    (run, configDir, stateDir) => {
+      const ok = (...args) => {
+        const result = run(args);
+        assert.equal(result.status, 0, result.stderr);
+        return result.stdout;
+      };
+      const describe = () => JSON.parse(ok('describe', '--json'));
+      const profileBytes = (look) => readFileSync(join(configDir, 'contexts', 'profile', `${look}.yaml`), 'utf8');
+      const runtime = () => JSON.parse(readFileSync(join(stateDir, 'active.json'), 'utf8'));
+      const visible = (model) => model.params.filter((p) => p.ui.control !== 'none');
+      const pending = (model) => visible(model).filter((p) => p.held.includes('scratch')).length;
+      const value = (model, key) => model.params.find((p) => p.key === key).value;
+      const guards = ['--expect-look', 'profile:Aurora', '--expect-wallpaper', 'id:w1'];
+      const initial = describe();
+      ok('set', 'glass.roughness', '0.55'); ok('set', 'glass.noise', '0.2');
+      const edited = describe();
+      assert.equal(pending(edited), 2);
+      ok('context', 'activate', 'profile', 'Dark');
+      const dark = describe();
+      assert.equal(pending(dark), 0);
+      assert.equal(value(dark, 'glass.roughness'), 0.8);
+      assert.equal(value(dark, 'glass.noise'), 0.35);
+      for (const destination of [['profile'], ['wallpaper', 'w1']]) {
+        const before = [profileBytes('Dark'), JSON.stringify(runtime())];
+        const refused = run(['commit', ...destination, ...guards]);
+        assert.equal(refused.status, 1);
+        assert.match(refused.stderr, /changed|expected|stale/);
+        assert.deepEqual([profileBytes('Dark'), JSON.stringify(runtime())], before);
+      }
+      ok('context', 'activate', 'profile', 'Aurora');
+      const restored = describe();
+      assert.equal(pending(restored), 0);
+      assert.equal(value(restored, 'glass.roughness'), 0.55);
+      assert.equal(value(restored, 'glass.noise'), 0.2);
+      const reports = inspectModels([initial, edited, dark, restored]);
+      assert.ok(reports[0].labels['0 for Aurora + this wallpaper']);
+      assert.ok(reports[1].labels['2 edits']);
+      assert.ok(reports[2].labels['1 for Dark + this wallpaper']);
+      assert.ok(reports[3].labels['2 for Aurora + this wallpaper']);
+      for (const index of [0, 2, 3]) assert.ok(reports[index].labels['No edits']);
+
+      const saved = profileBytes('Aurora');
+      ok('reset', 'neutral'); ok('reset', 'revert');
+      assert.equal(profileBytes('Aurora'), saved, 'Neutral/Revert cannot rewrite the look or pairs');
+      assert.equal(value(describe(), 'glass.roughness'), 0.55);
+      const darkBytes = profileBytes('Dark');
+      ok('set', 'glass.roughness', '0.6');
+      ok('commit', 'profile', ...guards);
+      assert.equal(value(describe(), 'glass.roughness'), 0.6);
+      assert.equal(profileBytes('Dark'), darkBytes);
+      ok('set', 'glass.noise', '0.25');
+      const scratch = runtime()._scratch;
+      ok('context', 'clear', 'wallpaper', 'w1', ...guards);
+      assert.deepEqual(runtime()._scratch, scratch, 'Clear preserves scratch');
+      assert.equal(profileBytes('Dark'), darkBytes);
+      const shown = describe();
+      ok('commit', 'profile', 'Dark', ...guards);
+      const snapshot = describe();
+      assert.equal(value(snapshot, 'glass.roughness'), value(shown, 'glass.roughness'));
+      assert.equal(value(snapshot, 'glass.noise'), value(shown, 'glass.noise'));
+      assert.ok(inspectModels([snapshot])[0].labels['0 for Dark + this wallpaper']);
+      const other = parseYaml(ok('context', 'show', 'wallpaper', 'other', '--look', 'profile:Dark'));
+      assert.equal(other['glass.noise'], 0.7);
+      const auroraOther = parseYaml(ok('context', 'show', 'wallpaper', 'other', '--look', 'profile:Aurora'));
+      assert.equal(auroraOther['glass.noise'], 0.6);
+
+      // A genuine slider write behind selection is incoming scratch.
+      ok('context', 'activate', 'profile', 'Aurora'); ok('set', 'glass.noise', '0.45');
+      assert.equal(runtime().profile, 'Aurora');
+      assert.equal(runtime()._scratch['glass.noise'], 0.45);
+      const destinationBytes = profileBytes('Dark');
+      ok('commit', 'wallpaper', 'w1', ...guards);
+      assert.equal(pending(describe()), 0);
+      assert.equal(value(describe(), 'glass.noise'), 0.45);
+      assert.equal(profileBytes('Dark'), destinationBytes);
+      assert.equal(parseYaml(ok('context', 'show', 'wallpaper', 'other', '--look', 'profile:Aurora'))['glass.noise'], 0.6);
+      ok('context', 'activate', 'wallpaper', 'other');
+      for (const destination of [['profile'], ['wallpaper', 'w1']]) {
+        const before = [profileBytes('Aurora'), JSON.stringify(runtime())];
+        assert.equal(run(['commit', ...destination, ...guards]).status, 1);
+        assert.deepEqual([profileBytes('Aurora'), JSON.stringify(runtime())], before);
+      }
+    });
 });

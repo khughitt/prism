@@ -47,14 +47,12 @@ open rather than greeting the next one behind a model that reconciles fine.
 
 All parameter writes go through the panel's shared FIFO. Each command is
 serialized through `noctalia.runAsync`, and the next item starts only after
-the current item completes. `set`, `unset`, `reset`, `pin`, and the profile verbs
-`activate`, `deactivate`, `save`, `rename`, and `delete` are the only verbs; anything
-else fails loudly rather than reaching another backend. Only `set`, `unset`,
-and `reset` write parameters, but all these verbs can move the write target or
-resolved values, so each counts as affecting the model and forces a refresh. A queued item may name a follow-up (`activateAfter`), which is
-enqueued only once the item itself has landed: the FIFO continues after a
-failure, so an unconditional pair would enter a profile whose save never
-happened. Parameter batches refresh the model
+the current item completes. `set`, `unset`, `reset`, `commit`, and the context
+verbs `activate`, `deactivate`, `clear`, `rename`, and `delete` are the only
+verbs; anything else fails loudly rather than reaching another backend. Only
+`set`, `unset`, and `reset` write parameters, but every verb can move what the
+layers hold or the resolved values, so each counts as affecting the model and
+forces a refresh. Parameter batches refresh the model
 after the queue drains, except when the completed tail is a live drag sample;
 that reconciliation waits for the drag's final write.
 
@@ -64,6 +62,32 @@ final write. Every parameter with a non-`live` binding resolves to
 `effectiveDrag = "release"`, so the reload-bound native material parameters
 write once on release and rewrite the compositor config once per gesture. A describe started before or during a drag is discarded when its
 result is stale and replayed only after the drag and write queue are idle.
+While the panel is open it asks the host for second ticks and re-reads describe
+every two seconds through the same stale-and-replay path, so a wallpaper
+rotation reaches the header, the edits row, and every provenance marker within
+a period. Each rendered Keep, Save As, Clear, Rename, and Delete action captures
+both selected slots before optimistic model changes. The queue sends
+`--expect-look <default|profile:name> --expect-wallpaper <none|id:id>`; a stale
+action is refused under the store lock and appears in the banner. Selection
+commands carry no slot expectation. Both guards are required together; look
+`default` differs from a named `profile:Default`, and wallpaper `none` differs
+from `id:<id>`. The positional wallpaper id remains checked too.
+
+A genuine ordinary profile selection clears optimistic pending flags before
+rendering. Saved pair membership and incoming values come only from the next
+accepted describe. One `selectionPending` flag disables and handler-guards
+Keep, Clear, Rename, Delete, and Save As until an authoritative, non-invalidated
+describe is accepted. Queue drain, command failure, and failed or invalidated
+describes do not reopen those actions. Sliders and rapid profile selections
+stay enabled: a genuine slider command queued behind selection writes the
+incoming look's scratch. Immediate slider model echoes resolve the current
+parameter by key before the existing echo check; deferred model callbacks also
+produce no writes. Model dropdown updates are silent.
+
+Failed selection or Keep reconciles the real pending count and retains its
+error banner. Recovery from an unreadable/broken outgoing named profile or
+pair preserves scratch in the backend; accepted describe restores those flags,
+even though the optimistic selection cleared them.
 
 Noctalia API 22 exposes slider `step`, `onChange`, and `onDragEnd`, but no
 interaction-source callback. Normalized-display sliders and curved (logarithmic
@@ -90,17 +114,15 @@ The presentation module defines the panel's stable layout contract:
   one theme role, cycling `primary`, `secondary`, `tertiary`, on its header
   label and its separator, so a group is findable without reading. The cycle
   outlasts the panel's section count, so no two sections share a color.
-  Each section shows restore and neutral buttons, plus symmetric where it has
-  matrix rows. Restore counts keys held by the write target, symmetric counts
-  differing pairs, and neutral counts eligible keys away from their neutral.
-  The same actions appear in a panel-wide row under the wallpaper header.
-  Each action issues one `prism reset <mode> [--group <name>]` command, except
-  the panel-wide neutral under a loaded profile, which first issues `prism
-  context deactivate profile` in the same FIFO: a reset writes into the write
-  target, and neutralizing everything into a profile's snapshot would destroy
-  it, so the neutral values land beneath the profile and the selector clears
-  optimistically. A section's neutral still edits the loaded profile. No-op
-  buttons stay in the tree, dimmed and guarded in their click handlers.
+  Each section shows revert, neutral, and, where it has matrix rows, symmetric
+  buttons. Revert counts keys scratch holds, symmetric counts differing pairs,
+  and neutral counts eligible keys away from their neutral. The edits row under
+  the wallpaper header carries the edited count, keep-in-look (`prism commit
+  profile` under a loaded profile, else `prism commit base`),
+  keep-for-wallpaper (`prism commit wallpaper <id>`), and the same three resets
+  over every visible parameter. Every reset mode writes scratch; nothing clears
+  the profile first. No-op buttons stay in the tree, dimmed and guarded in
+  their click handlers.
 - The rack is one card per device in `rack.devices` order. A card's head is a
   light, a chevron, and the device name, in the same fixed span as every other
   head cell; then the mix row's unfocused and focused cells, in the matrix's
@@ -127,8 +149,8 @@ The presentation module defines the panel's stable layout contract:
   two sections may reuse a row label but cannot supply each other's halves.
 - Every other visible parameter is a single row: its name with the same help
   behavior, the formatted value, the native control, and a per-parameter reset
-  that removes the override in the write target and shows the fallback value
-  until describe reconciles. Plain matrix rows use the same name/help control.
+  that reverts the edit (`prism unset`) and shows the fallback value until
+  describe reconciles. Plain matrix rows use the same name/help control.
 - Row geometry is fixed and independent of parameter state. Names and
   formatted values occupy reserved widths, the two matrix cells divide the
   remaining span evenly, and the `Unfocused` / `Focused` titles reserve the
@@ -141,72 +163,52 @@ The presentation module defines the panel's stable layout contract:
   Sized spacers explicitly disable growth so indentation and header spacing
   cannot consume the space reserved for names and controls. Every reset stays in
   the tree, dim when its parameter holds no override and full strength when it
-  is overridden; nothing appears or disappears as a value crosses its default.
+  is edited in scratch; nothing appears or disappears as a value crosses its default.
 - Toggle, select, slider, color, and reset actions update the local displayed
   value before their required write boundary.
-- Only exceptional rows carry a marker, and one row can hold two parameters on
-  different layers, so the marker is chosen across the whole row in a fixed
-  precedence: `Unavailable` for a parameter with no consumer at all, whose
-  control is also disabled; then the shadow hint; then `Live` for a parameter
-  that writes while dragging. A `Live` marker on one matrix cell never crowds
-  out a shadow on the other. Writing on release is the norm and is left
-  unmarked.
-- A parameter is *shadowed* when its `layer` ranks above `target` in `layers`:
-  the control still writes, but into a layer the shadowing one covers, so the
-  gesture has no visible effect. A shadowed cell dims; a matrix row's label
-  dims only when both of its cells are shadowed. The hint names the covering
-  layer and offers advice only where advice exists — `Overridden by wallpaper;
-  pin to edit`, but a bare `Overridden by state`, since pinning the wallpaper
-  cannot lift it above a state layer. A held override under a shadow is still
-  resettable: removing it changes the target, while the higher layer keeps
-  supplying the visible value. Writes update the local override flag before
-  the next describe reconciles target ownership.
-- The panel draws a profile row above the sections, and above the wallpaper
-  header because a profile outranks a wallpaper: a selector, a save button, a
-  rename button, and a delete button. The selector doubles as the clear control — index 0 is
-  `-`, which deactivates. A pick is optimistic, like a slider edit:
-  the render that follows it already declares the picked index, because
-  Noctalia re-applies `selectedIndex` on every render (the `options` prop
-  resets its change memory) and a render that still declared the old model's
-  index would snap the selector back to the old name for the whole activate
-  round trip, compositor reload included; the describe that follows the
-  command reconciles either way. It is deliberately not "base values":
-  deactivating leaves the wallpaper layer active, so what is on screen may
-  still come from it, and only the write target returns to base. Save opens a
-  name field (`ui.input`, `submitOnEnter`) with a check button beside it:
-  Enter submits only with keyboard focus, so the check submits the text the
-  panel tracks through `onChange`. The input is uncontrolled, its `value`
-  seeding the host buffer once per slot, so its key carries the mode
-  (`name-save`, `name-rename`) and switching modes re-seeds from a fresh slot.
-  `focus` does land keyboard focus, but only once, when the control is created
-  (the reconciler's focus sink is applied by the panel host after layout), so
-  opening the field and switching modes both re-arm it. While the field is
-  open its mode's icon turns into a plain cancel (an `x`): a floppy that
-  closes the field reads as a broken save. The name is validated against the
-  store's rule locally rather than spending a failed command on it, then saves
-  and enters the new profile. A name that already belongs to another profile
-  is not replaced silently: the name field gives way to a question row
-  (`Replace profile <name>?`, a destructive button, a cancel), because Noctalia
-  has no dialog. Saving the loaded profile under its own name asks nothing,
-  since every edit already lands there. Rename and delete carry the reset
-  idiom: dim and inert with nothing loaded, live once a profile is, and both
-  act only on the loaded profile — deleting or renaming another one means
-  selecting it first, which loads it. That is intended: the row acts on what
-  is on screen, and the selector makes every profile reachable. Rename opens
-  the same name field seeded with the current name and runs `prism context
-  rename`; a taken name is refused locally, the way the store refuses it, and
-  the same name closes the field. Delete asks first in the same question row
-  (`Delete profile <name>?`). Opening the name field drops a pending question
-  and a question drops the field, so at most one occupies the row.
+- Only exceptional rows carry a marker, and one row can hold two parameters
+  from different layers, so the marker is chosen across the whole row in a
+  fixed precedence: `Unavailable` for a parameter with no consumer at all,
+  whose control is also disabled; then `wallpaper` for a value from its nudges;
+  then `Live` for a parameter that writes while dragging. Writing on release
+  is the norm and is left unmarked. Nothing is shadowed: scratch is the topmost
+  layer, so every write shows.
+- The panel draws a profile row above the sections and wallpaper header: a
+  selector, save, rename, and delete. Index 0 is `Default`, the unnamed base
+  look. A pick is optimistic, like a slider edit: the rendered index follows
+  the pick while describe reconciles after the command. Ordinary selection,
+  including Default, saves all scratch keys to the outgoing pair and shows zero
+  pending edits, then loads only the incoming look's pair. With no wallpaper,
+  selection discards scratch. First wallpaper activation preserves scratch,
+  as does explicit recovery from a broken outgoing named profile or pair.
+  Runtime scratch lives in `_scratch` in the state directory's `active.json`.
+  Save opens a name field and issues `prism commit profile <name>`, which
+  snapshots what is on screen and loads the new profile in one command. It
+  replaces the destination's current-wallpaper pair while retaining its other
+  pairs, so the saved snapshot cannot be overridden by its old pair. Saving
+  the loaded profile under its own name issues `prism commit profile` when
+  there are edits and closes the field otherwise. A name already in use opens
+  a replace question that issues the same commit. The field uses `ui.input`
+  and a check button so mouse users can submit it; it validates names locally.
+  Rename and delete act on the loaded profile. Rename opens the same name
+  field and issues `prism context rename`; delete asks for confirmation. A
+  confirmed delete removes the loaded profile document, including all its
+  wallpaper pairs, selects Default, and preserves scratch. Ordinary selection
+  saves pending edits to the outgoing pair when a wallpaper is active.
 - When a wallpaper is active the panel draws a header row above the sections:
-  its basename, the count of visible parameters it holds, and a pin button that
-  runs `prism context pin|unpin wallpaper`. A loaded profile is always topmost
-  and blocks the pin; the button is then greyed by opacity and guarded in its
-  handler, never disabled, because Noctalia gates a Button's hit area on
-  `enabled` and the tooltip lives on that hit area — a disabled pin could not
-  say why it is unavailable. A Noctalia toggle takes no `tooltip` prop at all,
-  which is why the pin is a button and why shadowed toggles carry a visible
-  hint label instead. With no active wallpaper there is no header row.
+  a glyph lit while the selected look–wallpaper pair holds any visible key,
+  the count (`N for Aurora + this wallpaper`, or `N for Default + this wallpaper`),
+  and a clear button that runs
+  `prism context clear wallpaper <id>` with the id from the model. The basename
+  is the glyph's tooltip. Keep reads `Keep N edits for <look> + this wallpaper`;
+  Clear reads `Clear <look> + this wallpaper's N adjustments`. Saved pair keys
+  and saved profile settings never count as pending edits. CLI-only keys stay
+  outside visible counts and resets; transitions and commits save all keys.
+  Clear removes only the active pair and preserves scratch and other pairs.
+  With no active wallpaper there is no header row.
+  `prism context list` discovers pairs in all looks; `prism context show
+  wallpaper <id> --look profile:<name>` inspects an inactive pair, while
+  `--look default` names the unnamed look.
 - Numeric controls preserve canonical values while supporting raw, percent,
   and normalized display metadata on linear, logarithmic, and power (`exponent`)
   scales; a curved scale shapes the track and the display only the label. The
@@ -214,37 +216,29 @@ The presentation module defines the panel's stable layout contract:
 
 `prism describe --json` carries `active` (the active context per kind),
 `profiles` (the saved profile names, listed in the same locked snapshot as
-`active` so the selector cannot disagree with the slot drawn beside it),
-`layers` (the store's resolution order, low to high), `target` (the
-write-target layer), `rack` (the validated device order and ownership), and
-`params`, whose entries include `layer` (where the value comes from) and
-`fallback` (what `unset` would leave). Each parameter also carries
-`heldInTarget`, a boolean reporting whether the write target owns the key;
-that is what makes a parameter overridden, even if its value is shadowed.
-The row reset is always present and shows full strength when overridden.
-Visible parameters declare exactly one of `neutral` or `neutralize: false`,
-next to `default`; `glass.focusSplit` is the exemption. Neutral counts ignore
-exempt parameters, and compare scalar values exactly (including color case).
-Matrix halves declare equal neutrals, validated at definition load. The panel
-ranks a layer against the target with `layers` rather than carrying its own
-copy of the order, so a layer added to the store reaches the
-panel without a second list to keep in step.
+`active`), `layers` (`default, base, profile, wallpaper, state, scratch`
+in resolution order), `rack` (the validated device order and ownership),
+and `params`. Each parameter includes `layer` (where the value comes from),
+`held` (the layers that hold the key, in resolution order, never default),
+and `fallback` (what revert would reveal). The row reset is always present
+and shows full strength when scratch holds the key. Visible parameters declare
+exactly one of `neutral` or `neutralize: false`, next to `default`;
+`glass.focusSplit` is the exemption. Neutral counts ignore exempt parameters
+and compare scalar values exactly (including color case). Matrix halves
+declare equal neutrals, validated at definition load. The panel uses the
+reported `layers` order rather than carrying its own copy.
 
 The panel is installed into Noctalia separately from the `prism` command, so
-the two must be upgraded together. The loud failure is one-sided, because every
-field the panel needs is one the CLI adds: a newer panel reading an older CLI's
-output fails `validateModel` on the first field that is absent — `prism
+the two must be upgraded together. A newer panel reading an older CLI's output
+fails `validateModel` on the first field that is absent — `prism
 describe returned no layer order` without `layers`, `prism describe returned
-no profile list` without `profiles`, `prism describe returned no write target`
-without `target`, `<key> has no layer` without a per-parameter
-`layer` — and degrades to the panel's visible-error banner, which is the
-correct failure mode. The other direction is quiet: `validateModel` inspects
-only the fields it knows and does not reject unknown ones, so an older panel
-ignores what a newer CLI adds and keeps rendering under its own older rules,
-without shadowing rows it has no order to rank. A user who sees any of those
-messages, or a panel that draws no wallpaper header row against a CLI that
-reports one, should read it as "the panel and the `prism` command are out of
-sync" and upgrade whichever side is behind.
+no profile list` without `profiles`, `<key> has no held layers` without a per-parameter `held`,
+`<key> has no layer` without a per-parameter `layer` — and degrades to the panel's visible-error banner, which is the
+correct failure mode. An older panel reading the newer CLI also fails
+validation: it requires `model.target`, which the newer CLI no longer emits,
+and reports `prism describe returned no write target`. A user who sees either
+validation error should read it as "the panel and the `prism` command are out
+of sync" and upgrade whichever side is behind.
 
 That agreement is checked rather than assumed:
 `integrations/noctalia-plugin/contract.test.mjs` spawns `prism describe --json`
@@ -281,3 +275,23 @@ them.
 The widget and panel use Noctalia's native v5 entries and controls. No
 additional runtime dependency or compatibility layer is part of this
 contract.
+
+## Same-look activation and desktop acceptance
+
+`prism context activate profile Aurora` explicitly selects Aurora even if it is
+already active; `prism context deactivate profile` similarly selects Default.
+These commands save every scratch key to the current pair and clear pending
+edits, or discard scratch when no wallpaper is active. No visible edit-count
+condition gates the CLI transition.
+
+The installed native dropdown suppresses a same-option click unless its
+`notifyOnReselect` capability is enabled. Noctalia does not expose that property
+to Lua; changing Prism's callback cannot create the event. Programmatic
+`selectedIndex` updates are silent. Existing Keep for wallpaper saves the
+current pair without a new control. Idea `prism-02befb` tracks the native
+property separately; simulated Lua callbacks do not prove physical reselection.
+
+Desktop acceptance remains with `prism-439774`, using
+[the pair acceptance record](2026-09-20-profile-wallpaper-pairs-acceptance.md).
+Automated checks use temporary stores; they do not establish desktop results
+or authorize live migration/plugin reload as part of coding.

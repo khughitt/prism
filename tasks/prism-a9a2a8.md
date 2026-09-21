@@ -5,9 +5,10 @@ status: doing
 priority: 2
 size: m
 complexity: low
+process: direct
 owner: main
 created: 2026-09-04T21:44:54Z
-updated: 2026-09-12T16:46:10Z
+updated: 2026-09-19T22:49:16Z
 depends: [ops-31f038]
 tags: [testing]
 ---
@@ -21,3 +22,4 @@ Piece of ops-65837b (the cross-project audit in the ops hub). 1. Measure: full-s
 - 2026-09-05T22:56:36Z (main): Suite hygiene item found while merging prism-6fd864: prism-e76678 — test/fanout.test.js's timeout test spends its 100ms sink budget on node interpreter startup, so it fails under full-suite contention and passes alone. Measured here: node -e '' is 20-30ms at load ~24, sh -c ':' is ~0ms.
 - 2026-09-06T09:00:50Z (main): step 4 hygiene: prism-e76678 landed (fan-out timeout test now measures the kill path, not node startup); reproduced and verified under 96 CPU burners on the 32-core box.
 - 2026-09-09T01:55:28Z (main): Step 4 cost datapoint: prism-52bc13's contract test is the most expensive single test in the suite -- two 'prism describe' spawns plus one lua spawn, ~300ms of a ~1.87s full suite (was ~1.78s). Process spawns, not compute; nothing to trim without giving up the end-to-end check.
+- 2026-09-19T22:49:16Z (prism-aec90f): Process metadata repaired during compositional-profile preflight: the recorded audit steps and existing implementation settle approach and verification; no new design is needed.
