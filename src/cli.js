@@ -10,10 +10,11 @@ import { withLock } from './lock.js';
 import { loadStore, loadLayers, withScratch, activeJson, RESOLUTION_ORDER } from './layers.js';
 import { listContexts, readLook, readActive, lookPath } from './contexts.js';
 import { readScratch, writeScratch } from './scratch.js';
-import { runContext } from './context-cli.js';
 import { runCommit } from './commit.js';
+import { runContext } from './context-cli.js';
+import { UsageError, parseInvocation, helpText, rootHelp, candidatesFor, completionScript } from './commands.js';
 import { loadRack } from './rack.js';
-import { MODES, planReset, visibleGroups } from './reset.js';
+import { planReset, visibleGroups } from './reset.js';
 import { planMigration, replacements, writeBackup, writeMigrated, runPairMigration, assertPairLayout, pairLayoutSources } from './migrate.js';
 import {
   configDir,
@@ -25,39 +26,106 @@ import {
 } from './paths.js';
 
 const LIVENESS_ORDER = { live: 0, reload: 1, restart: 2 };
+const VERSION = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
 function load() {
   const defs = loadDefs(defsDir());
   return { defs, manifests: loadManifests(integrationsDir(), defs) };
 }
 
-function splitBaseFlag(rest) {
-  const toBase = rest[0] === '--base';
-  return { toBase, args: toBase ? rest.slice(1) : rest };
-}
-
 // Every read of the store happens under the store lock: a slot and the file it
 // names must come from the same write.
 const snapshot = (defs) => withLock(lockPath(), async () => loadStore(defs));
 
-function report({ failed }, eprint) {
-  for (const failure of failed) {
-    eprint(`prism: ${failure.sink}: ${failure.error}\n`);
+// A failure that ran: exit 1, the message on stderr — one error object under --json,
+// `prism: <message>` otherwise. Usage errors never reach here; parseInvocation exits 2.
+function failer(eprint, json) {
+  return (message) => {
+    eprint(json ? `${JSON.stringify({ error: { kind: 'prism', detail: message } })}\n` : `prism: ${message}\n`);
+    return 1;
+  };
+}
+
+// The outcome of a change that fanned out: under --json the one value is the keys that
+// changed and the sinks that took them; pretty mode stays silent on success as it always
+// has. Failures are the error object (json) or one `prism: <sink>: <error>` line per sink.
+function report({ applied, failed }, { print, eprint, json, fail }, changedKeys) {
+  if (failed.length === 0) {
+    if (json) print(`${JSON.stringify({ changed: changedKeys, applied })}\n`);
+    return 0;
   }
-  return failed.length === 0 ? 0 : 1;
+  const messages = failed.map((failure) => `${failure.sink}: ${failure.error}`);
+  if (json) return fail(messages.join('; '));
+  for (const message of messages) eprint(`prism: ${message}\n`);
+  return 1;
+}
+
+const UNCHANGED = { applied: [], failed: [] };
+
+// The declared table validates the options; the verbs still read the expected-slot
+// pair and `--look` positionally, as the panel sends them.
+function expectedArgs(positionals, options) {
+  const args = [...positionals];
+  if (options['expect-look'] !== undefined) args.push('--expect-look', options['expect-look']);
+  if (options['expect-wallpaper'] !== undefined) args.push('--expect-wallpaper', options['expect-wallpaper']);
+  return args;
+}
+
+function contextArgs(verb, positionals, options) {
+  if (verb === 'show') return options.look !== undefined ? [...positionals, '--look', options.look] : [...positionals];
+  return expectedArgs(positionals, options);
+}
+
+function describeText(store, rack) {
+  const active = activeJson(store.active);
+  const lines = [
+    `wallpaper: ${active.wallpaper === null ? 'none' : `${active.wallpaper.id}  ${active.wallpaper.path}${active.wallpaper.pinned ? ' (pinned)' : ''}`}`,
+    `profile: ${active.profile ?? 'none'}`,
+    `edits: ${Object.keys(store.scratch).length}`,
+    `profiles: ${store.profiles.length === 0 ? 'none' : store.profiles.join(', ')}`,
+    `layers: ${RESOLUTION_ORDER.join(', ')}`,
+    `rack: ${rack.group}: ${rack.devices.map((device) => device.device).join(', ')}`,
+    'params:',
+    ...Object.keys(store.params).map((key) => `  ${key} = ${JSON.stringify(store.params[key])}  [${store.layerOf[key]}]`),
+  ];
+  return `${lines.join('\n')}\n`;
 }
 
 export async function run(argv, opts = {}) {
   const print = opts.print ?? ((text) => process.stdout.write(text));
   const eprint = opts.eprint ?? ((text) => process.stderr.write(text));
-  const [verb, ...rest] = argv;
+  const env = opts.env ?? process.env;
+
+  if (env.PRISM_COMPLETE) {
+    if (argv.length === 0) { print(completionScript(env.PRISM_COMPLETE)); return 0; }
+    if (argv[0] === '--') {
+      for (const [v, d] of candidatesFor(argv.slice(1), Number(env.PRISM_COMPLETE_INDEX ?? argv.length - 2))) print(`${v}\t${d}\n`);
+      return 0;
+    }
+  }
+
+  let inv;
+  try {
+    inv = parseInvocation(argv, env);
+  } catch (error) {
+    if (error instanceof UsageError) { eprint(`prism: ${error.message}\n`); return 2; }
+    throw error;
+  }
+  if (inv.version) { print(`prism ${VERSION}\n`); return 0; }
+  if (Object.hasOwn(inv, 'help')) { print(inv.help === null ? rootHelp() : helpText(inv.help)); return 0; }
+
+  const json = inv.mode === 'json';
+  const fail = failer(eprint, json);
+  const output = { print, eprint, json, fail };
+  // One value in each mode: the JSON object under --json, the text lines otherwise.
+  const emit = (value, text) => print(json ? `${JSON.stringify(value)}\n` : text);
+  const { positionals, options } = inv;
+  const toBase = options.base === true;
 
   try {
-    switch (verb) {
+    switch (inv.cmd.path[0]) {
       case 'set': {
-        const { toBase, args } = splitBaseFlag(rest);
-        if (args.length !== 2) throw new Error('usage: prism set [--base] <key> <value>');
-        const [key, text] = args;
+        const [key, text] = positionals;
         const { defs, manifests } = load();
         const def = defs.get(key);
         if (!def) throw new Error(`unknown param ${key}`);
@@ -83,13 +151,11 @@ export async function run(argv, opts = {}) {
           resolved = writeResolved(loadStore(defs).params);
         });
 
-        return report(await fanOut({ manifests, resolved, changedKeys: [key], runner: opts.runner }), eprint);
+        return report(await fanOut({ manifests, resolved, changedKeys: [key], runner: opts.runner }), output, [key]);
       }
 
       case 'unset': {
-        const { toBase, args } = splitBaseFlag(rest);
-        if (args.length !== 1) throw new Error('usage: prism unset [--base] <key>');
-        const [key] = args;
+        const [key] = positionals;
         const { defs, manifests } = load();
         let resolved;
 
@@ -113,26 +179,12 @@ export async function run(argv, opts = {}) {
           resolved = writeResolved(loadStore(defs).params);
         });
 
-        return report(await fanOut({ manifests, resolved, changedKeys: [key], runner: opts.runner }), eprint);
+        return report(await fanOut({ manifests, resolved, changedKeys: [key], runner: opts.runner }), output, [key]);
       }
 
       case 'reset': {
-        const usage = 'usage: prism reset revert|symmetric|neutral [--base] [--group <name>]';
-        let mode = null;
-        let group = null;
-        let toBase = false;
-        for (let index = 0; index < rest.length; index += 1) {
-          const arg = rest[index];
-          if (arg === '--base') toBase = true;
-          else if (arg === '--group') {
-            index += 1;
-            group = rest[index];
-            if (group === undefined) throw new Error(usage);
-          } else if (mode === null) mode = arg;
-          else throw new Error(usage);
-        }
-        if (!MODES.includes(mode)) throw new Error(usage);
-
+        const [mode] = positionals;
+        const group = options.group ?? null;
         const { defs, manifests } = load();
         const groups = visibleGroups(defs);
         if (group !== null && !groups.has(group)) {
@@ -157,23 +209,26 @@ export async function run(argv, opts = {}) {
           resolved = writeResolved(loadStore(defs).params);
         });
 
-        if (changedKeys.length === 0) return 0;
-        return report(await fanOut({ manifests, resolved, changedKeys, runner: opts.runner }), eprint);
+        if (changedKeys.length === 0) return report(UNCHANGED, output, []);
+        return report(await fanOut({ manifests, resolved, changedKeys, runner: opts.runner }), output, changedKeys);
       }
 
       case 'get': {
-        if (rest.length !== 1) throw new Error('usage: prism get <key>');
-        const [key] = rest;
+        const [key] = positionals;
         const { defs } = load();
         if (!defs.has(key)) throw new Error(`unknown param ${key}`);
-        print(`${JSON.stringify((await snapshot(defs)).params[key])}\n`);
+        const value = (await snapshot(defs)).params[key];
+        print(`${JSON.stringify(json ? { key, value } : value)}\n`);
         return 0;
       }
 
       case 'list': {
-        if (rest.length !== 0) throw new Error('usage: prism list');
         const { defs } = load();
         const { params } = await snapshot(defs);
+        if (json) {
+          print(`${JSON.stringify({ params })}\n`);
+          return 0;
+        }
         for (const key of Object.keys(params)) {
           print(`${key} = ${JSON.stringify(params[key])}\n`);
         }
@@ -181,12 +236,13 @@ export async function run(argv, opts = {}) {
       }
 
       case 'describe': {
-        if (rest.length !== 1 || rest[0] !== '--json') {
-          throw new Error('usage: prism describe --json');
-        }
         const { defs, manifests } = load();
         const store = await snapshot(defs);
         const rack = loadRack(defsDir(), defs);
+        if (!json) {
+          print(describeText(store, rack));
+          return 0;
+        }
         const described = [];
 
         for (const [key, def] of defs) {
@@ -230,11 +286,11 @@ export async function run(argv, opts = {}) {
       case 'apply': {
         const { defs, manifests } = load();
         const knownSinks = new Set(manifests.map((manifest) => manifest.sink));
-        const unknown = rest.find((sink) => !knownSinks.has(sink));
+        const unknown = positionals.find((sink) => !knownSinks.has(sink));
         if (unknown) throw new Error(`unknown sink ${unknown}`);
-        const targets = rest.length === 0
+        const targets = positionals.length === 0
           ? manifests
-          : manifests.filter((manifest) => rest.includes(manifest.sink));
+          : manifests.filter((manifest) => positionals.includes(manifest.sink));
 
         let resolved;
         await withLock(lockPath(), async () => {
@@ -247,7 +303,7 @@ export async function run(argv, opts = {}) {
           resolved,
           changedKeys,
           runner: opts.runner,
-        }), eprint);
+        }), output, changedKeys);
       }
 
       // doctor's requirement pass alone, for a machine that has not applied
@@ -255,30 +311,34 @@ export async function run(argv, opts = {}) {
       // past the generated files setup is about to create. A missing store
       // resolves to the defaults, so `when` evaluates on a fresh machine.
       case 'requirements': {
-        if (rest.length !== 0) throw new Error('usage: prism requirements');
         const { defs, manifests } = load();
         const { params } = await snapshot(defs);
-        let unmetCount = 0;
-        for (const manifest of manifests) {
-          const unmet = unmetRequirement(manifest, { params });
-          if (!unmet) continue;
-          print(`requirements: ${manifest.sink}: ${unmet}\n`);
-          unmetCount++;
-        }
-        if (unmetCount === 0) print('requirements: ok\n');
-        return unmetCount === 0 ? 0 : 1;
+        const unmet = manifests
+          .map((manifest) => ({ sink: manifest.sink, requirement: unmetRequirement(manifest, { params }) }))
+          .filter((entry) => entry.requirement);
+        emit({ ok: unmet.length === 0, unmet }, unmet.length === 0
+          ? 'requirements: ok\n'
+          : unmet.map((entry) => `requirements: ${entry.sink}: ${entry.requirement}\n`).join(''));
+        return unmet.length === 0 ? 0 : 1;
       }
 
       case 'doctor': {
-        if (rest.length !== 0) throw new Error('usage: prism doctor');
         const { defs, manifests } = load();
-        let problems = 0;
+        // Every finding is one text line or one entry of the JSON object. Store problems
+        // (orphans, broken contexts, invalid values) block the sink pass, so they are
+        // counted on their own as well.
+        const problems = [];
+        const finish = () => {
+          emit({ ok: problems.length === 0, problems }, problems.length === 0
+            ? 'doctor: ok\n'
+            : problems.map((problem) => `doctor: ${problem}\n`).join(''));
+          return problems.length === 0 ? 0 : 1;
+        };
 
         for (const manifest of manifests) {
           for (const name of manifest.generates) {
             if (!fs.existsSync(generatedPath(name))) {
-              print(`doctor: ${manifest.sink}: generated file missing: ${name} — run 'prism apply ${manifest.sink}'\n`);
-              problems++;
+              problems.push(`${manifest.sink}: generated file missing: ${name} — run 'prism apply ${manifest.sink}'`);
             }
           }
         }
@@ -287,13 +347,13 @@ export async function run(argv, opts = {}) {
           let contextProblems = 0;
           const replaced = replacements(defs);
           for (const source of pairLayoutSources()) {
-            print(`doctor: old pair layout: ${source} — run 'prism migrate pairs'\n`);
+            problems.push(`old pair layout: ${source} — run 'prism migrate pairs'`);
             contextProblems++;
           }
           let active = {};
           let scratch = {};
           try { active = readActive(); scratch = readScratch(); }
-          catch (error) { print(`doctor: ${error.message}\n`); contextProblems++; }
+          catch (error) { problems.push(error.message); contextProblems++; }
           const diagnose = (values, where, remedy) => {
             let invalid = false;
             for (const [key, value] of Object.entries(values)) {
@@ -307,13 +367,13 @@ export async function run(argv, opts = {}) {
                 try { validateValue(def, value); }
                 catch (error) { message = `${where}: ${error.message}`; }
               }
-              if (message) { print(`doctor: ${message}\n`); contextProblems++; invalid = true; }
+              if (message) { problems.push(message); contextProblems++; invalid = true; }
             }
             return invalid;
           };
           const names = listContexts().profile;
           if (active.profile !== undefined && !names.includes(active.profile)) {
-            print(`doctor: profile ${active.profile}: active context is missing — run 'prism context deactivate profile'\n`);
+            problems.push(`profile ${active.profile}: active context is missing — run 'prism context deactivate profile'`);
             contextProblems++;
           }
           for (const name of [null, ...names]) {
@@ -326,9 +386,9 @@ export async function run(argv, opts = {}) {
                 const invalid = diagnose(pair.values, `${where} / wallpaper ${id}`, `edit ${lookPath(name)}`);
                 if (id === active.wallpaper?.id) broken ||= invalid;
               }
-            } catch (error) { print(`doctor: ${where}: ${error.message}\n`); contextProblems++; broken = true; }
+            } catch (error) { problems.push(`${where}: ${error.message}`); contextProblems++; broken = true; }
             if (broken && name !== null && name === active.profile) {
-              print(`doctor: profile ${name}: active look is broken — run 'prism context deactivate profile'\n`);
+              problems.push(`profile ${name}: active look is broken — run 'prism context deactivate profile'`);
             }
           }
           diagnose(scratch, 'scratch', "run 'prism unset <key>'");
@@ -336,90 +396,94 @@ export async function run(argv, opts = {}) {
           return { params: loadStore(defs).params, blocked: false };
         });
 
-        if (blocked) return 1;
+        if (blocked) return finish();
         const status = readJson(sinkStatusPath(), {});
         for (const manifest of manifests) {
           const unmet = unmetRequirement(manifest, { params });
           if (unmet) {
-            print(`doctor: ${manifest.sink}: ${unmet}\n`);
-            problems++;
+            problems.push(`${manifest.sink}: ${unmet}`);
             continue;
           }
           const entry = status[manifest.sink];
           const expected = boundParams(manifest, { params });
           if (!entry) {
-            print(`doctor: ${manifest.sink}: never applied\n`);
-            problems++;
+            problems.push(`${manifest.sink}: never applied`);
           } else if (!entry.ok) {
-            print(`doctor: ${manifest.sink}: failed: ${entry.error}\n`);
-            problems++;
+            problems.push(`${manifest.sink}: failed: ${entry.error}`);
           } else if (!isDeepStrictEqual(entry.params, expected)) {
-            print(`doctor: ${manifest.sink}: stale (applied values differ from current)\n`);
-            problems++;
+            problems.push(`${manifest.sink}: stale (applied values differ from current)`);
           }
         }
 
-        if (problems === 0) print('doctor: ok\n');
-        return problems === 0 ? 0 : 1;
+        return finish();
       }
 
       case 'commit': {
         const { defs } = load();
-        return await runCommit(rest, { defs });
+        const committed = await runCommit(expectedArgs(positionals, options), { defs });
+        emit(committed, '');
+        return 0;
       }
 
       case 'migrate': {
-        if (rest.length === 1 && rest[0] === 'pairs') {
-          const { defs } = load();
-          await withLock(lockPath(), async () => runPairMigration(defs, { print }));
+        const { defs } = load();
+        if (positionals[0] === 'pairs') {
+          await withLock(lockPath(), async () => runPairMigration(defs, { print: (text) => { if (!json) print(text); } }));
           return 0;
         }
-        if (rest.length !== 0) throw new Error('usage: prism migrate [pairs]');
-        const { defs } = load();
+        // Pretty mode streams: the backup line lands before any write, then each file as
+        // it is rewritten, so a failure part-way leaves what landed on the screen. Under
+        // --json the one object is emitted after the lock, and a failure names the
+        // migrated files in its detail instead.
+        const line = (text) => { if (!json) print(text); };
+        const changeLine = (where, change) => (change.kept
+          ? `migrate: ${change.where ?? where}: ${change.from} ${JSON.stringify(change.old)} removed; ${change.to} ${JSON.stringify(change.value)} kept\n`
+          : `migrate: ${change.where ?? where}: ${change.from} ${JSON.stringify(change.old)} -> ${change.to} ${JSON.stringify(change.value)}\n`);
         const migrated = await withLock(lockPath(), async () => {
           const files = planMigration(defs);
-          if (files.length === 0) return 0;
+          if (files.length === 0) return { backup: null, files: [] };
           const backup = writeBackup(files, new Date());
           const restore = 'copy ' + [
             files.some((file) => file.kind === 'look') && `config files back over ${configDir()}`,
             files.some((file) => file.kind === 'runtime') && 'state/active.json back to the runtime document',
           ].filter(Boolean).join(' and ') + ' to undo';
-          print(`migrate: backup ${backup}\n`);
+          line(`migrate: backup ${backup}\n`);
+          const done = [];
           for (const file of files) {
             try {
               writeMigrated(file);
             } catch (error) {
-              throw new Error(`migrate: ${file.where}: ${error.message}; the files reported above are migrated, `
-                + `this one and those after it are not; the originals are in ${backup} — ${restore}`);
+              const landed = json
+                ? (done.length === 0 ? 'no file is migrated;' : `migrated: ${done.map((f) => f.where).join(', ')};`)
+                : 'the files reported above are migrated,';
+              throw new Error(`migrate: ${file.where}: ${error.message}; ${landed} this one and those after it are not; `
+                + `the originals are in ${backup} — ${restore}`);
             }
-            for (const change of file.changes) {
-              print(change.kept
-                ? `migrate: ${change.where ?? file.where}: ${change.from} ${JSON.stringify(change.old)} removed; ${change.to} ${JSON.stringify(change.value)} kept\n`
-                : `migrate: ${change.where ?? file.where}: ${change.from} ${JSON.stringify(change.old)} -> ${change.to} ${JSON.stringify(change.value)}\n`);
-            }
+            done.push({ where: file.where, changes: file.changes });
+            for (const change of file.changes) line(changeLine(file.where, change));
           }
-          return files.length;
+          return { backup, files: done };
         });
-        if (migrated === 0) {
-          print('migrate: nothing to migrate\n');
+        if (migrated.files.length === 0) {
+          emit(migrated, 'migrate: nothing to migrate\n');
           return 0;
         }
-        print("migrate: done — run 'prism apply' to hand the new keys to the sinks\n");
+        emit(migrated, "migrate: done — run 'prism apply' to hand the new keys to the sinks\n");
         return 0;
       }
 
       case 'context': {
         const { defs, manifests } = load();
-        const outcome = await runContext(rest, { defs, manifests, print, eprint, runner: opts.runner });
-        return outcome === null ? 0 : report(outcome, eprint);
+        // A verb that changed the slots returns { changedKeys, result }; one that printed
+        // its own value through emit returns null.
+        const change = await runContext(inv.cmd.path[1], contextArgs(inv.cmd.path[1], positionals, options), { defs, manifests, emit, print, eprint, json, runner: opts.runner });
+        return change === null ? 0 : report(change.result ?? UNCHANGED, output, change.changedKeys);
       }
 
       default:
-        eprint('usage: prism set|unset|get|list|describe|apply|requirements|doctor|migrate|context|reset|commit\n');
-        return 2;
+        throw new Error(`prism ${inv.cmd.path.join(' ')} is declared but not implemented`);
     }
   } catch (error) {
-    eprint(`prism: ${error.message}\n`);
-    return 1;
+    return fail(error.message);
   }
 }

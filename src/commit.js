@@ -7,6 +7,7 @@ import { resolveLayered } from './resolve.js';
 
 const usage = () => new Error('usage: prism commit base | profile [<name>] | wallpaper <id>');
 
+// Returns { destination, name, keys }: the look written and the scratch keys it took.
 export async function runCommit(args, { defs }) {
   const { args: positional, expected } = parseExpectedSlots(args);
   const [destination, ...rest] = positional;
@@ -15,6 +16,7 @@ export async function runCommit(args, { defs }) {
       || (destination === 'profile' && rest.length > 1)
       || (destination === 'wallpaper' && rest.length !== 1)) throw usage();
 
+  let committed = null;
   await withLock(lockPath(), async () => {
     assertExpectedSlots(readRuntime().active, expected);
     const store = loadStore(defs);
@@ -58,6 +60,7 @@ export async function runCommit(args, { defs }) {
     if (!isDeepStrictEqual(next, store.params)) throw new Error('commit would change effective values');
     writeLook(selected, look);
     writeRuntime({ active: nextActive, scratch: {} });
+    committed = { destination, name: destination === 'base' ? null : destination === 'wallpaper' ? id : selected, keys };
   });
-  return 0;
+  return committed;
 }

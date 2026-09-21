@@ -389,11 +389,25 @@
   neutral: '#ccccff'
   ui: {group: Ring, control: color, label: Color, order: 520}
   description: Ring color under the manual source; the resting color under familiar until its signal arrives, and the fallback under noctalia until a colorscheme exists
-- key: glass.ring.sweepMs
+- key: glass.ring.beamSpeed
   type: int
-  range: [0, 10000]
-  default: 1500
-  neutral: 1500
-  replaces: glass.ring.driftHz
-  ui: {group: Ring, control: slider, step: 100, label: Sweep, order: 530, unit: ms}
-  description: How long the ring light takes for its one lap when a window gains focus, easing out to rest; 0 skips the lap, as do reduced motion and animations off
+  range: [0, 5000]
+  default: 300
+  neutral: 300
+  replaces: glass.ring.sweepMs
+  ui: {group: Ring, control: slider, step: 50, label: Beam speed, order: 530, unit: px/s}
+  description: How fast the beam of light travels around the inside of the face when a window gains focus, in pixels per second; a lap takes the face's perimeter divided by this, and 0 shows only the resting glow
+- key: glass.ring.gap
+  type: int
+  range: [0, 128]
+  default: 8
+  neutral: 8
+  ui: {group: Ring, control: slider, step: 1, label: Gap, order: 540, unit: px}
+  description: Clear glass between the edge of the face and the centre of the beam; the bevel may be shrunk to make room
+- key: glass.ring.glow
+  type: float
+  range: [0, 3]
+  default: 1
+  neutral: 1
+  ui: {group: Ring, control: slider, step: 0.1, label: Glow, order: 550}
+  description: Intensity of the whole focus light — beam, tail, resting glow and edge spill together

@@ -30,6 +30,9 @@ const { readValues } = await import('../src/values.js');
 const { readScratch, writeScratch } = await import('../src/scratch.js');
 const { lockPath, resolvedPath, valuesPath, generatedPath, scratchPath, activePath } = await import('../src/paths.js');
 const { writeActive, writeContext, contextPath, readContext } = await import('../src/contexts.js');
+const { VERB_KINDS } = await import('../src/contexts.js');
+const { MODES } = await import('../src/reset.js');
+const { findCommand } = await import('../src/commands.js');
 const prismBin = fileURLToPath(new URL('../bin/prism', import.meta.url));
 
 // Every test starts from an identical clean store and arranges what it needs.
@@ -558,22 +561,28 @@ test('orphan unset validates the whole next base state before writing', async ()
   assert.deepEqual(fs.readFileSync(valuesPath(), 'utf8'), '{}\n');
 });
 
-test('every public verb enforces its required and stray arguments', async () => {
+test('every public verb enforces its required and stray arguments as usage errors', async () => {
   const invalid = [
     ['unset'], ['unset', 'compositor.gaps', 'extra'],
     ['get'], ['get', 'compositor.gaps', 'extra'],
     ['list', 'extra'],
-    ['describe'], ['describe', '--json', 'extra'], ['describe', '--yaml'],
+    ['describe', '--json', 'extra'], ['describe', '--yaml'],
     ['doctor', 'extra'],
     ['requirements', 'extra'],
     ['set', '--base'], ['set', '--base', 'glass.ior'], ['unset', '--base'],
   ];
   for (const argv of invalid) {
-    const failure = await runCaptured(argv, { print: () => {} });
-    assert.notEqual(failure.code, 0,
-      `${argv.join(' ')} unexpectedly succeeded`);
+    let stdout = '';
+    const failure = await runCaptured(argv, { print: (text) => { stdout += text; } });
+    assert.equal(failure.code, 2, `${argv.join(' ')}: ${failure.stderr}`);
+    assert.equal(stdout, '');
     assert.match(failure.stderr, /usage: prism/);
   }
+  // describe no longer needs --json: the global output mode picks the rendering
+  let pretty = '';
+  assert.equal(await cli.run(['describe'], { print: (text) => { pretty += text; } }), 0);
+  assert.match(pretty, /^wallpaper: none\nprofile: none\nedits: 0\n/);
+  assert.throws(() => JSON.parse(pretty));
 });
 
 test('set writes scratch above every layer, and a wallpaper on screen never captures it', async () => {
@@ -826,6 +835,16 @@ test('reset refuses a store it cannot resolve, and writes nothing', async () => 
   assert.deepEqual(calls, []);
 });
 
+// The declared value sets are what the parser enforces, so they must be the same lists
+// the verbs implement against, or the table would admit a mode or kind the code refuses.
+test('the declared enums are the runtime constants', () => {
+  assert.deepEqual(findCommand(['reset']).args[0].values, MODES);
+  for (const verb of ['show', 'activate', 'deactivate', 'delete', 'rename']) {
+    assert.deepEqual(findCommand(['context', verb]).args[0].values, VERB_KINDS, verb);
+  }
+  assert.deepEqual(findCommand(['context', 'clear']).args[0].values, ['wallpaper']);
+});
+
 test('reset rejects an unknown group and a bad mode', async () => {
   const bad = await runCaptured(['reset', 'neutral', '--group', 'Nope'], { runner: () => {} });
   assert.equal(bad.code, 1);
@@ -833,8 +852,8 @@ test('reset rejects an unknown group and a bad mode', async () => {
   assert.match(bad.stderr, /Focus/);
 
   const mode = await runCaptured(['reset', 'sideways'], { runner: () => {} });
-  assert.equal(mode.code, 1);
-  assert.match(mode.stderr, /usage: prism reset revert\|symmetric\|neutral/);
+  assert.equal(mode.code, 2);
+  assert.match(mode.stderr, /mode must be one of revert, symmetric, neutral, got "sideways"/);
 });
 
 test('reset --base writes beneath an overlay', async () => {
@@ -887,10 +906,10 @@ for (const mode of ['neutral', 'symmetric']) {
 }
 
 test('migrate rewrites the replaced ring key everywhere, backs the files up, reports, and is idempotent', async () => {
-  fs.writeFileSync(valuesPath(), 'glass.ring.driftHz: 25\nglass.ior: 1.3\n');
-  writeContext('profile', 'dusk', { source: null, values: { 'glass.ring.driftHz': 0 } });
+  fs.writeFileSync(valuesPath(), 'glass.ring.sweepMs: 9000\nglass.ior: 1.3\n');
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ring.sweepMs': 0 } });
   writeContext('profile', 'plain', { source: null, values: { 'glass.ior': 1.4 } });
-  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'glass.ring.driftHz': 12, 'glass.ring.sweepMs': 800 } });
+  writeContext('wallpaper', 'abc12345', { source: '/w', values: { 'glass.ring.sweepMs': 1200, 'glass.ring.beamSpeed': 450 } });
   const base = fs.readFileSync(valuesPath());
   const originals = [
     [valuesPath(), base, 'values.yaml'],
@@ -909,14 +928,14 @@ test('migrate rewrites the replaced ring key everywhere, backs the files up, rep
   } }), 0);
   const backup = out.match(/^migrate: backup (.+)$/m)[1];
   assert.ok(backup.startsWith(path.join(process.env.PRISM_STATE_DIR, 'migrations', '')), backup);
-  assert.match(out, /^migrate: base: glass\.ring\.driftHz 25 -> glass\.ring\.sweepMs 1500$/m);
-  assert.match(out, /^migrate: profile dusk: glass\.ring\.driftHz 0 -> glass\.ring\.sweepMs 0$/m);
-  assert.match(out, /^migrate: base \/ wallpaper abc12345: glass\.ring\.driftHz 12 removed; glass\.ring\.sweepMs 800 kept$/m);
+  assert.match(out, /^migrate: base: glass\.ring\.sweepMs 9000 -> glass\.ring\.beamSpeed 300$/m);
+  assert.match(out, /^migrate: profile dusk: glass\.ring\.sweepMs 0 -> glass\.ring\.beamSpeed 0$/m);
+  assert.match(out, /^migrate: base \/ wallpaper abc12345: glass\.ring\.sweepMs 1200 removed; glass\.ring\.beamSpeed 450 kept$/m);
   assert.match(out, /^migrate: done — run 'prism apply' to hand the new keys to the sinks$/m);
   assert.doesNotMatch(out, /plain/);
   assert.deepEqual(fs.readFileSync(path.join(backup, 'values.yaml')), base);
-  assert.deepEqual(readValues(), { 'glass.ring.sweepMs': 1500, 'glass.ior': 1.3 });
-  assert.deepEqual(readContext('wallpaper', 'abc12345').values, { 'glass.ring.sweepMs': 800 });
+  assert.deepEqual(readValues(), { 'glass.ring.beamSpeed': 300, 'glass.ior': 1.3 });
+  assert.deepEqual(readContext('wallpaper', 'abc12345').values, { 'glass.ring.beamSpeed': 450 });
 
   out = '';
   assert.equal(await cli.run(['migrate'], { print: (s) => { out += s; } }), 0);
@@ -925,23 +944,23 @@ test('migrate rewrites the replaced ring key everywhere, backs the files up, rep
 });
 
 test('migrate includes scratch with a backup inside the migration directory', async () => {
-  writeScratch({ 'glass.ring.driftHz': 0, 'glass.ior': 1.4 });
+  writeScratch({ 'glass.ring.sweepMs': 0, 'glass.ior': 1.4 });
   const original = fs.readFileSync(activePath(), 'utf8');
   let doctor = '';
   assert.equal(await cli.run(['doctor'], { print: (s) => { doctor += s; }, runner: () => {} }), 1);
-  assert.match(doctor, /pending migration: glass\.ring\.driftHz in scratch is replaced by glass\.ring\.sweepMs/);
+  assert.match(doctor, /pending migration: glass\.ring\.sweepMs in scratch is replaced by glass\.ring\.beamSpeed/);
 
   let out = '';
   assert.equal(await cli.run(['migrate'], { print: (s) => { out += s; } }), 0);
   const backup = out.match(/^migrate: backup (.+)$/m)[1];
   assert.deepEqual(fs.readFileSync(path.join(backup, 'state', 'active.json'), 'utf8'), original);
-  assert.deepEqual(readScratch(), { 'glass.ring.sweepMs': 0, 'glass.ior': 1.4 });
-  assert.match(out, /^migrate: scratch: glass\.ring\.driftHz 0 -> glass\.ring\.sweepMs 0$/m);
+  assert.deepEqual(readScratch(), { 'glass.ring.beamSpeed': 0, 'glass.ior': 1.4 });
+  assert.match(out, /^migrate: scratch: glass\.ring\.sweepMs 0 -> glass\.ring\.beamSpeed 0$/m);
   assert.deepEqual(fs.readdirSync(backup), ['state']);
 });
 
 test('scratch-only migration failure names only its state restore destination', async (t) => {
-  writeScratch({ 'glass.ring.driftHz': 0 });
+  writeScratch({ 'glass.ring.sweepMs': 0 });
   const originalWrite = fs.writeFileSync;
   t.after(() => { fs.writeFileSync = originalWrite; });
 
@@ -961,22 +980,22 @@ test('scratch-only migration failure names only its state restore destination', 
 
 test('migrate takes no arguments and aborts whole on a context that does not parse', async () => {
   const usage = await runCaptured(['migrate', 'now']);
-  assert.equal(usage.code, 1);
-  assert.match(usage.stderr, /usage: prism migrate/);
+  assert.equal(usage.code, 2);
+  assert.match(usage.stderr, /target must be one of pairs, got "now"/);
 
-  fs.writeFileSync(valuesPath(), 'glass.ring.driftHz: 25\n');
+  fs.writeFileSync(valuesPath(), 'glass.ring.sweepMs: 9000\n');
   fs.mkdirSync(path.dirname(contextPath('profile', 'bad')), { recursive: true });
   fs.writeFileSync(contextPath('profile', 'bad'), '- not\n- flat\n');
   const failure = await runCaptured(['migrate'], { print: () => {} });
   assert.equal(failure.code, 1);
   assert.match(failure.stderr, /look must be a mapping/);
-  assert.equal(fs.readFileSync(valuesPath(), 'utf8'), 'glass.ring.driftHz: 25\n', 'base untouched');
+  assert.equal(fs.readFileSync(valuesPath(), 'utf8'), 'glass.ring.sweepMs: 9000\n', 'base untouched');
   assert.equal(fs.existsSync(path.join(process.env.PRISM_STATE_DIR, 'migrations')), false, 'no backup made');
 });
 
 test('migrate reports the backup before a later physical-file write fails', async (t) => {
-  fs.writeFileSync(valuesPath(), 'glass.ring.driftHz: 25\n');
-  writeContext('profile', 'dusk', { source: null, values: { 'glass.ring.driftHz': 0 } });
+  fs.writeFileSync(valuesPath(), 'glass.ring.sweepMs: 9000\n');
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ring.sweepMs': 0 } });
   const original = fs.readFileSync(contextPath('profile', 'dusk'));
   const rename = fs.renameSync;
   t.after(() => { fs.renameSync = rename; });
@@ -988,22 +1007,22 @@ test('migrate reports the backup before a later physical-file write fails', asyn
   const failure = await runCaptured(['migrate'], { print: (s) => { out += s; } });
   assert.equal(failure.code, 1);
   const backup = out.match(/^migrate: backup (.+)$/m)[1];
-  assert.match(out, /^migrate: base: glass\.ring\.driftHz 25 -> glass\.ring\.sweepMs 1500$/m);
+  assert.match(out, /^migrate: base: glass\.ring\.sweepMs 9000 -> glass\.ring\.beamSpeed 300$/m);
   assert.match(failure.stderr, /migrate: profile dusk: injected profile failure/);
   assert.ok(failure.stderr.includes(backup));
-  assert.deepEqual(readValues(), { 'glass.ring.sweepMs': 1500 });
+  assert.deepEqual(readValues(), { 'glass.ring.beamSpeed': 300 });
   assert.deepEqual(fs.readFileSync(contextPath('profile', 'dusk')), original);
-  assert.deepEqual(fs.readFileSync(path.join(backup, 'values.yaml'), 'utf8'), 'glass.ring.driftHz: 25\n');
+  assert.deepEqual(fs.readFileSync(path.join(backup, 'values.yaml'), 'utf8'), 'glass.ring.sweepMs: 9000\n');
 });
 
 test('doctor names a pending migration in base and in a context, and is quiet once it has run', async () => {
-  fs.writeFileSync(valuesPath(), 'glass.ring.driftHz: 25\n');
-  writeContext('profile', 'dusk', { source: null, values: { 'glass.ring.driftHz': 0 } });
+  fs.writeFileSync(valuesPath(), 'glass.ring.sweepMs: 9000\n');
+  writeContext('profile', 'dusk', { source: null, values: { 'glass.ring.sweepMs': 0 } });
   let out = '';
   assert.equal(await cli.run(['doctor'], { runner: () => {}, print: (s) => { out += s; } }), 1);
-  assert.match(out, /^doctor: pending migration: glass\.ring\.driftHz in base is replaced by glass\.ring\.sweepMs — run 'prism migrate'$/m);
-  assert.match(out, /^doctor: pending migration: glass\.ring\.driftHz in profile dusk is replaced by glass\.ring\.sweepMs — run 'prism migrate'$/m);
-  assert.doesNotMatch(out, /orphan value glass\.ring\.driftHz/);
+  assert.match(out, /^doctor: pending migration: glass\.ring\.sweepMs in base is replaced by glass\.ring\.beamSpeed — run 'prism migrate'$/m);
+  assert.match(out, /^doctor: pending migration: glass\.ring\.sweepMs in profile dusk is replaced by glass\.ring\.beamSpeed — run 'prism migrate'$/m);
+  assert.doesNotMatch(out, /orphan value glass\.ring\.sweepMs/);
 
   assert.equal(await cli.run(['migrate'], { print: () => {} }), 0);
   assert.equal(await cli.run(['apply'], { runner: () => {} }), 0);

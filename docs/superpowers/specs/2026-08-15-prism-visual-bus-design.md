@@ -523,7 +523,7 @@ Include placement and the parameters it displaces:
   drift this replaces.
 - From `config.kdl`: the terminal `background-effect`/opacity window rules,
   `gaps` in the `layout` block, and the stale ownership-table comment.
-- From **both** `host-europa.kdl` and `host-titan.kdl`: `gaps`. This is easy
+- From **both** `host-europa.kdl` and `host-<host>.kdl`: `gaps`. This is easy
   to miss — the per-host gap values live only in the host includes, and
   leaving them means prism's fragment is overridden and appears to do
   nothing. Per-host gaps move into each host's `values.yaml`.

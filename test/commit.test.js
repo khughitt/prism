@@ -198,7 +198,7 @@ test('commit rejects a bad destination, a bad name, and stray arguments', async 
     const failure = await runCaptured(argv);
     assert.notEqual(failure.code, 0, `${argv.join(' ')} unexpectedly succeeded`);
   }
-  assert.match((await runCaptured(['commit'])).stderr, /usage: prism commit base \| profile \[<name>\] \| wallpaper <id>/);
+  assert.match((await runCaptured(['commit'])).stderr, /missing destination; usage: prism commit/);
 });
 
 for (const source of [null, 'Aurora']) {

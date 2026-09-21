@@ -59,7 +59,9 @@ glass.bypass.aurora: false
 glass.ring.focus: true
 glass.ring.colorSource: familiar
 glass.ring.color: "#ccccff"
-glass.ring.sweepMs: 1500
+glass.ring.beamSpeed: 300
+glass.ring.gap: 8
+glass.ring.glow: 1
 terminal.background.opacity.active: 0
 terminal.background.opacity.inactive: 0
 terminal.apps:

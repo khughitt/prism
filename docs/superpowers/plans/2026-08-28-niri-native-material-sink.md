@@ -38,7 +38,7 @@ retained historical procedure, not open Prism work.
 | Prism `integrations/niri/apply` | Atomic generation, validation, restore, reload | 2 |
 | Prism `integrations/noctalia-plugin/{panel,queue}.luau` | Live-terminal controls without preview IPC | 3 |
 | Prism `docs/notes/noctalia-plugin-contract.md` | Current plugin contract | 3 |
-| Dotfiles `prism/titan/values.yaml` | Accepted native values; first rollout commit | 4 |
+| Dotfiles `prism/<host>/values.yaml` | Accepted native values; first rollout commit | 4 |
 | Dotfiles `niri/{config.kdl,materials.kdl}` | Remove static material ownership | 4 |
 | Dotfiles `setup.sh`, `bin/dotfiles-health`, `.gitignore`, tests | Generated KDL validation and legacy-link cleanup | 4 |
 | niri-material rollout docs | Final deployment evidence and resumed burn-in | 6 |
@@ -449,7 +449,7 @@ git commit -m "refactor(noctalia): remove legacy glass preview"
 ### Task 4: Prepare two ordered dotfiles commits
 
 **Files:**
-- Modify first commit: `prism/titan/values.yaml`
+- Modify first commit: `prism/<host>/values.yaml`
 - Modify second commit: `.gitignore`
 - Modify second commit: `setup.sh`
 - Modify second commit: `bin/dotfiles-health`
@@ -477,7 +477,7 @@ Expected: clean worktree and existing complete suite passes.
 
 - [ ] **Step 2: Replace Titan values with the accepted native set**
 
-Make `prism/titan/values.yaml` exactly:
+Make `prism/<host>/values.yaml` exactly:
 
 ```yaml
 compositor.gaps: 54
@@ -508,11 +508,11 @@ still emits it.
 - [ ] **Step 3: Prove the value commit is accepted by current Prism and commit it**
 
 ```bash
-PRISM_CONFIG_DIR="$dotfiles_wt/prism/titan" \
+PRISM_CONFIG_DIR="$dotfiles_wt/prism/<host>" \
   "$HOME/d/prism/bin/prism" describe --json >/dev/null
 git -C "$dotfiles_wt" diff --check
-git -C "$dotfiles_wt" add prism/titan/values.yaml
-git -C "$dotfiles_wt" commit -m "feat(prism): migrate titan native material values"
+git -C "$dotfiles_wt" add prism/<host>/values.yaml
+git -C "$dotfiles_wt" commit -m "feat(prism): migrate <host> native material values"
 values_commit=$(git -C "$dotfiles_wt" rev-parse HEAD)
 ```
 
@@ -527,7 +527,7 @@ link while requiring `prism.kdl` and `NIRI_CONFIG` on pre-link apply.
 
 Reduce `configure_prism_glass_runtime` to the one surviving prerequisite and
 rename it accordingly: it must still link
-`"${repo_root}/prism/titan"` to `"${tmp}/config/prism"`, otherwise the healthy
+`"${repo_root}/prism/<host>"` to `"${tmp}/config/prism"`, otherwise the healthy
 and doctor-failure tests never enter the Prism health block. Delete
 `test_dotfiles_health_fails_wrong_niri_glass_consumer`,
 `test_dotfiles_health_fails_wrong_named_niri_glass_config`, and
@@ -589,14 +589,14 @@ trap 'rm -rf -- "$stage"' EXIT HUP INT TERM
 mkdir -p "$stage/bin" "$stage/state" "$stage/config"
 ln -s /usr/bin/true "$stage/bin/niri"
 PATH="$stage/bin:$PATH" \
-  PRISM_CONFIG_DIR="$dotfiles_wt/prism/titan" \
+  PRISM_CONFIG_DIR="$dotfiles_wt/prism/<host>" \
   PRISM_STATE_DIR="$stage/state" \
   "$HOME/d/prism/.worktrees/niri-native-material/bin/prism" apply niri
-cp "$dotfiles_wt/niri/config.kdl" "$dotfiles_wt/niri/host-titan.kdl" \
+cp "$dotfiles_wt/niri/config.kdl" "$dotfiles_wt/niri/host-<host>.kdl" \
   "$stage/config/"
 cp "$HOME/.config/niri/noctalia.kdl" "$stage/config/noctalia.kdl"
 cp "$stage/state/generated/prism.kdl" "$stage/config/prism.kdl"
-ln -s host-titan.kdl "$stage/config/host.kdl"
+ln -s host-<host>.kdl "$stage/config/host.kdl"
 zsh "$dotfiles_wt/tests/setup_and_health.zsh"
 /usr/bin/niri validate -c "$stage/config/config.kdl"
 git -C "$dotfiles_wt" diff --check
@@ -660,11 +660,11 @@ git -C "$HOME/d/prism/.worktrees/niri-native-material" log --oneline main..HEAD
 git -C "$dotfiles_wt" log --oneline main..HEAD
 git -C "$HOME/d/prism/.worktrees/niri-native-material" status --short
 git -C "$dotfiles_wt" status --short
-git -C "$HOME/d/dotfiles" diff -- prism/titan/values.yaml
+git -C "$HOME/d/dotfiles" diff -- prism/<host>/values.yaml
 ```
 
 Pause for explicit approval of the two live merges and of discarding exactly
-the displayed live `prism/titan/values.yaml` drift before the first merge. The
+the displayed live `prism/<host>/values.yaml` drift before the first merge. The
 accepted values commit replaces that file with the pinned set. Stop if either
 feature worktree is dirty or commit order is not value migration then cleanup;
 unrelated dirty paths in dotfiles `main` remain untouched.
@@ -675,12 +675,12 @@ unrelated dirty paths in dotfiles `main` remain untouched.
 set -euo pipefail
 test "$(git -C "$dotfiles_repo" branch --show-current)" = main
 git -C "$dotfiles_repo" diff --quiet -- niri/materials.kdl niri/config.kdl
-git -C "$dotfiles_repo" restore --source=HEAD --staged --worktree -- prism/titan/values.yaml
-git -C "$dotfiles_repo" diff --quiet -- prism/titan/values.yaml
-git -C "$dotfiles_repo" diff --cached --quiet -- prism/titan/values.yaml
+git -C "$dotfiles_repo" restore --source=HEAD --staged --worktree -- prism/<host>/values.yaml
+git -C "$dotfiles_repo" diff --quiet -- prism/<host>/values.yaml
+git -C "$dotfiles_repo" diff --cached --quiet -- prism/<host>/values.yaml
 git -C "$dotfiles_repo" merge --ff-only "$values_commit"
 test "$(git -C "$dotfiles_repo" rev-parse HEAD)" = "$values_commit"
-PRISM_CONFIG_DIR="$dotfiles_repo/prism/titan" "$HOME/d/prism/bin/prism" describe --json >/dev/null
+PRISM_CONFIG_DIR="$dotfiles_repo/prism/<host>" "$HOME/d/prism/bin/prism" describe --json >/dev/null
 ```
 
 Expected: current Prism still resolves and static `terminal-glass` remains
@@ -811,7 +811,7 @@ Open Prism and verify:
 5. reset restores the accepted value; and
 6. no error banner, legacy process, or `glasspanes*` layer appears.
 
-Restore every changed value and require `git -C "$dotfiles_repo" diff --quiet -- prism/titan/values.yaml`.
+Restore every changed value and require `git -C "$dotfiles_repo" diff --quiet -- prism/<host>/values.yaml`.
 
 ---
 

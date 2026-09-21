@@ -141,12 +141,17 @@ test('context verbs reject the reserved kind, unknown kinds, bad names, and stra
     const failure = await runCaptured(argv);
     assert.notEqual(failure.code, 0, `${argv.join(' ')} unexpectedly succeeded`);
   }
-  assert.match((await runCaptured(['context', 'delete', 'state', 'dark'])).stderr, /kind state is reserved/);
-  assert.match((await runCaptured(['context', 'delete', 'theme', 'x'])).stderr, /unknown kind theme/);
+  // the declared enum refuses every kind outside the set before a verb runs, the
+  // reserved `state` included: a usage error, exit 2
+  for (const kind of ['state', 'theme']) {
+    const refused = await runCaptured(['context', 'delete', kind, 'dark']);
+    assert.equal(refused.code, 2);
+    assert.match(refused.stderr, new RegExp(`kind must be one of profile, wallpaper, got "${kind}"`));
+  }
   assert.match((await runCaptured(['context', 'delete', 'profile', 'a b'])).stderr, /invalid context name/);
   assert.match((await runCaptured(['context'])).stderr, /usage: prism context/);
   assert.match((await runCaptured(['context', 'pin', 'wallpaper'])).stderr,
-    /usage: prism context list\|show\|rename\|activate\|deactivate\|delete\|clear\|wallpaper/);
+    /unknown command "context pin"; usage: prism context/);
 });
 
 test('activate profile fans out only the keys whose effective value changed', async () => {
@@ -428,7 +433,7 @@ test('context rename refuses a missing source, an existing target, the wallpaper
     const failure = await runCaptured(argv);
     assert.notEqual(failure.code, 0, `${argv.join(' ')} unexpectedly succeeded`);
   }
-  assert.match((await runCaptured(['context', 'rename'])).stderr, /usage: prism context rename <kind> <old> <new>/);
+  assert.match((await runCaptured(['context', 'rename'])).stderr, /missing kind; usage: prism context rename/);
   assert.match((await runCaptured(['context', 'rename', 'profile', 'dusk', 'bad name'])).stderr, /invalid context name/);
 });
 
@@ -621,13 +626,15 @@ for (const command of [
 test('expected slots distinguish Default, named Default, no wallpaper and require both valid flags', async () => {
   writeLook('Default', { values: {}, wallpapers: { w1: { source: '/w', values: { 'glass.roughness': 0.2 } } } });
   writeRuntime({ active: { profile: 'Default', wallpaper: { id: 'w1', path: '/w' } }, scratch: {} });
-  for (const guards of [expected('default', 'id:w1'), expected('profile:Default', 'none'),
-    ['--expect-look', 'profile:Default'], ['--expect-wallpaper', 'id:w1'],
-    expected('profile:Default', 'id:w1').concat(['--expect-look', 'profile:Default']),
-    expected('Default', 'id:w1')]) {
+  // a repeated flag is a usage error (exit 2) at the declared table; the rest fail
+  // inside the verb (exit 1)
+  for (const [guards, code] of [[expected('default', 'id:w1'), 1], [expected('profile:Default', 'none'), 1],
+    [['--expect-look', 'profile:Default'], 1], [['--expect-wallpaper', 'id:w1'], 1],
+    [expected('profile:Default', 'id:w1').concat(['--expect-look', 'profile:Default']), 2],
+    [expected('Default', 'id:w1'), 1]]) {
     const before = storeBytes();
     const failure = await runCaptured(['context', 'delete', 'profile', 'Default', ...guards]);
-    assert.equal(failure.code, 1, guards.join(' '));
+    assert.equal(failure.code, code, guards.join(' '));
     assert.deepEqual(storeBytes(), before);
   }
   assert.equal((await runCaptured(['context', 'rename', 'profile', 'Default', 'Saved',

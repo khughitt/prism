@@ -135,21 +135,21 @@ test('equal existing pairs and dual scratch sources are safe and keep all other 
 });
 
 test('replacement-era keys are copied unchanged and plain migration changes all logical maps once per file', async () => {
-  oldPair('w1', '_source: /w\nglass.ring.driftHz: 0\n');
-  writeLook('Inactive', { values: { 'glass.ring.driftHz': 25 }, wallpapers: {
-    other: { source: '/other', values: { 'glass.ring.driftHz': 12 } },
+  oldPair('w1', '_source: /w\nglass.ring.sweepMs: 0\n');
+  writeLook('Inactive', { values: { 'glass.ring.sweepMs': 25 }, wallpapers: {
+    other: { source: '/other', values: { 'glass.ring.sweepMs': 12 } },
   } });
   assert.equal((await runCaptured(['migrate', 'pairs'])).code, 0);
-  assert.deepEqual(readPair('Inactive', 'w1').values, { 'glass.ring.driftHz': 0 });
+  assert.deepEqual(readPair('Inactive', 'w1').values, { 'glass.ring.sweepMs': 0 });
   const rename = fs.renameSync;
   const writes = [];
   fs.renameSync = (from, to) => { writes.push(to); return rename(from, to); };
   try { assert.equal((await runCaptured(['migrate'])).code, 0); }
   finally { fs.renameSync = rename; }
   assert.equal(writes.filter((file) => file === contextPath('profile', 'Inactive')).length, 1);
-  assert.deepEqual(readLook('Inactive'), { values: { 'glass.ring.sweepMs': 1500 }, wallpapers: {
-    other: { source: '/other', values: { 'glass.ring.sweepMs': 1500 } },
-    w1: { source: '/w', values: { 'glass.ring.sweepMs': 0 } },
+  assert.deepEqual(readLook('Inactive'), { values: { 'glass.ring.beamSpeed': 300 }, wallpapers: {
+    other: { source: '/other', values: { 'glass.ring.beamSpeed': 300 } },
+    w1: { source: '/w', values: { 'glass.ring.beamSpeed': 0 } },
   } });
 });
 

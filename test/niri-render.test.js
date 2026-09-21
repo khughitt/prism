@@ -67,7 +67,9 @@ const resolved = { params: {
   'glass.ring.focus': true,
   'glass.ring.colorSource': 'manual',
   'glass.ring.color': '#f2c14e',
-  'glass.ring.sweepMs': 1200,
+  'glass.ring.beamSpeed': 450,
+  'glass.ring.gap': 10,
+  'glass.ring.glow': 1.2,
 } };
 
 const with_ = (overrides) => ({ params: { ...resolved.params, ...overrides } });
@@ -108,7 +110,9 @@ material "terminal-glass" {
         accent "none"
         focus "ring-light"
         ring-color "#f2c14e"
-        ring-sweep-ms 1200
+        ring-beam-speed 450
+        ring-gap 10
+        ring-glow 1.2
     }
 }
 material "terminal-glass-inactive" {
@@ -140,7 +144,9 @@ material "terminal-glass-inactive" {
         accent "none"
         focus "ring-light"
         ring-color "#f2c14e"
-        ring-sweep-ms 1200
+        ring-beam-speed 450
+        ring-gap 10
+        ring-glow 1.2
     }
 }
 window-rule {
@@ -198,7 +204,9 @@ material "terminal-glass" {
         accent "none"
         focus "ring-light"
         ring-color "#f2c14e"
-        ring-sweep-ms 1200
+        ring-beam-speed 450
+        ring-gap 10
+        ring-glow 1.2
     }
 }
 window-rule {
@@ -521,7 +529,7 @@ test('optic bypasses silence both states while retaining their settings', () => 
 test('both materials carry the same response block', () => {
   const kdl = renderNiriFragment(resolved);
   const block = '    response "default" {\n        accent "none"\n        focus "ring-light"\n'
-    + '        ring-color "#f2c14e"\n        ring-sweep-ms 1200\n    }';
+    + '        ring-color "#f2c14e"\n        ring-beam-speed 450\n        ring-gap 10\n        ring-glow 1.2\n    }';
 
   assert.equal(count(kdl, block), 2, kdl);
   const [active, inactive] = kdl.match(/^material [^]*?^\}/gm);
@@ -529,10 +537,12 @@ test('both materials carry the same response block', () => {
   assert.ok(inactive.includes(block));
 });
 
-test('the resolved shipped sweep default reaches both material response blocks', () => {
+test('the resolved shipped defaults reach both material response blocks', () => {
   const kdl = renderNiriFragment({ params: resolveParams(loadDefs(defsDir()), {}) });
 
-  assert.equal(count(kdl, 'ring-sweep-ms 1500'), 2, kdl);
+  assert.equal(count(kdl, 'ring-beam-speed 300'), 2, kdl);
+  assert.equal(count(kdl, 'ring-gap 8'), 2, kdl);
+  assert.equal(count(kdl, 'ring-glow 1'), 2, kdl);
 });
 
 test('the focus light switches off without touching the rest of the response', () => {
@@ -572,12 +582,12 @@ test('the manual source ignores a palette accent', () => {
   assert.equal(count(kdl, '#bad065'), 0);
 });
 
-test('a zero sweep skips the lap, and the retired drift key never reaches the config', () => {
-  const kdl = renderNiriFragment(with_({ 'glass.ring.sweepMs': 0 }));
+test('a zero beam speed shows only the resting glow, and the retired sweep key never reaches the config', () => {
+  const kdl = renderNiriFragment(with_({ 'glass.ring.beamSpeed': 0 }));
 
-  assert.equal(count(kdl, 'ring-sweep-ms 0'), 2);
-  assert.equal(count(kdl, 'ring-drift-hz'), 0);
-  assert.equal(count(renderNiriFragment(resolved), 'ring-drift-hz'), 0);
+  assert.equal(count(kdl, 'ring-beam-speed 0'), 2);
+  assert.equal(count(kdl, 'ring-sweep-ms'), 0);
+  assert.equal(count(renderNiriFragment(resolved), 'ring-sweep-ms'), 0);
 });
 
 test('the palette reader rests on absence and fails on a broken file', (t) => {
