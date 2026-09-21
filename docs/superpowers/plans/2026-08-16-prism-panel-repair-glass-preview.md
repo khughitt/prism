@@ -1156,7 +1156,7 @@ touch "${tmp}/home/d/niri-glass/shell.qml"
 ```
 
 Also add `PATH="${tmp}/bin:$PATH"` to the environment passed to `setup.sh`, so
-the existing hostname fixture selects `prism/titan` during graphical dry
+the existing hostname fixture selects `prism/<host>` during graphical dry
 runs.
 
 Add `test_setup_graphical_config_plans_niri_glass`:
@@ -1168,7 +1168,7 @@ test_setup_graphical_config_plans_niri_glass() {
   register_tmp_cleanup "$tmp"
   mkdir -p "${tmp}/home" "${tmp}/config" "${tmp}/data"
 
-  output=$(PRISM_TEST_HOSTNAME=titan \
+  output=$(PRISM_TEST_HOSTNAME=<host> \
     run_setup "$tmp" --dry-run --link-only --only graphical-config)
 
   [[ "$output" == *"${tmp}/home/d/niri-glass"* ]] || \
@@ -1198,7 +1198,7 @@ configure_prism_glass_runtime() {
     "${tmp}/home/d/niri-glass" "${tmp}/home/.local/state/prism/generated"
   touch "${tmp}/home/d/niri-glass/shell.qml"
   print -- '{}' > "${tmp}/home/.local/state/prism/generated/niri-glass.json"
-  ln -s "${repo_root}/prism/titan" "${tmp}/config/prism"
+  ln -s "${repo_root}/prism/<host>" "${tmp}/config/prism"
   ln -s "${tmp}/home/d/niri-glass" "${tmp}/config/quickshell/niri-glass"
   ln -s "${tmp}/home/.local/state/prism/generated/niri-glass.json" \
     "${tmp}/config/niri/niri-glass.json"
@@ -1216,7 +1216,7 @@ test_dotfiles_health_accepts_prism_glass_runtime() {
   run_setup "$tmp" --link-only --headless >/dev/null
   configure_prism_glass_runtime "$tmp"
 
-  PRISM_TEST_HOSTNAME=titan run_health "$tmp" --skip-systemd >/dev/null
+  PRISM_TEST_HOSTNAME=<host> run_health "$tmp" --skip-systemd >/dev/null
 }
 
 test_dotfiles_health_fails_wrong_niri_glass_consumer() {
@@ -1231,7 +1231,7 @@ test_dotfiles_health_fails_wrong_niri_glass_consumer() {
   ln -s "${tmp}/wrong.json" "${tmp}/config/niri/niri-glass.json"
 
   set +e
-  output=$(PRISM_TEST_HOSTNAME=titan run_health "$tmp" --skip-systemd 2>&1)
+  output=$(PRISM_TEST_HOSTNAME=<host> run_health "$tmp" --skip-systemd 2>&1)
   exit_status=$?
   set -e
   [[ "$exit_status" -ne 0 ]] || fail "health accepted wrong niri-glass consumer"
@@ -1251,7 +1251,7 @@ test_dotfiles_health_fails_wrong_named_niri_glass_config() {
   ln -s "${tmp}/wrong-niri-glass" "${tmp}/config/quickshell/niri-glass"
 
   set +e
-  output=$(PRISM_TEST_HOSTNAME=titan run_health "$tmp" --skip-systemd 2>&1)
+  output=$(PRISM_TEST_HOSTNAME=<host> run_health "$tmp" --skip-systemd 2>&1)
   exit_status=$?
   set -e
   [[ "$exit_status" -ne 0 ]] || fail "health accepted wrong named niri-glass config"
@@ -1269,7 +1269,7 @@ test_dotfiles_health_rejects_root_quickshell_config() {
   touch "${tmp}/config/quickshell/shell.qml"
 
   set +e
-  output=$(PRISM_TEST_HOSTNAME=titan run_health "$tmp" --skip-systemd 2>&1)
+  output=$(PRISM_TEST_HOSTNAME=<host> run_health "$tmp" --skip-systemd 2>&1)
   exit_status=$?
   set -e
   [[ "$exit_status" -ne 0 ]] || fail "health accepted a root Quickshell config"

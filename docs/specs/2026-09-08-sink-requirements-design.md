@@ -179,7 +179,7 @@ failing at apply time. The probe is now the fragment the sink writes, rendered
 by `renderNiriFragment` from the defs' own defaults with both glass states on,
 so a new property is probed the moment it can be emitted.
 
-Verified on titan 2026-09-08: exit 0 under niri-material, and exit 1 for a
+Verified on the desktop host 2026-09-08: exit 0 under niri-material, and exit 1 for a
 config containing a node niri does not know. On failure the probe writes one
 line naming the missing capability and the output of `niri --version`, which
 is the only identity an installed niri offers — `niri --version` prints

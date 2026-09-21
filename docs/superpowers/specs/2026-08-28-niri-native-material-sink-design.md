@@ -197,7 +197,7 @@ removed.
 
 ## Titan value migration
 
-Dotfiles `prism/titan/values.yaml` is migrated before the native sink becomes
+Dotfiles `prism/<host>/values.yaml` is migrated before the native sink becomes
 authoritative. It removes every deleted key, records the exact live app IDs,
 and pins the accepted material appearance:
 

@@ -24,7 +24,7 @@ node --test test/manifest.test.js
 Exact relevant output:
 
 ```text
-Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/mnt/ssd/Dropbox/prism/.worktrees/prism-v1/src/manifest.js' imported from /mnt/ssd/Dropbox/prism/.worktrees/prism-v1/test/manifest.test.js
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '<checkout>/.worktrees/prism-v1/src/manifest.js' imported from <checkout>/.worktrees/prism-v1/test/manifest.test.js
 ✖ test/manifest.test.js (51.490709ms)
 ℹ tests 1
 ℹ pass 0

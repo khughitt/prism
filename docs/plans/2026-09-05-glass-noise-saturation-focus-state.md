@@ -389,7 +389,7 @@ Run: `tasks start prism-608787`
 - [ ] **Step 1: Confirm the native build is installed**
 
 Run: `tasks show material-1293e8 --pretty | head -8` and `niri --version`
-Expected: the material task is `done` and the installed version string names a commit at or after the merge of `material-1293e8` into `materials-26.04` (compare with `git -C /mnt/ssd/Dropbox/niri-material log --oneline -3 materials-26.04`). If not, stop here and report; the remaining steps would roll back on `niri validate`.
+Expected: the material task is `done` and the installed version string names a commit at or after the merge of `material-1293e8` into `materials-26.04` (compare with `git -C <the niri-material checkout> log --oneline -3 materials-26.04`). If not, stop here and report; the remaining steps would roll back on `niri validate`.
 
 - [ ] **Step 2: Validate the generated fragment against the installed niri**
 
