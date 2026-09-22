@@ -62,6 +62,7 @@ glass.ring.colorSource: familiar
 glass.ring.color: "#ccccff"
 glass.ring.beamSpeed: 300
 glass.ring.gap: 8
+glass.ring.width: 2.6
 glass.ring.glow: 1
 terminal.background.opacity.active: 0
 terminal.background.opacity.inactive: 0

@@ -1,15 +1,16 @@
 ---
 id: prism-a2c205
 title: Decide whether Prism should expose the ring filament width
-status: doing
+status: done
 priority: 2
 size: xs
 complexity: low
 process: direct
 owner: main
 created: 2026-09-22T13:19:50Z
-updated: 2026-09-22T13:54:09Z
+updated: 2026-09-22T13:56:10Z
 started: 2026-09-22T13:54:09Z
+completed: 2026-09-22T13:56:10Z
 depends: []
 tags: [niri]
 agent: "claude-code/claude-opus-5[1m]"
@@ -21,4 +22,10 @@ prism-d8ee06's one unfinished clause. Native ring-width is >0 through 128, defau
 
 - 2026-09-22T13:54:09Z (main): Owner decision 2026-09-22: yes, expose it. Native ring-width is >0 through 128, default 2.6; zero is rejected ('ring-width must be positive'), so the def's lower bound must be strictly positive.
 - 2026-09-22T13:54:09Z (main): started
+  provenance: {"harness_session":"claude-code:86218c99-e333-49f8-965c-e0e30c526e78","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-09-22T13:56:10Z (prism-a2c205): Range narrowed to [0.2, 16] from the native >0..128. The floor is what keeps 'ring-width must be positive' out of reach — no slider position, stored value or reset can emit 0. The ceiling is usefulness: filamentBand centres the core at ring-gap with a Gaussian falling off over ~width px, so a width past the Gap (default 8) already reaches the face edge; 16 is twice that and 128 is meaningless for a filament. Default and neutral stay 2.6, the value the owner accepted on the 2026-09-21 sheets.
+- 2026-09-22T13:56:10Z (prism-a2c205): Native checkpoint on installed niri 26.04 (649c731b): ring-width 0.2, 2.6, 16 accepted (the whole reachable range); 0 rejected with 'ring-width must be positive' and -1 rejected, both unreachable from the panel.
+- 2026-09-22T13:56:10Z (prism-a2c205): done
+  provenance: {"harness_session":"claude-code:86218c99-e333-49f8-965c-e0e30c526e78","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-09-22T13:56:10Z (prism-a2c205): glass.ring.width exposed as a Ring-group slider (0.2-16 px, default 2.6) and emitted as ring-width in both response blocks, bound at reload and in both starter profiles; the positive floor keeps the native error unreachable
   provenance: {"harness_session":"claude-code:86218c99-e333-49f8-965c-e0e30c526e78","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
