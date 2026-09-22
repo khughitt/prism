@@ -70,6 +70,7 @@ const resolved = { params: {
   'glass.ring.color': '#f2c14e',
   'glass.ring.beamSpeed': 450,
   'glass.ring.gap': 10,
+  'glass.ring.width': 4,
   'glass.ring.glow': 1.2,
 } };
 
@@ -114,6 +115,7 @@ material "terminal-glass" {
         ring-color "#f2c14e"
         ring-beam-speed 450
         ring-gap 10
+        ring-width 4
         ring-glow 1.2
     }
 }
@@ -149,6 +151,7 @@ material "terminal-glass-inactive" {
         ring-color "#f2c14e"
         ring-beam-speed 450
         ring-gap 10
+        ring-width 4
         ring-glow 1.2
     }
 }
@@ -210,6 +213,7 @@ material "terminal-glass" {
         ring-color "#f2c14e"
         ring-beam-speed 450
         ring-gap 10
+        ring-width 4
         ring-glow 1.2
     }
 }
@@ -407,13 +411,21 @@ test('the ring gap is the small-pane limit, and prism reports it instead of clam
   assert.match(gap.description, /twice/);
 });
 
-test('prism emits no ring width and none of the retired ring keys', () => {
-  const kdl = renderNiriFragment(resolved);
+test('every ring width the panel can emit is one niri accepts, and no retired key is', () => {
+  const width = loadDefs(defsDir()).get('glass.ring.width');
 
-  // ring-width is the one response field prism leaves to the native default,
-  // which is positive; emitting it would put "ring-width must be positive"
-  // within reach of a panel slider.
-  assert.equal(count(kdl, 'ring-width'), 0);
+  // niri rejects a zero or negative width ("ring-width must be positive"), so
+  // the range's own floor is what keeps that error out of reach: there is no
+  // slider position, stored value or reset that can emit a width of zero.
+  assert.ok(width.range[0] > 0, `ring width may reach ${width.range[0]}`);
+  assert.ok(width.range[1] <= 128, `ring width may reach ${width.range[1]}`);
+  assert.equal(width.neutral > 0, true, 'the neutral look emits a width too');
+
+  for (const value of [width.range[0], width.default, width.range[1]]) {
+    const kdl = renderNiriFragment(with_({ 'glass.ring.width': value }));
+    assert.equal(count(kdl, `ring-width ${value}\n`), 2, `width ${value}`);
+  }
+  const kdl = renderNiriFragment(resolved);
   for (const retired of ['ring-inset', 'ring-sweep-ms', 'ring-drift-hz']) {
     assert.equal(count(kdl, retired), 0, retired);
   }
@@ -618,7 +630,8 @@ test('optic bypasses silence both states while retaining their settings', () => 
 test('both materials carry the same response block', () => {
   const kdl = renderNiriFragment(resolved);
   const block = '    response "default" {\n        accent "none"\n        focus "ring-light"\n'
-    + '        ring-color "#f2c14e"\n        ring-beam-speed 450\n        ring-gap 10\n        ring-glow 1.2\n    }';
+    + '        ring-color "#f2c14e"\n        ring-beam-speed 450\n        ring-gap 10\n'
+    + '        ring-width 4\n        ring-glow 1.2\n    }';
 
   assert.equal(count(kdl, block), 2, kdl);
   const [active, inactive] = kdl.match(/^material [^]*?^\}/gm);
@@ -631,6 +644,7 @@ test('the resolved shipped defaults reach both material response blocks', () => 
 
   assert.equal(count(kdl, 'ring-beam-speed 300'), 2, kdl);
   assert.equal(count(kdl, 'ring-gap 8'), 2, kdl);
+  assert.equal(count(kdl, 'ring-width 2.6'), 2, kdl);
   assert.equal(count(kdl, 'ring-glow 1'), 2, kdl);
 });
 

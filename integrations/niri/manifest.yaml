@@ -65,4 +65,5 @@ binds:
   - {param: glass.ring.color, liveness: reload}
   - {param: glass.ring.beamSpeed, liveness: reload}
   - {param: glass.ring.gap, liveness: reload}
+  - {param: glass.ring.width, liveness: reload}
   - {param: glass.ring.glow, liveness: reload}

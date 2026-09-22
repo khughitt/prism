@@ -22,7 +22,9 @@ function appMatcher(apps) {
 // ring's color has one driver at a time. familiar tints it live through its
 // per-window signal (accent stays on only then); noctalia hands over the
 // colorscheme accent the apply read; manual pins the palette's own color.
-// ring-inset and ring-width stay at the native defaults.
+// The band's own geometry is prism's now: ring-gap places it under the face
+// and ring-width sizes it. niri rejects a width of zero, so the def's lower
+// bound is strictly positive and no slider position can reach the error.
 function responseBlock(params, sources) {
   const source = params['glass.ring.colorSource'];
   const color = source === 'noctalia' && typeof sources.noctaliaAccent === 'string'
@@ -35,6 +37,7 @@ function responseBlock(params, sources) {
     `        ring-color ${JSON.stringify(color)}`,
     `        ring-beam-speed ${params['glass.ring.beamSpeed']}`,
     `        ring-gap ${params['glass.ring.gap']}`,
+    `        ring-width ${params['glass.ring.width']}`,
     `        ring-glow ${params['glass.ring.glow']}`,
     '    }',
   ];

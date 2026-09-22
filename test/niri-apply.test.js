@@ -47,6 +47,7 @@ const PARAMS = {
   'glass.ring.color': '#f2c14e',
   'glass.ring.beamSpeed': 450,
   'glass.ring.gap': 10,
+  'glass.ring.width': 2.6,
   'glass.ring.glow': 1.2,
 
 };
