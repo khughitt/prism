@@ -403,7 +403,7 @@
   default: 8
   neutral: 8
   ui: {group: Ring, control: slider, step: 1, label: Gap, order: 540, unit: px}
-  description: Clear glass between the edge of the face and the centre of the beam; the bevel may be shrunk to make room
+  description: Clear glass between the edge of the face and the centre of the beam; the bevel may be shrunk to make room, and a pane whose face is narrower than twice this shows no ring at all
 - key: glass.ring.glow
   type: float
   range: [0, 3]
