@@ -1,13 +1,15 @@
 ---
 id: prism-71b7d1
 title: Verify small-pane configs against the updated native geometry contract
-status: todo
+status: doing
 priority: 2
 size: s
 complexity: mid
 process: direct
+owner: main
 created: 2026-09-10T11:44:10Z
-updated: 2026-09-19T00:27:00Z
+updated: 2026-09-22T13:14:20Z
+started: 2026-09-22T13:14:20Z
 depends: [material-92edaf]
 tags: [niri]
 ---
@@ -20,3 +22,6 @@ Neutral desktop acceptance exposed an existing geometry constraint gap: bevel = 
 ## Notes
 
 - 2026-09-19T00:27:00Z (main): Ring follow-through refinement: checked defs/glass.yaml, integrations/niri/render.js and native e79b226b; removed obsolete premise without changing implementation. Related material brief: docs/notes/2026-09-18-ring-next-steps-brief.md; native integration/installation remains a gate.
+- 2026-09-22T13:14:20Z (main): started
+  provenance: {"harness_session":"claude-code:86218c99-e333-49f8-965c-e0e30c526e78","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-09-22T13:14:20Z (main): Scope drift found at start: the task body (2026-09-18) still names ring-inset, which the ring beam retired. Current native contract (docs/materials/material-config.md in niri-material at 649c731b): the band sits ring-gap px inward from the FACE edge and the bevel shrinks to make room, so there is no inset+width<=bevel rule at all; ring-gap is 0-128 default 8, ring-width >0..128 default 2.6 (prism does not emit it). The remaining validation rules are offset<=bevel, bevel 0-128, positive ring-width, and the retired keys rejected by name. The 'inset20/bevel12' case becomes gap 20 / bevel 12.
