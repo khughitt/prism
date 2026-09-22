@@ -46,6 +46,8 @@ const PARAMS = {
   'glass.ring.colorSource': 'manual',
   'glass.ring.color': '#f2c14e',
   'glass.ring.beamSpeed': 450,
+  'glass.ring.beamNoise': 0.4,
+  'glass.ring.beamNoiseHz': 2.5,
   'glass.ring.gap': 10,
   'glass.ring.width': 2.6,
   'glass.ring.glow': 1.2,

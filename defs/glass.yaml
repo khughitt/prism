@@ -397,6 +397,20 @@
   replaces: glass.ring.sweepMs
   ui: {group: Ring, control: slider, step: 50, label: Beam speed, order: 530, unit: px/s}
   description: How fast the beam of light travels around the inside of the face when a window gains focus, in pixels per second; a lap takes the face's perimeter divided by this, and 0 shows only the resting glow
+- key: glass.ring.beamNoise
+  type: float
+  range: [0, 1]
+  default: 0
+  neutral: 0
+  ui: {group: Ring, control: slider, step: 0.05, label: Head wander, order: 532}
+  description: How far the beam head's brightness wanders either side of itself as it travels, so the comet reads as a living light rather than a lamp on a track; 0 is a steady head, and the wander rides the head alone, never the tail or the resting glow
+- key: glass.ring.beamNoiseHz
+  type: float
+  range: [0, 30]
+  default: 3
+  neutral: 3
+  ui: {group: Ring, control: slider, step: 0.5, label: Wander rate, order: 534, unit: Hz}
+  description: How fast the head's brightness wanders, in wanders per second; it has no effect while Head wander is 0
 - key: glass.ring.gap
   type: int
   range: [0, 128]

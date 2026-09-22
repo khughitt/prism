@@ -36,6 +36,8 @@ function responseBlock(params, sources) {
     `        focus ${JSON.stringify(params['glass.ring.focus'] ? 'ring-light' : 'none')}`,
     `        ring-color ${JSON.stringify(color)}`,
     `        ring-beam-speed ${params['glass.ring.beamSpeed']}`,
+    `        ring-beam-noise ${params['glass.ring.beamNoise']}`,
+    `        ring-beam-noise-hz ${params['glass.ring.beamNoiseHz']}`,
     `        ring-gap ${params['glass.ring.gap']}`,
     `        ring-width ${params['glass.ring.width']}`,
     `        ring-glow ${params['glass.ring.glow']}`,

@@ -48,6 +48,8 @@ const NATIVE = {
   'glass.ring.focus': { default: true },
   'glass.ring.color': { default: '#ccccff' },
   'glass.ring.beamSpeed': { range: [0, 5000], default: 300 },
+  'glass.ring.beamNoise': { range: [0, 1], default: 0 },
+  'glass.ring.beamNoiseHz': { range: [0, 30], default: 3 },
   'glass.ring.gap': { range: [0, 128], default: 8 },
   // The native width is positive through 128; the open lower bound cannot be
   // written as a number here, so a test of its own pins prism's floor above 0.
@@ -406,7 +408,8 @@ test('everything outside the matrix is shared glass', () => {
     'compositor.gaps', 'glass.paneLip', 'glass.paneShiftX',
     'glass.paneShiftY', 'glass.jellyFlex', 'glass.jellyRipple',
     'glass.ring.focus', 'glass.ring.colorSource', 'glass.ring.color',
-    'glass.ring.beamSpeed', 'glass.ring.gap', 'glass.ring.width', 'glass.ring.glow',
+    'glass.ring.beamSpeed', 'glass.ring.beamNoise', 'glass.ring.beamNoiseHz',
+    'glass.ring.gap', 'glass.ring.width', 'glass.ring.glow',
     'glass.lightIor',
   ].sort());
   const groups = Object.fromEntries(shared.map((key) => [key, defs.get(key).ui.group]));
@@ -421,6 +424,8 @@ test('everything outside the matrix is shared glass', () => {
     'glass.ring.colorSource': 'Ring',
     'glass.ring.color': 'Ring',
     'glass.ring.beamSpeed': 'Ring',
+    'glass.ring.beamNoise': 'Ring',
+    'glass.ring.beamNoiseHz': 'Ring',
     'glass.ring.gap': 'Ring',
     'glass.ring.width': 'Ring',
     'glass.ring.glow': 'Ring',
@@ -460,7 +465,8 @@ const NEUTRAL = {
   'glass.bypass.directionalBlur': false, 'glass.bypass.tint': false,
   'glass.bypass.saturation': false, 'glass.bypass.noise': false,
   'glass.ring.focus': true, 'glass.ring.colorSource': 'noctalia',
-  'glass.ring.color': '#ccccff', 'glass.ring.beamSpeed': 300, 'glass.ring.gap': 8, 'glass.ring.width': 2.6, 'glass.ring.glow': 1,
+  'glass.ring.color': '#ccccff', 'glass.ring.beamSpeed': 300, 'glass.ring.beamNoise': 0,
+  'glass.ring.beamNoiseHz': 3, 'glass.ring.gap': 8, 'glass.ring.width': 2.6, 'glass.ring.glow': 1,
   'glass.lightIor': 6,
 };
 

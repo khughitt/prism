@@ -58,6 +58,8 @@ test('shipped presentation is a Glass section, a Focus matrix, and a Ring sectio
     'glass.ring.colorSource',
     'glass.ring.color',
     'glass.ring.beamSpeed',
+    'glass.ring.beamNoise',
+    'glass.ring.beamNoiseHz',
     'glass.ring.gap',
     'glass.ring.width',
     'glass.ring.glow',
