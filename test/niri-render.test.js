@@ -323,16 +323,100 @@ test('the extreme supported geometry stays inside the native bevel maximum', () 
   assert.match(kdl, /offset-y 64\n/);
 });
 
-test('the neutral geometry fits the native material ring in both focus states', () => {
+// The geometry rules the native parser still has, after the ring beam moved
+// the band under the face (niri-material docs/materials/material-config.md):
+// bevel is 0..128 and no offset may be wider than its own bevel. The retired
+// rule was ring-inset + ring-width <= bevel; the band now sits ring-gap px
+// inside the face edge and the bevel shrinks to make room, so no minimum
+// bevel exists and prism must not reinstate one as a clamp or a floor.
+const NATIVE_BEVEL = [0, 128];
+
+const geometryOf = (kdl) => ({
+  bevels: [...kdl.matchAll(/bevel (\S+)\n/g)].map((match) => Number(match[1])),
+  offsets: [...kdl.matchAll(/offset-[xy] (\S+)\n/g)].map((match) => Number(match[1])),
+});
+
+const assertNativeGeometry = (kdl, label) => {
+  const { bevels, offsets } = geometryOf(kdl);
+  for (const bevel of bevels) {
+    assert.ok(bevel >= NATIVE_BEVEL[0] && bevel <= NATIVE_BEVEL[1], `${label}: bevel ${bevel}`);
+  }
+  for (const offset of offsets) {
+    assert.ok(Math.abs(offset) <= bevels[0],
+      `${label}: offset ${offset} exceeds bevel ${bevels[0]}`);
+  }
+  return bevels;
+};
+
+test('the neutral geometry meets every geometry rule the native parser keeps', () => {
   const params = Object.fromEntries([...loadDefs(defsDir())].map(([key, def]) =>
     [key, Object.hasOwn(def, 'neutral') ? def.neutral : def.default]));
   const kdl = renderNiriFragment({ params: { ...params, 'glass.focusSplit': true } });
-  const bevels = [...kdl.matchAll(/bevel (\S+)\n/g)].map((match) => Number(match[1]));
 
-  assert.equal(bevels.length, 2);
-  // niri-material's default response uses inset 5 and width 2.6; its parser
-  // requires their sum to fit within the bevel, even with neutral optics.
-  for (const bevel of bevels) assert.ok(bevel >= 5 + 2.6, `ring does not fit bevel ${bevel}`);
+  assert.deepEqual(assertNativeGeometry(kdl, 'neutral'), [8, 8]);
+});
+
+// Every case is reachable from the panel's own ranges, and each one was
+// validated by the installed niri-material build before it was pinned here.
+// The last is the case the retired rule would have rejected: a ring gap wider
+// than the bevel is now ordinary, because the band is under the face.
+const GEOMETRY = [
+  { label: 'zero lip and zero offsets leave a flat slab',
+    over: { 'glass.paneLip': 0, 'glass.paneShiftX': 0, 'glass.paneShiftY': 0 }, bevel: 0 },
+  { label: 'zero lip with the widest supported offsets',
+    over: { 'glass.paneLip': 0, 'glass.paneShiftX': -64, 'glass.paneShiftY': 64 }, bevel: 64 },
+  { label: 'the shipped ring placement under a small bevel',
+    over: { 'glass.paneLip': 1, 'glass.paneShiftX': 1, 'glass.paneShiftY': 0 }, bevel: 2 },
+  { label: 'an explicit face placement: ring gap 20 under bevel 12',
+    over: { 'glass.paneLip': 6, 'glass.paneShiftX': 6, 'glass.paneShiftY': -6, 'glass.ring.gap': 20 },
+    bevel: 12 },
+];
+
+test('every small-pane geometry the panel can reach is one niri accepts', () => {
+  for (const { label, over, bevel } of GEOMETRY) {
+    const kdl = renderNiriFragment(with_(over));
+
+    assert.deepEqual(assertNativeGeometry(kdl, label), [bevel, bevel], label);
+    const gap = Object.hasOwn(over, 'glass.ring.gap')
+      ? over['glass.ring.gap'] : resolved.params['glass.ring.gap'];
+    assert.equal(count(kdl, `ring-gap ${gap}\n`), 2, label);
+  }
+});
+
+test('a bevel of zero keeps the ring: only the chamfer spill needs a chamfer', () => {
+  const kdl = renderNiriFragment(with_(GEOMETRY[0].over));
+
+  // main.frag: "The ring needs a face to run under, not a chamfer: a flat slab
+  // with bevel 0 carries the beam." So a flat slab is not a reason to withhold
+  // the focus light, and the response block is written unchanged.
+  assert.equal(count(kdl, 'bevel 0\n'), 2);
+  assert.equal(count(kdl, 'focus "ring-light"'), 2);
+  assert.equal(count(kdl, 'ring-gap 10\n'), 2);
+});
+
+test('the ring gap is the small-pane limit, and prism reports it instead of clamping', () => {
+  const gap = loadDefs(defsDir()).get('glass.ring.gap');
+
+  // The parser takes any gap in 0..128, but the ring is drawn only where the
+  // face half-extent exceeds the gap (main.frag: hasLine), so the widest gap
+  // the panel offers needs a face over 256 px on both axes. Prism cannot see
+  // the window, so the range stays native and the description carries the
+  // limit; narrowing it here would silently rewrite stored profiles.
+  assert.deepEqual(gap.range, [0, 128]);
+  assert.equal(gap.default, 8);
+  assert.match(gap.description, /twice/);
+});
+
+test('prism emits no ring width and none of the retired ring keys', () => {
+  const kdl = renderNiriFragment(resolved);
+
+  // ring-width is the one response field prism leaves to the native default,
+  // which is positive; emitting it would put "ring-width must be positive"
+  // within reach of a panel slider.
+  assert.equal(count(kdl, 'ring-width'), 0);
+  for (const retired of ['ring-inset', 'ring-sweep-ms', 'ring-drift-hz']) {
+    assert.equal(count(kdl, retired), 0, retired);
+  }
 });
 
 test('terminals match by exact anchored app id, not by substring', () => {
