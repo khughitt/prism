@@ -60,6 +60,7 @@ test('shipped presentation is a Glass section, a Focus matrix, and a Ring sectio
     'glass.ring.beamSpeed',
     'glass.ring.gap',
     'glass.ring.glow',
+    'glass.lightIor',
   ]);
   assert.equal(defs.find((def) => def.ui.group === 'Ring' && def.ui.header === true).key,
     'glass.ring.focus', 'the light switch heads the section');

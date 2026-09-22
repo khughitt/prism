@@ -411,3 +411,18 @@
   neutral: 1
   ui: {group: Ring, control: slider, step: 0.1, label: Glow, order: 550}
   description: Intensity of the whole focus light — beam, tail, resting glow and edge spill together
+
+# light-ior bends only the light travelling inside the slab — the ring filament
+# and the aurora field — along the light path 1 + (ior - 1) * light-ior; the
+# backdrop taps keep the plain Refraction index, so this is not a second IOR for
+# the image behind the glass. Shared by both focus states: the ring lights the
+# focused window, and a divergent multiplier would make a material swap jump the
+# aurora. The native default is 6; the ring's own shift is capped at half the
+# Gap, which the stock glass stays under.
+- key: glass.lightIor
+  type: float
+  range: [1, 12]
+  default: 6
+  neutral: 6
+  ui: {group: Ring, control: slider, step: 0.5, label: Light bending, order: 560}
+  description: How much harder the glass bends the light inside it — the ring filament and the aurora field — than it bends the backdrop, which Refraction alone drives

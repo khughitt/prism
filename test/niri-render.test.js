@@ -18,6 +18,7 @@ const resolved = { params: {
   'glass.paneShiftX': 4,
   'glass.paneShiftY': 4,
   'glass.ior': 1.38,
+  'glass.lightIor': 9,
   'glass.thickness': 32,
   'glass.attenuationColor': '#bbc7db',
   'glass.attenuationDistance': 178,
@@ -84,6 +85,7 @@ layout {
 material "terminal-glass" {
     glass {
         ior 1.38
+        light-ior 9
         thickness 32
         attenuation-color "#bbc7db"
         attenuation-distance 178
@@ -118,6 +120,7 @@ material "terminal-glass" {
 material "terminal-glass-inactive" {
     glass {
         ior 1.52
+        light-ior 9
         thickness 44
         attenuation-color "#2a2f3a"
         attenuation-distance 70
@@ -178,6 +181,7 @@ layout {
 material "terminal-glass" {
     glass {
         ior 1.38
+        light-ior 9
         thickness 32
         attenuation-color "#bbc7db"
         attenuation-distance 178
@@ -242,6 +246,7 @@ test('the focus split inherits only the slab geometry, the pane motion, and the 
 
   for (const line of [
     'jelly-flex 0.0038', 'jelly-ripple 0.15', 'bevel 9', 'offset-x 4', 'offset-y 4',
+    'light-ior 9',
   ]) assert.ok(inactive.includes(`        ${line}\n`), `inherited line missing: ${line}`);
   for (const line of [
     'attenuation-distance 70', 'chromatic-aberration 0.08', 'distortion 0.1 scale=0.4',
@@ -289,7 +294,7 @@ test('the material definition carries every supported native parameter', () => {
 
   assert.match(kdl, /material "terminal-glass" \{\n    glass \{\n/);
   for (const line of [
-    'ior 1.38', 'thickness 32', 'attenuation-color "#bbc7db"',
+    'ior 1.38', 'light-ior 9', 'thickness 32', 'attenuation-color "#bbc7db"',
     'attenuation-distance 178', 'chromatic-aberration 0.68',
     'distortion 0.32 scale=0.05', 'anisotropic-blur 0', 'roughness 0.08', 'noise 0 type="fine"', 'saturation 1',
     'backdrop-blur true',

@@ -19,6 +19,7 @@ glass.attenuationDistance: 60
 glass.inactive.attenuationDistance: 60
 glass.ior: 1.7
 glass.inactive.ior: 1.7
+glass.lightIor: 6
 glass.thickness: 20
 glass.inactive.thickness: 20
 glass.chromaticAberration: 0.5
