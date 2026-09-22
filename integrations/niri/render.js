@@ -49,6 +49,7 @@ function definition(name, params, glass, sources) {
     `material ${JSON.stringify(name)} {`,
     '    glass {',
     `        ior ${glass.ior}`,
+    `        light-ior ${params['glass.lightIor']}`,
     `        thickness ${glass.thickness}`,
     `        attenuation-color ${JSON.stringify(glass.attenuationColor)}`,
     `        attenuation-distance ${glass.attenuationDistance}`,

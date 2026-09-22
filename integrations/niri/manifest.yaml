@@ -13,6 +13,7 @@ binds:
   - {param: glass.paneShiftY, liveness: reload}
   - {param: glass.ior, liveness: reload}
   - {param: glass.inactive.ior, liveness: reload}
+  - {param: glass.lightIor, liveness: reload}
   - {param: glass.thickness, liveness: reload}
   - {param: glass.inactive.thickness, liveness: reload}
   - {param: glass.attenuationColor, liveness: reload}

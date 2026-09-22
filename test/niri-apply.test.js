@@ -22,6 +22,7 @@ const PARAMS = {
   'glass.paneShiftX': 4,
   'glass.paneShiftY': 4,
   'glass.ior': 1.38,
+  'glass.lightIor': 6,
   'glass.thickness': 32,
   'glass.attenuationColor': '#bbc7db',
   'glass.attenuationDistance': 178,
