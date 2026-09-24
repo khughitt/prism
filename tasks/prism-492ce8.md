@@ -1,13 +1,15 @@
 ---
 id: prism-492ce8
 title: "colorSource familiar: drop the 'not wired yet' disclosure now that the bridge runs"
-status: todo
+status: doing
 priority: 2
 size: xs
 complexity: low
 process: direct
+owner: main
 created: 2026-09-24T18:42:48Z
-updated: 2026-09-24T18:42:48Z
+updated: 2026-09-24T18:45:22Z
+started: 2026-09-24T18:45:22Z
 depends: []
 tags: [defs, ui]
 source: material-930c55
@@ -19,3 +21,8 @@ Why: material-068639 made defs/glass.yaml's ring colorSource description (and th
 Done when: the colorSource description says familiar tints each terminal's ring with its session's familiar hue and rests on the manual Color where no session runs, and the panel tooltip follows. Keep prism-b4d118's scope (Color-control gating) separate.
 
 Where to look: defs/glass.yaml colorSource (line ~385), the panel row that shows the description, prism's defs tests.
+
+## Notes
+
+- 2026-09-24T18:45:22Z (main): started
+  provenance: {"harness_session":"claude-code:043fdd81-3649-4354-a9c1-0d8726289ef8","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
