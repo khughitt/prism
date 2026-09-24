@@ -382,7 +382,7 @@
   default: noctalia
   neutral: noctalia
   ui: {group: Ring, control: select, label: Color source, order: 510}
-  description: "Who drives the ring color: the Noctalia colorscheme accent, the manual Color below, or familiar's per-window signal tint (not wired yet: until the familiar bridge lands, familiar rests every window on the manual Color)"
+  description: "Who drives the ring color: the Noctalia colorscheme accent, the manual Color below, or familiar, which tints each terminal's ring with its agent session's hue and rests windows without a session on the manual Color"
 - key: glass.ring.color
   type: color
   default: '#ccccff'

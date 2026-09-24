@@ -1,18 +1,20 @@
 ---
 id: prism-492ce8
 title: "colorSource familiar: drop the 'not wired yet' disclosure now that the bridge runs"
-status: doing
+status: done
 priority: 2
 size: xs
 complexity: low
 process: direct
 owner: main
 created: 2026-09-24T18:42:48Z
-updated: 2026-09-24T18:45:22Z
+updated: 2026-09-24T18:45:58Z
 started: 2026-09-24T18:45:22Z
+completed: 2026-09-24T18:45:58Z
 depends: []
 tags: [defs, ui]
 source: material-930c55
+model: "claude-opus-5-5[1m]"
 agent: claude-code/claude-opus-5-5
 ---
 
@@ -25,4 +27,8 @@ Where to look: defs/glass.yaml colorSource (line ~385), the panel row that shows
 ## Notes
 
 - 2026-09-24T18:45:22Z (main): started
+  provenance: {"harness_session":"claude-code:043fdd81-3649-4354-a9c1-0d8726289ef8","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-09-24T18:45:58Z (prism-492ce8): done
+  provenance: {"harness_session":"claude-code:043fdd81-3649-4354-a9c1-0d8726289ef8","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-09-24T18:45:58Z (prism-492ce8): colorSource description now says familiar tints each terminal's ring with its session's hue and rests sessionless windows on the manual Color; test pins it and rejects 'not wired'
   provenance: {"harness_session":"claude-code:043fdd81-3649-4354-a9c1-0d8726289ef8","harness_session_source":"CLAUDE_CODE_SESSION_ID"}

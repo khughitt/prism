@@ -198,11 +198,12 @@ test('backdrop blur no longer claims to supply noise or saturation', () => {
   assert.doesNotMatch(description, /noise/);
 });
 
-test('the familiar color source admits it is not wired yet', () => {
+test('the familiar color source says what it tints and where it rests', () => {
   const description = loadDefs(defsDir()).get('glass.ring.colorSource').description;
 
-  assert.match(description, /not wired yet/);
-  assert.match(description, /rests every window on the manual Color/);
+  assert.match(description, /each terminal's ring with its agent session's hue/);
+  assert.match(description, /rests windows without a session on the manual Color/);
+  assert.doesNotMatch(description, /not wired/);
 });
 
 test('noise and saturation are focus-matrix optics, not blur inheritance', () => {
