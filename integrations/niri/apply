@@ -19,7 +19,7 @@ sinkMain(() => {
     if (error.code !== 'ENOENT') throw error;
   }
 
-  // Read the palette only when it drives the ring: a broken colors.json must
+  // Read the palette only when it drives the ring: a broken palette file must
   // fail the apply of a user who chose it, and go unread for anyone else —
   // with the glass off no ring is emitted, so it must not block that apply.
   const sources = {};

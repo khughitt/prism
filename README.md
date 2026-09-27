@@ -189,6 +189,32 @@ These guarantees cover process interruption and atomic file replacement, not
 power-loss durability. A stale resolved bus or interrupted sink application is
 repaired with `prism apply`.
 
+## Noctalia palette
+
+The ring's `noctalia` color source (`glass.ring.colorSource`) reads
+`$XDG_STATE_HOME/prism/noctalia-palette.json` (prism's state directory), which a
+Noctalia user template renders on every palette change. Noctalia's `colors_changed` hook, which fires
+after the templates are written and only when the palette changed, re-renders
+the niri sink. The wallpaper hook stays `prism context wallpaper`. The
+template is registered with the other user templates (a templates.toml in the
+Noctalia config directory):
+
+```toml
+[theme.templates.user.prism]
+input_path  = "<prism checkout>/integrations/niri/noctalia-palette.template"
+output_path = "$XDG_STATE_HOME/prism/noctalia-palette.json"
+```
+
+and the hook sits beside `wallpaper_changed` in the Noctalia config.toml:
+
+```toml
+[hooks]
+colors_changed = ["prism apply niri"]
+```
+
+Until the template has rendered once, the ring rests on the manual color.
+`PRISM_NOCTALIA_COLORS` points the sink at another file.
+
 ## Command line
 
 `prism [--json|--pretty] [--color <when>] <command> [args]`, following the shared CLI

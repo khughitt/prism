@@ -321,7 +321,7 @@ test('a noctalia-driven ring lights in the palette accent the apply reads', (t) 
   const { dir, target, run, calls, writeParams } = fixture(t);
   writeParams({ 'glass.ring.colorSource': 'noctalia' });
   const colors = path.join(dir, 'colors.json');
-  fs.writeFileSync(colors, JSON.stringify({ mPrimary: '#a1b2c3' }));
+  fs.writeFileSync(colors, JSON.stringify({ primary: '#a1b2c3' }));
 
   const result = run({ PRISM_NOCTALIA_COLORS: colors });
 
@@ -365,7 +365,7 @@ test('a palette without a primary fails the apply', (t) => {
   const result = run({ PRISM_NOCTALIA_COLORS: colors });
 
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /mPrimary missing or not a #rrggbb color/);
+  assert.match(result.stderr, /primary missing or not a #rrggbb color/);
 });
 
 test('a familiar-driven ring never reads the palette file', (t) => {

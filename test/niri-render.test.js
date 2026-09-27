@@ -5,9 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { parse } from 'yaml';
 import { renderNiriFragment, DRY } from '../integrations/niri/render.js';
-import { readNoctaliaAccent } from '../integrations/niri/palette.js';
+import { noctaliaColorsPath, readNoctaliaAccent } from '../integrations/niri/palette.js';
 import { loadDefs } from '../src/defs.js';
-import { defsDir } from '../src/paths.js';
+import { defsDir, stateDir } from '../src/paths.js';
 import { resolveParams } from '../src/resolve.js';
 
 const resolved = { params: {
@@ -705,16 +705,33 @@ test('a zero beam speed shows only the resting glow, and the retired sweep key n
 test('the palette reader rests on absence and fails on a broken file', (t) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-palette-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
-  const file = path.join(dir, 'colors.json');
+  const file = path.join(dir, 'noctalia-palette.json');
 
   assert.equal(readNoctaliaAccent(file), null, 'a fresh machine has no palette');
 
-  fs.writeFileSync(file, JSON.stringify({ mPrimary: '#BAD065' }));
+  fs.writeFileSync(file, JSON.stringify({ primary: '#BAD065' }));
   assert.equal(readNoctaliaAccent(file), '#BAD065', 'uppercase hex is a color');
 
   fs.writeFileSync(file, '{ not json');
   assert.throws(() => readNoctaliaAccent(file), /not valid JSON/);
 
-  fs.writeFileSync(file, JSON.stringify({ mPrimary: 'blue' }));
-  assert.throws(() => readNoctaliaAccent(file), /mPrimary missing or not a #rrggbb color/);
+  fs.writeFileSync(file, JSON.stringify({ primary: 'blue' }));
+  assert.throws(() => readNoctaliaAccent(file), /primary missing or not a #rrggbb color/);
+
+  fs.writeFileSync(file, JSON.stringify({ mPrimary: '#BAD065' }));
+  assert.throws(() => readNoctaliaAccent(file), new RegExp(`${file}: primary missing`),
+    'the Noctalia 4 colors.json shape is not a palette');
+});
+
+test('the palette defaults to prism state and honours the override', () => {
+  const saved = process.env.PRISM_NOCTALIA_COLORS;
+  delete process.env.PRISM_NOCTALIA_COLORS;
+  try {
+    assert.equal(noctaliaColorsPath(), path.join(stateDir(), 'noctalia-palette.json'));
+    process.env.PRISM_NOCTALIA_COLORS = '/elsewhere.json';
+    assert.equal(noctaliaColorsPath(), '/elsewhere.json');
+  } finally {
+    if (saved === undefined) delete process.env.PRISM_NOCTALIA_COLORS;
+    else process.env.PRISM_NOCTALIA_COLORS = saved;
+  }
 });
