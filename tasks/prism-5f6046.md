@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: main
 created: 2026-09-27T15:59:52Z
-updated: 2026-09-27T16:24:01Z
+updated: 2026-09-27T16:24:10Z
 started: 2026-09-27T15:59:52Z
 depends: []
 parent: prism-2f0b4b
@@ -23,4 +23,6 @@ Every Noctalia/wali rotation (every 30 min) runs 'prism context wallpaper', whos
 ## Notes
 
 - 2026-09-27T15:59:52Z (main): started
+  provenance: {"harness_session":"claude-code:f8e92955-b9e0-4c68-8462-c120c2170535","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-09-27T16:24:10Z (prism-5f6046-rotation): parked (waiting on user, review): User reviews docs/plans/2026-09-27-rotation-keeps-edits.md and picks an execution method; then the agent runs Task 1 (prism-7eed95) in .worktrees/rotation-keeps-edits after npm install
   provenance: {"harness_session":"claude-code:f8e92955-b9e0-4c68-8462-c120c2170535","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
