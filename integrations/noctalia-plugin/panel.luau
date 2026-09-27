@@ -360,10 +360,13 @@ local function beginDrag(param, sliderValue)
       sliderValue = sliderValue,
       originValue = param.value,
       pendingSample = nil,
+      dirty = false,
     }
     state.sampleElapsedMs = 0
     if describeRunning then state.describeInvalidated = true end
-    if param.effectiveDrag == "live" then panel.setNeedsFrameTick(true) end
+    -- Every drag needs the tick, not only live-mode ones: it is what throttles
+    -- the render below to one per frame instead of one per pointer-move event.
+    panel.setNeedsFrameTick(true)
   else
     state.drag.value = canonical
     state.drag.sliderValue = sliderValue
@@ -374,7 +377,11 @@ local function beginDrag(param, sliderValue)
   elseif param.effectiveDrag == "release" then
     state.drag.pendingSample = nil
   end
-  render()
+  -- A native slider can fire onChange far faster than the panel can render a
+  -- full tree of sections and rack cards; rendering here on every event once
+  -- blew the host's per-callback CPU budget and got the panel disabled.
+  -- onFrameTick flushes this at most once per rendered frame instead.
+  state.drag.dirty = true
 end
 
 local function endDrag(param)
@@ -1076,7 +1083,12 @@ function update()
 end
 
 function onFrameTick(deltaMs)
-  if not state.drag or not state.drag.pendingSample then return end
+  if not state.drag then return end
+  if state.drag.dirty then
+    state.drag.dirty = false
+    render()
+  end
+  if not state.drag.pendingSample then return end
   state.sampleElapsedMs = state.sampleElapsedMs + deltaMs
   if state.sampleElapsedMs < 100 then return end
   state.sampleElapsedMs = 0

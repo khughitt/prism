@@ -60,7 +60,12 @@ The panel tracks live slider samples at 100 ms frame intervals and always
 emits a final non-sample write on release. Release-mode sliders emit only that
 final write. Every parameter with a non-`live` binding resolves to
 `effectiveDrag = "release"`, so the reload-bound native material parameters
-write once on release and rewrite the compositor config once per gesture. A describe started before or during a drag is discarded when its
+write once on release and rewrite the compositor config once per gesture. A
+drag of any effectiveDrag re-renders at most once per host frame tick rather
+than once per pointer-move event; a native slider can fire far more often than
+the panel can afford to rebuild its tree, and rendering on every event once
+exceeded the host's per-callback CPU budget and got the panel disabled until
+reload. A describe started before or during a drag is discarded when its
 result is stale and replayed only after the drag and write queue are idle.
 While the panel is open it asks the host for second ticks and re-reads describe
 every two seconds through the same stale-and-replay path, so a wallpaper

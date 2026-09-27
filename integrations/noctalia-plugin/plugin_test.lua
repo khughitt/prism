@@ -1593,6 +1593,31 @@ equal(errorBanner(rendered), nil, "opening the panel is a fresh gesture and star
   equal(selectWithOption(rendered, "Default").props.selectedIndex, 2)
 end)()
 
+-- A native slider can fire onChange far more often than the panel can afford
+-- to rebuild its tree; rendering unconditionally there once blew the host's
+-- per-callback CPU budget and got the panel disabled until reload. Render
+-- must throttle to at most one per frame tick, whatever the effectiveDrag.
+;(function()
+  local tree = renderModel(profileModel())
+  local depthSlider
+  for _, node in ipairs(collect(tree, "slider")) do
+    if node.props.key == "glass.roughness:slider" then depthSlider = node end
+  end
+  assert(depthSlider, "fixture slider missing")
+  local beforeBurst = rendered
+  depthSlider.props.onChange(0.30)
+  depthSlider.props.onChange(0.32)
+  depthSlider.props.onChange(0.34)
+  assert(rendered == beforeBurst, "onChange alone must not render; it only marks the drag dirty")
+  onFrameTick(16)
+  local afterOneTick = rendered
+  assert(afterOneTick ~= beforeBurst, "the frame tick must flush exactly one render for the whole burst")
+  onFrameTick(16)
+  assert(rendered == afterOneTick, "a tick with nothing newly dirty renders nothing")
+  depthSlider.props.onDragEnd()
+  assert(rendered ~= afterOneTick, "release still forces a final render")
+end)()
+
 -- Actions retain the slots represented by their rendered controls even when
 -- the mutable model changes before the click, submit, or confirmation.
 ;(function()
