@@ -19,6 +19,7 @@
 - A missing palette file means the manual color; a malformed one fails the apply.
 - No machine names or absolute home paths in code comments or docs (the pre-commit hook rejects hostnames).
 - Setup in a fresh worktree: `npm install` (README, Development prerequisites). Gates: `just test`, `just check` before each commit.
+- Task records: `tasks start <child>` before a task's first code change, and `tasks done <child> "<result>"` staged into that task's code commit (AGENTS.md). Never edit `tasks/*.md` by hand.
 
 ## Review Focus
 
@@ -36,11 +37,19 @@
 - Create: `src/carry.js`
 - Modify: `src/context-cli.js:40-95` (`changeSlots`)
 - Modify: `test/context-cli.test.js:440-497` (the three fold tests), `:521-530` (delete test)
+- Modify: `test/write-order.test.js:119-139` (the four wallpaper-transition cases) and `:190-203` (the harness's expected scratch and screen checks)
 - Create: `test/carry.test.js`
 - Modify: `README.md:74-80`, `README.md:173` (the write-order table)
 
 **Interfaces:**
 - Produces: `carryScratch(previous: Record<string, unknown>, beneath: Record<string, unknown>, pairValues: Record<string, unknown>) => Record<string, unknown>` exported from `src/carry.js`.
+
+- [ ] **Step 0: Set up and claim**
+
+```bash
+npm install
+tasks start prism-7eed95
+```
 
 - [ ] **Step 1: Write the failing unit test for `carryScratch`**
 
@@ -206,10 +215,74 @@ In the test `deleting the active wallpaper clears the slot and leaves scratch: �
   assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.paneLip'], 6, 'the deleted pair is not carried');
 ```
 
-- [ ] **Step 6: Run the context tests and see the new ones fail**
+- [ ] **Step 5b: Update the interruption and retry cases**
 
-Run: `node --test test/context-cli.test.js`
-Expected: the six new rotation tests FAIL (scratch comes back `{}` and pairs gain values); the delete test and every profile-selection test pass.
+`test/write-order.test.js` runs every transition with a failure injected after each durable write, then retries, and checks exact ownership. Its fixture (`pairStore`) is Aurora on `w1`, with scratch `{ glass.roughness: 0.73, terminal.background.opacity.inactive: 0.51 }`. Aurora's values are `roughness 0.3, ior 1.4`, its `w1` pair is `roughness 0.4, noise 0.22`, and its `w2` pair is `roughness 0.45`. `glass.noise` defaults to 0.
+
+In the harness (the `for (const scenario of cases)` loop), let a case name its expected scratch and declare that it keeps the screen. Replace
+
+```js
+    const expectedRuntime = { active: JSON.parse(JSON.stringify(scenario.next?.(seed) ?? seed.active)),
+      scratch: scenario.keepScratch ? seed.scratch : {} };
+```
+
+with
+
+```js
+    const expectedRuntime = { active: JSON.parse(JSON.stringify(scenario.next?.(seed) ?? seed.active)),
+      scratch: scenario.scratch ?? (scenario.keepScratch ? seed.scratch : {}) };
+```
+
+and replace
+
+```js
+    if (argv[0] === 'commit' || argv[1] === 'rename'
+        || (scenario.fold && isDeepStrictEqual(expectedRuntime.active, seed.active))) {
+```
+
+with
+
+```js
+    if (argv[0] === 'commit' || argv[1] === 'rename' || scenario.keepsScreen
+        || (scenario.fold && isDeepStrictEqual(expectedRuntime.active, seed.active))) {
+```
+
+Replace the four cases `wallpaper hook rotation`, `explicit wallpaper rotation`, `wallpaper deactivation` and `first wallpaper activation retains pending edits` with:
+
+```js
+  ...[
+    ['wallpaper hook rotation', ({ w2 }) => ['context', 'wallpaper', w2.path]],
+    ['explicit wallpaper rotation', ({ w2 }) => ['context', 'activate', 'wallpaper', w2.id]],
+  ].map(([name, argv]) => ({
+    // w2's pair owns roughness; w1's noise and the pending opacity are carried.
+    name: `${name} carries pending edits and writes no pair`, argv,
+    scratch: { 'glass.noise': 0.22, 'terminal.background.opacity.inactive': 0.51 },
+    next: ({ active, w2 }) => ({ ...active, wallpaper: w2 }),
+    writes: () => [activePath(), resolvedPath()],
+  })),
+  {
+    name: 'wallpaper deactivation carries the leaving pair and keeps the screen',
+    argv: () => ['context', 'deactivate', 'wallpaper'], keepsScreen: true,
+    scratch: { 'glass.roughness': 0.73, 'glass.noise': 0.22, 'terminal.background.opacity.inactive': 0.51 },
+    next: ({ active }) => ({ profile: active.profile }),
+    writes: () => [activePath(), resolvedPath()], completedRefusal: /no active wallpaper/,
+  },
+  {
+    // w1's pair owns roughness and noise; only the pending opacity survives.
+    name: 'first wallpaper activation lets the incoming pair win its keys', seed: { hasWallpaper: false },
+    argv: ({ w1 }) => ['context', 'wallpaper', w1.path],
+    scratch: { 'terminal.background.opacity.inactive': 0.51 },
+    next: ({ active, w1 }) => ({ ...active, wallpaper: w1 }),
+    writes: () => [activePath(), resolvedPath()],
+  },
+```
+
+No case sets `fold: true` any more for a wallpaper transition, so `expectedLooks` stays equal to the seeded looks: the harness then checks, at every prefix, that no look document was written. A retry after the runtime write is a same-wallpaper no-op for the hook and explicit cases, and a `no active wallpaper` refusal for deactivation. Both converge on the final files, which the harness already asserts.
+
+- [ ] **Step 6: Run the context and write-order tests and see the new ones fail**
+
+Run: `node --test test/context-cli.test.js test/write-order.test.js`
+Expected: the six new rotation tests in `context-cli.test.js` and the four transition cases in `write-order.test.js` FAIL (scratch comes back `{}`, and a look document is written). The delete test and every profile-selection case pass.
 
 - [ ] **Step 7: Change `changeSlots`**
 
@@ -279,7 +352,8 @@ In the write-order table (line 173), change the first row's operation from `Sele
 
 ```bash
 just check
-git add src/carry.js src/context-cli.js test/carry.test.js test/context-cli.test.js README.md
+tasks done prism-7eed95 "Rotation carries the screen and pending edits; no pair is written on a wallpaper transition"
+git add src/carry.js src/context-cli.js test/carry.test.js test/context-cli.test.js test/write-order.test.js README.md tasks/
 git commit -m "feat(context): rotation carries the screen and pending edits instead of saving the outgoing pair"
 ```
 
@@ -295,6 +369,10 @@ git commit -m "feat(context): rotation carries the screen and pending edits inst
 **Interfaces:**
 - Produces: `sinkLockPath(sink: string) => string`, `path.join(stateDir(), 'sinks', \`${sink}.lock\`)`.
 - Consumes: `withLock(lockPath, fn)` from `src/lock.js`.
+
+- [ ] **Step 0: Claim**
+
+Run: `tasks start prism-853e92`
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -369,7 +447,8 @@ Expected: all pass, including `child fan-outs wait for the status lock and retai
 ```bash
 just test
 just check
-git add src/paths.js src/fanout.js test/fanout.test.js
+tasks done prism-853e92 "Fan-out serializes each sink's apply under a per-sink lock"
+git add src/paths.js src/fanout.js test/fanout.test.js tasks/
 git commit -m "feat(fanout): serialize each sink's apply under a per-sink lock"
 ```
 
@@ -387,6 +466,10 @@ git commit -m "feat(fanout): serialize each sink's apply under a per-sink lock"
 
 **Interfaces:**
 - Produces: `noctaliaColorsPath() => string` (unchanged name, new default `path.join(stateDir(), 'noctalia-palette.json')`), `readNoctaliaAccent(file) => string | null` reading `primary`.
+
+- [ ] **Step 0: Claim**
+
+Run: `tasks start prism-916f49`
 
 - [ ] **Step 1: Update the tests to the new shape**
 
@@ -537,14 +620,19 @@ The ring's `noctalia` color source (`glass.ring.colorSource`) reads
 `noctalia-palette.json` in prism's state directory, which a Noctalia user template
 renders on every palette change. Noctalia's `colors_changed` hook, which fires
 after the templates are written and only when the palette changed, re-renders
-the niri sink. The wallpaper hook stays `prism context wallpaper`. In the
-Noctalia config:
+the niri sink. The wallpaper hook stays `prism context wallpaper`. The
+template is registered with the other user templates (a `templates.toml` in the
+Noctalia config directory):
 
 ```toml
 [theme.templates.user.prism]
 input_path  = "<prism checkout>/integrations/niri/noctalia-palette.template"
 output_path = "$XDG_STATE_HOME/prism/noctalia-palette.json"
+```
 
+and the hook sits beside `wallpaper_changed` in `config.toml`:
+
+```toml
 [hooks]
 colors_changed = ["prism apply niri"]
 ```
@@ -558,7 +646,8 @@ Until the template has rendered once, the ring rests on the manual color.
 ```bash
 just test
 just check
-git add integrations/niri/noctalia-palette.template integrations/niri/palette.js integrations/niri/apply test/niri-render.test.js test/niri-apply.test.js test/noctalia-palette-template.test.js README.md
+tasks done prism-916f49 "The niri ring reads its accent from a prism-owned palette rendered by a Noctalia user template"
+git add integrations/niri/noctalia-palette.template integrations/niri/palette.js integrations/niri/apply test/niri-render.test.js test/niri-apply.test.js test/noctalia-palette-template.test.js README.md tasks/
 git commit -m "feat(niri): read the ring accent from a prism-owned Noctalia palette template"
 ```
 
@@ -568,7 +657,11 @@ git commit -m "feat(niri): read the ring accent from a prism-owned Noctalia pale
 
 Depends on `dots-632c20` (the Noctalia config registers the template and the `colors_changed` hook). The hooks call `~/bin/prism`, which runs the main checkout, so acceptance happens after the merge.
 
-**Files:** none in prism beyond the task record and the spec status line.
+**Files:** none in prism beyond the task records and the two spec status lines.
+
+- [ ] **Step 0: Claim**
+
+Run: `tasks start prism-a8df28` (it depends on `dots-632c20`; land that first, Step 2, if `start` reports the dependency open).
 
 - [ ] **Step 1: Merge the branch**
 
@@ -576,7 +669,7 @@ Run `just gate` in `.worktrees/rotation-keeps-edits`, then merge `prism-5f6046-r
 
 - [ ] **Step 2: Land `dots-632c20`**
 
-In the dotfiles checkout, add the `[theme.templates.user.prism]` entry and `colors_changed = ["~/bin/prism apply niri"]` to `noctalia/config.toml` (per that task), keeping `wallpaper_changed` as it is. Trigger a re-render (`noctalia msg` theme re-apply, see Noctalia's Media & UI → Theme IPC) and confirm `noctalia-palette.json` appears in prism's state directory.
+In the dotfiles checkout, per that task: add the `[theme.templates.user.prism]` entry to `noctalia/templates.toml`, the tracked template registry, beside the other `[theme.templates.user.*]` entries. Add `colors_changed = ["~/bin/prism apply niri"]` to the `[hooks]` table in `noctalia/config.toml`, and leave `wallpaper_changed` as it is. Close `dots-632c20` in the dotfiles commit. Trigger a re-render (`noctalia msg` theme re-apply, see Noctalia's Media & UI → Theme IPC) and confirm `noctalia-palette.json` appears in prism's state directory.
 
 - [ ] **Step 3: Desktop acceptance (spec items 1–3, 6, 8)**
 
@@ -591,4 +684,14 @@ Record the outcome with `tasks note prism-5f6046 "<what was observed>"`.
 
 - [ ] **Step 4: Close**
 
-Set the spec's status line to `implemented and accepted <date>`, amend the 2026-09-20 pairs spec's status line with `Rotate and first-activation rows amended by 2026-09-27-rotation-keeps-edits-design.md`, then `tasks done` the task in the same commit.
+Set the spec's status line to `implemented and accepted <date>` and amend the 2026-09-20 pairs spec's status line with `Rotate and first-activation rows amended by 2026-09-27-rotation-keeps-edits-design.md`. Then, in one commit with those two edits:
+
+```bash
+tasks done prism-a8df28 "Merged; palette template and colors_changed hook live; desktop acceptance passed"
+tasks done prism-5f6046 "Rotation keeps the screen and pending edits; only a saved incoming pair changes settings; the ring follows the palette"
+tasks check
+git add docs/specs tasks/
+git commit -m "docs(spec): rotation keeps edits accepted on the desktop (prism-5f6046)"
+```
+
+The parent closes last: `tasks done` refuses it while any of its four children is open.
