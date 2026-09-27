@@ -61,6 +61,9 @@ Previously scratch sat above it. This makes first activation the same rule as ro
 - **Clear wallpaper tuning** (`context clear wallpaper`, the `without` path) keeps the
   wallpaper slot. It is not a rotation and carries nothing: it still removes the active
   pair and reveals the profile.
+- **Deleting the active wallpaper's pair** (`context delete wallpaper <id>`) empties the
+  slot, as today. It is not a rotation either: the deleted pair's values are not carried,
+  and scratch is left as it was.
 - No wallpaper transition writes a pair. Pairs are written by **Keep for wallpaper**, and
   still by the save to the outgoing pair on an explicit profile selection (see
   Consequences). **Keep in look**, **Revert**, **Neutral**, and **Save As** are unchanged.
