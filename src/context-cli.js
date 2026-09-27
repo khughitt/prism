@@ -348,8 +348,8 @@ export async function runContext(sub, rest, { defs, manifests, emit, eprint, jso
     }
 
     // The hook's entry point. The same wallpaper again (a second connector, a
-    // re-set) changes nothing; a different one folds scratch into the one
-    // that leaves and activates the new one in the same locked step.
+    // re-set) changes nothing; a different one carries the screen across
+    // (carryScratch) and activates the new one in the same locked step.
     case 'wallpaper': {
       const wallpaper = canonicalWallpaperPath(rest[0]);
       const id = wallpaperId(wallpaper);
