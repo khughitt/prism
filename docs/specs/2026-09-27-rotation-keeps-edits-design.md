@@ -1,7 +1,7 @@
 # Wallpaper rotation keeps the screen and pending edits
 
 **Date:** 2026-09-27
-**Status:** approved 2026-09-27 after review (ring palette path, wording fixes)
+**Status:** implemented 2026-09-27 (merged to main). Live check: a wali rotation with and without pending edits kept the screen and wrote no pair; the palette template renders. A rotation onto a saved pair and a colorscheme-driven ring are covered by tests, not yet seen live (the ring source is familiar).
 **Task:** `prism-5f6046` (parent `prism-2f0b4b`)
 **Amends:** [profile loading and wallpaper-specific tweaks](2026-09-20-profile-wallpaper-pairs-design.md), the
 "Rotate the wallpaper" and "First wallpaper activation" rows of its transition table.

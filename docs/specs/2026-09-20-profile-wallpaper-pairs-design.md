@@ -1,7 +1,7 @@
 # Profile loading and wallpaper-specific tweaks
 
 **Date:** 2026-09-20
-**Status:** implemented in the worktree with outgoing-pair auto-save; all five [implementation steps](../plans/2026-09-20-profile-wallpaper-pairs.md) passed scoped review. Whole-branch review and its scoped fix review passed; desktop acceptance remains pending.
+**Status:** implemented in the worktree with outgoing-pair auto-save; all five [implementation steps](../plans/2026-09-20-profile-wallpaper-pairs.md) passed scoped review. Whole-branch review and its scoped fix review passed; desktop acceptance remains pending. The Rotate and First wallpaper activation rows are amended by [rotation keeps edits](2026-09-27-rotation-keeps-edits-design.md): rotation no longer saves the outgoing pair.
 **Parent:** `prism-aec90f`
 **Amends:** [compositional profiles](2026-09-19-compositional-profiles-design.md), particularly Sections 2, 3, 6, 7 and 9.
 
