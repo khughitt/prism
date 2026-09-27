@@ -37,10 +37,17 @@ test('panel lifecycle owns refresh, drag cleanup, and live-drag frame ticks', as
   // Closing the panel has no backend action: there is no preview to tear down.
   const onClose = source.slice(source.indexOf('function onClose()'));
   assert.doesNotMatch(onClose.slice(0, onClose.indexOf('end')), /enqueue|run\(/);
-  assert.match(source, /function onFrameTick\(deltaMs\)[\s\S]*if not state\.drag or not state\.drag\.pendingSample then return end[\s\S]*state\.sampleElapsedMs = state\.sampleElapsedMs \+ deltaMs[\s\S]*state\.sampleElapsedMs < 100[\s\S]*enqueue\(state\.drag\.pendingSample\)[\s\S]*state\.drag\.pendingSample = nil/);
+  // A native slider can fire onChange far more often than the panel can
+  // afford to rebuild its tree, whatever the parameter's effectiveDrag; the
+  // tick flushes at most one render per frame instead of one per event.
+  assert.match(source, /function onFrameTick\(deltaMs\)\n  if not state\.drag then return end\n  if state\.drag\.dirty then[\s\S]*render\(\)[\s\S]*if not state\.drag\.pendingSample then return end[\s\S]*state\.sampleElapsedMs = state\.sampleElapsedMs \+ deltaMs[\s\S]*state\.sampleElapsedMs < 100[\s\S]*enqueue\(state\.drag\.pendingSample\)[\s\S]*state\.drag\.pendingSample = nil/);
 
   const liveDrag = source.slice(source.indexOf('local function beginDrag'), source.indexOf('local function endDrag'));
-  assert.match(liveDrag, /effectiveDrag == "live"[\s\S]*panel\.setNeedsFrameTick\(true\)/);
+  // Every drag requests ticks now, not only live-mode ones: it is what
+  // throttles the render, not only the live-mode sample write.
+  assert.match(liveDrag, /panel\.setNeedsFrameTick\(true\)/);
+  assert.match(liveDrag, /state\.drag\.dirty = true/);
+  assert.doesNotMatch(liveDrag, /render\(\)/);
   assert.equal(source.match(/panel\.setNeedsFrameTick\(true\)/g)?.length, 1);
 });
 
