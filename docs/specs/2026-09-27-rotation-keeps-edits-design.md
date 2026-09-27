@@ -1,15 +1,16 @@
 # Wallpaper rotation keeps the screen and pending edits
 
 **Date:** 2026-09-27
-**Status:** draft, awaiting review
+**Status:** approved 2026-09-27 after review (ring palette path, wording fixes)
 **Task:** `prism-5f6046` (parent `prism-2f0b4b`)
 **Amends:** [profile loading and wallpaper-specific tweaks](2026-09-20-profile-wallpaper-pairs-design.md), the
 "Rotate the wallpaper" and "First wallpaper activation" rows of its transition table.
 
 ## Intent
 
-Noctalia rotates the wallpaper every 30 minutes, and wali rotations go through the same
-`wallpaper_changed` hook, which runs `prism context wallpaper <path>`. Today that
+Wali's `wali-rotate.timer` picks a new wallpaper every 15 minutes (Noctalia's own timed
+rotation is off). Wali sets it through Noctalia, whose `wallpaper_changed` hook runs
+`prism context wallpaper <path>` (dotfiles `noctalia/config.toml`). Today that
 transition saves pending edits into the outgoing look–wallpaper pair, clears scratch, and
 re-resolves the look plus the incoming pair. On screen, unsaved work vanishes and the
 profile reloads at every rotation. The saved copy lands in a pair the user never asked
@@ -60,12 +61,58 @@ Previously scratch sat above it. This makes first activation the same rule as ro
 - **Clear wallpaper tuning** (`context clear wallpaper`, the `without` path) keeps the
   wallpaper slot. It is not a rotation and carries nothing: it still removes the active
   pair and reveals the profile.
-- **Keep for wallpaper** remains the one way to create or update a pair from pending
-  edits. **Keep in look**, **Revert**, **Neutral**, and **Save As** are unchanged.
+- No wallpaper transition writes a pair. Pairs are written by **Keep for wallpaper**, and
+  still by the save to the outgoing pair on an explicit profile selection (see
+  Consequences). **Keep in look**, **Revert**, **Neutral**, and **Save As** are unchanged.
 - Existing pairs are kept as they are. There is no migration. Unwanted ones are removed
   with Clear wallpaper tuning or `prism context delete`.
 - Fan-out still reports and applies only the keys whose resolved value changed. A rotation
-  between two unpaired wallpapers therefore changes no resolved key and reaches no sink.
+  between two unpaired wallpapers therefore changes no resolved key and reaches no sink
+  through that path. What such a rotation changes is the palette, and the ring follows
+  it through the separate path in the next section.
+
+## Ring color follows the palette, not the rotation
+
+The ring's `noctalia` color source (`glass.ring.colorSource`) is not a prism value. The
+niri sink reads the accent from a Noctalia palette file each time it renders
+(`integrations/niri/palette.js`). A palette change therefore reaches the ring only when
+something runs the niri sink after the palette is written. Three things break that
+today, and this change would make the first one routine:
+
+1. Fan-out runs a sink only for changed keys. A rotation that changes no prism value
+   runs no sink. That already happens today when scratch is empty and neither wallpaper
+   has a pair; under this design it is the common case.
+2. `wallpaper_changed` is the wrong moment. Noctalia fires it right after it starts
+   regenerating the theme (`application_services.cpp`, the wallpaper change callback),
+   so an apply from that hook can read the previous palette.
+3. The file is dead. `~/.config/noctalia/colors.json` is a Noctalia 4 template output.
+   Noctalia 5 no longer writes it; the working desktop's copy was last written on 2026-08-19, so
+   today the ring rests on a month-old accent whatever the rotation does.
+
+Design:
+
+- **Source.** Prism ships a Noctalia 5 user template that renders the palette's primary
+  color into a prism-owned file: `noctalia-palette.json` in prism's state directory (`stateDir()`), holding
+  `{"primary": "#rrggbb"}`. `noctaliaColorsPath()` points at it, and
+  `PRISM_NOCTALIA_COLORS` still overrides it. The reader's contract is unchanged: a
+  missing file means the manual color, and a malformed one fails the apply. Further palette
+  fields (the surface tone `prism-b5cb1e` needs) are added by that task, not here.
+- **Trigger.** Noctalia's `colors_changed` hook runs `prism apply niri`. Noctalia fires it
+  after the palette is resolved and the templates are written, and only when the palette
+  actually changed. Ordering against the file write is therefore guaranteed, and an
+  unchanged palette costs no apply. `wallpaper_changed` keeps only
+  `prism context wallpaper` (and wali's `observe`).
+- **Concurrency.** A rotation can run both hooks close together: the transition's
+  fan-out, and the `colors_changed` apply. Whichever niri render finishes last must read
+  the current palette. Niri renders are serialized, and each reads the palette inside
+  its turn. The one that starts after the template write therefore always sees the new
+  accent, whatever order the two hooks run in. The plan verifies whether fan-out and
+  `prism apply` already share a per-sink lock, and adds one if they do not.
+- **Where it lives.** The template file and its documentation are prism's
+  (`integrations/niri/`). Registering the template and the `colors_changed` hook is a
+  change to the dotfiles Noctalia config, filed as `dots-632c20`, which this task depends
+  on for desktop acceptance.
+- The `familiar` and `manual` color sources are unaffected.
 
 ## Consequences to be aware of
 
@@ -112,7 +159,12 @@ could not succeed either.
    off, and no pair gains `glass.enabled`.
 7. A malformed incoming pair fails the transition before any write; scratch and slots are
    unchanged.
-8. The 2026-09-20 acceptance items for profile selection still pass. Its item 3
+8. Rotate between two unpaired wallpapers whose palettes differ. The ring takes the new
+   primary once Noctalia's templates are written, with no prism value changing. A
+   rotation that leaves the palette unchanged runs no `colors_changed` apply.
+9. With the palette file missing, the ring rests on the manual color. With it malformed,
+   `prism apply niri` fails and says which file.
+10. The 2026-09-20 acceptance items for profile selection still pass. Its item 3
    ("rotating away and back restores each pair") changes. Going from W1 (pair A) to W2
    (pair B) and back shows A's values for A's keys again. Keys only B sets stay pending,
    because leaving W2 carries them forward. The old item held only because every
