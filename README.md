@@ -1,5 +1,35 @@
 # Prism
 
+Prism is the appearance layer of a [niri](https://github.com/YaLTeR/niri) desktop:
+one store of look settings (glass optics, focus ring, gaps, terminal opacity),
+saved as named profiles and per-wallpaper adjustments, rendered into niri's
+configuration and tuned live from a [Noctalia](https://github.com/noctalia-dev/noctalia)
+shell panel or the `prism` command line.
+
+## Requirements
+
+- niri built with the native glass material (`niri-material`). Stock niri does
+  not accept the material config; `prism requirements` and the material
+  capability probe say so before glass is applied.
+- Noctalia v5, for the panel plugin and the wallpaper and palette hooks
+  (optional: the command line works without it).
+- Node.js 20 or newer.
+
+## Install
+
+```sh
+git clone https://github.com/khughitt/prism.git
+cd prism
+npm install
+ln -s "$PWD/bin/prism" ~/.local/bin/prism
+prism doctor
+```
+
+Include the generated `~/.local/state/prism/generated/prism.kdl` from the niri
+config. The Noctalia plugin lives under `integrations/noctalia-plugin/`.
+
+## Overview
+
 Prism resolves appearance definitions and applies them to the configured
 backends. The `niri` sink is the sole compositor integration: it generates one
 prism.kdl carrying layout, terminal opacity, and the native niri glass
