@@ -75,9 +75,13 @@ Every `prism set` writes scratch; a value already shown beneath scratch is
 omitted. Selecting a profile or Default saves **all** pending keys to the
 outgoing look–wallpaper pair and loads the selected look with zero pending
 edits. Selecting the already active look does the same. With no wallpaper,
-explicit selection discards pending edits. A wallpaper rotation saves the
-outgoing pair; the first wallpaper activation and repeated observations of the
-same wallpaper preserve scratch. Panel counts and resets retain their
+explicit selection discards pending edits. A wallpaper rotation (the Noctalia
+hook, or `context activate`/`deactivate wallpaper`) saves nothing. It keeps the
+screen, changing only the keys the incoming look–wallpaper pair sets, and every
+other visible value that the new fold would not show stays as a pending edit.
+Leaving a tuned wallpaper therefore turns its values into pending edits; Keep
+for wallpaper saves them to the wallpaper now showing. Repeated observations of
+the same wallpaper are no-ops. Panel counts and resets retain their
 visible-control scope, while transitions and commits move every scratch key.
 The panel names saved adjustments as `N for Aurora + this wallpaper` (or
 `Default`), separate from pending edits. Selection shows zero pending edits
@@ -170,7 +174,8 @@ state/active.json to state to undo parameter migration.
 
 | Operation | Durable write order | Interruption recovery |
 |---|---|---|
-| Select a look or rotate wallpaper with outgoing edits | Outgoing look/pair; runtime with next slots and empty scratch; bus | Before runtime, scratch still covers the saved values. Retry preserves ownership; after runtime, apply repairs a stale bus. |
+| Select a look with outgoing edits | Outgoing look/pair; runtime with next slots and empty scratch; bus | Before runtime, scratch still covers the saved values. Retry preserves ownership; after runtime, apply repairs a stale bus. |
+| Rotate wallpaper | Runtime with next slots and carried scratch; bus | Runtime publishes the slot and the carried scratch together. After it, `prism apply` repairs a stale bus. |
 | Select without wallpaper | Runtime with selected look and empty scratch; bus | Runtime publishes selection and discard together. |
 | Recover a broken named look | Runtime with valid incoming look and preserved scratch; bus | Retry before runtime. After it, use `prism apply`; repeating selection is a new ordinary save/discard action. |
 | Keep in look / Keep for wallpaper | Whole look document; runtime with empty scratch | Scratch covers intermediate writes; completed retry can report nothing to commit. |
@@ -183,6 +188,32 @@ state/active.json to state to undo parameter migration.
 These guarantees cover process interruption and atomic file replacement, not
 power-loss durability. A stale resolved bus or interrupted sink application is
 repaired with `prism apply`.
+
+## Noctalia palette
+
+The ring's `noctalia` color source (`glass.ring.colorSource`) reads
+`$XDG_STATE_HOME/prism/noctalia-palette.json` (prism's state directory), which a
+Noctalia user template renders on every palette change. Noctalia's `colors_changed` hook, which fires
+after the templates are written and only when the palette changed, re-renders
+the niri sink. The wallpaper hook stays `prism context wallpaper`. The
+template is registered with the other user templates (a templates.toml in the
+Noctalia config directory):
+
+```toml
+[theme.templates.user.prism]
+input_path  = "<prism checkout>/integrations/niri/noctalia-palette.template"
+output_path = "$XDG_STATE_HOME/prism/noctalia-palette.json"
+```
+
+and the hook sits beside `wallpaper_changed` in the Noctalia config.toml:
+
+```toml
+[hooks]
+colors_changed = ["prism apply niri"]
+```
+
+Until the template has rendered once, the ring rests on the manual color.
+`PRISM_NOCTALIA_COLORS` points the sink at another file.
 
 ## Command line
 

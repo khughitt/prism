@@ -437,62 +437,102 @@ test('context rename refuses a missing source, an existing target, the wallpaper
   assert.match((await runCaptured(['context', 'rename', 'profile', 'dusk', 'bad name'])).stderr, /invalid context name/);
 });
 
-test('the hook folds scratch into the wallpaper that leaves, in one locked step', async () => {
+test('a rotation between untuned wallpapers keeps scratch, writes no pair, and reaches no sink', async () => {
   const a = wallpaperFile('a.jpg');
   const b = wallpaperFile('b.jpg');
   const { wallpaperId } = await import('../src/contexts.js');
-  writeContext('wallpaper', wallpaperId(a), { source: a, values: { 'glass.paneLip': 9 } });
   assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
   await cli.run(['set', 'glass.ior', '1.7'], { runner: () => {} });
   await cli.run(['set', 'glass.paneLip', '12'], { runner: () => {} });
 
   const calls = [];
-  assert.equal(await cli.run(['context', 'wallpaper', b], { runner: (m, f, keys) => calls.push(keys) }), 0);
-  assert.deepEqual(readContext('wallpaper', wallpaperId(a)),
-    { source: a, values: { 'glass.paneLip': 12, 'glass.ior': 1.7 } }, 'the leaving delta absorbs scratch');
-  assert.deepEqual(readScratch(), {});
+  assert.equal(await cli.run(['context', 'wallpaper', b], { runner: (m) => calls.push(m.sink) }), 0);
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.7, 'glass.paneLip': 12 });
+  assert.equal(readContext('wallpaper', wallpaperId(a)), null, 'the leaving wallpaper gained no pair');
+  assert.equal(readContext('wallpaper', wallpaperId(b)), null);
   assert.deepEqual(readActive(), { wallpaper: { id: wallpaperId(b), path: b } });
-  const params = JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params;
-  assert.equal(params['glass.ior'], 1.5, 'the edit left with its wallpaper; the shipped default shows');
-  assert.equal(params['glass.paneLip'], 6, 'the shipped default');
-
-  // rotating back brings the nudges back
-  assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
-  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.7);
+  assert.deepEqual(calls, [], 'no resolved value changed');
 });
 
-test('the first activation keeps scratch: there is no wallpaper to receive it; the next rotation folds it', async () => {
+test('a rotation onto a saved pair changes only the keys the pair sets', async () => {
   const a = wallpaperFile('a.jpg');
   const b = wallpaperFile('b.jpg');
   const { wallpaperId } = await import('../src/contexts.js');
-  await cli.run(['set', 'glass.ior', '1.7'], { runner: () => {} });
+  writeContext('wallpaper', wallpaperId(b), { source: b, values: { 'glass.paneLip': 9 } });
   assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
-  assert.deepEqual(readScratch(), { 'glass.ior': 1.7 });
-  assert.equal(readContext('wallpaper', wallpaperId(a)), null);
-  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.ior'], 1.7);
+  await cli.run(['set', 'glass.ior', '1.7'], { runner: () => {} });
+  await cli.run(['set', 'glass.paneLip', '12'], { runner: () => {} });
+
   assert.equal(await cli.run(['context', 'wallpaper', b], { runner: () => {} }), 0);
-  assert.deepEqual(readContext('wallpaper', wallpaperId(a)), { source: a, values: { 'glass.ior': 1.7 } });
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.7 }, 'the pair owns paneLip; ior stays pending');
+  const params = JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params;
+  assert.equal(params['glass.paneLip'], 9);
+  assert.equal(params['glass.ior'], 1.7);
+  assert.deepEqual(readContext('wallpaper', wallpaperId(b)), { source: b, values: { 'glass.paneLip': 9 } });
+});
+
+test('leaving a saved pair carries its values as pending edits that Keep for wallpaper can save', async () => {
+  const a = wallpaperFile('a.jpg');
+  const b = wallpaperFile('b.jpg');
+  const { wallpaperId } = await import('../src/contexts.js');
+  writeContext('wallpaper', wallpaperId(a), { source: a, values: { 'glass.paneLip': 9 } });
+  assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
+  assert.deepEqual(readScratch(), {});
+
+  assert.equal(await cli.run(['context', 'wallpaper', b], { runner: () => {} }), 0);
+  assert.deepEqual(readScratch(), { 'glass.paneLip': 9 });
+  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.paneLip'], 9, 'the screen did not change');
+  assert.deepEqual(readContext('wallpaper', wallpaperId(a)), { source: a, values: { 'glass.paneLip': 9 } }, 'the pair is untouched');
+
+  assert.equal(await cli.run(['commit', 'wallpaper', wallpaperId(b)], { runner: () => {} }), 0);
+  assert.deepEqual(readContext('wallpaper', wallpaperId(b)).values, { 'glass.paneLip': 9 });
   assert.deepEqual(readScratch(), {});
 });
 
-test('activate and deactivate wallpaper fold like the hook; the same wallpaper again folds nothing', async () => {
+test('the first activation lets the incoming pair win over pending edits for its keys only', async () => {
   const a = wallpaperFile('a.jpg');
   const { wallpaperId } = await import('../src/contexts.js');
-  writeContext('wallpaper', 'other001', { source: '/o.jpg', values: {} });
+  writeContext('wallpaper', wallpaperId(a), { source: a, values: { 'glass.paneLip': 9 } });
+  await cli.run(['set', 'glass.ior', '1.7'], { runner: () => {} });
+  await cli.run(['set', 'glass.paneLip', '12'], { runner: () => {} });
+  assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.7 });
+  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.paneLip'], 9);
+});
+
+test('activate and deactivate wallpaper carry like the hook; the same wallpaper again changes nothing', async () => {
+  const a = wallpaperFile('a.jpg');
+  const { wallpaperId } = await import('../src/contexts.js');
+  writeContext('wallpaper', 'other001', { source: '/o.jpg', values: { 'glass.paneLip': 9 } });
   assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
   await cli.run(['set', 'glass.ior', '1.7'], { runner: () => {} });
   assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
-  assert.deepEqual(readScratch(), { 'glass.ior': 1.7 }, 'a repeat is a no-op, fold included');
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.7 }, 'a repeat is a no-op');
 
   assert.equal(await cli.run(['context', 'activate', 'wallpaper', 'other001'], { runner: () => {} }), 0);
-  assert.deepEqual(readContext('wallpaper', wallpaperId(a)).values, { 'glass.ior': 1.7 });
-  assert.deepEqual(readScratch(), {});
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.7 });
+  assert.equal(readContext('wallpaper', wallpaperId(a)), null);
+  const before = fs.readFileSync(activePath(), 'utf8');
+  assert.equal(await cli.run(['context', 'activate', 'wallpaper', 'other001'], { runner: () => {} }), 0);
+  assert.equal(fs.readFileSync(activePath(), 'utf8'), before, 'repeating after a carry re-carries nothing');
 
-  await cli.run(['set', 'glass.ior', '1.6'], { runner: () => {} });
   assert.equal(await cli.run(['context', 'deactivate', 'wallpaper'], { runner: () => {} }), 0);
-  assert.deepEqual(readContext('wallpaper', 'other001').values, { 'glass.ior': 1.6 });
-  assert.deepEqual(readScratch(), {});
+  assert.deepEqual(readScratch(), { 'glass.ior': 1.7, 'glass.paneLip': 9 }, 'the leaving pair is carried');
+  assert.deepEqual(readContext('wallpaper', 'other001').values, { 'glass.paneLip': 9 });
   assert.deepEqual(readActive(), {});
+  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.paneLip'], 9);
+});
+
+test('a pending glass off survives rotation and is written into no pair', async () => {
+  const a = wallpaperFile('a.jpg');
+  const b = wallpaperFile('b.jpg');
+  const c = wallpaperFile('c.jpg');
+  const { wallpaperId } = await import('../src/contexts.js');
+  assert.equal(await cli.run(['context', 'wallpaper', a], { runner: () => {} }), 0);
+  await cli.run(['set', 'glass.enabled', 'false'], { runner: () => {} });
+  for (const next of [b, c]) assert.equal(await cli.run(['context', 'wallpaper', next], { runner: () => {} }), 0);
+  assert.deepEqual(readScratch(), { 'glass.enabled': false });
+  for (const wall of [a, b, c]) assert.equal(readContext('wallpaper', wallpaperId(wall)), null);
 });
 
 test('an invalid incoming delta is refused before anything is written', async () => {
@@ -527,6 +567,7 @@ test('deleting the active wallpaper clears the slot and leaves scratch: the fold
   assert.equal(await cli.run(['context', 'delete', 'wallpaper', wallpaperId(a)], { runner: () => {} }), 0);
   assert.deepEqual(readActive(), {});
   assert.deepEqual(readScratch(), { 'glass.ior': 1.7 });
+  assert.equal(JSON.parse(fs.readFileSync(resolvedPath(), 'utf8')).params['glass.paneLip'], 6, 'the deleted pair is not carried');
 });
 
 test('profile activate and deactivate discard scratch without a wallpaper', async () => {

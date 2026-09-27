@@ -116,24 +116,28 @@ const cases = [
     next: () => to === null ? {} : { profile: to },
     writes: () => [activePath(), resolvedPath()],
   })),
-  {
-    name: 'wallpaper hook rotation', argv: ({ w2 }) => ['context', 'wallpaper', w2.path], fold: true,
+  ...[
+    ['wallpaper hook rotation', ({ w2 }) => ['context', 'wallpaper', w2.path]],
+    ['explicit wallpaper rotation', ({ w2 }) => ['context', 'activate', 'wallpaper', w2.id]],
+  ].map(([name, argv]) => ({
+    // w2's pair owns roughness; w1's noise and the pending opacity are carried.
+    name: `${name} carries pending edits and writes no pair`, argv,
+    scratch: { 'glass.noise': 0.22, 'terminal.background.opacity.inactive': 0.51 },
     next: ({ active, w2 }) => ({ ...active, wallpaper: w2 }),
-    writes: () => [lookPath('Aurora'), activePath(), resolvedPath()],
-  },
+    writes: () => [activePath(), resolvedPath()],
+  })),
   {
-    name: 'explicit wallpaper rotation', argv: ({ w2 }) => ['context', 'activate', 'wallpaper', w2.id], fold: true,
-    next: ({ active, w2 }) => ({ ...active, wallpaper: w2 }),
-    writes: () => [lookPath('Aurora'), activePath(), resolvedPath()],
-  },
-  {
-    name: 'wallpaper deactivation', argv: () => ['context', 'deactivate', 'wallpaper'], fold: true,
+    name: 'wallpaper deactivation carries the leaving pair and keeps the screen',
+    argv: () => ['context', 'deactivate', 'wallpaper'], keepsScreen: true,
+    scratch: { 'glass.roughness': 0.73, 'glass.noise': 0.22, 'terminal.background.opacity.inactive': 0.51 },
     next: ({ active }) => ({ profile: active.profile }),
-    writes: () => [lookPath('Aurora'), activePath(), resolvedPath()], completedRefusal: /no active wallpaper/,
+    writes: () => [activePath(), resolvedPath()], completedRefusal: /no active wallpaper/,
   },
   {
-    name: 'first wallpaper activation retains pending edits', seed: { hasWallpaper: false },
-    argv: ({ w1 }) => ['context', 'wallpaper', w1.path], keepScratch: true,
+    // w1's pair owns roughness and noise; only the pending opacity survives.
+    name: 'first wallpaper activation lets the incoming pair win its keys', seed: { hasWallpaper: false },
+    argv: ({ w1 }) => ['context', 'wallpaper', w1.path],
+    scratch: { 'terminal.background.opacity.inactive': 0.51 },
     next: ({ active, w1 }) => ({ ...active, wallpaper: w1 }),
     writes: () => [activePath(), resolvedPath()],
   },
@@ -196,14 +200,14 @@ for (const scenario of cases) {
     scenario.edit?.(expectedLooks, seed, before.params);
     // JSON round-trip omits the absent profile slot in Default selections.
     const expectedRuntime = { active: JSON.parse(JSON.stringify(scenario.next?.(seed) ?? seed.active)),
-      scratch: scenario.keepScratch ? seed.scratch : {} };
+      scratch: scenario.scratch ?? (scenario.keepScratch ? seed.scratch : {}) };
     const clean = await runAfterWrite(argv);
     assert.equal(clean.code, 0, clean.stderr);
     assert.deepEqual(clean.writes, scenario.writes(seed), 'exact durable order');
     assert.deepEqual(looks(), expectedLooks, 'clean result has the specified pair maps');
     assert.deepEqual(readRuntime(), expectedRuntime);
     const final = { params: loadStore(defs).params, files: files() };
-    if (argv[0] === 'commit' || argv[1] === 'rename'
+    if (argv[0] === 'commit' || argv[1] === 'rename' || scenario.keepsScreen
         || (scenario.fold && isDeepStrictEqual(expectedRuntime.active, seed.active))) {
       assert.deepEqual(final.params, before.params, 'operation preserves the screen');
     } else {

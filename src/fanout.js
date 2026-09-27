@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { withLock } from './lock.js';
-import { resolvedPath, sinkStatusPath, statusLockPath } from './paths.js';
+import { resolvedPath, sinkLockPath, sinkStatusPath, statusLockPath } from './paths.js';
 import { diagnose, onPath, SINK_TIMEOUT } from './sink.js';
 import { readJson, writeJsonAtomic } from './store.js';
 
@@ -73,7 +73,9 @@ export async function fanOut({ manifests, resolved, changedKeys, runner = runApp
       continue;
     }
     try {
-      runner(manifest, resolvedPath(), changedKeys);
+      // The apply reads resolved.json and its own inputs (the palette) inside
+      // the lock, so whichever render of this sink runs last sees the newest.
+      await withLock(sinkLockPath(manifest.sink), async () => runner(manifest, resolvedPath(), changedKeys));
       await record(manifest.sink, { ok: true, at, params });
       applied.push(manifest.sink);
     } catch (error) {

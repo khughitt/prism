@@ -12,6 +12,7 @@ import { activeJson, activeName, loadLayers, withScratch } from './layers.js';
 import { readScratch } from './scratch.js';
 import { checkLayer, resolveLayered, writeResolved } from './resolve.js';
 import { fanOut } from './fanout.js';
+import { carryScratch } from './carry.js';
 import { assertPairLayout, pairLayoutSources } from './migrate.js';
 
 function usage(text) {
@@ -60,10 +61,12 @@ async function changeSlots({ defs, manifests, runner }, mutate,
       if (active.profile !== undefined && (selectLook || (intent === 'delete-profile' && next.profile !== active.profile))) recoverOutgoing = true;
       else if (without?.kind !== 'wallpaper') throw error;
     }
-    const wallpaperChanged = active.wallpaper?.id !== next.wallpaper?.id;
-    const saveOutgoing = !recoverOutgoing && active.wallpaper !== undefined
-      && (selectLook || (intent === 'wallpaper' && wallpaperChanged));
-    const scratchAfter = recoverOutgoing ? scratch : (selectLook || saveOutgoing ? {} : scratch);
+    // A wallpaper transition (the hook, activate or deactivate wallpaper) saves
+    // nothing: it carries the screen across and lets only the incoming pair's
+    // keys change. Clear and delete keep the slot or name their own intent.
+    const rotation = intent === 'wallpaper' && active.wallpaper?.id !== next.wallpaper?.id;
+    const saveOutgoing = !recoverOutgoing && active.wallpaper !== undefined && selectLook;
+    let scratchAfter = recoverOutgoing ? scratch : (selectLook ? {} : scratch);
     let folded = null;
     if (saveOutgoing && Object.keys(scratch).length) {
       const id = active.wallpaper.id;
@@ -77,7 +80,12 @@ async function changeSlots({ defs, manifests, runner }, mutate,
       incomingLook = { ...incomingLook, wallpapers: { ...incomingLook.wallpapers } };
       delete incomingLook.wallpapers[without.name];
     }
-    const { params } = resolveLayered(defs, base, withScratch(loadLayers(next, incomingLook), scratchAfter));
+    const incomingLayers = loadLayers(next, incomingLook);
+    if (rotation) {
+      const pair = incomingLayers.find((layer) => layer.kind === 'wallpaper')?.values ?? {};
+      scratchAfter = carryScratch(previous, resolveLayered(defs, base, incomingLayers).params, pair);
+    }
+    const { params } = resolveLayered(defs, base, withScratch(incomingLayers, scratchAfter));
     if (folded !== null) writeLook(active.profile ?? null, folded);
     const runtimeChanged = !isDeepStrictEqual({ active: next, scratch: scratchAfter }, { active, scratch });
     if (slotBeforeCommit && runtimeChanged) writeRuntime({ active: next, scratch: scratchAfter });
@@ -340,8 +348,8 @@ export async function runContext(sub, rest, { defs, manifests, emit, eprint, jso
     }
 
     // The hook's entry point. The same wallpaper again (a second connector, a
-    // re-set) changes nothing; a different one folds scratch into the one
-    // that leaves and activates the new one in the same locked step.
+    // re-set) changes nothing; a different one carries the screen across
+    // (carryScratch) and activates the new one in the same locked step.
     case 'wallpaper': {
       const wallpaper = canonicalWallpaperPath(rest[0]);
       const id = wallpaperId(wallpaper);
