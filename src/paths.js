@@ -16,6 +16,9 @@ export const valuesPath = () => path.join(configDir(), 'values.yaml');
 export const resolvedPath = () => path.join(stateDir(), 'resolved.json');
 export const sinkStatusPath = () => path.join(stateDir(), 'sink-status.json');
 export const statusLockPath = () => path.join(stateDir(), 'status.lock');
+// One lock per sink: two hooks firing together (a rotation's fan-out and the
+// palette's colors_changed apply) must not interleave one sink's render.
+export const sinkLockPath = (sink) => path.join(stateDir(), 'sinks', `${sink}.lock`);
 export const lockPath = () => path.join(stateDir(), 'store.lock');
 export const activePath = () => path.join(stateDir(), 'active.json');
 // Retired standalone scratch; only the explicit layout migration reads it.

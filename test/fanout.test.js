@@ -266,3 +266,29 @@ test('an unmet requirement fails only its own sink and never spawns apply', asyn
 test('SINK_TIMEOUT is the bound both apply and probes run under', () => {
   assert.equal(SINK_TIMEOUT, 5_000);
 });
+
+const { sinkLockPath } = await import('../src/paths.js');
+
+test('an apply waits for the sink lock another apply of that sink holds', async () => {
+  freshState();
+  const order = [];
+  let release;
+  const held = withLock(sinkLockPath('fast'), () => new Promise((resolve) => { release = resolve; order.push('holder'); }));
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  const waiting = fanOut({ manifests: [manifests[0]], resolved, changedKeys: ['a.x'], runner: () => order.push('apply') });
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  assert.deepEqual(order, ['holder'], 'the apply has not run while the lock is held');
+  release();
+  await held;
+  assert.deepEqual((await waiting).applied, ['fast']);
+  assert.deepEqual(order, ['holder', 'apply']);
+});
+
+test('a throwing apply releases its sink lock', async () => {
+  freshState();
+  const first = await fanOut({ manifests: [manifests[0]], resolved, changedKeys: ['a.x'], runner: () => { throw new Error('boom'); } });
+  assert.equal(first.failed.length, 1);
+  assert.equal(fs.existsSync(sinkLockPath('fast')), false);
+  const second = await fanOut({ manifests: [manifests[0]], resolved, changedKeys: ['a.x'], runner: () => {} });
+  assert.deepEqual(second.applied, ['fast']);
+});
