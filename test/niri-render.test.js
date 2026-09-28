@@ -71,6 +71,7 @@ const resolved = { params: {
   'glass.ring.beamSpeed': 450,
   'glass.ring.beamNoise': 0.4,
   'glass.ring.beamNoiseHz': 2.5,
+  'glass.ring.decay': 1800,
   'glass.ring.gap': 10,
   'glass.ring.width': 4,
   'glass.ring.glow': 1.2,
@@ -118,6 +119,7 @@ material "terminal-glass" {
         ring-beam-speed 450
         ring-beam-noise 0.4
         ring-beam-noise-hz 2.5
+        ring-beam-decay 1800
         ring-gap 10
         ring-width 4
         ring-glow 1.2
@@ -156,6 +158,7 @@ material "terminal-glass-inactive" {
         ring-beam-speed 450
         ring-beam-noise 0.4
         ring-beam-noise-hz 2.5
+        ring-beam-decay 1800
         ring-gap 10
         ring-width 4
         ring-glow 1.2
@@ -220,6 +223,7 @@ material "terminal-glass" {
         ring-beam-speed 450
         ring-beam-noise 0.4
         ring-beam-noise-hz 2.5
+        ring-beam-decay 1800
         ring-gap 10
         ring-width 4
         ring-glow 1.2
@@ -639,7 +643,8 @@ test('both materials carry the same response block', () => {
   const kdl = renderNiriFragment(resolved);
   const block = '    response "default" {\n        accent "none"\n        focus "ring-light"\n'
     + '        ring-color "#f2c14e"\n        ring-beam-speed 450\n'
-    + '        ring-beam-noise 0.4\n        ring-beam-noise-hz 2.5\n        ring-gap 10\n'
+    + '        ring-beam-noise 0.4\n        ring-beam-noise-hz 2.5\n        ring-beam-decay 1800\n'
+    + '        ring-gap 10\n'
     + '        ring-width 4\n        ring-glow 1.2\n    }';
 
   assert.equal(count(kdl, block), 2, kdl);

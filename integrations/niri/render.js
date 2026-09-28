@@ -38,6 +38,7 @@ function responseBlock(params, sources) {
     `        ring-beam-speed ${params['glass.ring.beamSpeed']}`,
     `        ring-beam-noise ${params['glass.ring.beamNoise']}`,
     `        ring-beam-noise-hz ${params['glass.ring.beamNoiseHz']}`,
+    `        ring-beam-decay ${params['glass.ring.decay']}`,
     `        ring-gap ${params['glass.ring.gap']}`,
     `        ring-width ${params['glass.ring.width']}`,
     `        ring-glow ${params['glass.ring.glow']}`,

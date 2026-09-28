@@ -411,6 +411,13 @@
   neutral: 3
   ui: {group: Ring, control: slider, step: 0.5, label: Wander rate, order: 534, unit: Hz}
   description: How fast the head's brightness wanders, in wanders per second; it has no effect while Head wander is 0
+- key: glass.ring.decay
+  type: int
+  range: [0, 20000]
+  default: 0
+  neutral: 0
+  ui: {group: Ring, control: slider, step: 50, label: Decay distance, order: 536, unit: px}
+  description: How far the beam travels before its head and tail have faded out together, in pixels along the band, the same on every window and at every speed; below the window's perimeter the comet dies before its lap closes, and 0 keeps it bright for the whole lap
 - key: glass.ring.gap
   type: int
   range: [0, 128]
