@@ -8,7 +8,7 @@ complexity: low
 process: direct
 owner: main
 created: 2026-09-04T21:44:54Z
-updated: 2026-09-19T22:49:16Z
+updated: 2026-09-28T08:35:59Z
 depends: [ops-31f038]
 tags: [testing]
 ---
@@ -23,3 +23,5 @@ Piece of ops-65837b (the cross-project audit in the ops hub). 1. Measure: full-s
 - 2026-09-06T09:00:50Z (main): step 4 hygiene: prism-e76678 landed (fan-out timeout test now measures the kill path, not node startup); reproduced and verified under 96 CPU burners on the 32-core box.
 - 2026-09-09T01:55:28Z (main): Step 4 cost datapoint: prism-52bc13's contract test is the most expensive single test in the suite -- two 'prism describe' spawns plus one lua spawn, ~300ms of a ~1.87s full suite (was ~1.78s). Process spawns, not compute; nothing to trim without giving up the end-to-end check.
 - 2026-09-19T22:49:16Z (prism-aec90f): Process metadata repaired during compositional-profile preflight: the recorded audit steps and existing implementation settle approach and verification; no new design is needed.
+- 2026-09-28T08:34:21Z (main): baseline 2026-09-28 (tt-report --project prism --since 2026-09-05 --until 2026-09-24; 18 active days, before step 3): test 177 runs median 4.1s p90 8.3s fail 0.16, 14 min total; test-fast 5 runs median 1.5s p90 4.4s fail 0.00, 0 min total; check 145 runs median 0.1s p90 0.2s fail 0.03, 0 min total; hook-pre-commit 272 runs median 0.1s p90 0.3s fail 0.01, 0 min total; front-door total 0.24 h (1 min per active day), ad-hoc targets 0 min; fast/full by agents 0.03; bypasses 122
+- 2026-09-28T08:35:59Z (main): Baseline window 2026-09-05..09-24 closes the day before ops host-budget worker sizing (09-25), the first timing change after step 1; no step-3 change had landed. Front-door total counts wrapper seconds of test, test-fast, check and both hooks. Next: step 3 (gates to ops design §4.6, the AGENTS.md inner-loop line, hygiene the numbers point at), then an after-window read with tt-report --since/--until.
