@@ -4,8 +4,9 @@ title: Accent-colored icon buttons need a Noctalia contribution
 status: idea
 priority: 2
 created: 2026-09-05T22:29:35Z
-updated: 2026-09-06T21:30:43Z
+updated: 2026-09-29T22:58:39Z
 depends: []
+parent: prism-4e5039
 tags: [noctalia, ui]
 ---
 
@@ -21,3 +22,4 @@ The panel's reset icons carry their state in opacity (dim at default, full stren
 - 2026-09-06T15:21:08Z (main): Button color merged locally: noctalia main is now 019f16079 = upstream/main 224da6dd4 + 3 commits (fast-forward); worktree and branch removed. Not pushed and no PR yet; to file, push a branch from those three commits. Consequence for the sibling: .worktrees/plugin-ui-container-tooltip still sits at 224da6dd4 and its plan claims API 31; when it runs, rebase it onto local main first and register as 32, or file button-color upstream before starting it.
 - 2026-09-06T21:14:00Z (main): Screenshot for the button-color PR captured in a nested niri session with the built shell and a throwaway plugin (harness in the session scratchpad): noctalia docs/superpowers/pr/2026-09-06-button-color.png; PR draft updated with the manual-test paragraph. Live desktop untouched.
 - 2026-09-06T21:30:43Z (main): Draft PR opened upstream: https://github.com/noctalia-dev/noctalia/pull/4320 (head khughitt:feat/plugin-ui-button-color = 019f16079, three commits; screenshot served from the fork's pr-assets branch). Still a draft pending maintainer feedback.
+- 2026-09-29T22:58:39Z (main): scope: briefed; reuse prism-569378 to verify native button glyph color, tooltip preservation, and minimum API before adoption; historical shell contribution status is unverified; brief: docs/notes/2026-09-29-panel-integration-brief.md
