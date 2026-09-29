@@ -4,8 +4,9 @@ title: "Panel dice button: randomize all parameters or a subsection"
 status: idea
 priority: 2
 created: 2026-09-09T13:43:07Z
-updated: 2026-09-11T23:39:09Z
+updated: 2026-09-29T22:43:31Z
 depends: []
+parent: prism-179840
 tags: [ui, noctalia]
 ---
 
@@ -14,3 +15,4 @@ Add a small dice icon near the top-right of the Prism panel. Clicking it randomi
 ## Notes
 
 - 2026-09-11T23:39:09Z (main): The dice button doubles as the random-modulation data collector for the adaptive-glass dataset (prism-3e59b5): each roll plus the user's follow-up nudge or rating is a labelled sample.
+- 2026-09-29T22:43:31Z (main): scope: briefed; parented under prism-179840; prism-6aca8a settles eligible values, action scope, scratch writes, and recovery while coordinating keyboard randomization with prism-84d308; brief: docs/notes/2026-09-29-look-exploration-brief.md
