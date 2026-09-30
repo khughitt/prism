@@ -21,6 +21,11 @@ local state = {
   sampleElapsedMs = 0,
   renderedSliderCorrection = nil,
   expanded = {},
+  -- Writes enqueued so far, and the describe output and write count the model
+  -- on screen came from: an identical answer with no write since changes nothing.
+  enqueued = 0,
+  shownStdout = nil,
+  shownEnqueued = 0,
 }
 
 local describeRunning = false
@@ -198,6 +203,14 @@ local function described(result)
   local invalidated = state.describeInvalidated or state.drag ~= nil
   state.describeInvalidated = false
   local message = resultError(result, "prism describe")
+  -- The two-second re-read almost always answers what is already on screen.
+  -- Decoding and rebuilding the tree for it costs most of the host's 25 ms
+  -- per-callback CPU budget, so that answer is a no-op.
+  if not message and not invalidated and state.errorText == nil
+    and result.stdout == state.shownStdout and state.enqueued == state.shownEnqueued then
+    finishRefresh()
+    return
+  end
   local model
   if not message then
     local decodeError
@@ -212,6 +225,8 @@ local function described(result)
   elseif not message then
     markEdits(model)
     state.model = model
+    state.shownStdout = result.stdout
+    state.shownEnqueued = state.enqueued
     state.selectionPending = false
     -- A command's error outlives the refresh it triggers. Clearing it here
     -- would flash the reason a profile would not load past the user and leave
@@ -230,7 +245,8 @@ refresh = function()
   end
   describeRunning = true
   state.describeInvalidated = state.drag ~= nil
-  render()
+  -- No render here: every caller renders once itself, and a second full render
+  -- in the same callback overran the host's CPU budget and disabled the panel.
   if not run({"prism", "describe", "--json"}, described) then
     describeRunning = false
     state.errorText = "Failed to launch prism describe"
@@ -267,6 +283,7 @@ launch = function(item)
 end
 
 enqueue = function(item)
+  state.enqueued = state.enqueued + 1
   state.batchAffectsParams = state.batchAffectsParams or Queue.affectsParams(item)
   if state.queue.inFlight == nil then
     state.errorText = nil
@@ -1059,6 +1076,7 @@ function onOpen(context)
   state.errorSticky = false
   state.ticks = 0
   panel.setWantsSecondTicks(true)
+  render()
   refresh()
 end
 

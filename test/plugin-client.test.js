@@ -31,8 +31,9 @@ test('panel lifecycle owns refresh, drag cleanup, and live-drag frame ticks', as
   const source = await readEntry('panel.luau');
 
   // Opening is a fresh gesture: it drops a sticky command error from a previous
-  // session before re-reading, since the Luau runtime survives a close.
-  assert.match(source, /function onOpen\(context\)\n  state\.errorText = nil\n  state\.errorSticky = false\n  state\.ticks = 0\n  panel\.setWantsSecondTicks\(true\)\n  refresh\(\)\nend/);
+  // session before re-reading, since the Luau runtime survives a close. It
+  // renders itself because refresh no longer does.
+  assert.match(source, /function onOpen\(context\)\n  state\.errorText = nil\n  state\.errorSticky = false\n  state\.ticks = 0\n  panel\.setWantsSecondTicks\(true\)\n  render\(\)\n  refresh\(\)\nend/);
   assert.match(source, /function onClose\(\)[\s\S]*state\.drag = nil[\s\S]*state\.sampleElapsedMs = 0[\s\S]*panel\.setNeedsFrameTick\(false\)/);
   // Closing the panel has no backend action: there is no preview to tear down.
   const onClose = source.slice(source.indexOf('function onClose()'));

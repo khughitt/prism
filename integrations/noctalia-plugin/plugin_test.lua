@@ -326,8 +326,15 @@ model.params[2].layer, model.params[2].held = "wallpaper", { "wallpaper" }
 ui = setmetatable({}, { __index = function(_, kind)
   return function(props, children) return { kind = kind, props = props or {}, children = children or {} } end
 end })
+-- Each describe answers with fresh output, as a model change would; the tests
+-- that pin the unchanged-output shortcut resend one answer on purpose.
+local host = { renders = 0, decodes = 0, serial = 0 }
+function host.describeOk()
+  host.serial = host.serial + 1
+  return { exitCode = 0, stdout = '{"serial":' .. host.serial .. '}' }
+end
 panel = {
-  render = function(tree) rendered = tree end,
+  render = function(tree) rendered = tree; host.renders = host.renders + 1 end,
   setNeedsFrameTick = function() end,
   setWantsSecondTicks = function() end,
 }
@@ -339,7 +346,7 @@ noctalia = {
     if cmd:find("describe", 1, true) then described = callback else commandCallback = callback end
     return true
   end,
-  json = { decode = function() return model end },
+  json = { decode = function() host.decodes = host.decodes + 1; return model end },
 }
 package.loaded["./presentation.luau"] = Presentation
 package.loaded["./queue.luau"] = Queue
@@ -349,7 +356,7 @@ dofile(here .. "panel.luau")
 onOpen({})
 equal(rendered.kind, "scroll")
 equal(rendered.props.flexGrow, 1, "loading scroll must fill the panel viewport")
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 equal(rendered.props.flexGrow, 1, "populated scroll must fill the panel viewport")
 
 -- The populated tree carries both sections, the Focus header toggle, the
@@ -454,7 +461,7 @@ equal(commands[#commands], Shell.command({ "prism", "unset", "glass.roughness" }
 equal(model.params[4].value, 0.1, "the reset shows the fallback before describe reconciles")
 equal(model.params[4].edited, false)
 commandCallback({exitCode = 0, stdout = ""})
-described({exitCode = 0, stdout = "{}"})
+described(host.describeOk())
 
 local function buttonsByGlyph(tree, glyph)
   local found = {}
@@ -472,9 +479,9 @@ for index, param in ipairs(model.params) do beforeNeutral[index] = {param.value,
 panelWide.props.onClick()
 equal(commands[#commands], Shell.command({"prism", "reset", "neutral"}))
 commandCallback({exitCode = 0, stdout = ""})
-described({exitCode = 0, stdout = "{}"})
+described(host.describeOk())
 for index, param in ipairs(model.params) do param.value, param.overridden = beforeNeutral[index][1], beforeNeutral[index][2] end
-described({exitCode = 0, stdout = "{}"})
+described(host.describeOk())
 -- Labels do not honour width in the native host. Value columns must reserve
 -- their space with a layout container, including non-slider and empty values.
 local valueWidth
@@ -557,7 +564,7 @@ local noiseBypass = model.params[13]
 noiseBypass.effectiveDrag = nil
 dofile(here .. "panel.luau")
 onOpen({})
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 local unavailableLight = light("noise")
 equal(unavailableLight.props.onClick, nil, "an unavailable bypass light has no write handler")
 assert(unavailableLight.props.opacity < 1.0, "an unavailable bypass light dims")
@@ -571,7 +578,7 @@ noiseBypass.effectiveDrag, noiseBypass.layer, noiseBypass.held = "release", "wal
 model.active = { wallpaper = { id = "f8eb0556", path = "/pics/Deep Field.jpg" } }
 dofile(here .. "panel.luau")
 onOpen({})
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 equal(light("noise").props.opacity, 1.0, "nothing is shadowed any more")
 local hintLabels = {}
 for _, label in ipairs(collect(rendered, "label")) do hintLabels[label.props.text or ""] = true end
@@ -587,7 +594,7 @@ model.active = {}
 -- flight and anything enqueued now would only wait behind it: start clean.
 dofile(here .. "panel.luau")
 onOpen({})
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 local commandsBeforeLight = #commands
 local backdropLightRow = light("backdrop")
 backdropLightRow.props.onClick()
@@ -602,7 +609,7 @@ for _, param in ipairs(model.params) do
 end
 dofile(here .. "panel.luau")
 onOpen({})
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 local _, silencedLight = light("saturation")
 equal(silencedLight.props.name, "circle")
 equal(silencedLight.props.color, "#f6ad55", "a silenced light keeps its category color, hollow")
@@ -612,7 +619,7 @@ for _, param in ipairs(model.params) do
 end
 dofile(here .. "panel.luau")
 onOpen({})
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 
 -- Expanding a card shows the bypass row first, then details; the bypass row
 -- carries the ordinary reset that issues unset.
@@ -661,7 +668,7 @@ for _, node in ipairs(collect(noiseCard, "column")) do
 end
 equal(detailRows, { "glass.bypass.noise:row", "glass.noiseType:row" })
 model.params[12].layer, model.params[12].held = "scratch", { "base", "scratch" }
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 chevron("saturation").props.onClick()
 local saturationCard = byKey(rendered, "saturation:card")[1]
 local bypassReset
@@ -673,12 +680,12 @@ bypassReset.props.onClick()
 assert(commands[#commands]:find("'unset' 'glass.bypass.saturation'", 1, true), "bypass reset enqueues prism unset")
 commandCallback({exitCode = 0, stdout = ""})
 model.params[12].layer, model.params[12].held = "base", { "base" }
-described({exitCode = 0, stdout = "{}"})
+described(host.describeOk())
 
 -- Expansion survives close and reopen within a session.
 onClose()
 onOpen({})
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 equal(chevron("noise").props.tooltip, "Hide details")
 chevron("noise").props.onClick()
 equal(chevron("noise").props.tooltip, "Show details")
@@ -694,7 +701,7 @@ local savedRack = model.rack
 model.rack = nil
 dofile(here .. "panel.luau")
 onOpen({})
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 local errorLabel = collect(rendered, "label")[1]
 equal(errorLabel.props.text, "prism describe returned no rack")
 model.rack = savedRack
@@ -717,7 +724,7 @@ for index, value in ipairs(noise.values) do
   noise.value, noise.layer = "fine", "default"
   dofile(here .. "panel.luau")
   onOpen({})
-  described({ exitCode = 0, stdout = "{}" })
+  described(host.describeOk())
   chevron("noise").props.onClick()
   paramSelect(rendered).props.onChange(index - 1)
   equal(noise.value, value)
@@ -728,7 +735,7 @@ end
 noise.values = nil
 dofile(here .. "panel.luau")
 onOpen({})
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 local missingValuesError = false
 for _, label in ipairs(collect(rendered, "label")) do
   if label.props.text == "glass.noiseType has no select values" then missingValuesError = true end
@@ -915,7 +922,7 @@ local function renderModel(next)
   model = next
   dofile(here .. "panel.luau")
   onOpen({})
-  described({ exitCode = 0, stdout = "{}" })
+  described(host.describeOk())
   return rendered
 end
 
@@ -1000,7 +1007,7 @@ equal(commands[#commands], Shell.command({ "prism", "context", "clear", "wallpap
   "--expect-look", "default", "--expect-wallpaper", "id:f8eb0556" }))
 writeCallback({ exitCode = 0, stdout = "" })
 assert(commands[#commands]:find("describe", 1, true), "a completed clear re-reads the model")
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 
 -- Nothing is dimmed: scratch is topmost, so no write can be covered. A row the
 -- wallpaper nudges carries a provenance marker instead.
@@ -1224,7 +1231,7 @@ assert(commands[#commands]:find("describe", 1, true), "a failed activate still r
 -- The harness decodes describe output to the fixture by reference, so hand it
 -- a fresh model the way the real describe would.
 model = profileModel({ active = { profile = "dawn" } })
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 equal(selectWithOption(rendered, "Default").props.selectedIndex, 1,
   "a failed activate is reconciled by the describe that follows")
 
@@ -1242,7 +1249,7 @@ equal(#commands, beforeWide + 1, "one command")
 equal(commands[#commands], Shell.command({ "prism", "reset", "neutral" }))
 equal(selectWithOption(rendered, "Default").props.selectedIndex, 1, "the profile stays loaded")
 writeCallback({ exitCode = 0, stdout = "" })
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 
 -- Save-as is one command: commit profile <name> snapshots the screen and
 -- loads the new profile, so the selector shows it at once.
@@ -1261,14 +1268,14 @@ equal(commands[#commands], Shell.command({ "prism", "commit", "profile", "noon",
 equal(state_activeProfile(), "noon", "the pick shows at once")
 writeCallback({ exitCode = 0, stdout = "" })
 assert(commands[#commands]:find("describe", 1, true), "a finished batch still re-reads the model")
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 
 -- A command error has to survive the refresh that follows it.
 local failTree = renderModel(profileModel())
 glyphButton(failTree, "device-floppy").props.onClick()
 collect(rendered, "input")[1].props.onSubmit("noon")
 writeCallback({ exitCode = 1, stdout = "", stderr = "disk full" })
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 local banner
 for _, label in ipairs(collect(rendered, "label")) do
   if label.props.color == "error" and label.props.visible then banner = label.props.text end
@@ -1347,7 +1354,7 @@ textButton(rendered, "Replace").props.onClick()
 equal(commands[#commands], Shell.command({ "prism", "commit", "profile", "dawn",
   "--expect-look", "default", "--expect-wallpaper", "id:f8eb0556" }))
 writeCallback({ exitCode = 0, stdout = "" })
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 
 -- Saving the loaded profile under its own name is the merging commit when
 -- there are edits, and closes the field without a command when there are none.
@@ -1365,7 +1372,7 @@ collect(rendered, "input")[1].props.onSubmit("dusk")
 equal(commands[#commands], Shell.command({ "prism", "commit", "profile",
   "--expect-look", "profile:dusk", "--expect-wallpaper", "none" }), "with edits it is the merging commit")
 writeCallback({ exitCode = 0, stdout = "" })
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 
 -- The edits row: the count, keep-in-look, keep-for-wallpaper, revert,
 -- symmetric, neutral. Every button keeps the reset idiom.
@@ -1386,7 +1393,7 @@ equal(commands[#commands], Shell.command({ "prism", "commit", "profile",
   "--expect-look", "profile:dusk", "--expect-wallpaper", "id:f8eb0556" }))
 equal(editsModel.params[3].edited, false, "the edits clear optimistically")
 writeCallback({ exitCode = 0, stdout = "" })
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 local wallpaperEditsTree = renderModel(twoEdits())
 local keepWall = glyphButton(wallpaperEditsTree, "photo-check")
 equal(keepWall.props.tooltip, "Keep 2 edits for dusk + this wallpaper")
@@ -1394,14 +1401,14 @@ keepWall.props.onClick()
 equal(commands[#commands], Shell.command({ "prism", "commit", "wallpaper", "f8eb0556",
   "--expect-look", "profile:dusk", "--expect-wallpaper", "id:f8eb0556" }))
 writeCallback({ exitCode = 0, stdout = "" })
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 local revertTree = renderModel(twoEdits())
 local revert = buttonsByGlyph(revertTree, "restore")[1]
 equal(revert.props.tooltip, "Revert 2 edits")
 revert.props.onClick()
 equal(commands[#commands], Shell.command({ "prism", "reset", "revert" }))
 writeCallback({ exitCode = 0, stdout = "" })
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 
 local defaultEdits = profileModel({ active = {} })
 defaultEdits.params[3].layer, defaultEdits.params[3].held = "scratch", { "scratch" }
@@ -1411,7 +1418,7 @@ glyphButton(defaultTree, "bookmark").props.onClick()
 equal(commands[#commands], Shell.command({ "prism", "commit", "base",
   "--expect-look", "default", "--expect-wallpaper", "none" }))
 writeCallback({ exitCode = 0, stdout = "" })
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 local noWall = glyphButton(defaultTree, "photo-check")
 assert(noWall.props.opacity < 1.0, "no wallpaper on screen, so keep-for-wallpaper is inert")
 equal(noWall.props.tooltip, "No wallpaper on screen")
@@ -1528,12 +1535,12 @@ end
 local reopenTree = renderModel(profileModel({ active = { profile = "dusk" } }))
 glyphButton(reopenTree, "trash").props.onClick()
 writeCallback({ exitCode = 1, stdout = "", stderr = "profile in use" })
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 equal(errorBanner(rendered), "profile in use", "the error survives the refresh it triggered")
 
 onClose()
 onOpen({})
-described({ exitCode = 0, stdout = "{}" })
+described(host.describeOk())
 equal(errorBanner(rendered), nil, "opening the panel is a fresh gesture and starts without the last error")
 
 -- Following the rotation: the store is the only authority on which wallpaper
@@ -1550,7 +1557,7 @@ equal(errorBanner(rendered), nil, "opening the panel is a fresh gesture and star
   update()
   equal(#commands, beforeTicks + 1, "the second tick refreshes")
   assert(commands[#commands]:find("describe", 1, true))
-  described({ exitCode = 0, stdout = "{}" })
+  described(host.describeOk())
 
 -- During a drag the tick sets one flag and the refresh replays once the
 -- panel is idle, however many ticks passed.
@@ -1567,7 +1574,7 @@ equal(errorBanner(rendered), nil, "opening the panel is a fresh gesture and star
   writeCallback({ exitCode = 0, stdout = "" })
   equal(#commands, beforeDrag + 2, "then one refresh, not four")
   assert(commands[#commands]:find("describe", 1, true))
-  described({ exitCode = 0, stdout = "{}" })
+  described(host.describeOk())
 
   onClose()
   equal(ticksWanted, false, "closing the panel stops the tick")
@@ -1589,7 +1596,7 @@ equal(errorBanner(rendered), nil, "opening the panel is a fresh gesture and star
   writeCallback({ exitCode = 0, stdout = "" })
   assert(commands[#commands]:find("describe", 1, true), "the invalidated describe is replayed once the write lands")
   model = profileModel({ active = { profile = "dusk" } })
-  described({ exitCode = 0, stdout = "{}" })
+  described(host.describeOk())
   equal(selectWithOption(rendered, "Default").props.selectedIndex, 2)
 end)()
 
@@ -1672,4 +1679,56 @@ staleClearModel.active.profile = "dusk"
 glyphButton(staleClearTree, "eraser").props.onClick()
 equal(commands[#commands], Shell.command({ "prism", "context", "clear", "wallpaper", "f8eb0556",
   "--expect-look", "default", "--expect-wallpaper", "id:f8eb0556" }))
+end)()
+
+-- A full render costs 10-14 ms of the host's 25 ms per-callback CPU budget in
+-- the real shell, and three overruns in a row disable the panel until reload.
+-- No callback may render twice, and the idle re-read must cost nothing when
+-- describe answers what is already on screen.
+;(function()
+  renderModel(profileModel())
+  local title = collect(rendered, "toggle")[1]
+  title.props.onChange(false)
+  host.renders = 0
+  commandCallback({exitCode = 0, stdout = ""})
+  equal(host.renders, 1, "a drained write that triggers the refresh renders once, not once more inside refresh")
+  equal(commands[#commands], Shell.command({ "prism", "describe", "--json" }))
+
+  host.renders = 0
+  described(host.describeOk())
+  equal(host.renders, 1, "an accepted describe renders once")
+
+  host.renders = 0
+  update(); update()
+  equal(commands[#commands], Shell.command({ "prism", "describe", "--json" }))
+  equal(host.renders, 0, "the second-tick refresh launches describe without rendering")
+
+  local unchanged = { exitCode = 0, stdout = '{"unchanged":true}' }
+  described(unchanged)
+  update(); update()
+  host.renders, host.decodes = 0, 0
+  described(unchanged)
+  equal(host.decodes, 0, "an unchanged describe is not decoded again")
+  equal(host.renders, 0, "an unchanged describe does not rebuild the tree")
+
+  collect(rendered, "toggle")[1].props.onChange(true)
+  commandCallback({exitCode = 0, stdout = ""})
+  host.renders, host.decodes = 0, 0
+  described(unchanged)
+  equal(host.decodes, 1, "a write since the model was shown makes the same answer authoritative again")
+  equal(host.renders, 1)
+
+  update(); update()
+  described({ exitCode = 1, stdout = "", stderr = "boom" })
+  assert(collect(rendered, "label")[1].props.text ~= nil, "fixture: the failed describe shows its error")
+  update(); update()
+  host.renders = 0
+  described(unchanged)
+  equal(host.renders, 1, "an unchanged answer still clears the error a failed describe left")
+  equal(collect(rendered, "label")[1].props.text, nil)
+
+  host.renders = 0
+  onClose()
+  onOpen({})
+  equal(host.renders, 1, "opening renders at once, before describe answers")
 end)()

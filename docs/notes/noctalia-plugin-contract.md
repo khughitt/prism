@@ -70,7 +70,13 @@ result is stale and replayed only after the drag and write queue are idle.
 While the panel is open it asks the host for second ticks and re-reads describe
 every two seconds through the same stale-and-replay path, so a wallpaper
 rotation reaches the header, the edits row, and every provenance marker within
-a period. Each rendered Keep, Save As, Clear, Rename, and Delete action captures
+a period. A full render costs 10-14 ms of the host's 25 ms per-callback CPU
+budget in the running shell (most of it host-side: the interrupt that meters
+the budget reads the thread CPU clock on every Luau call), and three overruns
+in a row disable the panel until reload. So no callback renders twice:
+`refresh` never renders, and its callers render once. A describe whose output
+is byte-identical to the one on screen, with no write enqueued since and no
+error showing, is not decoded or rendered, which keeps the idle re-read free. Each rendered Keep, Save As, Clear, Rename, and Delete action captures
 both selected slots before optimistic model changes. The queue sends
 `--expect-look <default|profile:name> --expect-wallpaper <none|id:id>`; a stale
 action is refused under the store lock and appears in the banner. Selection
