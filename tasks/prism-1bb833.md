@@ -7,8 +7,8 @@ size: m
 complexity: mid
 process: planned
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-02T23:39:14Z
-depends: [material-6f45a0]
+updated: 2026-10-02T23:46:51Z
+depends: [material-6f45a0, prism-b4d118]
 parent: prism-980a29
 tags: [material, niri]
 agent: claude-code/claude-opus-5-5

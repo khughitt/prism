@@ -2,13 +2,13 @@
 id: prism-4f8bab
 title: Organize the Ring group on the Unfocused/Focused axis
 status: todo
-priority: 3
+priority: 2
 size: m
 complexity: mid
 process: planned
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-02T23:39:14Z
-depends: [prism-b4d118]
+updated: 2026-10-02T23:46:53Z
+depends: []
 parent: prism-980a29
 tags: [ui, material]
 agent: claude-code/claude-opus-5-5
@@ -18,4 +18,8 @@ Why: the Focus group pairs each optic into Unfocused/Focused rows (ui.state + ui
 
 Question for the spec: presentation only (Focused-only rows plus shared rows spanning both columns), or real per-state ring params? prism writes the same response block into terminal-glass and terminal-glass-inactive (integrations/niri/render.js responseBlock), so per-state accent and geometry values need no upstream change; whether per-state geometry looks right across a material swap needs checking (cf. material-5a5fff). Recommendation: start presentation-only, and split per state only the params that visibly should differ.
 
-Start: defs/glass.yaml Ring section; integrations/noctalia-plugin/presentation.luau row pairing (~L159-200, ~L300-330); panel.luau column header (~L606); test/plugin-presentation.test.js. Lands after the source-aware swatch task, which reworks the same Ring rows.
+Start: defs/glass.yaml Ring section; integrations/noctalia-plugin/presentation.luau row pairing (~L159-200, ~L300-330); panel.luau column header (~L606); test/plugin-presentation.test.js. Lands first: it settles where the Ring rows live, so the source-aware swatch task (prism-b4d118) gates controls in their final layout.
+
+## Notes
+
+- 2026-10-02T23:46:52Z (main): owner 2026-10-02: the '?' marks an open idea, not low priority; raised to P2.

@@ -7,8 +7,8 @@ size: m
 complexity: mid
 process: planned
 created: 2026-09-22T15:37:30Z
-updated: 2026-10-02T23:39:14Z
-depends: []
+updated: 2026-10-02T23:46:51Z
+depends: [prism-4f8bab]
 parent: prism-980a29
 tags: [defs, noctalia, ui, material]
 agent: claude-code/claude-opus-5
