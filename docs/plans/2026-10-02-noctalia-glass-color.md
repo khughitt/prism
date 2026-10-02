@@ -162,7 +162,7 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 **Interfaces:**
 
 - Consumes: the refreshed two-field palette, resolved params, and existing DRY/`glassFor` optics pipeline.
-- Produces: `readNoctaliaPalette(file, requiredFields) -> null | { primary?: string, surface?: string }`. `requiredFields` is the caller-selected array of `primary` and/or `surface`; return only those validated fields. Null means ENOENT; every other filesystem error propagates.
+- Produces: `readNoctaliaPalette(file, requiredFields, consumer = 'ring') -> null | { primary?: string, surface?: string }`. `requiredFields` is the caller-selected array of `primary` and/or `surface`; return only those validated fields. Null means ENOENT; every other filesystem error propagates.
 - Extends the existing renderer sources with `noctaliaSurface?: string`, preserving `noctaliaAccent?: string | null` for ring rendering. `renderNiriFragment(resolved, sources = {})` stays pure; its Noctalia tint callers supply the validated required colors. Manual/bypassed rendering needs no surface.
 - Publishes the two tint parameters through defs/rack/manifest. No new panel implementation or core resolver code is needed.
 
@@ -208,7 +208,10 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 - [ ] **Step 2: Replace the accent-only reader.** Preserve `noctaliaColorsPath()` unchanged. Use this implementation in place of `readNoctaliaAccent`:
 
   ```js
-  export function readNoctaliaPalette(file, requiredFields) {
+  export function readNoctaliaPalette(file, requiredFields, consumer = 'ring') {
+    const remedy = consumer === 'tint'
+      ? "run 'noctalia msg templates-apply', verify primary and surface, then rerun 'prism apply niri'; see the README for direct wallpaper refresh or select manual tint"
+      : "run 'noctalia msg templates-apply', verify primary, then rerun 'prism apply niri' or select the ring's manual Color source";
     let text;
     try {
       text = fs.readFileSync(file, 'utf8');
@@ -220,12 +223,12 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
     try {
       colors = JSON.parse(text);
     } catch {
-      throw new Error(`${file}: not valid JSON — run 'noctalia msg templates-apply', verify primary and surface, then rerun 'prism apply niri'; see the README for direct wallpaper refresh or select manual tint`);
+      throw new Error(`${file}: not valid JSON — ${remedy}`);
     }
     return Object.fromEntries(requiredFields.map((field) => {
       const value = colors?.[field];
       if (typeof value !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(value)) {
-        throw new Error(`${file}: ${field} missing or not a #rrggbb color — run 'noctalia msg templates-apply', verify primary and surface, then rerun 'prism apply niri'; see the README for direct wallpaper refresh or select manual tint`);
+        throw new Error(`${file}: ${field} missing or not a #rrggbb color — ${remedy}`);
       }
       return [field, value];
     }));
@@ -249,6 +252,7 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 
   ```js
   if (params['glass.tintSource'] === 'noctalia' && params['glass.bypass.tint'] !== true) {
+    if (!sources.noctaliaSurface) throw new Error('noctalia tint rendered without a validated surface');
     glass.attenuationColor = paletteTint(sources.noctaliaSurface,
       sources.noctaliaAccent, params['glass.tintAccentMix']);
   }
@@ -256,13 +260,11 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 
   Pass sources through `activeGlass(params, sources)`, `inactiveGlass(params, sources)` and their two `definition` call sites. Do not change `responseBlock`, OPTICS membership, DRY, assignment rules or focus-ring handling. The renderer trusts the sink's validated inputs; do not silently substitute stored tint when a required palette field is absent.
 
-- [ ] **Step 4: Add the apply regression for palette refresh and recovery.** Add manual source/mix to its existing `PARAMS` fixture. Import `loadDefs`, `defsDir`, and `resolveParams` for complete default-derived new test params. In the existing fixture, expose `resolvedFile` and add `PRISM_CONFIG_DIR: path.join(dir, 'config')` to the child environment so store snapshots are isolated from the host.
+- [ ] **Step 4: Add the apply regression for palette refresh and recovery.** Add manual source/mix to its existing `PARAMS` fixture. Import `loadDefs`, `defsDir`, and `resolveParams` for complete default-derived new test params. In the existing fixture, expose `runCli(extra)`: invoke `bin/prism apply niri` with the same stub-niri environment, isolated `PRISM_CONFIG_DIR: path.join(dir, 'config')`, and `PRISM_INTEGRATIONS_DIR` set to the real integrations directory. Keep `run(extra)` for sink-only failure tests. The store-preservation test must use `runCli`, so it exercises store resolution, fan-out and the existing sink lock rather than a fixed resolved input.
 
   ```js
   test('palette changes reach both materials without changing the store', (t) => {
-    const { dir, state, target, run, calls, writeParams, resolvedFile } = fixture(t);
-    writeParams({ ...resolveParams(loadDefs(defsDir()), {}),
-      'glass.ring.colorSource': 'familiar', 'glass.roughness': 0.3 });
+    const { dir, state, target, runCli, calls } = fixture(t);
     const palette = path.join(dir, 'palette.json');
     const config = path.join(dir, 'config');
     fs.mkdirSync(path.join(config, 'contexts', 'profile'), { recursive: true });
@@ -273,15 +275,18 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
     fs.writeFileSync(saved, 'glass.roughness: 0.2\n');
     fs.writeFileSync(runtime, JSON.stringify({ profile: 'Saved',
       _scratch: { 'glass.roughness': 0.3 } }));
-    const before = new Map([resolvedFile, base, saved, runtime]
+    const before = new Map([base, saved, runtime]
       .map((file) => [file, fs.readFileSync(file, 'utf8')]));
     for (const [surface, primary, expected] of [
       ['#101010', '#202020', '#121212'],
       ['#202020', '#303030', '#222222'],
     ]) {
       fs.writeFileSync(palette, JSON.stringify({ surface, primary }));
-      const result = run({ PRISM_NOCTALIA_COLORS: palette });
+      const result = runCli({ PRISM_NOCTALIA_COLORS: palette });
       assert.equal(result.status, 0, result.stderr);
+      const resolved = JSON.parse(fs.readFileSync(path.join(state, 'resolved.json'), 'utf8'));
+      assert.equal(resolved.params['glass.roughness'], 0.3);
+      assert.equal(resolved.params['glass.tintSource'], 'noctalia');
       const kdl = fs.readFileSync(target, 'utf8');
       assert.equal((kdl.match(new RegExp(`attenuation-color "${expected}"`, 'g')) ?? []).length, 2);
       assert.match(kdl, /attenuation-distance 30\n/);
@@ -356,7 +361,7 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
   const sources = {};
   if (fields.length) {
     const file = noctaliaColorsPath();
-    const palette = readNoctaliaPalette(file, fields);
+    const palette = readNoctaliaPalette(file, fields, tint ? 'tint' : 'ring');
     if (tint && palette === null) {
       throw new Error(`${file}: palette missing — run 'noctalia msg templates-apply', verify primary and surface, then rerun 'prism apply niri'; see the README for direct wallpaper refresh or select manual tint`);
     }
@@ -506,4 +511,4 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 
 ## Execution and review status
 
-Spec round 2's conditional acceptance is fulfilled: the design now requires two separate merges, with an explicit host refresh gate between them. This plan is a draft for user review; no product implementation or rollout in this plan has started. Native inline execution is recommended because the tasks are sequential and share the same color flow. After plan acceptance, start Task 1 in the existing worktree and proceed through the dependencies; do not combine the two landings.
+Plan round 1 accepted subject to the CLI store-preservation correction, now incorporated. Ring-only errors name the ring control, and the renderer names a missing validated surface explicitly. The serial order is retained for the quick local refresh. Spec round 2's conditional acceptance is fulfilled: the design now requires two separate merges, with an explicit host refresh gate between them. This plan is approved for inline execution; no product implementation or rollout in this plan has started. Native inline execution is recommended because the tasks are sequential and share the same color flow. After plan acceptance, start Task 1 in the existing worktree and proceed through the dependencies; do not combine the two landings.

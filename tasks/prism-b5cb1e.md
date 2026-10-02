@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: feat/noctalia-glass-color
 created: 2026-09-05T01:10:50Z
-updated: 2026-10-02T09:54:25Z
+updated: 2026-10-02T10:07:22Z
 started: 2026-10-02T08:08:45Z
 depends: []
 tags: [integration, noctalia, colors]
@@ -51,3 +51,7 @@ Outcome: the active terminal-glass material carries the Noctalia surface color a
 - 2026-10-02T09:54:24Z (feat/noctalia-glass-color): plan self-review: all accepted spec requirements map to four dependent tasks; Merge 1 contains only template/tests/README and design/task records; a host-specific verified refresh gates Merge 2. Covered unused fields, bypass, mix endpoints, store preservation, starter snapshots and neutral/panel behavior. No placeholders or interface mismatches found; inline execution recommended.
 - 2026-10-02T09:54:24Z (feat/noctalia-glass-color): parked (waiting on user, review): User reviews .worktrees/noctalia-glass-color/docs/plans/2026-10-02-noctalia-glass-color.md; after acceptance the agent records the plan review, resumes this task and starts prism-47da20 in the existing worktree using inline execution.
   provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-10-02T10:05:55Z (feat/noctalia-glass-color): resumed
+  provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-10-02T10:05:55Z (feat/noctalia-glass-color): review: plan round 1 — verdict: revise; findings: P2 1, P3 3; reviewer: claude-code/opus-5.5
+- 2026-10-02T10:07:22Z (feat/noctalia-glass-color): plan revision 1: store-preservation regression now invokes bin/prism apply niri through the real CLI, isolated store and stub niri, exercising resolution/fan-out/sink locking. Fold consumer-specific palette remedies and explicit missing-surface renderer error into Task 3. Retain serial order for the quick local refresh. Conditional plan acceptance fulfilled; starting inline implementation.

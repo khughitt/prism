@@ -1,13 +1,15 @@
 ---
 id: prism-47da20
 title: Expand the Noctalia palette template and document the staged upgrade
-status: todo
+status: doing
 priority: 1
 size: s
 complexity: low
 process: direct
+owner: feat/noctalia-glass-color
 created: 2026-10-02T09:44:25Z
-updated: 2026-10-02T09:54:24Z
+updated: 2026-10-02T10:07:22Z
+started: 2026-10-02T10:07:22Z
 depends: []
 parent: prism-b5cb1e
 tags: []
@@ -22,4 +24,6 @@ First product phase of the reviewed plan. Add surface to the palette template an
 ## Notes
 
 - 2026-10-02T09:54:24Z (feat/noctalia-glass-color): parked (waiting on user, review): User reviews .worktrees/noctalia-glass-color/docs/plans/2026-10-02-noctalia-glass-color.md; after acceptance the agent records the parent plan review and starts this child in the existing worktree.
+  provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-10-02T10:07:22Z (feat/noctalia-glass-color): started
   provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
