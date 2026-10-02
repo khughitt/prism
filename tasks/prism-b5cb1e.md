@@ -1,12 +1,15 @@
 ---
 id: prism-b5cb1e
 title: Derive glass attenuation color and terminal palette from the Noctalia colorscheme
-status: todo
+status: doing
 priority: 1
 size: m
 complexity: high
+process: planned
+owner: main
 created: 2026-09-05T01:10:50Z
-updated: 2026-09-12T16:46:10Z
+updated: 2026-10-02T08:08:47Z
+started: 2026-10-02T08:08:45Z
 depends: []
 tags: [integration, noctalia, colors]
 ---
@@ -21,3 +24,6 @@ Outcome: the active terminal-glass material carries the Noctalia surface color a
 - 2026-09-05T18:51:00Z (main): Related 2026-09-05: prism-2f0b4b (context-specific profiles); an auto-derived tint shrinks what a wallpaper profile must store.
 - 2026-09-07T08:21:16Z (main): 2026-09-07 promoted to todo P1: with kitty at 0 the glass is the only thing behind the text; a fixed attenuation color drifts out of step within one rotation.
 - 2026-09-08T22:56:56Z (main): The focus matrix now has glass.inactive.attenuationColor as well (prism-a4ef9a), so a derived tint has two halves to fill; deriving only the focused one leaves the unfocused material on the shipped #dfe8ff.
+- 2026-10-02T08:08:45Z (main): started
+  provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-10-02T08:08:45Z (main): process: planned — the existing palette hook can carry surface color, but tint source selection, secondary color mixing, and treatment of manual focus-state values need a reviewed design; no resolver or store mutation is required for the recommended sink approach.
