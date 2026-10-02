@@ -71,7 +71,7 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 - Consumes: the current `readNoctaliaAccent(file)` and existing template registration.
 - Produces: a two-field palette `{ primary: '#rrggbb', surface: '#rrggbb' }`; the current sink still reads only primary. No defs or sink implementation changes are allowed in this task.
 
-- [ ] **Step 1: Expand the existing template regression to cover both modes.** Keep its existing temp-directory cleanup, installed-CLI skip rule, and `readNoctaliaAccent` import. Replace its single token-map/render assertion with:
+- [x] **Step 1: Expand the existing template regression to cover both modes.** Keep its existing temp-directory cleanup, installed-CLI skip rule, and `readNoctaliaAccent` import. Replace its single token-map/render assertion with:
 
   ```js
   const tokens = {
@@ -88,15 +88,15 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
   }
   ```
 
-- [ ] **Step 2: Run `just test-fast` in the worktree.** On a host with Noctalia installed, the new assertion fails because surface is absent. A skipped CLI test is insufficient evidence for the host rollout.
-- [ ] **Step 3: Expand only the template.** Its entire contents become:
+- [x] **Step 2: Run `just test-fast` in the worktree.** On a host with Noctalia installed, the new assertion fails because surface is absent. A skipped CLI test is insufficient evidence for the host rollout.
+- [x] **Step 3: Expand only the template.** Its entire contents become:
 
   ```text
   {"primary": "{{ colors.primary.default.hex }}", "surface": "{{ colors.surface.default.hex }}"}
   ```
 
-- [ ] **Step 4: Document the two-merge upgrade in the README.** Copy the accepted spec's commands and ordering: first merge template/tests/README; reapply templates; verify both fields; only then merge the sink/defaults/controls. State that new controls are upcoming until Merge 2, so an operator does not try an unknown `glass.tintSource` key during Merge 1. Include dark-mode scope, expected light-mode appearance, the checked direct wallpaper command, and the predefined-scheme/manual recovery limitation. Keep the existing template registration and `colors_changed` hook instructions.
-- [ ] **Step 5: Run `just test-fast` and `tasks check` in the worktree.** Confirm the template test actually ran on the rollout host. Inspect the diff: there must be no changes to defs, source modules, apply, profiles or panel code. Mark this child done with the result before committing its code and task record. Use conventional commit `feat(palette): include surface and document staged tint upgrade`.
+- [x] **Step 4: Document the two-merge upgrade in the README.** Copy the accepted spec's commands and ordering: first merge template/tests/README; reapply templates; verify both fields; only then merge the sink/defaults/controls. State that new controls are upcoming until Merge 2, so an operator does not try an unknown `glass.tintSource` key during Merge 1. Include dark-mode scope, expected light-mode appearance, the checked direct wallpaper command, and the predefined-scheme/manual recovery limitation. Keep the existing template registration and `colors_changed` hook instructions.
+- [x] **Step 5: Run `just test-fast` and `tasks check` in the worktree.** Confirm the template test actually ran on the rollout host. Inspect the diff: there must be no changes to defs, source modules, apply, profiles or panel code. Mark this child done with the result before committing its code and task record. Use conventional commit `feat(palette): include surface and document staged tint upgrade`.
 
 ### Task 2: Merge the template and verify the host palette
 
@@ -511,4 +511,4 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 
 ## Execution and review status
 
-Plan round 1 accepted subject to the CLI store-preservation correction, now incorporated. Ring-only errors name the ring control, and the renderer names a missing validated surface explicitly. The serial order is retained for the quick local refresh. Spec round 2's conditional acceptance is fulfilled: the design now requires two separate merges, with an explicit host refresh gate between them. This plan is approved for inline execution; no product implementation or rollout in this plan has started. Native inline execution is recommended because the tasks are sequential and share the same color flow. After plan acceptance, start Task 1 in the existing worktree and proceed through the dependencies; do not combine the two landings.
+Plan round 1 accepted subject to the CLI store-preservation correction, now incorporated. Ring-only errors name the ring control, and the renderer names a missing validated surface explicitly. The serial order is retained for the quick local refresh. Spec round 2's conditional acceptance is fulfilled: the design now requires two separate merges, with an explicit host refresh gate between them. This plan is approved for inline execution; Task 1 is implemented and verified; the host rollout has not yet started. Native inline execution is recommended because the tasks are sequential and share the same color flow. After plan acceptance, start Task 1 in the existing worktree and proceed through the dependencies; do not combine the two landings.

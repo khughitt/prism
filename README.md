@@ -245,6 +245,69 @@ colors_changed = ["prism apply niri"]
 Until the template has rendered once, the ring rests on the manual color.
 `PRISM_NOCTALIA_COLORS` points the sink at another file.
 
+### Upgrade to palette-driven glass tint
+
+The template now supplies both `primary` and `surface`. The upcoming tint
+source uses the surface with a 10% palette-accent mix, with distance defaults
+of 30 px focused and 35 px unfocused at 20 px depth. Dark-mode legibility is
+the goal; a near-white light-mode surface produces nearly clear glass and
+cannot make dark terminal text legible over a dark wallpaper.
+
+The launcher and registered template can both load from the main checkout,
+so this upgrade requires **two separate merges**, with a refresh between them:
+
+1. Merge the expanded template, its tests and these upgrade instructions.
+   Keep the old sink/defaults installed; the extra surface field is harmless
+   to the existing ring reader. The new tint controls are not available yet.
+2. Run `noctalia msg templates-apply` to reapply the current palette's user
+   templates. Its `ok` acknowledgment does not prove rendering completed.
+   Verify both fields before proceeding, from the main checkout:
+
+   ```sh
+   node --input-type=module <<'JS'
+   import fs from 'node:fs';
+   import assert from 'node:assert/strict';
+   import { noctaliaColorsPath } from './integrations/niri/palette.js';
+   const file = noctaliaColorsPath();
+   const colors = JSON.parse(fs.readFileSync(file, 'utf8'));
+   for (const field of ['primary', 'surface']) {
+     assert.equal(typeof colors?.[field], 'string', `${file}: ${field} missing`);
+     assert.match(colors[field], /^#[0-9a-fA-F]{6}$/, `${file}: invalid ${field}`);
+   }
+   console.log('palette ready:', file, colors);
+   JS
+   ```
+
+3. Only after successful verification on every host being upgraded, merge the
+   sink, defaults and controls, then run `prism apply niri`. A failed refresh
+   blocks this second merge and leaves the old apply path working.
+
+If templates-apply leaves primary-only output for a wallpaper-generated scheme,
+run this synchronous render from the main checkout, then repeat verification:
+
+```sh
+(
+scheme=$(noctalia msg color-scheme-get)
+case "$scheme" in
+  wallpaper\ *) scheme=${scheme#wallpaper } ;;
+  *) printf '%s\n' 'Use templates-apply for a predefined scheme.' >&2; exit 1 ;;
+esac
+noctalia theme "$(noctalia msg wallpaper-get)" \
+  --scheme "$scheme" --default-mode "$(noctalia msg theme-mode-get)" \
+  -r "$PWD/integrations/niri/noctalia-palette.template:${XDG_STATE_HOME:-$HOME/.local/state}/prism/noctalia-palette.json"
+)
+```
+
+The direct command renders only Prism's output, without other templates or
+post-hooks. It writes the registered default state path; if using a custom
+`PRISM_NOCTALIA_COLORS`/`PRISM_STATE_DIR`, render to that configured file instead.
+It refuses predefined schemes rather than replacing their colors. A predefined
+scheme has no direct-render fallback here: if templates-apply fails, leave the
+second merge blocked until the transport is repaired. If the new sink was
+installed independently, its manual tint source will provide recovery once
+those controls are available. Manual absorption cannot solve light-mode
+legibility by itself.
+
 ## Command line
 
 `prism [--json|--pretty] [--color <when>] <command> [args]`, following the shared CLI

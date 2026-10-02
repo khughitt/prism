@@ -18,8 +18,17 @@ test('the template renders a palette the niri sink accepts', { skip: hasNoctalia
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   const out = path.join(dir, 'noctalia-palette.json');
   const theme = path.join(dir, 'theme.json');
-  // A fixed palette, so the render needs no image and no running shell.
-  fs.writeFileSync(theme, JSON.stringify({ dark: { primary: '#a1b2c3' }, light: { primary: '#a1b2c3' } }));
-  execFileSync('noctalia', ['theme', '--theme-json', theme, '-r', `${template}:${out}`], { stdio: 'pipe' });
-  assert.equal(readNoctaliaAccent(out).toLowerCase(), '#a1b2c3');
+  // Fixed dark/light palettes need neither an image nor a running shell.
+  const tokens = {
+    dark: { primary: '#a1b2c3', surface: '#111317' },
+    light: { primary: '#445566', surface: '#fafafa' },
+  };
+  fs.writeFileSync(theme, JSON.stringify(tokens));
+  for (const mode of ['dark', 'light']) {
+    execFileSync('noctalia', ['theme', '--theme-json', theme,
+      '--default-mode', mode, '-r', `${template}:${out}`], { stdio: 'pipe' });
+    assert.deepEqual(JSON.parse(fs.readFileSync(out, 'utf8')), tokens[mode]);
+    assert.equal(readNoctaliaAccent(out), tokens[mode].primary,
+      'the existing ring reader accepts the expanded output');
+  }
 });

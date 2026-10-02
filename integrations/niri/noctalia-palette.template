@@ -1,1 +1,1 @@
-{"primary": "{{ colors.primary.default.hex }}"}
+{"primary": "{{ colors.primary.default.hex }}", "surface": "{{ colors.surface.default.hex }}"}
