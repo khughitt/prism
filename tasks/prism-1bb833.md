@@ -1,0 +1,23 @@
+---
+id: prism-1bb833
+title: Add familiar to glass.tintSource
+status: todo
+priority: 2
+size: m
+complexity: mid
+process: planned
+created: 2026-10-02T23:39:13Z
+updated: 2026-10-02T23:39:14Z
+depends: [material-6f45a0]
+parent: prism-980a29
+tags: [material, niri]
+agent: claude-code/claude-opus-5-5
+---
+
+Why: glass.ring.colorSource already offers familiar (each terminal's ring takes its agent session's hue through niri-material's 'accent "ring"'); the glass tint offers only noctalia and manual (defs/glass.yaml glass.tintSource).
+
+Outcome: glass.tintSource values [familiar, noctalia, manual]. Under familiar, each terminal's attenuation color mixes toward its session hue; a window without a session rests on the manual focused/unfocused tints, as the ring rests on its manual Color.
+
+Blocked upstream: niri-material's accent selector is ring|none only. material-3bdffc designs the attenuation-tint response (spelling, weight, coexistence with the ring accent, missing-accent behaviour); material-6f45a0 implements it. Prism's render (integrations/niri/render.js responseBlock, which emits accent 'ring' or 'none' today) must emit whatever spelling that design settles, and expose its weight if it has one, possibly reusing glass.tintAccentMix.
+
+Start: defs/glass.yaml tintSource/tintAccentMix; integrations/niri/render.js; integrations/niri/palette.js (remedy text names the sources); test/niri-render.test.js, test/glass-defs.test.js, test/niri-apply.test.js source matrix. Planned because the param shape depends on the upstream design.

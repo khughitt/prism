@@ -1,15 +1,16 @@
 ---
 id: prism-b4d118
-title: Ring Color stays editable under every color source
+title: Show color pickers only under the manual source; swatches of the effective color otherwise
 status: todo
 priority: 2
-size: s
+size: m
 complexity: mid
-process: direct
+process: planned
 created: 2026-09-22T15:37:30Z
-updated: 2026-09-22T15:37:52Z
+updated: 2026-10-02T23:39:14Z
 depends: []
-tags: [defs, noctalia, ui]
+parent: prism-980a29
+tags: [defs, noctalia, ui, material]
 agent: claude-code/claude-opus-5
 ---
 
@@ -24,3 +25,4 @@ Scope: the def/UI mechanism, the Ring group's rendering in the Noctalia panel, a
 ## Notes
 
 - 2026-09-22T15:37:52Z (main): Pairs with material-068639: the same Ring rows, and the familiar source is currently inert. Settle both descriptions together.
+- 2026-10-02T23:39:13Z (main): scope widened 2026-10-02 (owner): same rule for the glass tint pickers (glass.attenuationColor, glass.inactive.attenuationColor) and Palette accent mix under glass.tintSource, and for the familiar tint source (sibling task). Non-manual sources show read-only 'real only' swatches of the applied color (Noctalia surface mixed by Palette accent mix; colorscheme accent for the ring; per-window under familiar, so likely the resting color plus a note). Effective-color source to settle: palette.js reads it at apply; prism-d299f0 already shows the current tint on the button. Process moved to planned: the def-level visibility mechanism and the effective-color plumbing are design choices spanning two groups.
