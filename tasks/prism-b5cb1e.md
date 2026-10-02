@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: feat/noctalia-glass-color
 created: 2026-09-05T01:10:50Z
-updated: 2026-10-02T09:27:10Z
+updated: 2026-10-02T09:29:57Z
 started: 2026-10-02T08:08:45Z
 depends: []
 tags: [integration, noctalia, colors]
@@ -42,3 +42,7 @@ Outcome: the active terminal-glass material carries the Noctalia surface color a
 - 2026-10-02T09:27:09Z (feat/noctalia-glass-color): self-review: all 8 findings addressed; niri's shader confirms pow(color, opticalDistance/distance). Exact documented refresh passed the primary-only upgrade check, and its predefined-scheme guard refused before rendering. tasks check and git diff --check are clean; no product files changed.
 - 2026-10-02T09:27:09Z (feat/noctalia-glass-color): parked (waiting on user, review): User re-reviews .worktrees/noctalia-glass-color/docs/specs/2026-10-02-noctalia-glass-color-design.md (round 1 findings addressed, dark-mode scope recommended); after acceptance the agent records review round 2 and drafts the implementation plan in this worktree.
   provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-10-02T09:29:29Z (feat/noctalia-glass-color): resumed
+  provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-10-02T09:29:29Z (feat/noctalia-glass-color): review: spec round 2 — verdict: revise; findings: P1 1, P3 3; reviewer: claude-code/opus-5.5
+- 2026-10-02T09:29:57Z (feat/noctalia-glass-color): spec revision 2: require two separate merges to main (template/tests/README first, verified host palette refresh next, sink/defaults/controls second); a failed refresh blocks Merge 2. Predefined schemes have no direct fallback and use manual tint for recovery if new code was independently installed. Near-clear light-mode glass is expected. Revision evidence remains in task notes. User's conditional spec acceptance is fulfilled; proceeding to the plan gate.

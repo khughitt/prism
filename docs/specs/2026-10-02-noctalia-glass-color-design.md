@@ -1,7 +1,7 @@
 # Glass tint follows the Noctalia palette
 
 **Date:** 2026-10-02
-**Status:** revised after human spec review round 1; awaiting re-review. Product implementation has not started.
+**Status:** accepted subject to round 2 fixes, now incorporated; ready for implementation planning. Product implementation has not started.
 **Task:** `prism-b5cb1e`
 **Amends:** [Wallpaper rotation keeps the screen and pending edits](2026-09-27-rotation-keeps-edits-design.md), extending its palette transport to the glass tint.
 
@@ -20,7 +20,9 @@ The legibility goal and desktop acceptance are explicitly limited to dark
 mode. Absorption multiplies the backdrop by a transmittance no greater than
 one: it can darken a wallpaper, but cannot brighten it for dark text in light
 mode. The template still renders the selected light palette correctly; that
-does not establish legibility over a dark wallpaper. Supporting transparent
+does not establish legibility over a dark wallpaper. The Noctalia source gives
+nearly clear glass with the near-white light-mode surface; that is the expected
+appearance, not a tint-rendering bug. Supporting transparent
 terminals in light mode needs a material that can brighten or replace the
 backdrop, and is outside this task. Light-mode users need an opaque terminal
 background or a separately accepted material treatment; selecting a manual
@@ -168,11 +170,18 @@ regenerate it explicitly rather than accepting an old shape as a tint source.
 The existing dotfiles template registration and colors-change hook already
 point to Prism's template; their tracked configuration needs no change.
 
+The host's Prism wrapper and Noctalia template registration both load from the
+main checkout. Merging all changes at once therefore enables the new sink and
+default before the palette is ready. Require **two separate merges to main**,
+with a successful refresh between them. Two commits in one merge do not meet
+this requirement.
+
 Sequence the host upgrade so panel edits and wallpaper applies keep working:
 
-1. Land the expanded template while the old accent-only sink is still in use.
-   It accepts the additional surface field. Do not activate the new Noctalia
-   tint default yet, and do not repoint the registered template to a worktree.
+1. **Merge 1:** land the expanded template, its tests, and README upgrade steps.
+   This merge contains no new sink, controls, or tint defaults. The existing
+   accent-only reader accepts the additional surface field. Keep the host
+   launcher and registered template pointing at main.
 2. Reapply templates for the current palette without changing the colorscheme:
 
    ```sh
@@ -187,10 +196,12 @@ Sequence the host upgrade so panel edits and wallpaper applies keep working:
    `primary` and `surface` as `#rrggbb` colors. If it still has only primary,
    stop the upgrade and use the direct render below; do not enable the new sink
    or merely wait for an unrelated future palette change.
-3. Only after that verification, activate the new sink and defaults, then run
-   `prism apply niri`. A failed palette refresh therefore leaves the old apply
-   path working. Keep manual tint selectable for an installation without
-   Noctalia's palette transport.
+3. **Merge 2:** only after verifying valid primary and surface on every host
+   being upgraded, merge the sink, defaults and controls, with their tests and
+   completed user documentation. Then run `prism apply niri`. A failed refresh
+   blocks this merge and leaves the old apply path working on main. The plan
+   must encode the refresh as a dependency of Merge 2. Keep manual tint
+   selectable for an installation without Noctalia's palette transport.
 
 A direct synchronous refresh for a wallpaper-generated scheme is also
 available. From the Prism checkout whose expanded template is to be used:
@@ -213,6 +224,13 @@ colors. The direct command renders only Prism's palette output; it does not
 run the other templates. Require a successful exit and valid two-field output
 before enabling the sink. Include these upgrade commands and ordering in the
 README, rather than the instruction "render the template" alone.
+
+For a predefined scheme there is no direct-render fallback in this design. If
+`templates-apply` does not produce the required fields, leave Merge 2 blocked
+until the palette transport is repaired. If the new code has already been
+installed independently, select the manual tint source to recover niri apply.
+Do not regenerate a wallpaper palette in place of the selected predefined
+scheme. A `--theme-json` recovery route is outside this task.
 
 For desktop verification, first confirm where the host's Prism command and
 template resolve. Run the worktree code by explicit path or an environment
@@ -248,26 +266,12 @@ Lua panel checks.
    30/35 px distances, and separately inspect the owner's saved depth/distance
    values. The owner judges legibility; automated checks cannot establish that
    visual result. Light-mode rendering is not desktop legibility acceptance.
-7. Rehearse the upgrade from a primary-only palette: refresh and validate the
-   two-field output before activating the new default. Prove that a failed
-   refresh leaves the old sink available, and that a new sink explicitly
-   enabled too early fails with the concrete refresh command in its error.
-
-## Evidence from the revision
-
-On 2026-10-02, Noctalia v5.2.0 accepted `noctalia msg templates-apply` and
-returned `ok`. Neither a 10-second probe nor a 45-second follow-up observed a
-palette mtime change while reapplying the unchanged registered template. That
-does not distinguish an unchanged-output optimization from a missed refresh,
-so acknowledgment alone is not recorded as proof of refresh completion.
-The direct render was checked with a temporary two-field template and temporary
-output against the running desktop's wallpaper, generator scheme and mode:
-its primary matched the live palette, and it emitted a valid surface. Fixed
-dark and light token-map renders also produced the expected two fields.
-The exact shell block documented above also exited 0 in an isolated directory,
-replacing a primary-only palette with valid primary and surface fields.
-These probes did not deploy the new sink or repoint any host launcher or
-template registration.
+7. Rehearse the upgrade from a primary-only palette: Merge 1 must retain the
+   original sink/defaults; refresh and validate the two-field output before
+   Merge 2. A failed refresh blocks Merge 2. A new sink installed independently
+   too early fails with the concrete refresh command in its error, and manual
+   tint recovers apply. A predefined scheme is never replaced by a wallpaper
+   palette as recovery.
 
 Task completion requires the automated checks and the owner's desktop
 acceptance. The tuned ring-defaults and panel-size tasks follow this work and
