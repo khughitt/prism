@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: feat/noctalia-glass-color
 created: 2026-09-05T01:10:50Z
-updated: 2026-10-02T10:22:13Z
+updated: 2026-10-02T10:44:48Z
 started: 2026-10-02T08:08:45Z
 depends: []
 tags: [integration, noctalia, colors]
@@ -56,3 +56,6 @@ Outcome: the active terminal-glass material carries the Noctalia surface color a
 - 2026-10-02T10:05:55Z (feat/noctalia-glass-color): review: plan round 1 — verdict: revise; findings: P2 1, P3 3; reviewer: claude-code/opus-5.5
 - 2026-10-02T10:07:22Z (feat/noctalia-glass-color): plan revision 1: store-preservation regression now invokes bin/prism apply niri through the real CLI, isolated store and stub niri, exercising resolution/fan-out/sink locking. Fold consumer-specific palette remedies and explicit missing-surface renderer error into Task 3. Retain serial order for the quick local refresh. Conditional plan acceptance fulfilled; starting inline implementation.
 - 2026-10-02T10:22:13Z (feat/noctalia-glass-color): review: impl round 1 — verdict: accept; findings: none; reviewer: codex/gpt-6-astra
+- 2026-10-02T10:44:47Z (feat/noctalia-glass-color): Implementation and two product landings complete (6029ec5 template first; verified palette refresh; 0263fb3 sink/defaults/controls). 499 Node tests and Lua checks pass; independent implementation review accepts without findings. Desktop comparison ready in the existing worktree; parent remains open until owner accepts focused/unfocused text over bright/dark wallpapers.
+- 2026-10-02T10:44:47Z (feat/noctalia-glass-color): parked (waiting on user, review): User judges dark-mode legibility in .worktrees/noctalia-glass-color/.superpowers/sdd/2026-10-02-noctalia-glass-color/visual/comparison.png; after acceptance agent records the review and closes prism-ad333a plus this parent in the existing worktree, then integrates closing records. Code is live on main and no checks are running.
+  provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}

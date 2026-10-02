@@ -495,9 +495,9 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 - Consumes: Task 2's recorded Merge 1/host refresh and Task 3's verified implementation.
 - Produces: **Merge 2 completed**, successful niri apply, and the owner's dark-mode visual acceptance. The parent stays open until that acceptance arrives.
 
-- [ ] **Step 1: Review the complete implementation before Merge 2.** Use `superpowers:requesting-code-review`, record any received review with the required `review: impl round ...` shape before acting, fix findings in the worktree, and rerun the relevant front-door checks. If an independent reviewer is required by that skill, dispatch only for that review and wait for its completed result. Confirm all accepted spec requirements have an implementation/check and no product code slipped into Merge 1.
-- [ ] **Step 2: Revalidate every rollout host's palette immediately before landing.** Use Task 2's exact validator, check the live launcher/template still resolve to main, and confirm Task 2 has closed with host-specific evidence. A missing/invalid palette, unsupported predefined refresh, or unresolved host blocks this step. Do not replace the agreed Noctalia default with manual merely to bypass the gate.
-- [ ] **Step 3: Run the integration gate and perform the second merge.** Preserve unrelated main-checkout edits. Resolve any main/branch divergence in the task worktree, reverify, then:
+- [x] **Step 1: Review the complete implementation before Merge 2.** Use `superpowers:requesting-code-review`, record any received review with the required `review: impl round ...` shape before acting, fix findings in the worktree, and rerun the relevant front-door checks. If an independent reviewer is required by that skill, dispatch only for that review and wait for its completed result. Confirm all accepted spec requirements have an implementation/check and no product code slipped into Merge 1.
+- [x] **Step 2: Revalidate every rollout host's palette immediately before landing.** Use Task 2's exact validator, check the live launcher/template still resolve to main, and confirm Task 2 has closed with host-specific evidence. A missing/invalid palette, unsupported predefined refresh, or unresolved host blocks this step. Do not replace the agreed Noctalia default with manual merely to bypass the gate.
+- [x] **Step 3: Run the integration gate and perform the second merge.** Preserve unrelated main-checkout edits. Resolve any main/branch divergence in the task worktree, reverify, then:
 
   ```sh
   (cd .worktrees/noctalia-glass-color && just gate)
@@ -507,9 +507,25 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
   ```
 
   Record Merge 2's actual main revision and apply result. Confirm primary/surface remain valid and generated focused/unfocused colors match the selected mix. Saved explicit distance/depth values continue to win; report those values instead of claiming the default distances are live when they are overridden.
-- [ ] **Step 4: Prepare the visual check and stop at the owner's judgment.** In dark mode, inspect the default 20 px depth/30–35 px distances and the owner's existing saved tuning, across bright and dark wallpapers with different palettes. Confirm generated tint follows each palette and neither rotation changes the saved look/pending edits. Arrange the comparison through explicit worktree paths or main's now-landed code; do not repoint host launchers/config includes. Preserve the owner's prior tuning and wallpaper selection after temporary checks, and record any live-state changes and restoration at the time. Present the visible result to the owner, who decides legibility. If awaiting that judgment, park this child and the parent with `--waiting-on user --reason review`, naming the exact visual artifact/check and next action; do not close the feature early.
+- [x] **Step 4: Prepare the visual check and stop at the owner's judgment.** In dark mode, inspect the default 20 px depth/30–35 px distances and the owner's existing saved tuning, across bright and dark wallpapers with different palettes. Confirm generated tint follows each palette and neither rotation changes the saved look/pending edits. Arrange the comparison through explicit worktree paths or main's now-landed code; do not repoint host launchers/config includes. Preserve the owner's prior tuning and wallpaper selection after temporary checks, and record any live-state changes and restoration at the time. Present the visible result to the owner, who decides legibility. If awaiting that judgment, park this child and the parent with `--waiting-on user --reason review`, naming the exact visual artifact/check and next action; do not close the feature early.
 - [ ] **Step 5: Close only after the owner accepts.** Update spec/plan status to implemented with actual automated and desktop evidence. Mark this child done, then mark `prism-b5cb1e` done with a one-line result, include both records in the closing commit, and run `tasks check`. If the worktree is removed, first harvest `tt-report`, verify no host pointer resolves into it, unlock it, then remove it. Otherwise leave the worktree documented; do not remove an active or unaccepted workspace.
 
 ## Execution and review status
 
-Plan round 1 accepted subject to the CLI store-preservation correction, now incorporated. Ring-only errors name the ring control, and the renderer names a missing validated surface explicitly. The serial order is retained for the quick local refresh. Spec round 2's conditional acceptance is fulfilled: the design now requires two separate merges, with an explicit host refresh gate between them. This plan is approved for inline execution; Merge 1 is landed at 6029ec5 and the rollout-host palette refresh is verified; Task 3 is implemented and verified; independent review precedes Merge 2. Native inline execution is recommended because the tasks are sequential and share the same color flow. After plan acceptance, start Task 1 in the existing worktree and proceed through the dependencies; do not combine the two landings.
+The corrected plan is approved and implemented inline. Merge 1 (`6029ec5`)
+landed the template/tests/README; the rollout-host palette refresh was verified
+before Merge 2 (`0263fb3`) landed the sink/defaults/controls. The whole-branch
+review accepted without findings, and the integration gate passed 499 Node
+tests (zero skipped) plus Lua checks.
+
+Dark-mode desktop captures cover bright/dark wallpapers with different palettes:
+`#21252e` and `#242620` reach both generated materials through the normal palette
+hook. Captures compare 20 px depth and 30/35 px distances with the owner's saved
+focused 31.2/11 and unfocused 19.3/18 values. Saved base/profile values and pending
+edits remained unchanged. The original wallpaper, generated material and focus
+were restored, and all test terminals were reaped. No host pointers changed.
+
+Task 4 and the parent remain open for the owner's visual acceptance. The next
+step is for the owner to review the comparison linked in the task notes; after
+acceptance, the agent records that review and completes Step 5. The task worktree
+and its visual artifacts remain available until then.
