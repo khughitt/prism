@@ -6,12 +6,13 @@ priority: 1
 size: m
 complexity: high
 process: planned
-owner: main
+owner: feat/noctalia-glass-color
 created: 2026-09-05T01:10:50Z
-updated: 2026-10-02T08:08:47Z
+updated: 2026-10-02T08:15:30Z
 started: 2026-10-02T08:08:45Z
 depends: []
 tags: [integration, noctalia, colors]
+spec: docs/specs/2026-10-02-noctalia-glass-color-design.md
 ---
 
 Outcome: the active terminal-glass material carries the Noctalia surface color at a short attenuation distance, refreshed on every palette change, so text stays legible over any wallpaper with kitty at background_opacity 0 (dots-a00088 landed 2026-09-06 with a hand-seeded #111317 at distance 30 on titan). Direction settled 2026-09-04: Noctalia colorscheme is the dominant source, flow noctalia -> prism -> glass. Transport: a Noctalia template post_hook (the path noctalia-glass-sync already uses) that writes the surface tone into Prism; decide in the brainstorm whether that is a base write, a derived value the resolver computes from a new colors input, or a state context. Keep the wallpaper-derived tint as a secondary mix. Acceptance: change wallpaper twice; the active material's attenuation-color in prism.kdl follows the palette surface each time, the inactive variant follows too, and focused/unfocused text is legible over a bright wallpaper. Load-bearing for ops-500adb now that the terminal paints no background.
@@ -27,3 +28,9 @@ Outcome: the active terminal-glass material carries the Noctalia surface color a
 - 2026-10-02T08:08:45Z (main): started
   provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
 - 2026-10-02T08:08:45Z (main): process: planned — the existing palette hook can carry surface color, but tint source selection, secondary color mixing, and treatment of manual focus-state values need a reviewed design; no resolver or store mutation is required for the recommended sink approach.
+- 2026-10-02T08:09:57Z (feat/noctalia-glass-color): resumed
+  provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-10-02T08:13:58Z (feat/noctalia-glass-color): design: extend the existing palette transport with surface, derive shared focus-state tint in the niri sink, retain a manual source and distance controls, and expose an adjustable secondary palette-accent mix; draft ready for user review. Baseline just test-fast: 490 Node tests passed, Lua panel checks passed.
+- 2026-10-02T08:15:29Z (feat/noctalia-glass-color): self-review: draft has explicit source precedence, color interpolation, consumer-specific validation, bypass/neutral behavior, upgrade steps and desktop acceptance; no placeholders or conflicting requirements found. tasks check: zero errors and zero warnings.
+- 2026-10-02T08:15:29Z (feat/noctalia-glass-color): parked (waiting on user, review): User reviews .worktrees/noctalia-glass-color/docs/specs/2026-10-02-noctalia-glass-color-design.md; after approval, the agent drafts the implementation plan there for review before coding.
+  provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
