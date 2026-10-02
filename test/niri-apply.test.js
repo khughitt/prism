@@ -52,6 +52,7 @@ const PARAMS = {
   'glass.ring.gap': 10,
   'glass.ring.width': 2.6,
   'glass.ring.glow': 1.2,
+  'glass.ring.rest': 0.5,
 
 };
 

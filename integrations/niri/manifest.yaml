@@ -70,3 +70,4 @@ binds:
   - {param: glass.ring.gap, liveness: reload}
   - {param: glass.ring.width, liveness: reload}
   - {param: glass.ring.glow, liveness: reload}
+  - {param: glass.ring.rest, liveness: reload}

@@ -42,6 +42,7 @@ function responseBlock(params, sources) {
     `        ring-gap ${params['glass.ring.gap']}`,
     `        ring-width ${params['glass.ring.width']}`,
     `        ring-glow ${params['glass.ring.glow']}`,
+    `        ring-rest ${params['glass.ring.rest']}`,
     '    }',
   ];
 }

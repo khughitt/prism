@@ -75,6 +75,7 @@ const resolved = { params: {
   'glass.ring.gap': 10,
   'glass.ring.width': 4,
   'glass.ring.glow': 1.2,
+  'glass.ring.rest': 0.5,
 } };
 
 const with_ = (overrides) => ({ params: { ...resolved.params, ...overrides } });
@@ -123,6 +124,7 @@ material "terminal-glass" {
         ring-gap 10
         ring-width 4
         ring-glow 1.2
+        ring-rest 0.5
     }
 }
 material "terminal-glass-inactive" {
@@ -162,6 +164,7 @@ material "terminal-glass-inactive" {
         ring-gap 10
         ring-width 4
         ring-glow 1.2
+        ring-rest 0.5
     }
 }
 window-rule {
@@ -227,6 +230,7 @@ material "terminal-glass" {
         ring-gap 10
         ring-width 4
         ring-glow 1.2
+        ring-rest 0.5
     }
 }
 window-rule {
@@ -645,7 +649,7 @@ test('both materials carry the same response block', () => {
     + '        ring-color "#f2c14e"\n        ring-beam-speed 450\n'
     + '        ring-beam-noise 0.4\n        ring-beam-noise-hz 2.5\n        ring-beam-decay 1800\n'
     + '        ring-gap 10\n'
-    + '        ring-width 4\n        ring-glow 1.2\n    }';
+    + '        ring-width 4\n        ring-glow 1.2\n        ring-rest 0.5\n    }';
 
   assert.equal(count(kdl, block), 2, kdl);
   const [active, inactive] = kdl.match(/^material [^]*?^\}/gm);
@@ -660,6 +664,7 @@ test('the resolved shipped defaults reach both material response blocks', () => 
   assert.equal(count(kdl, 'ring-gap 8'), 2, kdl);
   assert.equal(count(kdl, 'ring-width 2.6'), 2, kdl);
   assert.equal(count(kdl, 'ring-glow 1'), 2, kdl);
+  assert.equal(count(kdl, 'ring-rest 1'), 2, kdl);
 });
 
 test('the focus light switches off without touching the rest of the response', () => {

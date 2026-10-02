@@ -439,6 +439,13 @@
   neutral: 1
   ui: {group: Ring, control: slider, step: 0.1, label: Glow, order: 550}
   description: Intensity of the whole focus light — beam, tail, resting glow and edge spill together
+- key: glass.ring.rest
+  type: float
+  range: [0, 3]
+  default: 1
+  neutral: 1
+  ui: {group: Ring, control: slider, step: 0.1, label: Resting ring, order: 552}
+  description: Brightness of the ring that stays on the focused window once the beam has passed, as a share of Glow; 0 leaves no resting ring while the beam still runs on every focus change
 
 # light-ior bends only the light travelling inside the slab — the ring filament
 # and the aurora field — along the light path 1 + (ior - 1) * light-ior; the
