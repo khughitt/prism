@@ -73,3 +73,5 @@ binds:
   - {param: glass.ring.width, liveness: reload}
   - {param: glass.ring.glow, liveness: reload}
   - {param: glass.ring.rest, liveness: reload}
+  - {param: glass.ring.accent, liveness: reload}
+  - {param: glass.ring.edgeTint, liveness: reload}

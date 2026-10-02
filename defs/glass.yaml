@@ -460,6 +460,19 @@
   neutral: 1
   ui: {group: Ring, control: slider, step: 0.1, label: Resting ring, order: 552}
   description: Brightness of the ring that stays on the focused window once the beam has passed, as a share of Glow; 0 leaves no resting ring while the beam still runs on every focus change
+- key: glass.ring.accent
+  type: float
+  range: [0, 3]
+  default: 1
+  neutral: 1
+  ui: {group: Ring, control: slider, step: 0.1, label: Accent strength, order: 554}
+  description: Brightness of the outline a window's signal hue draws on the band, on any window; 0 removes the outline while the hue still colors the beam and the resting ring. Glow and Resting ring do not reach it
+- key: glass.ring.edgeTint
+  type: bool
+  default: true
+  neutral: true
+  ui: {group: Ring, control: toggle, label: Edge tint, order: 556}
+  description: Tint the bevel's edge glint with a window's signal hue, swaying with the signal level; off keeps the glint neutral
 
 # light-ior bends only the light travelling inside the slab — the ring filament
 # and the aurora field — along the light path 1 + (ior - 1) * light-ior; the

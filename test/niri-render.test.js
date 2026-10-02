@@ -78,6 +78,8 @@ const resolved = { params: {
   'glass.ring.width': 4,
   'glass.ring.glow': 1.2,
   'glass.ring.rest': 0.5,
+  'glass.ring.accent': 0.25,
+  'glass.ring.edgeTint': false,
 } };
 
 const with_ = (overrides) => ({ params: { ...resolved.params, ...overrides } });
@@ -118,6 +120,7 @@ material "terminal-glass" {
     response "default" {
         accent "none"
         focus "ring-light"
+        attention "none"
         ring-color "#f2c14e"
         ring-beam-speed 450
         ring-beam-noise 0.4
@@ -127,6 +130,7 @@ material "terminal-glass" {
         ring-width 4
         ring-glow 1.2
         ring-rest 0.5
+        ring-accent 0.25
     }
 }
 material "terminal-glass-inactive" {
@@ -158,6 +162,7 @@ material "terminal-glass-inactive" {
     response "default" {
         accent "none"
         focus "ring-light"
+        attention "none"
         ring-color "#f2c14e"
         ring-beam-speed 450
         ring-beam-noise 0.4
@@ -167,6 +172,7 @@ material "terminal-glass-inactive" {
         ring-width 4
         ring-glow 1.2
         ring-rest 0.5
+        ring-accent 0.25
     }
 }
 window-rule {
@@ -224,6 +230,7 @@ material "terminal-glass" {
     response "default" {
         accent "none"
         focus "ring-light"
+        attention "none"
         ring-color "#f2c14e"
         ring-beam-speed 450
         ring-beam-noise 0.4
@@ -233,6 +240,7 @@ material "terminal-glass" {
         ring-width 4
         ring-glow 1.2
         ring-rest 0.5
+        ring-accent 0.25
     }
 }
 window-rule {
@@ -647,11 +655,11 @@ test('optic bypasses silence both states while retaining their settings', () => 
 // signal accent lights any of them.
 test('both materials carry the same response block', () => {
   const kdl = renderNiriFragment(resolved);
-  const block = '    response "default" {\n        accent "none"\n        focus "ring-light"\n'
+  const block = '    response "default" {\n        accent "none"\n        focus "ring-light"\n        attention "none"\n'
     + '        ring-color "#f2c14e"\n        ring-beam-speed 450\n'
     + '        ring-beam-noise 0.4\n        ring-beam-noise-hz 2.5\n        ring-beam-decay 1800\n'
     + '        ring-gap 10\n'
-    + '        ring-width 4\n        ring-glow 1.2\n        ring-rest 0.5\n    }';
+    + '        ring-width 4\n        ring-glow 1.2\n        ring-rest 0.5\n        ring-accent 0.25\n    }';
 
   assert.equal(count(kdl, block), 2, kdl);
   const [active, inactive] = kdl.match(/^material [^]*?^\}/gm);
@@ -668,6 +676,8 @@ test('the resolved shipped defaults reach both material response blocks', () => 
   assert.equal(count(kdl, 'ring-width 2.6'), 2, kdl);
   assert.equal(count(kdl, 'ring-glow 1'), 2, kdl);
   assert.equal(count(kdl, 'ring-rest 1'), 2, kdl);
+  assert.equal(count(kdl, 'ring-accent 1'), 2, kdl);
+  assert.equal(count(kdl, 'attention "rim-orbit"'), 2, kdl);
 });
 
 test('the focus light switches off without touching the rest of the response', () => {

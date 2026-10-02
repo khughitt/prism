@@ -34,6 +34,7 @@ function responseBlock(params, sources) {
     '    response "default" {',
     `        accent ${JSON.stringify(source === 'familiar' ? 'ring' : 'none')}`,
     `        focus ${JSON.stringify(params['glass.ring.focus'] ? 'ring-light' : 'none')}`,
+    `        attention ${JSON.stringify(params['glass.ring.edgeTint'] ? 'rim-orbit' : 'none')}`,
     `        ring-color ${JSON.stringify(color)}`,
     `        ring-beam-speed ${params['glass.ring.beamSpeed']}`,
     `        ring-beam-noise ${params['glass.ring.beamNoise']}`,
@@ -43,6 +44,7 @@ function responseBlock(params, sources) {
     `        ring-width ${params['glass.ring.width']}`,
     `        ring-glow ${params['glass.ring.glow']}`,
     `        ring-rest ${params['glass.ring.rest']}`,
+    `        ring-accent ${params['glass.ring.accent']}`,
     '    }',
   ];
 }

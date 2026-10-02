@@ -46,6 +46,8 @@ const NATIVE = {
   'glass.jellyFlex': { range: [0, 0.02], default: 0.004 },
   'glass.jellyRipple': { range: [0, 0.5], default: 0.06 },
   'glass.ring.focus': { default: true },
+  // niri's attention defaults to rim-orbit, which Edge tint on emits.
+  'glass.ring.edgeTint': { default: true },
   'glass.ring.color': { default: '#ccccff' },
   'glass.ring.beamSpeed': { range: [0, 5000], default: 300 },
   'glass.ring.beamNoise': { range: [0, 1], default: 0 },
@@ -57,6 +59,7 @@ const NATIVE = {
   'glass.ring.width': { range: [0, 128], default: 2.6 },
   'glass.ring.glow': { range: [0, 3], default: 1 },
   'glass.ring.rest': { range: [0, 3], default: 1 },
+  'glass.ring.accent': { range: [0, 3], default: 1 },
   'glass.paneLip': { range: [0, 64], default: 6 },
   'glass.paneShiftX': { range: [-64, 64], default: 6 },
   'glass.paneShiftY': { range: [-64, 64], default: 6 },
@@ -421,6 +424,7 @@ test('everything outside the matrix is shared glass', () => {
     'glass.ring.focus', 'glass.ring.colorSource', 'glass.ring.color',
     'glass.ring.beamSpeed', 'glass.ring.beamNoise', 'glass.ring.beamNoiseHz', 'glass.ring.decay',
     'glass.ring.gap', 'glass.ring.width', 'glass.ring.glow', 'glass.ring.rest',
+    'glass.ring.accent', 'glass.ring.edgeTint',
     'glass.lightIor',
   ].sort());
   const groups = Object.fromEntries(shared.map((key) => [key, defs.get(key).ui.group]));
@@ -442,6 +446,8 @@ test('everything outside the matrix is shared glass', () => {
     'glass.ring.width': 'Ring',
     'glass.ring.glow': 'Ring',
     'glass.ring.rest': 'Ring',
+    'glass.ring.accent': 'Ring',
+    'glass.ring.edgeTint': 'Ring',
     'glass.lightIor': 'Ring',
   });
 });
@@ -482,7 +488,7 @@ const NEUTRAL = {
   'glass.ring.focus': true, 'glass.ring.colorSource': 'noctalia',
   'glass.ring.color': '#ccccff', 'glass.ring.beamSpeed': 300, 'glass.ring.beamNoise': 0,
   'glass.ring.beamNoiseHz': 3, 'glass.ring.decay': 0, 'glass.ring.gap': 8, 'glass.ring.width': 2.6, 'glass.ring.glow': 1,
-  'glass.ring.rest': 1,
+  'glass.ring.rest': 1, 'glass.ring.accent': 1, 'glass.ring.edgeTint': true,
   'glass.lightIor': 6,
 };
 

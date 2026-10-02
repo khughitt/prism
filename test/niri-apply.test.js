@@ -58,6 +58,8 @@ const PARAMS = {
   'glass.ring.width': 2.6,
   'glass.ring.glow': 1.2,
   'glass.ring.rest': 0.5,
+  'glass.ring.accent': 0.25,
+  'glass.ring.edgeTint': false,
 
 };
 
