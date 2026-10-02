@@ -1,7 +1,7 @@
 # Glass tint follows the Noctalia palette
 
 **Date:** 2026-10-02
-**Status:** landed in two product phases; automated verification and independent review pass. Dark-mode desktop captures are ready; owner visual acceptance remains.
+**Status:** implemented in two product phases; automated verification, independent review and owner dark-mode saved-look acceptance pass. A separate follow-up covers the absorption defaults on truly bright, busy wallpapers.
 **Task:** `prism-b5cb1e`
 **Amends:** [Wallpaper rotation keeps the screen and pending edits](2026-09-27-rotation-keeps-edits-design.md), extending its palette transport to the glass tint.
 
@@ -32,7 +32,7 @@ The task's older description proposed a template post-hook or a resolver input.
 The current code already has the transport: a Noctalia user template writes
 `noctalia-palette.json` in Prism's state directory, and `colors_changed` runs
 `prism apply niri` after templates finish. The ring consumes `primary`; the
-glass currently consumes only the stored attenuation colors. Those colors are
+glass previously consumed only the stored attenuation colors. Those colors are
 manual values, not an existing wallpaper-analysis result.
 
 ## Decision and alternatives
@@ -279,3 +279,9 @@ Lua panel checks.
 Task completion requires the automated checks and the owner's desktop
 acceptance. The tuned ring-defaults and panel-size tasks follow this work and
 retain their own acceptance criteria.
+
+The owner accepted the saved look on both captured wallpapers. The comparison's
+top row retained the saved optics and reset only depth/distance to 20 px and
+30/35 px; it was not a fresh-install look. Default absorption was marginal on
+busy backgrounds, and the brighter capture was a dusk sky. Rechecking the
+defaults against truly bright, busy backgrounds is tracked in `prism-9bbe89`.

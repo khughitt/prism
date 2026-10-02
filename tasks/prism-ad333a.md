@@ -1,15 +1,16 @@
 ---
 id: prism-ad333a
 title: Land the tint second and obtain dark-mode desktop acceptance
-status: doing
+status: done
 priority: 1
 size: s
 complexity: mid
 process: direct
 owner: feat/noctalia-glass-color
 created: 2026-10-02T09:44:26Z
-updated: 2026-10-02T10:44:48Z
+updated: 2026-10-02T10:56:18Z
 started: 2026-10-02T10:19:28Z
+completed: 2026-10-02T10:56:17Z
 depends: [prism-67247f, prism-0bb71e]
 parent: prism-b5cb1e
 tags: []
@@ -43,4 +44,12 @@ Review the complete implementation and revalidate all rollout hosts' primary/sur
 - 2026-10-02T10:40:41Z (feat/noctalia-glass-color): Visual dark: restored wallpaper /mnt/ssd/Dropbox/linux/backgrounds/3440/PXL_20220626_165940061.jpg, stored tuning/pending edits unchanged; test terminal pids 2936821,2936978 reaped; generated material restored by normal apply.
 - 2026-10-02T10:44:47Z (feat/noctalia-glass-color): Desktop evidence: corrected captures wait for a parsed palette change and both mapped test windows. Bright primary #a7c8fd/surface #121317 produces #21252e; dark primary #c1cba2/surface #131411 produces #242620 through the normal colors_changed CLI path. Both generated materials match. Comparison: .worktrees/noctalia-glass-color/.superpowers/sdd/2026-10-02-noctalia-glass-color/visual/comparison.png (top defaults 20 px depth and 30/35 distance; bottom saved 31.2/19.3 depths and 11/18 distances). Base/profile files and scratch preserved; wallpaper, focus and generated material restored after each run, then normal rotation advanced the wallpaper. All test terminals reaped, no host pointers changed. Owner legibility acceptance pending.
 - 2026-10-02T10:44:47Z (feat/noctalia-glass-color): parked (waiting on user, review): User reviews .worktrees/noctalia-glass-color/.superpowers/sdd/2026-10-02-noctalia-glass-color/visual/comparison.png for dark-mode focused/unfocused legibility; after acceptance agent records the desktop review, closes this child and the parent, and integrates closing records. Nothing is running.
+  provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-10-02T10:52:30Z (feat/noctalia-glass-color): resumed
+  provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-10-02T10:53:12Z (feat/noctalia-glass-color): attached: comparison.webp (528934 bytes): Accepted dark-mode comparison. Top row retains saved optics and resets only depth/distance to 20 and 30/35; it is not a fresh-install look. Bottom row uses saved focused 31.2/11 and unfocused 19.3/18. Saved tuning is clearly legible; default absorption needs a truly bright busy stress test.
+- 2026-10-02T10:56:17Z (feat/noctalia-glass-color): Owner accepts the saved-look comparison. Capture tints were #21252e (dusk sky) and #242620 (forest); later live palette #b6ce9e/#131411 yields #23271f, so the historical forest capture is not the latest rotation. Both focus states share the derived tint; saved depth/distance values still win. No desktop experiment was run during closure.
+- 2026-10-02T10:56:17Z (feat/noctalia-glass-color): done
+  provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-10-02T10:56:17Z (feat/noctalia-glass-color): Second landing verified; owner accepts saved-look dark-mode legibility, with default stress coverage deferred.
   provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}

@@ -508,7 +508,7 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 
   Record Merge 2's actual main revision and apply result. Confirm primary/surface remain valid and generated focused/unfocused colors match the selected mix. Saved explicit distance/depth values continue to win; report those values instead of claiming the default distances are live when they are overridden.
 - [x] **Step 4: Prepare the visual check and stop at the owner's judgment.** In dark mode, inspect the default 20 px depth/30–35 px distances and the owner's existing saved tuning, across bright and dark wallpapers with different palettes. Confirm generated tint follows each palette and neither rotation changes the saved look/pending edits. Arrange the comparison through explicit worktree paths or main's now-landed code; do not repoint host launchers/config includes. Preserve the owner's prior tuning and wallpaper selection after temporary checks, and record any live-state changes and restoration at the time. Present the visible result to the owner, who decides legibility. If awaiting that judgment, park this child and the parent with `--waiting-on user --reason review`, naming the exact visual artifact/check and next action; do not close the feature early.
-- [ ] **Step 5: Close only after the owner accepts.** Update spec/plan status to implemented with actual automated and desktop evidence. Mark this child done, then mark `prism-b5cb1e` done with a one-line result, include both records in the closing commit, and run `tasks check`. If the worktree is removed, first harvest `tt-report`, verify no host pointer resolves into it, unlock it, then remove it. Otherwise leave the worktree documented; do not remove an active or unaccepted workspace.
+- [x] **Step 5: Close only after the owner accepts.** Update spec/plan status to implemented with actual automated and desktop evidence. Mark this child done, then mark `prism-b5cb1e` done with a one-line result, include both records in the closing commit, and run `tasks check`. If the worktree is removed, first harvest `tt-report`, verify no host pointer resolves into it, unlock it, then remove it. Otherwise leave the worktree documented; do not remove an active or unaccepted workspace.
 
 ## Execution and review status
 
@@ -520,12 +520,15 @@ tests (zero skipped) plus Lua checks.
 
 Dark-mode desktop captures cover bright/dark wallpapers with different palettes:
 `#21252e` and `#242620` reach both generated materials through the normal palette
-hook. Captures compare 20 px depth and 30/35 px distances with the owner's saved
+hook. The top row retains the owner's saved optics and resets only depth/distance
+to 20 px and 30/35 px; it is not a fresh-install look. The bottom row uses saved
 focused 31.2/11 and unfocused 19.3/18 values. Saved base/profile values and pending
 edits remained unchanged. The original wallpaper, generated material and focus
 were restored, and all test terminals were reaped. No host pointers changed.
 
-Task 4 and the parent remain open for the owner's visual acceptance. The next
-step is for the owner to review the comparison linked in the task notes; after
-acceptance, the agent records that review and completes Step 5. The task worktree
-and its visual artifacts remain available until then.
+The owner accepted the saved look on both wallpapers. Default absorption was
+only marginal on busy backgrounds, and the brighter capture was a dusk sky;
+`prism-9bbe89` will check genuine defaults and saved optics with default
+absorption against truly bright, busy wallpapers. The accepted comparison is
+archived in Task 4's attachments. Repeated desktop-focus interference during
+captures is reported to the workflow owner as `tack-2c4939`.

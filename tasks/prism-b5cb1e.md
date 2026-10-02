@@ -1,15 +1,16 @@
 ---
 id: prism-b5cb1e
 title: Derive glass attenuation color and terminal palette from the Noctalia colorscheme
-status: doing
+status: done
 priority: 1
 size: m
 complexity: high
 process: planned
 owner: feat/noctalia-glass-color
 created: 2026-09-05T01:10:50Z
-updated: 2026-10-02T10:44:48Z
+updated: 2026-10-02T10:56:40Z
 started: 2026-10-02T08:08:45Z
+completed: 2026-10-02T10:56:17Z
 depends: []
 tags: [integration, noctalia, colors]
 spec: docs/specs/2026-10-02-noctalia-glass-color-design.md
@@ -59,3 +60,15 @@ Outcome: the active terminal-glass material carries the Noctalia surface color a
 - 2026-10-02T10:44:47Z (feat/noctalia-glass-color): Implementation and two product landings complete (6029ec5 template first; verified palette refresh; 0263fb3 sink/defaults/controls). 499 Node tests and Lua checks pass; independent implementation review accepts without findings. Desktop comparison ready in the existing worktree; parent remains open until owner accepts focused/unfocused text over bright/dark wallpapers.
 - 2026-10-02T10:44:47Z (feat/noctalia-glass-color): parked (waiting on user, review): User judges dark-mode legibility in .worktrees/noctalia-glass-color/.superpowers/sdd/2026-10-02-noctalia-glass-color/visual/comparison.png; after acceptance agent records the review and closes prism-ad333a plus this parent in the existing worktree, then integrates closing records. Code is live on main and no checks are running.
   provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-10-02T10:52:30Z (feat/noctalia-glass-color): review: impl round 2 — verdict: accept; findings: follow-up 1, clarification 1; reviewer: human
+- 2026-10-02T10:52:30Z (feat/noctalia-glass-color): resumed
+  provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-10-02T10:53:12Z (feat/noctalia-glass-color): Owner accepts saved-look dark-mode legibility on both wallpapers. The top row retained saved roughness/backdrop settings and reset only depth/distance; it does not establish fresh-install default legibility. Desktop-focus interference feedback filed as tack-2c4939; no additional desktop experiments are needed for closure.
+- 2026-10-02T10:55:41Z (feat/noctalia-glass-color): Closing checks: just gate passed tasks check but failed the unchanged process-lock counter test (23/24); just test-fast then passed all 499 Node tests, zero skipped, plus Lua. The intermittent lock failure is tracked separately and is not treated as repaired by the passing rerun.
+- 2026-10-02T10:56:17Z (feat/noctalia-glass-color): Execution rulings: capability probes explicitly use manual tint so grammar detection needs no host palette (cost if wrong: tint values omitted but attenuation node still probed); tests use the existing {source, values} context contract (cost if wrong: saved-profile fixture invalid); owner judges desktop appearance (cost if wrong: tests hide illegibility); dark-mode scope retained (light absorption cannot brighten dark backgrounds); readiness recorded only for the verified rollout host (other hosts may retain stale palettes).
+- 2026-10-02T10:56:17Z (feat/noctalia-glass-color): retro: The two-landing refresh gate prevented primary-only palettes from breaking live applies; CLI-level palette tests preserved saved state. Visual retries disrupted the occupied desktop and mislabeled saved optics as defaults; feedback tack-2c4939 records the workflow failure. Default stress coverage is deferred explicitly rather than inferred from the saved look.
+- 2026-10-02T10:56:17Z (feat/noctalia-glass-color): done
+  provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-10-02T10:56:17Z (feat/noctalia-glass-color): Noctalia surface/accent drives both glass materials without store writes; staged rollout and owner saved-look dark-mode acceptance complete.
+  provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-10-02T10:56:40Z (feat/noctalia-glass-color): Follow-ups: prism-9bbe89 covers bright/busy default legibility; prism-66db5d investigates the unchanged process-lock test failure observed at closure. Workflow feedback tack-2c4939 records repeated desktop focus theft.
