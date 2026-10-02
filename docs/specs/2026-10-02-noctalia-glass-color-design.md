@@ -92,6 +92,9 @@ distance override when a source changes.
 The source default is an intentional behavior change: existing looks without
 an explicit `glass.tintSource` start following Noctalia. A look that should keep
 its stored tints sets the source to `manual`. No store migration is needed.
+The shipped Aurora and Rainbow starter profiles are complete snapshots with
+curated tint colors; include the two new keys in those snapshots with the
+manual source so their preset appearance is preserved.
 
 ## Palette contract and rendering
 

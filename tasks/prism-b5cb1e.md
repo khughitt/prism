@@ -8,11 +8,12 @@ complexity: high
 process: planned
 owner: feat/noctalia-glass-color
 created: 2026-09-05T01:10:50Z
-updated: 2026-10-02T09:29:57Z
+updated: 2026-10-02T09:54:25Z
 started: 2026-10-02T08:08:45Z
 depends: []
 tags: [integration, noctalia, colors]
 spec: docs/specs/2026-10-02-noctalia-glass-color-design.md
+plan: docs/plans/2026-10-02-noctalia-glass-color.md
 ---
 
 Outcome: the active terminal-glass material carries the Noctalia surface color at a short attenuation distance, refreshed on every palette change, so light terminal text stays legible over bright and dark wallpapers in Noctalia dark mode with kitty at background_opacity 0 (dots-a00088 landed 2026-09-06 with a hand-seeded #111317 at distance 30 on titan). Direction settled 2026-09-04: Noctalia colorscheme is the dominant source, flow noctalia -> prism -> glass. Transport: a Noctalia template post_hook (the path noctalia-glass-sync already uses) that writes the surface tone into Prism; decide in the brainstorm whether that is a base write, a derived value the resolver computes from a new colors input, or a state context. Keep the palette accent as a secondary mix; it is wallpaper-derived only for a wallpaper-generated scheme. Acceptance: change wallpaper twice; the active material's attenuation-color in prism.kdl follows the palette surface each time, the inactive variant follows too, and focused/unfocused light text is legible over both a bright and a dark wallpaper in dark mode. Light-mode legibility is outside this absorption-only task. Load-bearing for ops-500adb now that the terminal paints no background.
@@ -46,3 +47,7 @@ Outcome: the active terminal-glass material carries the Noctalia surface color a
   provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
 - 2026-10-02T09:29:29Z (feat/noctalia-glass-color): review: spec round 2 — verdict: revise; findings: P1 1, P3 3; reviewer: claude-code/opus-5.5
 - 2026-10-02T09:29:57Z (feat/noctalia-glass-color): spec revision 2: require two separate merges to main (template/tests/README first, verified host palette refresh next, sink/defaults/controls second); a failed refresh blocks Merge 2. Predefined schemes have no direct fallback and use manual tint for recovery if new code was independently installed. Near-clear light-mode glass is expected. Revision evidence remains in task notes. User's conditional spec acceptance is fulfilled; proceeding to the plan gate.
+- 2026-10-02T09:36:18Z (feat/noctalia-glass-color): plan investigation: starter-profile render is another renderer caller, and Aurora/Rainbow are tested as complete snapshots. Include both new keys in those resources with explicit manual tint so their curated preset colors remain effective; user looks without an explicit source continue to follow the agreed Noctalia default.
+- 2026-10-02T09:54:24Z (feat/noctalia-glass-color): plan self-review: all accepted spec requirements map to four dependent tasks; Merge 1 contains only template/tests/README and design/task records; a host-specific verified refresh gates Merge 2. Covered unused fields, bypass, mix endpoints, store preservation, starter snapshots and neutral/panel behavior. No placeholders or interface mismatches found; inline execution recommended.
+- 2026-10-02T09:54:24Z (feat/noctalia-glass-color): parked (waiting on user, review): User reviews .worktrees/noctalia-glass-color/docs/plans/2026-10-02-noctalia-glass-color.md; after acceptance the agent records the plan review, resumes this task and starts prism-47da20 in the existing worktree using inline execution.
+  provenance: {"harness_session":"codex:01a0fba1-797b-7612-ac6c-b272e5fc6832","harness_session_source":"CODEX_SESSION_ID"}
