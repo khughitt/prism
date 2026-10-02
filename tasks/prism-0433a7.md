@@ -1,15 +1,16 @@
 ---
 id: prism-0433a7
 title: Isolate the pre-push gate from Git-local environment
-status: doing
+status: done
 priority: 2
 size: xs
 complexity: low
 process: direct
-owner: main
+owner: fix/pre-push-rollout
 created: 2026-10-02T01:33:15Z
-updated: 2026-10-02T01:33:16Z
+updated: 2026-10-02T01:46:15Z
 started: 2026-10-02T01:33:16Z
+completed: 2026-10-02T01:46:14Z
 depends: []
 tags: []
 source: ops-e6ec4e
@@ -21,4 +22,12 @@ Adopt the landed ops pre-push isolation block before the existing gate. Preserve
 ## Notes
 
 - 2026-10-02T01:33:16Z (main): started
+  provenance: {"harness_session":"codex:01a0fa3a-dc49-7fe2-ab41-ffb86990bda9","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-10-02T01:36:15Z (fix/pre-push-rollout): resumed
+  provenance: {"harness_session":"codex:01a0fa3a-dc49-7fe2-ab41-ffb86990bda9","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-10-02T01:42:48Z (fix/pre-push-rollout): review: impl round 1 — verdict: accept; findings: none; reviewer: codex/GPT-6
+- 2026-10-02T01:46:14Z (fix/pre-push-rollout): Project test-fast passed all 490 Node tests and the Lua plugin check.
+- 2026-10-02T01:46:14Z (fix/pre-push-rollout): done
+  provenance: {"harness_session":"codex:01a0fa3a-dc49-7fe2-ab41-ffb86990bda9","harness_session_source":"CODEX_SESSION_ID"}
+- 2026-10-02T01:46:14Z (fix/pre-push-rollout): Adopted pre-push Git-local environment isolation; preserved existing gates, keepalive, refs and exit status; shared behavioral regression and project checks pass.
   provenance: {"harness_session":"codex:01a0fa3a-dc49-7fe2-ab41-ffb86990bda9","harness_session_source":"CODEX_SESSION_ID"}
