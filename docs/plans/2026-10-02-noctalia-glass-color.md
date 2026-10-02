@@ -109,7 +109,7 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 - Consumes: Task 1's committed template/tests/README while main still contains the original sink.
 - Produces: **Merge 1 completed**, and valid primary/surface output on each host being upgraded. Task 3 depends on this verification; Task 4 must recheck it before Merge 2.
 
-- [ ] **Step 1: Identify the live paths before landing.** Inspect `command -v prism`, its resolved wrapper, and the Noctalia `[theme.templates.user.prism]` entry. Confirm they still resolve to main. Inspect the main checkout's status and preserve unrelated task files. Rebase the feature branch onto main if a clean fast-forward is unavailable; resolve and reverify in the worktree, rather than overwriting either checkout.
+- [x] **Step 1: Identify the live paths before landing.** Inspect `command -v prism`, its resolved wrapper, and the Noctalia `[theme.templates.user.prism]` entry. Confirm they still resolve to main. Inspect the main checkout's status and preserve unrelated task files. Rebase the feature branch onto main if a clean fast-forward is unavailable; resolve and reverify in the worktree, rather than overwriting either checkout.
 
   ```sh
   command -v prism
@@ -118,7 +118,7 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
   git diff --name-only main...feat/noctalia-glass-color
   ```
 
-- [ ] **Step 2: Perform Merge 1 only after the boundary check passes.** The difference may contain template/tests/README and this feature's design/task records, but must contain no new tint source, sink implementation, controls or distance defaults. Run the required gate through the worktree recipes, then land this first phase:
+- [x] **Step 2: Perform Merge 1 only after the boundary check passes.** The difference may contain template/tests/README and this feature's design/task records, but must contain no new tint source, sink implementation, controls or distance defaults. Run the required gate through the worktree recipes, then land this first phase:
 
   ```sh
   (cd .worktrees/noctalia-glass-color && just gate)
@@ -128,7 +128,7 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 
   Record that main revision as Merge 1. After it, verify main's apply still imports `readNoctaliaAccent` and main's defs do not define `glass.tintSource`. Do not merge any later feature commits until the next step succeeds.
 
-- [ ] **Step 3: Refresh the current palette.** Run `noctalia msg templates-apply`. Its acknowledgment is not proof of completion. From main, verify the output without accepting stale primary-only data:
+- [x] **Step 3: Refresh the current palette.** Run `noctalia msg templates-apply`. Its acknowledgment is not proof of completion. From main, verify the output without accepting stale primary-only data:
 
   ```sh
   node --input-type=module <<'JS'
@@ -147,7 +147,7 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 
   If validation fails for a wallpaper-generated scheme, run the direct synchronous command in the README **from main**, then rerun validation. For a predefined scheme, stop here and leave main on Merge 1 until its template transport is repaired. Never use the wallpaper command for that scheme. A missing/running-unavailable Noctalia instance is an environment blocker, not permission to bypass validation.
 
-- [ ] **Step 4: Confirm the old apply still works and record evidence.** Run main's `bin/prism apply niri` after the successful refresh; it still implements the old glass behavior. Record the command's actual exit, host from `uname -n`, main revision and validated field values. Repeat this check on any other host being upgraded before considering the gate satisfied; do not infer host-local state from the synced checkout. Keep the shared launcher and template registration on main. Mark this child done and commit its task evidence with `chore(tasks): verify palette refresh after first landing`.
+- [x] **Step 4: Confirm the old apply still works and record evidence.** Run main's `bin/prism apply niri` after the successful refresh; it still implements the old glass behavior. Record the command's actual exit, host from `uname -n`, main revision and validated field values. Repeat this check on any other host being upgraded before considering the gate satisfied; do not infer host-local state from the synced checkout. Keep the shared launcher and template registration on main. Mark this child done and commit its task evidence with `chore(tasks): verify palette refresh after first landing`.
 
 ### Task 3: Implement palette-driven tint, controls and regression checks
 
@@ -511,4 +511,4 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 
 ## Execution and review status
 
-Plan round 1 accepted subject to the CLI store-preservation correction, now incorporated. Ring-only errors name the ring control, and the renderer names a missing validated surface explicitly. The serial order is retained for the quick local refresh. Spec round 2's conditional acceptance is fulfilled: the design now requires two separate merges, with an explicit host refresh gate between them. This plan is approved for inline execution; Task 1 is implemented and verified; the host rollout has not yet started. Native inline execution is recommended because the tasks are sequential and share the same color flow. After plan acceptance, start Task 1 in the existing worktree and proceed through the dependencies; do not combine the two landings.
+Plan round 1 accepted subject to the CLI store-preservation correction, now incorporated. Ring-only errors name the ring control, and the renderer names a missing validated surface explicitly. The serial order is retained for the quick local refresh. Spec round 2's conditional acceptance is fulfilled: the design now requires two separate merges, with an explicit host refresh gate between them. This plan is approved for inline execution; Merge 1 is landed at 6029ec5 and the rollout-host palette refresh is verified; Task 3 is next. Native inline execution is recommended because the tasks are sequential and share the same color flow. After plan acceptance, start Task 1 in the existing worktree and proceed through the dependencies; do not combine the two landings.
