@@ -36,6 +36,8 @@ test('starter profiles load as complete snapshots and render both native preset 
     assert.deepEqual(profiles, ['Aurora', 'Rainbow']);
     assert.ok(Object.values(layerOf).every((source) => source === 'profile'), 'full snapshot');
     assert.equal(params['glass.enabled'], true);
+    assert.equal(params['glass.tintSource'], 'manual');
+    assert.equal(params['glass.tintAccentMix'], 0.1);
     assert.equal(params['glass.focusSplit'], true);
     for (const prefix of ['glass.', 'glass.inactive.']) {
       assert.equal(params[`${prefix}ior`], name === 'Rainbow' ? 1.7 : 1.5);
@@ -54,6 +56,7 @@ test('starter profiles load as complete snapshots and render both native preset 
     assert.equal(params['glass.bypass.iridescence'], false);
     const kdl = renderNiriFragment({ params });
     assert.equal(kdl.match(/^material /gm).length, 2);
+    assert.equal(kdl.match(new RegExp(`attenuation-color "${name === 'Aurora' ? '#cfe0ff' : '#dfe8ff'}"`, 'g')).length, 2);
     assert.equal(kdl.match(new RegExp(`iridescence ${name === 'Rainbow' ? '0.8' : '0'}\\n`, 'g')).length, 2);
     assert.equal(kdl.match(new RegExp(`aurora ${name === 'Aurora' ? '0.5' : '0'} \\{`, 'g')).length, 2);
   }

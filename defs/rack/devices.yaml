@@ -48,7 +48,7 @@ devices:
     category: optic
     mix: Tint
     rows: [Tint distance]
-    shared: []
+    shared: [glass.tintSource, glass.tintAccentMix]
     bypass: glass.bypass.tint
   - device: iridescence
     label: Iridescence

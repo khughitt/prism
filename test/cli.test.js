@@ -1030,3 +1030,25 @@ test('doctor names a pending migration in base and in a context, and is quiet on
   await cli.run(['doctor'], { runner: () => {}, print: (s) => { out += s; } });
   assert.doesNotMatch(out, /pending migration/);
 });
+
+test('Focus neutral overrides profile tint through scratch without rewriting saved tuning', async () => {
+  fs.writeFileSync(valuesPath(), 'glass.tintSource: manual\nglass.tintAccentMix: 0.2\n');
+  writeContext('profile', 'Dusk', { source: null, values: {
+    'glass.tintSource': 'noctalia', 'glass.tintAccentMix': 0.4 } });
+  writeActive({ profile: 'Dusk' });
+  const saved = contextPath('profile', 'Dusk');
+  const beforeBase = fs.readFileSync(valuesPath(), 'utf8');
+  const beforeProfile = fs.readFileSync(saved, 'utf8');
+  let described = '';
+  assert.equal(await cli.run(['describe', '--json'],
+    { print: (text) => { described += text; } }), 0);
+  const byKey = Object.fromEntries(JSON.parse(described).params.map((p) => [p.key, p]));
+  assert.equal(byKey['glass.tintSource'].value, 'noctalia');
+  assert.equal(byKey['glass.tintAccentMix'].value, 0.4);
+  const out = await runCaptured(['reset', 'neutral', '--group', 'Focus'], { runner: () => {} });
+  assert.equal(out.code, 0, out.stderr);
+  assert.equal(readScratch()['glass.tintSource'], 'manual');
+  assert.equal(readScratch()['glass.tintAccentMix'], 0);
+  assert.equal(fs.readFileSync(valuesPath(), 'utf8'), beforeBase);
+  assert.equal(fs.readFileSync(saved, 'utf8'), beforeProfile);
+});

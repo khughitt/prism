@@ -378,3 +378,17 @@ test('pair controls reconcile real CLI transitions, locality, guards, and replac
       }
     });
 });
+
+test('tint source and mix draw while both manual pickers stay visible', () => {
+  for (const source of ['noctalia', 'manual']) {
+    const model = describeStore({ base: { 'glass.tintSource': source } });
+    const [report] = inspectModels([model]);
+    assert.equal(report.error, undefined);
+    assert.equal(report.cells['glass.tintSource'].kind, 'select');
+    assert.equal(report.cells['glass.tintAccentMix'].kind, 'slider');
+    for (const key of ['glass.attenuationColor', 'glass.inactive.attenuationColor']) {
+      assert.equal(report.cells[key].glyph, 'palette');
+      assert.equal(model.params.find((param) => param.key === key).value, '#dfe8ff');
+    }
+  }
+});

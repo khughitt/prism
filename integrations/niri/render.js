@@ -113,18 +113,30 @@ export const DRY = {
   'glass.bypass.noise': { noise: 0 },
 };
 
+const paletteTint = (surface, accent, mix) => mix === 0
+  ? surface.toLowerCase()
+  : '#' + [1, 3, 5].map((offset) => Math.round(
+    parseInt(surface.slice(offset, offset + 2), 16) * (1 - mix)
+    + parseInt(accent.slice(offset, offset + 2), 16) * mix,
+  ).toString(16).padStart(2, '0')).join('');
+
 // A bypass is shared by both focus states, so the override lands in whichever
 // material this is building. The resolved values on the bus are untouched.
-const glassFor = (params, prefix) => {
+const glassFor = (params, prefix, sources) => {
   const glass = Object.fromEntries(OPTICS.map((optic) => [optic, params[`${prefix}${optic}`]]));
+  if (params['glass.tintSource'] === 'noctalia' && params['glass.bypass.tint'] !== true) {
+    if (!sources.noctaliaSurface) throw new Error('noctalia tint rendered without a validated surface');
+    glass.attenuationColor = paletteTint(sources.noctaliaSurface,
+      sources.noctaliaAccent, params['glass.tintAccentMix']);
+  }
   for (const [key, dry] of Object.entries(DRY)) {
     if (params[key] === true) Object.assign(glass, dry);
   }
   return glass;
 };
 
-const activeGlass = (params) => glassFor(params, 'glass.');
-const inactiveGlass = (params) => glassFor(params, 'glass.inactive.');
+const activeGlass = (params, sources) => glassFor(params, 'glass.', sources);
+const inactiveGlass = (params, sources) => glassFor(params, 'glass.inactive.', sources);
 
 // The inert background effect pins the superseded blur/noise pass off for the
 // windows this file owns. It needs no xray override: an inert effect never
@@ -168,8 +180,8 @@ export function renderNiriFragment(resolved, sources = {}) {
     // Glass off leaves no material node behind: the node is niri-material's
     // own, and a niri without it rejects the whole config over one it does not
     // know. Everything that remains is upstream vocabulary.
-    ...(glass ? [definition(MATERIAL, params, activeGlass(params), sources)] : []),
-    ...(split ? [definition(INACTIVE_MATERIAL, params, inactiveGlass(params), sources)] : []),
+    ...(glass ? [definition(MATERIAL, params, activeGlass(params, sources), sources)] : []),
+    ...(split ? [definition(INACTIVE_MATERIAL, params, inactiveGlass(params, sources), sources)] : []),
     ...(matcher === null ? []
       : split ? [
         assignmentRule(matcher, MATERIAL, true),

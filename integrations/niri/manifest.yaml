@@ -16,6 +16,8 @@ binds:
   - {param: glass.lightIor, liveness: reload}
   - {param: glass.thickness, liveness: reload}
   - {param: glass.inactive.thickness, liveness: reload}
+  - {param: glass.tintSource, liveness: reload}
+  - {param: glass.tintAccentMix, liveness: reload}
   - {param: glass.attenuationColor, liveness: reload}
   - {param: glass.inactive.attenuationColor, liveness: reload}
   - {param: glass.attenuationDistance, liveness: reload}

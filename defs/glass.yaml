@@ -86,29 +86,43 @@
   default: '#dfe8ff'
   neutral: '#ffffff'
   ui: {group: Focus, control: color, label: Tint, order: 240, state: focused, row: Tint}
-  description: Color absorbed by the glass volume
+  description: Picker shows the stored manual focused tint under both sources; takes effect on apply only with manual source, not the effective Noctalia tint
 - key: glass.inactive.attenuationColor
   type: color
   default: '#dfe8ff'
   neutral: '#ffffff'
   ui: {group: Focus, control: color, label: Unfocused tint, order: 241, state: unfocused, row: Tint}
-  description: Color absorbed by the glass volume of unfocused terminals
+  description: Picker shows the stored manual unfocused tint under both sources; takes effect on apply only with manual source, not the effective Noctalia tint
+- key: glass.tintSource
+  type: enum
+  values: [noctalia, manual]
+  default: noctalia
+  neutral: manual
+  ui: {group: Focus, control: select, label: Tint source, order: 242}
+  description: Select the Noctalia surface and palette-accent mix or the stored focused and unfocused manual tints
+- key: glass.tintAccentMix
+  type: float
+  range: [0, 1]
+  default: 0.1
+  neutral: 0
+  ui: {group: Focus, control: slider, step: 0.01, label: Palette accent mix, order: 244, display: percent}
+  description: Share of the palette primary mixed into its surface color under Noctalia tint; 0 uses only the surface and 1 only the primary
 # An enabler: at the 65535 ceiling tint absorbs nothing; at the floor of 1 it
 # goes black at once.
 - key: glass.attenuationDistance
   type: float
   range: [1, 65535]
-  default: 60
+  default: 30
   neutral: 60
   ui: {group: Focus, control: slider, step: 1, label: Tint distance, order: 250, scale: logarithmic, unit: px, state: focused, row: Tint distance}
-  description: Absorption distance; higher values preserve the wallpaper color farther through the glass
+  description: Absorption distance; higher values preserve the wallpaper color farther through the glass; this default assumes 20 px depth and absorption also increases with depth
 - key: glass.inactive.attenuationDistance
   type: float
   range: [1, 65535]
-  default: 70
+  default: 35
   neutral: 60
   ui: {group: Focus, control: slider, step: 1, label: Unfocused tint distance, order: 251, scale: logarithmic, unit: px, state: unfocused, row: Tint distance}
-  description: Absorption distance of unfocused terminals; higher values preserve the wallpaper color farther through the glass
+  description: Absorption distance of unfocused terminals; higher values preserve the wallpaper color farther through the glass; this default assumes 20 px depth and absorption also increases with depth
 - key: glass.ior
   type: float
   range: [1, 2]

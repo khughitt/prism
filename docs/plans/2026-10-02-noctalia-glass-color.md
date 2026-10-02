@@ -39,10 +39,10 @@
 | Landing | Files under `.worktrees/noctalia-glass-color/` | Responsibility |
 | --- | --- | --- |
 | Merge 1 | `integrations/niri/noctalia-palette.template`, `test/noctalia-palette-template.test.js`, `README.md` | Supply surface while the old sink remains installed; document upgrade order and actual refresh commands. |
-| Merge 2 | `integrations/niri/palette.js`, `integrations/niri/apply`, `integrations/niri/render.js` | Read required external colors once, derive tint, preserve bypass and niri failure semantics. |
+| Merge 2 | `integrations/niri/palette.js`, `integrations/niri/apply`, `integrations/niri/render.js`, `integrations/niri/probe-material` | Read required external colors once, derive tint, preserve bypass and niri failure semantics. |
 | Merge 2 | `defs/glass.yaml`, `defs/rack/devices.yaml`, `integrations/niri/manifest.yaml` | Publish the two controls, source defaults, distances and descriptions. |
 | Merge 2 | `resources/profiles/Aurora.yaml`, `resources/profiles/Rainbow.yaml` | Keep complete starter snapshots and their curated manual colors. |
-| Merge 2 | `test/niri-render.test.js`, `test/niri-apply.test.js`, `test/glass-defs.test.js`, `test/rack.test.js`, `test/starter-profiles.test.js`, `test/noctalia-palette-template.test.js`, `test/cli.test.js`, `integrations/noctalia-plugin/contract.test.mjs` | Cover the new flow using existing fixtures and panel harnesses. |
+| Merge 2 | `test/niri-render.test.js`, `test/niri-apply.test.js`, `test/glass-defs.test.js`, `test/plugin-presentation.test.js`, `test/rack.test.js`, `test/starter-profiles.test.js`, `test/noctalia-palette-template.test.js`, `test/cli.test.js`, `integrations/noctalia-plugin/contract.test.mjs` | Cover the new flow using existing fixtures and panel harnesses. |
 | Both | `README.md`, `docs/specs/`, `docs/plans/`, `tasks/` | Describe the actual landed phase and preserve review/rollout evidence. |
 
 ## Task records
@@ -153,10 +153,10 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 
 **Files:**
 
-- Modify `.worktrees/noctalia-glass-color/integrations/niri/palette.js`, `integrations/niri/apply`, `integrations/niri/render.js`, and `integrations/niri/manifest.yaml`.
+- Modify `.worktrees/noctalia-glass-color/integrations/niri/palette.js`, `integrations/niri/apply`, `integrations/niri/render.js`, `integrations/niri/probe-material`, and `integrations/niri/manifest.yaml`.
 - Modify `.worktrees/noctalia-glass-color/defs/glass.yaml` and `defs/rack/devices.yaml`.
 - Modify `.worktrees/noctalia-glass-color/resources/profiles/Aurora.yaml` and `resources/profiles/Rainbow.yaml`.
-- Modify `.worktrees/noctalia-glass-color/test/niri-render.test.js`, `test/niri-apply.test.js`, `test/glass-defs.test.js`, `test/rack.test.js`, `test/starter-profiles.test.js`, `test/noctalia-palette-template.test.js`, `test/cli.test.js`, and `integrations/noctalia-plugin/contract.test.mjs`.
+- Modify `.worktrees/noctalia-glass-color/test/niri-render.test.js`, `test/niri-apply.test.js`, `test/glass-defs.test.js`, `test/plugin-presentation.test.js`, `test/rack.test.js`, `test/starter-profiles.test.js`, `test/noctalia-palette-template.test.js`, `test/cli.test.js`, and `integrations/noctalia-plugin/contract.test.mjs`.
 - Complete `.worktrees/noctalia-glass-color/README.md`, including descriptions and recovery commands for the now-implemented source.
 
 **Interfaces:**
@@ -166,7 +166,7 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 - Extends the existing renderer sources with `noctaliaSurface?: string`, preserving `noctaliaAccent?: string | null` for ring rendering. `renderNiriFragment(resolved, sources = {})` stays pure; its Noctalia tint callers supply the validated required colors. Manual/bypassed rendering needs no surface.
 - Publishes the two tint parameters through defs/rack/manifest. No new panel implementation or core resolver code is needed.
 
-- [ ] **Step 1: Add failing reader/render checks in the existing render test file.** Add explicit `glass.tintSource: 'manual'` and `glass.tintAccentMix: 0.1` to its hand-authored resolved fixture to retain that fixture's intended manual appearance. The following rendering check pins the actual output, not a private helper:
+- [x] **Step 1: Add failing reader/render checks in the existing render test file.** Add explicit `glass.tintSource: 'manual'` and `glass.tintAccentMix: 0.1` to its hand-authored resolved fixture to retain that fixture's intended manual appearance. The following rendering check pins the actual output, not a private helper:
 
   ```js
   test('palette tint reaches both materials and bypass remains white', () => {
@@ -205,7 +205,7 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 
   Keep the existing missing-file/null, invalid JSON, invalid primary, retired `mPrimary` shape and path-override assertions, updating calls and object expectations. Missing, null, numeric, array, short and non-hex required color values must fail. Run `just test-fast`: the new reader import or tint assertions must fail before implementation.
 
-- [ ] **Step 2: Replace the accent-only reader.** Preserve `noctaliaColorsPath()` unchanged. Use this implementation in place of `readNoctaliaAccent`:
+- [x] **Step 2: Replace the accent-only reader.** Preserve `noctaliaColorsPath()` unchanged. Use this implementation in place of `readNoctaliaAccent`:
 
   ```js
   export function readNoctaliaPalette(file, requiredFields, consumer = 'ring') {
@@ -237,7 +237,7 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 
   Update the template-test import/call to this reader with `['primary', 'surface']`, comparing its returned object with that mode's tokens. Remove the old export and update every production/test caller, rather than adding an alias.
 
-- [ ] **Step 3: Derive tint before DRY overrides.** Add this internal helper in the renderer:
+- [x] **Step 3: Derive tint before DRY overrides.** Add this internal helper in the renderer:
 
   ```js
   const paletteTint = (surface, accent, mix) => mix === 0
@@ -258,9 +258,9 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
   }
   ```
 
-  Pass sources through `activeGlass(params, sources)`, `inactiveGlass(params, sources)` and their two `definition` call sites. Do not change `responseBlock`, OPTICS membership, DRY, assignment rules or focus-ring handling. The renderer trusts the sink's validated inputs; do not silently substitute stored tint when a required palette field is absent.
+  Pass sources through `activeGlass(params, sources)`, `inactiveGlass(params, sources)` and their two `definition` call sites. Set `glass.tintSource: 'manual'` in `probe-material`'s synthetic params: capability probing must not require external palette inputs. Its existing outdated-property checks must still run. Do not change `responseBlock`, OPTICS membership, DRY, assignment rules or focus-ring handling. The renderer trusts the sink's validated inputs; do not silently substitute stored tint when a required palette field is absent.
 
-- [ ] **Step 4: Add the apply regression for palette refresh and recovery.** Add manual source/mix to its existing `PARAMS` fixture. Import `loadDefs`, `defsDir`, and `resolveParams` for complete default-derived new test params. In the existing fixture, expose `runCli(extra)`: invoke `bin/prism apply niri` with the same stub-niri environment, isolated `PRISM_CONFIG_DIR: path.join(dir, 'config')`, and `PRISM_INTEGRATIONS_DIR` set to the real integrations directory. Keep `run(extra)` for sink-only failure tests. The store-preservation test must use `runCli`, so it exercises store resolution, fan-out and the existing sink lock rather than a fixed resolved input.
+- [x] **Step 4: Add the apply regression for palette refresh and recovery.** Add manual source/mix to its existing `PARAMS` fixture. Import `loadDefs`, `defsDir`, and `resolveParams` for complete default-derived new test params. In the existing fixture, expose `runCli(extra)`: invoke `bin/prism apply niri` with the same stub-niri environment, isolated `PRISM_CONFIG_DIR: path.join(dir, 'config')`, and `PRISM_INTEGRATIONS_DIR` set to the real integrations directory. Keep `run(extra)` for sink-only failure tests. The store-preservation test must use `runCli`, so it exercises store resolution, fan-out and the existing sink lock rather than a fixed resolved input.
 
   ```js
   test('palette changes reach both materials without changing the store', (t) => {
@@ -293,8 +293,8 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
       assert.match(kdl, /attenuation-distance 35\n/);
       for (const [file, contents] of before) assert.equal(fs.readFileSync(file, 'utf8'), contents);
     }
-    assert.deepEqual(calls(), ['validate', 'msg action load-config-file',
-      'validate', 'msg action load-config-file']);
+    assert.deepEqual(calls(), ['validate', 'validate', 'msg action load-config-file',
+      'validate', 'validate', 'msg action load-config-file']);
   });
   ```
 
@@ -346,7 +346,7 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
   });
   ```
 
-- [ ] **Step 5: Read only what apply's enabled consumers need.** Replace its import with `readNoctaliaPalette`. Replace the ring-only source-loading block with:
+- [x] **Step 5: Read only what apply's enabled consumers need.** Replace its import with `readNoctaliaPalette`. Replace the ring-only source-loading block with:
 
   ```js
   const params = resolved.params;
@@ -372,7 +372,7 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 
   Keep this before generating/writing the target, and preserve the existing niri validation/reload code. Preserve the fan-out locking code unchanged. The existing `an apply waits for the sink lock another apply of that sink holds` and throwing-apply lock-release tests remain part of `just test-fast`.
 
-- [ ] **Step 6: Publish definitions and wire the existing rack/manifest.** Add the following after the two Tint pickers:
+- [x] **Step 6: Publish definitions and wire the existing rack/manifest.** Add the following after the two Tint pickers:
 
   ```yaml
   - key: glass.tintSource
@@ -404,7 +404,7 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
   glass.tintAccentMix: 0.1
   ```
 
-- [ ] **Step 7: Update meaningful definition/panel/profile checks.** In the glass-defs surface whitelist include both Prism-only tint keys. Preserve NATIVE's actual 60/70 defaults; compare the two curated Prism distance defaults against a separate expected override map, keeping all native range assertions. Add neutral expectations `glass.tintSource: manual` and `glass.tintAccentMix: 0`. Assert defaults/ranges/UI of both new keys, native manifest coverage, and exact Tint rack ownership. Existing source-default render calls must supply `{ noctaliaSurface: '#101010', noctaliaAccent: '#202020' }`; hand-authored manual fixtures need no palette. The starter-profile test must still prove complete snapshots and their stored colors reaching both rendered materials.
+- [x] **Step 7: Update meaningful definition/panel/profile checks.** In the glass-defs surface whitelist include both Prism-only tint keys. Preserve NATIVE's actual 60/70 defaults; compare the two curated Prism distance defaults against a separate expected override map, keeping all native range assertions. Add neutral expectations `glass.tintSource: manual` and `glass.tintAccentMix: 0`. Assert defaults/ranges/UI of both new keys, native manifest coverage, and exact Tint rack ownership. Existing source-default render calls must supply `{ noctaliaSurface: '#101010', noctaliaAccent: '#202020' }`; hand-authored manual fixtures need no palette. The starter-profile test must still prove complete snapshots and their stored colors reaching both rendered materials.
 
   In the existing native-default test, keep the range checks and replace only
   its default assertion with this explicit Prism override:
@@ -460,7 +460,8 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
   ```js
   test('Focus neutral overrides profile tint through scratch without rewriting saved tuning', async () => {
     fs.writeFileSync(valuesPath(), 'glass.tintSource: manual\nglass.tintAccentMix: 0.2\n');
-    writeContext('profile', 'Dusk', { 'glass.tintSource': 'noctalia', 'glass.tintAccentMix': 0.4 });
+    writeContext('profile', 'Dusk', { source: null, values: {
+    'glass.tintSource': 'noctalia', 'glass.tintAccentMix': 0.4 } });
     writeActive({ profile: 'Dusk' });
     const saved = contextPath('profile', 'Dusk');
     const beforeBase = fs.readFileSync(valuesPath(), 'utf8');
@@ -480,7 +481,7 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
   });
   ```
 
-- [ ] **Step 8: Verify and commit the completed second-phase implementation.** Run `just test-fast` in the worktree. Check reader/render/apply failures were observed before their implementations and final output is green, including template CLI and Lua checks. Run `tasks check`; inspect every affected caller with `rg` and confirm the old export has no production/test caller left. Finish README text for the implemented controls, manual-source recovery, preset behavior and dark-mode acceptance. Mark this child done in the implementation commit, `feat(tint): derive glass color from Noctalia palette`. Do not merge this commit yet.
+- [x] **Step 8: Verify and commit the completed second-phase implementation.** Run `just test-fast` in the worktree. Check reader/render/apply failures were observed before their implementations and final output is green, including template CLI and Lua checks. Run `tasks check`; inspect every affected caller with `rg` and confirm the old export has no production/test caller left. Finish README text for the implemented controls, manual-source recovery, preset behavior and dark-mode acceptance. Mark this child done in the implementation commit, `feat(tint): derive glass color from Noctalia palette`. Do not merge this commit yet.
 
 ### Task 4: Merge the tint implementation and accept the desktop result
 
@@ -511,4 +512,4 @@ parent's approval is recorded. The remaining records stay blocked by the chain.
 
 ## Execution and review status
 
-Plan round 1 accepted subject to the CLI store-preservation correction, now incorporated. Ring-only errors name the ring control, and the renderer names a missing validated surface explicitly. The serial order is retained for the quick local refresh. Spec round 2's conditional acceptance is fulfilled: the design now requires two separate merges, with an explicit host refresh gate between them. This plan is approved for inline execution; Merge 1 is landed at 6029ec5 and the rollout-host palette refresh is verified; Task 3 is next. Native inline execution is recommended because the tasks are sequential and share the same color flow. After plan acceptance, start Task 1 in the existing worktree and proceed through the dependencies; do not combine the two landings.
+Plan round 1 accepted subject to the CLI store-preservation correction, now incorporated. Ring-only errors name the ring control, and the renderer names a missing validated surface explicitly. The serial order is retained for the quick local refresh. Spec round 2's conditional acceptance is fulfilled: the design now requires two separate merges, with an explicit host refresh gate between them. This plan is approved for inline execution; Merge 1 is landed at 6029ec5 and the rollout-host palette refresh is verified; Task 3 is implemented and verified; independent review precedes Merge 2. Native inline execution is recommended because the tasks are sequential and share the same color flow. After plan acceptance, start Task 1 in the existing worktree and proceed through the dependencies; do not combine the two landings.

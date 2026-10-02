@@ -221,7 +221,8 @@ repaired with `prism apply`.
 
 ## Noctalia palette
 
-The ring's `noctalia` color source (`glass.ring.colorSource`) reads
+Glass tint (`glass.tintSource: noctalia`, the default) and the ring's optional
+`noctalia` color source (`glass.ring.colorSource`) read
 `$XDG_STATE_HOME/prism/noctalia-palette.json` (prism's state directory), which a
 Noctalia user template renders on every palette change. Noctalia's `colors_changed` hook, which fires
 after the templates are written and only when the palette changed, re-renders
@@ -242,12 +243,38 @@ and the hook sits beside `wallpaper_changed` in the Noctalia config.toml:
 colors_changed = ["prism apply niri"]
 ```
 
-Until the template has rendered once, the ring rests on the manual color.
+An enabled Noctalia tint requires a valid surface, plus primary when its accent
+mix is positive. A missing or invalid required field fails before writing the
+generated config. When the ring is the sole palette consumer, a missing file
+still rests it on the manual ring color; a malformed file fails.
 `PRISM_NOCTALIA_COLORS` points the sink at another file.
+
+The Tint device's details provide **Tint source** (`noctalia`/`manual`) and
+**Palette accent mix** (0–100%, default 10%). Both focus states share the
+Noctalia-derived color. Their pickers remain visible, showing the stored manual
+colors rather than the effective palette tint. Choosing manual makes those
+colors take effect on the next successful apply:
+
+```sh
+prism set glass.tintSource manual
+prism set glass.tintSource noctalia
+prism set glass.tintAccentMix 0.1
+```
+
+Tint bypass emits white under either source and needs no tint palette. Neutral
+reset selects manual white tint with zero mix. The ring keeps its own Color
+source; if a malformed palette blocks that consumer, select its manual Color
+source too. Aurora and Rainbow starter snapshots select manual tint to retain
+their curated colors. Existing user looks without an explicit source follow
+Noctalia; no saved values are rewritten by palette changes.
+
+The 30/35 px distance defaults assume 20 px depth. Absorption depends on both:
+transmittance is approximately `color^(depth / distance)` on a flat face. Saved
+explicit depths/distances still win, so check both when tuning a very dark pane.
 
 ### Upgrade to palette-driven glass tint
 
-The template now supplies both `primary` and `surface`. The upcoming tint
+The template now supplies both `primary` and `surface`. The tint
 source uses the surface with a 10% palette-accent mix, with distance defaults
 of 30 px focused and 35 px unfocused at 20 px depth. Dark-mode legibility is
 the goal; a near-white light-mode surface produces nearly clear glass and
@@ -258,7 +285,7 @@ so this upgrade requires **two separate merges**, with a refresh between them:
 
 1. Merge the expanded template, its tests and these upgrade instructions.
    Keep the old sink/defaults installed; the extra surface field is harmless
-   to the existing ring reader. The new tint controls are not available yet.
+   to the existing ring reader. The new tint controls become available in the second merge.
 2. Run `noctalia msg templates-apply` to reapply the current palette's user
    templates. Its `ok` acknowledgment does not prove rendering completed.
    Verify both fields before proceeding, from the main checkout:
@@ -304,8 +331,7 @@ post-hooks. It writes the registered default state path; if using a custom
 It refuses predefined schemes rather than replacing their colors. A predefined
 scheme has no direct-render fallback here: if templates-apply fails, leave the
 second merge blocked until the transport is repaired. If the new sink was
-installed independently, its manual tint source will provide recovery once
-those controls are available. Manual absorption cannot solve light-mode
+installed independently, its manual tint source will provide recovery through the controls from the second merge. Manual absorption cannot solve light-mode
 legibility by itself.
 
 ## Command line

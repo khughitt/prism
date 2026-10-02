@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { parse } from 'yaml';
 import { renderNiriFragment, DRY } from '../integrations/niri/render.js';
-import { noctaliaColorsPath, readNoctaliaAccent } from '../integrations/niri/palette.js';
+import { noctaliaColorsPath, readNoctaliaPalette } from '../integrations/niri/palette.js';
 import { loadDefs } from '../src/defs.js';
 import { defsDir, stateDir } from '../src/paths.js';
 import { resolveParams } from '../src/resolve.js';
@@ -20,6 +20,8 @@ const resolved = { params: {
   'glass.ior': 1.38,
   'glass.lightIor': 9,
   'glass.thickness': 32,
+  'glass.tintSource': 'manual',
+  'glass.tintAccentMix': 0.1,
   'glass.attenuationColor': '#bbc7db',
   'glass.attenuationDistance': 178,
   'glass.chromaticAberration': 0.68,
@@ -658,7 +660,8 @@ test('both materials carry the same response block', () => {
 });
 
 test('the resolved shipped defaults reach both material response blocks', () => {
-  const kdl = renderNiriFragment({ params: resolveParams(loadDefs(defsDir()), {}) });
+  const kdl = renderNiriFragment({ params: resolveParams(loadDefs(defsDir()), {}) },
+    { noctaliaSurface: '#101010', noctaliaAccent: '#202020' });
 
   assert.equal(count(kdl, 'ring-beam-speed 300'), 2, kdl);
   assert.equal(count(kdl, 'ring-gap 8'), 2, kdl);
@@ -717,19 +720,19 @@ test('the palette reader rests on absence and fails on a broken file', (t) => {
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   const file = path.join(dir, 'noctalia-palette.json');
 
-  assert.equal(readNoctaliaAccent(file), null, 'a fresh machine has no palette');
+  assert.equal(readNoctaliaPalette(file, ['primary']), null, 'a fresh machine has no palette');
 
   fs.writeFileSync(file, JSON.stringify({ primary: '#BAD065' }));
-  assert.equal(readNoctaliaAccent(file), '#BAD065', 'uppercase hex is a color');
+  assert.deepEqual(readNoctaliaPalette(file, ['primary']), { primary: '#BAD065' }, 'uppercase hex is a color');
 
   fs.writeFileSync(file, '{ not json');
-  assert.throws(() => readNoctaliaAccent(file), /not valid JSON/);
+  assert.throws(() => readNoctaliaPalette(file, ['primary']), /not valid JSON/);
 
   fs.writeFileSync(file, JSON.stringify({ primary: 'blue' }));
-  assert.throws(() => readNoctaliaAccent(file), /primary missing or not a #rrggbb color/);
+  assert.throws(() => readNoctaliaPalette(file, ['primary']), /primary missing or not a #rrggbb color/);
 
   fs.writeFileSync(file, JSON.stringify({ mPrimary: '#BAD065' }));
-  assert.throws(() => readNoctaliaAccent(file), new RegExp(`${file}: primary missing`),
+  assert.throws(() => readNoctaliaPalette(file, ['primary']), new RegExp(`${file}: primary missing`),
     'the Noctalia 4 colors.json shape is not a palette');
 });
 
@@ -744,4 +747,72 @@ test('the palette defaults to prism state and honours the override', () => {
     if (saved === undefined) delete process.env.PRISM_NOCTALIA_COLORS;
     else process.env.PRISM_NOCTALIA_COLORS = saved;
   }
+});
+
+test('palette tint reaches both materials and bypass remains white', () => {
+  const input = with_({ 'glass.tintSource': 'noctalia', 'glass.tintAccentMix': 0.1 });
+  const before = structuredClone(input);
+  const sources = { noctaliaSurface: '#101010', noctaliaAccent: '#202020' };
+  const kdl = renderNiriFragment(input, sources);
+  assert.equal(count(kdl, 'attenuation-color "#121212"'), 2);
+  assert.deepEqual(input, before);
+  assert.equal(count(renderNiriFragment(with_({ ...input.params,
+    'glass.bypass.tint': true }), {}), 'attenuation-color "#ffffff"'), 2);
+  assert.equal(count(renderNiriFragment(with_({ ...input.params,
+    'glass.focusSplit': false }), sources), 'attenuation-color "#121212"'), 1);
+  for (const [mix, expected] of [[0, '#101010'], [1, '#202020']]) {
+    const output = renderNiriFragment(with_({ ...input.params,
+      'glass.tintAccentMix': mix }), sources);
+    assert.equal(count(output, `attenuation-color "${expected}"`), 2);
+  }
+  assert.equal(count(renderNiriFragment(with_({ ...input.params,
+    'glass.tintAccentMix': 0.25 }), { noctaliaSurface: '#001020',
+    noctaliaAccent: '#80c0ff' }), 'attenuation-color "#203c58"'), 2);
+  const surfaceOnly = renderNiriFragment(with_({ ...input.params,
+    'glass.tintAccentMix': 0 }), { noctaliaSurface: '#ABCDEF' });
+  assert.equal(count(surfaceOnly, 'attenuation-color "#abcdef"'), 2);
+});
+
+test('palette tint preserves explicit depths and distances and neutral needs no surface', () => {
+  const input = with_({ 'glass.tintSource': 'noctalia', 'glass.tintAccentMix': 0.1,
+    'glass.thickness': 80, 'glass.inactive.thickness': 40,
+    'glass.attenuationDistance': 16, 'glass.inactive.attenuationDistance': 90 });
+  const before = structuredClone(input);
+  const kdl = renderNiriFragment(input,
+    { noctaliaSurface: '#101010', noctaliaAccent: '#202020' });
+  for (const value of ['thickness 80', 'thickness 40',
+    'attenuation-distance 16', 'attenuation-distance 90']) assert.ok(kdl.includes(value));
+  assert.deepEqual(input, before);
+  const params = Object.fromEntries([...loadDefs(defsDir())].map(([key, def]) =>
+    [key, Object.hasOwn(def, 'neutral') ? def.neutral : def.default]));
+  assert.equal(params['glass.tintSource'], 'manual');
+  assert.equal(params['glass.tintAccentMix'], 0);
+  assert.equal(count(renderNiriFragment({ params }), 'attenuation-color "#ffffff"'), 2);
+});
+
+test('Noctalia tint names the missing validated source contract', () => {
+  assert.throws(() => renderNiriFragment(with_({ 'glass.tintSource': 'noctalia',
+    'glass.tintAccentMix': 0 }), {}), /noctalia tint rendered without a validated surface/);
+});
+
+test('palette validation only inspects required fields and names the consumer', (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-palette-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const file = path.join(dir, 'palette.json');
+  fs.writeFileSync(file, JSON.stringify({ surface: '#ABCDEF', primary: 'unused' }));
+  assert.deepEqual(readNoctaliaPalette(file, ['surface']), { surface: '#ABCDEF' });
+  assert.throws(() => readNoctaliaPalette(file, ['surface', 'primary']), /primary missing/);
+  fs.writeFileSync(file, JSON.stringify({ primary: '#A1B2C3', surface: 'unused' }));
+  assert.deepEqual(readNoctaliaPalette(file, ['primary']), { primary: '#A1B2C3' });
+  assert.throws(() => readNoctaliaPalette(path.dirname(file), ['surface']), /EISDIR/);
+  for (const value of [undefined, null, 123, [], '#123', '#gggggg']) {
+    fs.writeFileSync(file, JSON.stringify({ surface: value }));
+    assert.throws(() => readNoctaliaPalette(file, ['surface'], 'tint'), /surface missing/);
+  }
+  fs.writeFileSync(file, '{ broken');
+  assert.throws(() => readNoctaliaPalette(file, ['primary'], 'ring'), (error) => {
+    assert.match(error.message, /ring's manual Color source/);
+    assert.doesNotMatch(error.message, /manual tint/);
+    return true;
+  });
 });

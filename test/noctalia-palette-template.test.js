@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { readNoctaliaAccent } from '../integrations/niri/palette.js';
+import { readNoctaliaPalette } from '../integrations/niri/palette.js';
 
 const template = fileURLToPath(new URL('../integrations/niri/noctalia-palette.template', import.meta.url));
 
@@ -28,7 +28,6 @@ test('the template renders a palette the niri sink accepts', { skip: hasNoctalia
     execFileSync('noctalia', ['theme', '--theme-json', theme,
       '--default-mode', mode, '-r', `${template}:${out}`], { stdio: 'pipe' });
     assert.deepEqual(JSON.parse(fs.readFileSync(out, 'utf8')), tokens[mode]);
-    assert.equal(readNoctaliaAccent(out), tokens[mode].primary,
-      'the existing ring reader accepts the expanded output');
+    assert.deepEqual(readNoctaliaPalette(out, ['primary', 'surface']), tokens[mode]);
   }
 });

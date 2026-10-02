@@ -35,14 +35,14 @@ test('shipped presentation is a Glass section, a Focus matrix, and a Ring sectio
     }
   }
   assert.deepEqual(rows.map((row) => row.row), [
-    'Frosted backdrop', 'Blur', 'Tint', 'Tint distance', 'Refraction',
+    'Frosted backdrop', 'Blur', 'Tint', 'Tint source', 'Palette accent mix', 'Tint distance', 'Refraction',
     'Depth', 'Fringing', 'Distortion', 'Distortion detail', 'Directional blur',
     'Noise', 'Noise type', 'Saturation', 'Iridescence', 'Aurora', 'Drift rate', 'Color A', 'Color B',
     'Bypass backdrop', 'Bypass distortion', 'Bypass refraction', 'Bypass fringing',
     'Bypass iridescence', 'Bypass directional blur', 'Bypass tint', 'Bypass aurora', 'Bypass saturation', 'Bypass noise',
   ]);
   assert.deepEqual(rows.filter((row) => row.single).map((row) => row.single), [
-    'glass.noiseType',
+    'glass.tintSource', 'glass.tintAccentMix', 'glass.noiseType',
     'glass.bypass.backdrop', 'glass.bypass.distortion', 'glass.bypass.refraction',
     'glass.bypass.fringing', 'glass.bypass.iridescence', 'glass.bypass.directionalBlur', 'glass.bypass.tint', 'glass.bypass.aurora',
     'glass.bypass.saturation', 'glass.bypass.noise',

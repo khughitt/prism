@@ -73,3 +73,5 @@ terminal.background.opacity.inactive: 0
 terminal.apps:
   - kitty
   - com.mitchellh.ghostty
+glass.tintSource: manual
+glass.tintAccentMix: 0.1

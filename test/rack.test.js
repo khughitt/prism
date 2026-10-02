@@ -49,6 +49,7 @@ test('the shipped rack loads against the shipped defs in shader order', () => {
   ]);
   assert.deepEqual(rack.devices.filter((d) => d.requires).map((d) => [d.device, d.requires]),
     [['fringing', 'refraction'], ['directionalBlur', 'refraction']]);
+  assert.deepEqual(rack.devices.find((d) => d.device === 'tint').shared, ['glass.tintSource', 'glass.tintAccentMix']);
   assert.deepEqual(rack.devices.find((d) => d.device === 'noise').shared, ['glass.noiseType']);
 });
 

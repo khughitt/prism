@@ -98,7 +98,7 @@ test('the glass surface is exactly the parameters native niri consumes', () => {
   const glass = [...defs.keys()].filter((key) => key.startsWith('glass.'));
 
   assert.deepEqual(glass.slice().sort(),
-    [...Object.keys(NATIVE), 'glass.noiseType', 'glass.ring.colorSource'].sort());
+    [...Object.keys(NATIVE), 'glass.noiseType', 'glass.ring.colorSource', 'glass.tintSource', 'glass.tintAccentMix'].sort());
 });
 
 test('noise type is a shared Focus select with an explicit Prism default', () => {
@@ -118,7 +118,8 @@ test('every glass definition matches the native range and default', () => {
   for (const [key, native] of Object.entries(NATIVE)) {
     const def = defs.get(key);
     assert.ok(def, `missing def ${key}`);
-    assert.deepEqual(def.default, native.default, `${key} default`);
+    assert.deepEqual(def.default, ({ 'glass.attenuationDistance': 30,
+      'glass.inactive.attenuationDistance': 35 })[key] ?? native.default, `${key} default`);
     if (native.range) {
       assert.ok(def.range[0] >= native.range[0] && def.range[1] <= native.range[1],
         `${key} range [${def.range}] leaves the native [${native.range}]`);
@@ -446,6 +447,8 @@ test('everything outside the matrix is shared glass', () => {
 });
 
 const NEUTRAL = {
+  'glass.tintSource': 'manual',
+  'glass.tintAccentMix': 0,
   'glass.iridescence': 0,
   'glass.aurora': 0,
   'glass.auroraDriftHz': 4,
@@ -506,5 +509,26 @@ test('drift controls use whole Hz so every offered rate parses in niri', () => {
     assert.deepEqual(def.range, [0, 30]);
     assert.equal(def.ui.step, 1);
     assert.equal(def.ui.unit, 'Hz');
+  }
+});
+
+test('palette tint controls are shared with explicit source and mix contracts', () => {
+  const defs = loadDefs(defsDir());
+  const source = defs.get('glass.tintSource');
+  assert.equal(source?.type, 'enum');
+  assert.deepEqual(source.values, ['noctalia', 'manual']);
+  assert.equal(source.default, 'noctalia');
+  assert.equal(source.neutral, 'manual');
+  assert.deepEqual(source.ui, { group: 'Focus', control: 'select', label: 'Tint source', order: 242 });
+  const mix = defs.get('glass.tintAccentMix');
+  assert.equal(mix.type, 'float');
+  assert.equal(mix.default, 0.1);
+  assert.equal(mix.neutral, 0);
+  assert.deepEqual(mix.range, [0, 1]);
+  assert.deepEqual(mix.ui, { group: 'Focus', control: 'slider', step: 0.01,
+    label: 'Palette accent mix', order: 244, display: 'percent' });
+  for (const prefix of ['glass.', 'glass.inactive.']) {
+    assert.match(defs.get(`${prefix}attenuationColor`).description, /stored manual/);
+    assert.match(defs.get(`${prefix}attenuationDistance`).description, /20 px depth/);
   }
 });

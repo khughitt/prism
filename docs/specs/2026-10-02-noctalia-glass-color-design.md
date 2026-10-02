@@ -1,7 +1,7 @@
 # Glass tint follows the Noctalia palette
 
 **Date:** 2026-10-02
-**Status:** accepted subject to round 2 fixes, now incorporated; ready for implementation planning. Product implementation has not started.
+**Status:** accepted; template landed, tint implementation verified on the feature branch. Independent review, second landing and owner desktop acceptance remain.
 **Task:** `prism-b5cb1e`
 **Amends:** [Wallpaper rotation keeps the screen and pending edits](2026-09-27-rotation-keeps-edits-design.md), extending its palette transport to the glass tint.
 

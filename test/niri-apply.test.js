@@ -6,6 +6,9 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
+const prismBin = fileURLToPath(new URL('../bin/prism', import.meta.url));
+const integrations = fileURLToPath(new URL('../integrations/', import.meta.url));
+
 const applyBin = fileURLToPath(new URL('../integrations/niri/apply', import.meta.url));
 
 // The reason niri gives for rejecting a config is the only thing that tells an
@@ -24,6 +27,8 @@ const PARAMS = {
   'glass.ior': 1.38,
   'glass.lightIor': 6,
   'glass.thickness': 32,
+  'glass.tintSource': 'manual',
+  'glass.tintAccentMix': 0.1,
   'glass.attenuationColor': '#bbc7db',
   'glass.attenuationDistance': 178,
   'glass.chromaticAberration': 0.68,
@@ -98,25 +103,30 @@ exit 0
     fs.writeFileSync(resolvedFile, JSON.stringify({ params: { ...PARAMS, ...overrides } }));
 
   const target = path.join(state, 'generated', 'prism.kdl');
-  const run = (extra = {}) => {
+  const invoke = (binary, args, extra) => {
     const env = {
       ...process.env,
       PATH: `${bin}:${process.env.PATH}`,
       PRISM_STATE_DIR: state,
+      PRISM_CONFIG_DIR: path.join(dir, 'config'),
+      PRISM_INTEGRATIONS_DIR: integrations,
       NIRI_FAKE_LOG: log,
       NIRI_FAKE_DIAGNOSTIC: DIAGNOSTIC,
       ...extra,
     };
     delete env.NIRI_SOCKET;   // the deferred-reload path must look like a cold start
-    return spawnSync(applyBin, [resolvedFile], { encoding: 'utf8', env });
+    return spawnSync(binary, args, { encoding: 'utf8', env });
   };
+
+  const run = (extra = {}) => invoke(applyBin, [resolvedFile], extra);
+  const runCli = (extra = {}) => invoke(prismBin, ['apply', 'niri'], extra);
 
   const calls = () => (fs.existsSync(log)
     ? fs.readFileSync(log, 'utf8').trim().split('\n').filter(Boolean)
     : []);
   const inode = () => fs.statSync(target).ino;
 
-  return { dir, state, target, run, calls, inode, writeParams };
+  return { dir, state, target, run, runCli, calls, inode, writeParams };
 }
 
 test('an invalid composed config restores the previous target exactly', (t) => {
@@ -396,4 +406,83 @@ test('a broken palette does not block an apply with the glass off', (t) => {
   assert.doesNotMatch(fs.readFileSync(target, 'utf8'), /material/,
     'no ring is emitted for the palette to drive');
   assert.deepEqual(calls(), ['validate', 'msg action load-config-file']);
+});
+
+test('palette changes reach both materials without changing the store', (t) => {
+  const { dir, state, target, runCli, calls } = fixture(t);
+  const palette = path.join(dir, 'palette.json');
+  const config = path.join(dir, 'config');
+  fs.mkdirSync(path.join(config, 'contexts', 'profile'), { recursive: true });
+  const base = path.join(config, 'values.yaml');
+  const saved = path.join(config, 'contexts', 'profile', 'Saved.yaml');
+  const runtime = path.join(state, 'active.json');
+  fs.writeFileSync(base, 'glass.ring.colorSource: familiar\n');
+  fs.writeFileSync(saved, 'glass.roughness: 0.2\n');
+  fs.writeFileSync(runtime, JSON.stringify({ profile: 'Saved',
+    _scratch: { 'glass.roughness': 0.3 } }));
+  const before = new Map([base, saved, runtime]
+    .map((file) => [file, fs.readFileSync(file, 'utf8')]));
+  let previousParams;
+  for (const [surface, primary, expected] of [
+    ['#101010', '#202020', '#121212'],
+    ['#202020', '#303030', '#222222'],
+  ]) {
+    fs.writeFileSync(palette, JSON.stringify({ surface, primary }));
+    const result = runCli({ PRISM_NOCTALIA_COLORS: palette });
+    assert.equal(result.status, 0, result.stderr);
+    const resolved = JSON.parse(fs.readFileSync(path.join(state, 'resolved.json'), 'utf8'));
+    assert.equal(resolved.params['glass.roughness'], 0.3);
+    assert.equal(resolved.params['glass.tintSource'], 'noctalia');
+    if (previousParams) assert.deepEqual(resolved.params, previousParams);
+    previousParams = resolved.params;
+    const kdl = fs.readFileSync(target, 'utf8');
+    assert.equal((kdl.match(new RegExp(`attenuation-color "${expected}"`, 'g')) ?? []).length, 2);
+    assert.match(kdl, /attenuation-distance 30\n/);
+    assert.match(kdl, /attenuation-distance 35\n/);
+    for (const [file, contents] of before) assert.equal(fs.readFileSync(file, 'utf8'), contents);
+  }
+  assert.deepEqual(calls(), ['validate', 'validate', 'msg action load-config-file',
+    'validate', 'validate', 'msg action load-config-file']);
+});
+
+test('apply reads only the palette fields its enabled consumers need', (t) => {
+  const primaryOnly = JSON.stringify({ primary: '#202020', surface: 'unused' });
+  const surfaceOnly = JSON.stringify({ surface: '#101010', primary: 'unused' });
+  const cases = [
+    ['off', { 'glass.enabled': false, 'glass.ring.colorSource': 'noctalia' }, '{ broken', null],
+    ['manual/familiar', { 'glass.tintSource': 'manual' }, '{ broken', null],
+    ['manual/manual', { 'glass.tintSource': 'manual', 'glass.ring.colorSource': 'manual' }, '{ broken', null],
+    ['bypass/familiar', { 'glass.bypass.tint': true }, '{ broken', null],
+    ['bypass/manual', { 'glass.bypass.tint': true, 'glass.ring.colorSource': 'manual' }, '{ broken', null],
+    ['bypass/noctalia', { 'glass.bypass.tint': true, 'glass.ring.colorSource': 'noctalia' }, primaryOnly, null],
+    ['manual/noctalia', { 'glass.tintSource': 'manual', 'glass.ring.colorSource': 'noctalia' }, primaryOnly, null],
+    ['surface only', { 'glass.tintAccentMix': 0 }, surfaceOnly, null],
+    ['ring still needs primary', { 'glass.tintAccentMix': 0, 'glass.ring.colorSource': 'noctalia' }, surfaceOnly, /primary missing/],
+    ['missing surface', {}, primaryOnly, /surface missing/],
+    ['missing primary', {}, surfaceOnly, /primary missing/],
+    ['mix one still needs surface', { 'glass.tintAccentMix': 1 }, primaryOnly, /surface missing/],
+    ['absent tint palette', {}, null, /palette missing/],
+    ['malformed tint palette', {}, '{ broken', /not valid JSON/],
+    ['invalid surface type', {}, '{"surface":[],"primary":"#202020"}', /surface missing/],
+  ];
+  for (const [label, overrides, contents, failure] of cases) {
+    const { dir, target, run, calls, writeParams } = fixture(t);
+    writeParams({ 'glass.tintSource': 'noctalia', 'glass.tintAccentMix': 0.1,
+      'glass.ring.colorSource': 'familiar', ...overrides });
+    const palette = path.join(dir, 'palette.json');
+    if (contents !== null) fs.writeFileSync(palette, contents);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, '// previous accepted generation\n');
+    const result = run({ PRISM_NOCTALIA_COLORS: palette });
+    if (failure) {
+      assert.notEqual(result.status, 0, label);
+      assert.match(result.stderr, failure, label);
+      assert.match(result.stderr, /noctalia msg templates-apply/, label);
+      assert.equal(fs.readFileSync(target, 'utf8'), '// previous accepted generation\n', label);
+      assert.deepEqual(calls(), [], label);
+    } else {
+      assert.equal(result.status, 0, `${label}: ${result.stderr}`);
+      assert.deepEqual(calls(), ['validate', 'msg action load-config-file'], label);
+    }
+  }
 });

@@ -9,11 +9,12 @@ export function noctaliaColorsPath() {
   return process.env.PRISM_NOCTALIA_COLORS ?? path.join(stateDir(), 'noctalia-palette.json');
 }
 
-// null on a machine where the template has not rendered yet: the ring then
-// rests on the manual color. A file that exists but does not parse or carries
-// no usable primary is an error — the user chose this source, and a broken
-// one must fail the apply rather than silently freeze the ring.
-export function readNoctaliaAccent(file) {
+// Read once and validate only the fields the enabled consumers need.
+// A missing palette is allowed only when the ring is its sole consumer.
+export function readNoctaliaPalette(file, requiredFields, consumer = 'ring') {
+  const remedy = consumer === 'tint'
+    ? "run 'noctalia msg templates-apply', verify primary and surface, then rerun 'prism apply niri'; see the README for direct wallpaper refresh or select manual tint"
+    : "run 'noctalia msg templates-apply', verify primary, then rerun 'prism apply niri' or select the ring's manual Color source";
   let text;
   try {
     text = fs.readFileSync(file, 'utf8');
@@ -25,11 +26,13 @@ export function readNoctaliaAccent(file) {
   try {
     colors = JSON.parse(text);
   } catch {
-    throw new Error(`${file}: not valid JSON`);
+    throw new Error(`${file}: not valid JSON — ${remedy}`);
   }
-  const accent = colors?.primary;
-  if (typeof accent !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(accent)) {
-    throw new Error(`${file}: primary missing or not a #rrggbb color`);
-  }
-  return accent;
+  return Object.fromEntries(requiredFields.map((field) => {
+    const value = colors?.[field];
+    if (typeof value !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(value)) {
+      throw new Error(`${file}: ${field} missing or not a #rrggbb color — ${remedy}`);
+    }
+    return [field, value];
+  }));
 }
