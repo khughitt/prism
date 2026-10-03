@@ -85,14 +85,14 @@
   type: color
   default: '#dfe8ff'
   neutral: '#ffffff'
-  ui: {group: Focus, control: color, label: Tint, order: 240, state: focused, row: Tint}
-  description: Picker shows the stored manual focused tint under both sources; takes effect on apply only with manual source, not the effective Noctalia tint
+  ui: {group: Focus, control: color, label: Tint, order: 240, state: focused, row: Tint, when: {param: glass.tintSource, in: [manual], otherwise: effective}}
+  description: Focused tint, editable under the manual source; under Noctalia the panel shows the palette tint the last apply installed
 - key: glass.inactive.attenuationColor
   type: color
   default: '#dfe8ff'
   neutral: '#ffffff'
-  ui: {group: Focus, control: color, label: Unfocused tint, order: 241, state: unfocused, row: Tint}
-  description: Picker shows the stored manual unfocused tint under both sources; takes effect on apply only with manual source, not the effective Noctalia tint
+  ui: {group: Focus, control: color, label: Unfocused tint, order: 241, state: unfocused, row: Tint, when: {param: glass.tintSource, in: [manual], otherwise: effective}}
+  description: Unfocused tint, editable under the manual source; under Noctalia the panel shows the palette tint the last apply installed
 - key: glass.tintSource
   type: enum
   values: [noctalia, manual]
@@ -105,7 +105,7 @@
   range: [0, 1]
   default: 0.1
   neutral: 0
-  ui: {group: Focus, control: slider, step: 0.01, label: Palette accent mix, order: 244, display: percent}
+  ui: {group: Focus, control: slider, step: 0.01, label: Palette accent mix, order: 244, display: percent, when: {param: glass.tintSource, in: [noctalia], otherwise: hidden}}
   description: Share of the palette primary mixed into its surface color under Noctalia tint; 0 uses only the surface and 1 only the primary
 # An enabler: at the 65535 ceiling tint absorbs nothing; at the floor of 1 it
 # goes black at once.
@@ -404,8 +404,8 @@
   type: color
   default: '#ccccff'
   neutral: '#ccccff'
-  ui: {group: Ring, control: color, label: Color, order: 520, subgroup: Band}
-  description: Ring color under the manual source; the resting color under familiar until its signal arrives, and the fallback under noctalia until a colorscheme exists
+  ui: {group: Ring, control: color, label: Color, order: 520, subgroup: Band, when: {param: glass.ring.colorSource, in: [manual], otherwise: effective}}
+  description: Ring color, editable under the manual source; under familiar it is the resting color of windows without a session, and under noctalia the fallback until a colorscheme exists, both shown read-only
 - key: glass.ring.beamSpeed
   type: int
   range: [0, 5000]

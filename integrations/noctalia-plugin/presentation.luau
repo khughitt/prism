@@ -202,6 +202,29 @@ function M.sections(params, skipGroup)
   return sections
 end
 
+-- A def's ui.when names an enum and the values under which its own control is
+-- live. Otherwise the cell is the sink-reported color ("effective") or is not
+-- drawn ("hidden"). Gates are presentation only: the param still counts in
+-- every edit, neutral count and reset.
+function M.gates(params)
+  local byKey = {}
+  for _, param in ipairs(params) do byKey[param.key] = param end
+  local gates = {}
+  for _, param in ipairs(params) do
+    local when = param.ui.when
+    if param.ui.control ~= "none" and when ~= nil then
+      local source = byKey[when.param]
+      if source == nil then error(param.key .. " is gated on unknown parameter " .. tostring(when.param), 0) end
+      local open = false
+      for _, value in ipairs(when["in"]) do
+        if source.value == value then open = true end
+      end
+      gates[param.key] = open and "control" or when.otherwise
+    end
+  end
+  return gates
+end
+
 function M.sectionParams(section)
   local list = {}
   if section.toggle then list[#list + 1] = section.toggle end
@@ -340,6 +363,10 @@ function M.rack(model)
     end
     local card = { device = id, label = device.label, category = device.category, rows = {}, shared = {} }
     card.mix = takeRow(device.mix, id)
+    local mixWhen = card.mix.focused.ui.when
+    if mixWhen ~= nil and mixWhen.otherwise == "hidden" then
+      error("device " .. id .. ": mix row " .. device.mix .. " cannot be hidden by ui.when; a card has no head without it")
+    end
     for _, label in ipairs(device.rows or {}) do card.rows[#card.rows + 1] = takeRow(label, id) end
     for _, key in ipairs(device.shared or {}) do card.shared[#card.shared + 1] = takeKey(key, id) end
     card.bypass = takeKey(device.bypass, id)

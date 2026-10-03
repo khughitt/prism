@@ -1732,7 +1732,89 @@ equal(collect(beamCells.children[2], "label")[1].props.text, "—", "the unfocus
 equal(beamCells.children[4].props.key, "glass.ring.beamSpeed", "the control sits in the focused column")
 local accentCells = byKey(ringTree, "glass.ring.accent:row")[1].children[1]
 equal(#accentCells.children, 2, "a spanning row is head and one control")
--- Task 6's gate tests go here, inside this function.
+-- Gates: only manual edits the ring Color; otherwise the cell is the reported
+-- color behind a lock that says where it came from.
+local function gatedRing(source, effective)
+  local color = ringParam("glass.ring.color", "color", "#ccccff", 520,
+    { subgroup = "Band", when = { param = "glass.ring.colorSource", ["in"] = { "manual" }, otherwise = "effective" } })
+  color.effective = effective
+  return ringModel({
+    ringParam("glass.ring.focus", "toggle", true, 500, { header = true }),
+    ringParam("glass.ring.colorSource", "select", source, 510, { subgroup = "Band" }),
+    color,
+  })
+end
+local function colorCell(tree) return byKey(tree, "glass.ring.color")[1] end
+
+local manualCell = colorCell(renderModel(gatedRing("manual")))
+equal(manualCell.children[2].props.glyph, "palette", "manual keeps the picker")
+
+local reportedCell = colorCell(renderModel(gatedRing("noctalia", { value = "#a1b2c3", from = "the Noctalia palette" })))
+equal(reportedCell.children[1].children[1].props.fill, "#a1b2c3", "the swatch shows the reported color")
+equal(reportedCell.children[2].props.glyph, "lock")
+equal(reportedCell.children[2].props.tooltip,
+  "From the Noctalia palette, as of the last apply. Select the manual source to edit.")
+equal(#buttonsByGlyph(reportedCell, "restore"), 0, "a read-only cell offers no reset")
+
+local unreportedCell = colorCell(renderModel(gatedRing("familiar")))
+equal(unreportedCell.children[1].children[1].props.fill, nil, "no report draws a hollow swatch")
+equal(unreportedCell.children[2].props.tooltip,
+  "No rendered color: the tint is bypassed, glass is off, or prism has not applied this source yet.")
+
+-- Switching the source flips the gate on the optimistic value, and the
+-- reconciled model decides the next render.
+local switchModel = gatedRing("noctalia", { value = "#a1b2c3", from = "the Noctalia palette" })
+local switchTree = renderModel(switchModel)
+byKey(switchTree, "glass.ring.colorSource")[1].children[2].props.onChange(2)
+equal(colorCell(rendered).children[2].props.glyph, "palette", "manual opens the picker at once")
+writeCallback({ exitCode = 1, stdout = "", stderr = "rejected" })
+switchModel.params[#switchModel.params - 1].value = "noctalia"
+described(host.describeOk())
+equal(colorCell(rendered).children[2].props.glyph, "lock", "a rejected switch closes it again")
+
+-- A hidden shared key leaves the expanded card but still counts in its reset.
+local function tintRack(source)
+  local m = layeredModel()
+  local function add(param) m.params[#m.params + 1] = param end
+  add({ key = "glass.tintSource", value = source, default = "noctalia", layer = "default", fallback = "noctalia",
+    held = {}, neutral = "manual", effectiveDrag = "release", values = { "noctalia", "manual" },
+    ui = { control = "select", group = "Focus", order = 242, label = "Tint source" } })
+  add({ key = "glass.tintAccentMix", value = 0.3, default = 0.1, layer = "scratch", fallback = 0.1,
+    held = { "scratch" }, neutral = 0, effectiveDrag = "release", range = { 0, 1 },
+    ui = { control = "slider", group = "Focus", order = 244, step = 0.01, label = "Palette accent mix",
+      when = { param = "glass.tintSource", ["in"] = { "noctalia" }, otherwise = "hidden" } } })
+  m.rack.devices[1].shared = { "glass.tintSource", "glass.tintAccentMix" }
+  return m
+end
+local function expandBackdrop(tree)
+  for _, button in ipairs(collect(tree, "button")) do
+    if button.props.tooltip == "Show details" then button.props.onClick(); return rendered end
+  end
+  error("no collapsed card")
+end
+local noctaliaRack = expandBackdrop(renderModel(tintRack("noctalia")))
+assert(byKey(noctaliaRack, "glass.tintAccentMix:row")[1], "the mix shows under noctalia")
+local manualRack = expandBackdrop(renderModel(tintRack("manual")))
+equal(byKey(manualRack, "glass.tintAccentMix:row")[1], nil, "the mix hides under manual")
+local revertsHidden = false
+for _, button in ipairs(collect(manualRack, "button")) do
+  if button.props.tooltip == "Revert section (1)" and button.props.opacity == 1.0 then revertsHidden = true end
+end
+assert(revertsHidden, "the hidden edited mix still counts in the section reset")
+
+-- A gate that hides a card's mix row has no head to draw.
+local headless = layeredModel()
+for _, param in ipairs(headless.params) do
+  if param.key == "glass.roughness" or param.key == "glass.inactive.roughness" then
+    param.ui.when = { param = "glass.focusSplit", ["in"] = { true }, otherwise = "hidden" }
+  end
+end
+local ok, message = pcall(Presentation.rack, headless)
+assert(not ok and tostring(message):find("mix row Blur cannot be hidden", 1, true), tostring(message))
+
+-- A malformed report is a broken contract, not a swatch.
+local badReport = gatedRing("noctalia", { value = 7, from = "x" })
+equal(panelError(badReport), "glass.ring.color has a malformed effective color")
 end)()
 
 -- A full render costs 10-14 ms of the host's 25 ms per-callback CPU budget in

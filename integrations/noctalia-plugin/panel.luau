@@ -45,6 +45,9 @@ local render
 local refresh
 local enqueue
 local launch
+local gates = {}
+
+local function gateOf(param) return gates[param.key] or "control" end
 
 local function run(argv, callback)
   return noctalia.runAsync(Shell.command(argv), callback, 10000)
@@ -92,6 +95,10 @@ local function visibleParamError(param, index)
   if type(param.ui.order) ~= "number" then return param.key .. " has no UI order" end
   if param.effectiveDrag ~= nil and param.effectiveDrag ~= "live" and param.effectiveDrag ~= "release" then
     return param.key .. " has invalid drag behavior"
+  end
+  if param.effective ~= nil and (type(param.effective) ~= "table"
+    or type(param.effective.value) ~= "string" or type(param.effective.from) ~= "string") then
+    return param.key .. " has a malformed effective color"
   end
   if param.ui.control == "slider" then
     if type(param.range) ~= "table" or type(param.range[1]) ~= "number" or type(param.range[2]) ~= "number"
@@ -169,6 +176,8 @@ local function validateModel(model)
       end
     end
   end
+  local gatesOk, gatesError = pcall(Presentation.gates, model.params)
+  if not gatesOk then return tostring(gatesError) end
   local titleOk, titleError = pcall(Presentation.titleParam, model.params)
   if not titleOk then return tostring(titleError) end
   local rackOk, rackError = pcall(Presentation.rack, model)
@@ -547,9 +556,32 @@ local function headCell(text, param, indent)
   return ui.row({width = headColumnWidth, gap = 6, align = "center", opacity = 1.0}, children)
 end
 
+-- A color its source supplies: the swatch shows what the sink installed, and a
+-- lock stands where the picker would. Only buttons carry a tooltip, so the
+-- lock is an enabled button whose click does nothing.
+local function readOnlyCell(param, grow)
+  local effective = param.effective
+  local tooltip = effective ~= nil
+    and ("From " .. effective.from .. ", as of the last apply. Select the manual source to edit.")
+    or "No rendered color: the tint is bypassed, glass is off, or prism has not applied this source yet."
+  return ui.row({key = param.key, gap = 6, align = "center", flexGrow = grow, opacity = 1.0}, {
+    ui.row({width = valueColumnWidth, justify = "end", align = "center"}, {
+      ui.box({
+        width = 28, height = 16, radius = 4,
+        fill = effective ~= nil and effective.value or nil,
+        border = "on_surface_variant/0.4",
+        borderWidth = 1,
+      }),
+    }),
+    ui.button({glyph = "lock", variant = "ghost", controlSize = "sm", tooltip = tooltip, onClick = function() end}),
+    ui.spacer({flexGrow = 1}),
+  })
+end
+
 -- A control cell: formatted value, native control, and reset. Shared by the
 -- single rows and both halves of a matrix row.
 local function controlCell(param, grow)
+  if gateOf(param) == "effective" then return readOnlyCell(param, grow) end
   local available = param.effectiveDrag ~= nil
   local formattedValue = param.ui.control == "slider" and Presentation.formatValue(param.value, param) or nil
   local children = {
@@ -690,8 +722,12 @@ local function deviceCard(card)
   if hint then children[#children + 1] = ui.row({gap = 8, align = "center", justify = "end"}, {hint}) end
   if expanded then
     children[#children + 1] = singleRow(card.bypass, detailIndent)
-    for _, row in ipairs(card.rows) do children[#children + 1] = matrixRow(row, detailIndent) end
-    for _, param in ipairs(card.shared) do children[#children + 1] = singleRow(param, detailIndent) end
+    for _, row in ipairs(card.rows) do
+      if gateOf(row.focused) ~= "hidden" then children[#children + 1] = matrixRow(row, detailIndent) end
+    end
+    for _, param in ipairs(card.shared) do
+      if gateOf(param) ~= "hidden" then children[#children + 1] = singleRow(param, detailIndent) end
+    end
   end
   return ui.column({
     key = card.device .. ":card", gap = 2, paddingV = 4, paddingH = cardPadding, radius = 8,
@@ -793,11 +829,13 @@ local function appendSection(children, section, color)
   local subgroup = nil
   for _, row in ipairs(section.rows) do
     local first = row.param or row.focused
-    if first.ui.subgroup ~= nil and first.ui.subgroup ~= subgroup then
-      subgroup = first.ui.subgroup
-      children[#children + 1] = subgroupHeading(section.name, subgroup)
+    if gateOf(first) ~= "hidden" then
+      if first.ui.subgroup ~= nil and first.ui.subgroup ~= subgroup then
+        subgroup = first.ui.subgroup
+        children[#children + 1] = subgroupHeading(section.name, subgroup)
+      end
+      children[#children + 1] = row.param and singleRow(row.param) or matrixRow(row)
     end
-    children[#children + 1] = row.param and singleRow(row.param) or matrixRow(row)
   end
 end
 
@@ -1071,6 +1109,7 @@ render = function()
     local header = Presentation.wallpaperHeader(state.model)
     if header then children[#children + 1] = wallpaperHeaderRow(header) end
     children[#children + 1] = editsRow(state.model)
+    gates = Presentation.gates(state.model.params)
     local rack = Presentation.rack(state.model)
     local sections = Presentation.sections(state.model.params, rack.group)
     local rackPlaced = false

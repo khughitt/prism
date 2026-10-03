@@ -532,9 +532,16 @@ test('palette tint controls are shared with explicit source and mix contracts', 
   assert.equal(mix.neutral, 0);
   assert.deepEqual(mix.range, [0, 1]);
   assert.deepEqual(mix.ui, { group: 'Focus', control: 'slider', step: 0.01,
-    label: 'Palette accent mix', order: 244, display: 'percent' });
+    label: 'Palette accent mix', order: 244, display: 'percent',
+    when: { param: 'glass.tintSource', in: ['noctalia'], otherwise: 'hidden' } });
   for (const prefix of ['glass.', 'glass.inactive.']) {
-    assert.match(defs.get(`${prefix}attenuationColor`).description, /stored manual/);
+    assert.deepEqual(defs.get(`${prefix}attenuationColor`).ui.when,
+      { param: 'glass.tintSource', in: ['manual'], otherwise: 'effective' });
+    assert.doesNotMatch(defs.get(`${prefix}attenuationColor`).description, /stored manual/);
+    assert.match(defs.get(`${prefix}attenuationColor`).description, /editable under the manual source/);
     assert.match(defs.get(`${prefix}attenuationDistance`).description, /20 px depth/);
   }
+  assert.deepEqual(defs.get('glass.ring.color').ui.when,
+    { param: 'glass.ring.colorSource', in: ['manual'], otherwise: 'effective' });
+  assert.match(defs.get('glass.ring.color').description, /editable under the manual source/);
 });

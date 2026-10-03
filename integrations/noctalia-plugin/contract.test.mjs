@@ -275,7 +275,11 @@ test('real describe output satisfies the panel model validator', () => {
       if (!cell) continue;
       assert.equal(cell.kind, expected, `${param.key} drew ${cell.kind}, not ${expected}`);
       if (param.ui.control === 'color') {
-        assert.equal(cell.glyph, 'palette', `${param.key} drew a button that is not the color picker`);
+        const when = param.ui.when;
+        const open = when === undefined
+          || when.in.includes(model.params.find((other) => other.key === when.param).value);
+        assert.equal(cell.glyph, open ? 'palette' : 'lock',
+          `${param.key} drew ${cell.glyph}, not the ${open ? 'picker' : 'read-only lock'}`);
       }
       drawn.add(param.ui.control);
     }
@@ -379,16 +383,17 @@ test('pair controls reconcile real CLI transitions, locality, guards, and replac
     });
 });
 
-test('tint source and mix draw while both manual pickers stay visible', () => {
+test('tint pickers are editable only under manual, and the mix shows only under noctalia', () => {
   for (const source of ['noctalia', 'manual']) {
     const model = describeStore({ base: { 'glass.tintSource': source } });
     const [report] = inspectModels([model]);
     assert.equal(report.error, undefined);
     assert.equal(report.cells['glass.tintSource'].kind, 'select');
-    assert.equal(report.cells['glass.tintAccentMix'].kind, 'slider');
+    if (source === 'noctalia') assert.equal(report.cells['glass.tintAccentMix'].kind, 'slider');
+    else assert.equal(report.cells['glass.tintAccentMix'], undefined, 'the mix hides under manual');
     for (const key of ['glass.attenuationColor', 'glass.inactive.attenuationColor']) {
-      assert.equal(report.cells[key].glyph, 'palette');
-      assert.equal(model.params.find((param) => param.key === key).value, '#dfe8ff');
+      assert.equal(report.cells[key].glyph, source === 'manual' ? 'palette' : 'lock', `${key} under ${source}`);
+      assert.equal(model.params.find((param) => param.key === key).value, '#dfe8ff', 'the stored tint is untouched');
     }
   }
 });
