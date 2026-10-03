@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { parse } from 'yaml';
-import { renderNiriFragment, DRY } from '../integrations/niri/render.js';
+import { renderNiriFragment, DRY, sourceColors } from '../integrations/niri/render.js';
 import { noctaliaColorsPath, readNoctaliaPalette } from '../integrations/niri/palette.js';
 import { loadDefs } from '../src/defs.js';
 import { defsDir, stateDir } from '../src/paths.js';
@@ -825,4 +825,26 @@ test('palette validation only inspects required fields and names the consumer', 
     assert.doesNotMatch(error.message, /manual tint/);
     return true;
   });
+});
+
+test('sourceColors names exactly the colors a source resolved', () => {
+  const palette = { noctaliaSurface: '#101010', noctaliaAccent: '#202020' };
+  const params = (overrides) => with_(overrides).params;
+  const tint = { value: '#121212', from: 'the Noctalia palette' };
+  assert.deepEqual(sourceColors(params({ 'glass.tintSource': 'manual', 'glass.ring.colorSource': 'manual' }), palette), {});
+  assert.deepEqual(sourceColors(params({ 'glass.enabled': false, 'glass.tintSource': 'noctalia',
+    'glass.ring.colorSource': 'noctalia' }), palette), {});
+  assert.deepEqual(sourceColors(params({ 'glass.tintSource': 'noctalia', 'glass.tintAccentMix': 0.1,
+    'glass.ring.colorSource': 'manual' }), palette),
+  { 'glass.attenuationColor': tint, 'glass.inactive.attenuationColor': tint });
+  assert.deepEqual(sourceColors(params({ 'glass.tintSource': 'noctalia', 'glass.bypass.tint': true,
+    'glass.ring.colorSource': 'manual' }), {}), {}, 'a bypassed tint needs and reports no palette');
+  assert.deepEqual(sourceColors(params({ 'glass.tintSource': 'manual', 'glass.ring.colorSource': 'noctalia' }), palette),
+    { 'glass.ring.color': { value: '#202020', from: 'the Noctalia palette' } });
+  const stored = params({ 'glass.tintSource': 'manual', 'glass.ring.colorSource': 'noctalia' })['glass.ring.color'];
+  assert.deepEqual(sourceColors(params({ 'glass.tintSource': 'manual', 'glass.ring.colorSource': 'noctalia' }),
+    { noctaliaAccent: null }),
+  { 'glass.ring.color': { value: stored, from: 'the stored Color; no Noctalia palette was found' } });
+  assert.deepEqual(sourceColors(params({ 'glass.tintSource': 'manual', 'glass.ring.colorSource': 'familiar' }), {}),
+    { 'glass.ring.color': { value: stored, from: "the resting color; each agent session's hue replaces it on its window" } });
 });

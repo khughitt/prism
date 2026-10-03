@@ -25,6 +25,10 @@ export const activePath = () => path.join(stateDir(), 'active.json');
 export const scratchPath = () => path.join(stateDir(), 'scratch.yaml');
 export const contextsDir = () => path.join(configDir(), 'contexts');
 export const generatedPath = (name) => path.join(stateDir(), 'generated', name);
+// One report per sink of the values it resolved from outside the store and
+// installed; describe joins them onto the params.
+export const effectiveDir = () => path.join(stateDir(), 'effective');
+export const effectivePath = (sink) => path.join(effectiveDir(), `${sink}.json`);
 export const defsDir = () => fileURLToPath(new URL('../defs/', import.meta.url));
 export const integrationsDir = () =>
   process.env.PRISM_INTEGRATIONS_DIR ?? fileURLToPath(new URL('../integrations/', import.meta.url));

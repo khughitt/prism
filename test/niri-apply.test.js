@@ -105,6 +105,7 @@ exit 0
     fs.writeFileSync(resolvedFile, JSON.stringify({ params: { ...PARAMS, ...overrides } }));
 
   const target = path.join(state, 'generated', 'prism.kdl');
+  const report = path.join(state, 'effective', 'niri.json');
   const invoke = (binary, args, extra) => {
     const env = {
       ...process.env,
@@ -128,7 +129,7 @@ exit 0
     : []);
   const inode = () => fs.statSync(target).ino;
 
-  return { dir, state, target, run, runCli, calls, inode, writeParams };
+  return { dir, state, target, report, run, runCli, calls, inode, writeParams };
 }
 
 test('an invalid composed config restores the previous target exactly', (t) => {
@@ -368,6 +369,8 @@ test('a palette that does not parse fails the apply before anything is written',
   assert.match(result.stderr, /colors\.json: not valid JSON/);
   assert.equal(fs.existsSync(target), false, 'the failed render must leave no target');
   assert.deepEqual(calls(), [], 'niri is never asked to validate');
+  assert.equal(fs.existsSync(path.join(path.dirname(path.dirname(target)), 'effective')), false,
+    'a render that throws leaves no report and no temp file');
 });
 
 test('a palette without a primary fails the apply', (t) => {
@@ -486,5 +489,94 @@ test('apply reads only the palette fields its enabled consumers need', (t) => {
       assert.equal(result.status, 0, `${label}: ${result.stderr}`);
       assert.deepEqual(calls(), ['validate', 'msg action load-config-file'], label);
     }
+  }
+});
+
+const readReport = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
+
+test('the report names the colors the installed config carries', (t) => {
+  const { dir, target, report, run, writeParams } = fixture(t);
+  writeParams({ 'glass.ring.colorSource': 'noctalia' });
+  const colors = path.join(dir, 'colors.json');
+  fs.writeFileSync(colors, JSON.stringify({ primary: '#a1b2c3' }));
+
+  const result = run({ PRISM_NOCTALIA_COLORS: colors });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(fs.readFileSync(target, 'utf8'), /ring-color "#a1b2c3"/);
+  assert.deepEqual(readReport(report), { 'glass.ring.color': { value: '#a1b2c3', from: 'the Noctalia palette' } });
+});
+
+test('manual sources and glass off report nothing for their keys', (t) => {
+  for (const overrides of [{}, { 'glass.enabled': false, 'glass.ring.colorSource': 'noctalia', 'glass.tintSource': 'noctalia' }]) {
+    const { report, run, writeParams } = fixture(t);
+    writeParams(overrides);
+    const result = run();
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(readReport(report), {}, JSON.stringify(overrides));
+  }
+});
+
+test('the familiar ring reports its stored resting Color', (t) => {
+  const { report, run, writeParams } = fixture(t);
+  writeParams({ 'glass.ring.colorSource': 'familiar' });
+  assert.equal(run().status, 0);
+  assert.deepEqual(readReport(report), { 'glass.ring.color':
+    { value: '#f2c14e', from: "the resting color; each agent session's hue replaces it on its window" } });
+});
+
+test('a bypassed noctalia tint applies over a missing or malformed palette and reports no tint', (t) => {
+  for (const contents of [null, '{ broken']) {
+    const { dir, report, run, writeParams } = fixture(t);
+    writeParams({ 'glass.tintSource': 'noctalia', 'glass.bypass.tint': true });
+    const palette = path.join(dir, 'palette.json');
+    if (contents !== null) fs.writeFileSync(palette, contents);
+    const result = run({ PRISM_NOCTALIA_COLORS: palette });
+    assert.equal(result.status, 0, `${contents}: ${result.stderr}`);
+    assert.deepEqual(readReport(report), {}, String(contents));
+  }
+});
+
+test('a rejected config keeps the previous report and leaves no temp file', (t) => {
+  const { state, report, run } = fixture(t);
+  fs.mkdirSync(path.dirname(report), { recursive: true });
+  fs.writeFileSync(report, '{"glass.ring.color":{"value":"#000000","from":"the Noctalia palette"}}\n');
+  const before = fs.readFileSync(report, 'utf8');
+
+  const result = run({ NIRI_FAKE_VALIDATE_FAILS: '1' });
+
+  assert.notEqual(result.status, 0);
+  assert.equal(fs.readFileSync(report, 'utf8'), before);
+  assert.deepEqual(fs.readdirSync(path.join(state, 'effective')), ['niri.json']);
+});
+
+test('a failed reload request keeps the new config and the new report together', (t) => {
+  const { report, run, calls, writeParams } = fixture(t);
+  writeParams({ 'glass.ring.colorSource': 'familiar' });
+  const result = run({ NIRI_FAKE_RELOAD_FAILS: '1' });
+  assert.notEqual(result.status, 0);
+  assert.equal(readReport(report)['glass.ring.color'].value, '#f2c14e');
+  assert.deepEqual(calls(), ['validate', 'msg action load-config-file']);
+});
+
+// A directory where the report goes makes the publishing rename fail after a
+// passing validate, with no hook in the sink.
+test('a report that cannot be published rolls the config back and skips the reload', (t) => {
+  for (const previous of ['// previous accepted generation\n', null]) {
+    const { state, target, report, run, calls } = fixture(t);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    if (previous !== null) fs.writeFileSync(target, previous);
+    fs.mkdirSync(report, { recursive: true });
+    fs.writeFileSync(path.join(report, 'keep'), 'old report stand-in');
+
+    const result = run();
+
+    assert.notEqual(result.status, 0, 'an unpublished report fails the sink');
+    if (previous === null) assert.equal(fs.existsSync(target), false, 'a first apply leaves no config');
+    else assert.equal(fs.readFileSync(target, 'utf8'), previous);
+    assert.deepEqual(fs.readdirSync(path.join(report)), ['keep'], 'the old report is untouched');
+    assert.deepEqual(fs.readdirSync(path.join(state, 'effective')), ['niri.json'], 'no temp file is left');
+    assert.deepEqual(fs.readdirSync(path.join(state, 'generated')).filter((name) => name.endsWith('.tmp')), []);
+    assert.deepEqual(calls(), ['validate'], 'no reload is requested');
   }
 });

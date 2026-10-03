@@ -21,15 +21,13 @@ function appMatcher(apps) {
 // The one filament is shared by the focus light and signal accents, so the
 // ring's color has one driver at a time. familiar tints it live through its
 // per-window signal (accent stays on only then); noctalia hands over the
-// colorscheme accent the apply read; manual pins the palette's own color.
+// colorscheme accent the apply read (resolved by sourceColors); manual pins the palette's own color.
 // The band's own geometry is prism's now: ring-gap places it under the face
 // and ring-width sizes it. niri rejects a width of zero, so the def's lower
 // bound is strictly positive and no slider position can reach the error.
 function responseBlock(params, sources) {
   const source = params['glass.ring.colorSource'];
-  const color = source === 'noctalia' && typeof sources.noctaliaAccent === 'string'
-    ? sources.noctaliaAccent
-    : params['glass.ring.color'];
+  const color = sourceColors(params, sources)['glass.ring.color']?.value ?? params['glass.ring.color'];
   return [
     '    response "default" {',
     `        accent ${JSON.stringify(source === 'familiar' ? 'ring' : 'none')}`,
@@ -122,15 +120,39 @@ const paletteTint = (surface, accent, mix) => mix === 0
     + parseInt(accent.slice(offset, offset + 2), 16) * mix,
   ).toString(16).padStart(2, '0')).join('');
 
+const NOCTALIA = 'the Noctalia palette';
+
+// The colors a source resolves, keyed as the store names them. The render
+// emits these and the apply reports them, so the KDL and the report cannot
+// disagree. A key is present only when a source, not the store, decided it.
+export function sourceColors(params, sources) {
+  const colors = {};
+  if (params['glass.enabled'] !== true) return colors;
+  if (params['glass.tintSource'] === 'noctalia' && params['glass.bypass.tint'] !== true) {
+    if (!sources.noctaliaSurface) throw new Error('noctalia tint rendered without a validated surface');
+    const tint = { value: paletteTint(sources.noctaliaSurface, sources.noctaliaAccent,
+      params['glass.tintAccentMix']), from: NOCTALIA };
+    colors['glass.attenuationColor'] = tint;
+    colors['glass.inactive.attenuationColor'] = tint;
+  }
+  const ring = params['glass.ring.colorSource'];
+  if (ring === 'noctalia') {
+    colors['glass.ring.color'] = typeof sources.noctaliaAccent === 'string'
+      ? { value: sources.noctaliaAccent, from: NOCTALIA }
+      : { value: params['glass.ring.color'], from: 'the stored Color; no Noctalia palette was found' };
+  } else if (ring === 'familiar') {
+    colors['glass.ring.color'] = { value: params['glass.ring.color'],
+      from: "the resting color; each agent session's hue replaces it on its window" };
+  }
+  return colors;
+}
+
 // A bypass is shared by both focus states, so the override lands in whichever
 // material this is building. The resolved values on the bus are untouched.
 const glassFor = (params, prefix, sources) => {
   const glass = Object.fromEntries(OPTICS.map((optic) => [optic, params[`${prefix}${optic}`]]));
-  if (params['glass.tintSource'] === 'noctalia' && params['glass.bypass.tint'] !== true) {
-    if (!sources.noctaliaSurface) throw new Error('noctalia tint rendered without a validated surface');
-    glass.attenuationColor = paletteTint(sources.noctaliaSurface,
-      sources.noctaliaAccent, params['glass.tintAccentMix']);
-  }
+  const tint = sourceColors(params, sources)[`${prefix}attenuationColor`];
+  if (tint) glass.attenuationColor = tint.value;
   for (const [key, dry] of Object.entries(DRY)) {
     if (params[key] === true) Object.assign(glass, dry);
   }

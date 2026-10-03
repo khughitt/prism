@@ -2,9 +2,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { generatedPath } from '../../src/paths.js';
+import { effectivePath, generatedPath } from '../../src/paths.js';
 import { sinkMain } from '../../src/sink.js';
-import { renderNiriFragment } from './render.js';
+import { renderNiriFragment, sourceColors } from './render.js';
 import { noctaliaColorsPath, readNoctaliaPalette } from './palette.js';
 
 sinkMain(() => {
@@ -40,8 +40,28 @@ sinkMain(() => {
     sources.noctaliaSurface = palette?.surface;
   }
 
+  const kdl = renderNiriFragment(resolved, sources);
+  const report = sourceColors(params, sources);
+
+  // The report travels with the KDL: written beside it, published only once
+  // niri accepts the KDL, and abandoned with it. niri runs this KDL after the
+  // reload, or loads it at its next start, so the pair always agrees.
+  const reportTarget = effectivePath('niri');
+  fs.mkdirSync(path.dirname(reportTarget), { recursive: true });
+  const reportTmp = `${reportTarget}.${process.pid}.tmp`;
   const tmp = `${target}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, renderNiriFragment(resolved, sources));
+  const rollback = () => {
+    if (previous === null) {
+      fs.rmSync(target, { force: true });
+    } else {
+      fs.writeFileSync(tmp, previous);
+      fs.renameSync(tmp, target);
+    }
+    fs.rmSync(reportTmp, { force: true });
+  };
+
+  fs.writeFileSync(reportTmp, `${JSON.stringify(report, null, 2)}\n`);
+  fs.writeFileSync(tmp, kdl);
   fs.renameSync(tmp, target);
 
   // The candidate has to be in place for niri to compose it with the surrounding
@@ -49,12 +69,13 @@ sinkMain(() => {
   try {
     execFileSync('niri', ['validate'], { stdio: 'pipe' });
   } catch (error) {
-    if (previous === null) {
-      fs.rmSync(target);
-    } else {
-      fs.writeFileSync(tmp, previous);
-      fs.renameSync(tmp, target);
-    }
+    rollback();
+    throw error;
+  }
+  try {
+    fs.renameSync(reportTmp, reportTarget);
+  } catch (error) {
+    rollback();
     throw error;
   }
 
