@@ -1,12 +1,15 @@
 ---
 id: prism-8d5d8e
 title: "Rethink the Ring layout: scope headings instead of a half-empty focus axis"
-status: todo
+status: doing
 priority: 2
 size: s
 complexity: mid
+process: direct
+owner: main
 created: 2026-10-03T11:48:36Z
-updated: 2026-10-03T11:48:37Z
+updated: 2026-10-03T11:57:29Z
+started: 2026-10-03T11:57:28Z
 depends: []
 parent: prism-980a29
 tags: [ui, material]
@@ -17,3 +20,5 @@ Owner acceptance of prism-4f8bab (2026-10-03) passed but found the layout confus
 ## Notes
 
 - 2026-10-03T11:48:36Z (main): concerns: prism-4f8bab change — owner found the focus-axis layout awkward at acceptance; wants clearer scope per subgroup
+- 2026-10-03T11:57:28Z (main): started
+  provenance: {"harness_session":"claude-code:8eb178f6-5944-44f5-8688-c12bda8c37df","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
