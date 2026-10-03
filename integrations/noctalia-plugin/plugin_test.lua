@@ -1742,32 +1742,36 @@ local function gatedRing(source, effective)
   })
 end
 local function colorCell(tree) return byKey(tree, "glass.ring.color")[1] end
+local function sourceCell(tree) return byKey(tree, "glass.ring.colorSource")[1] end
+local reportedTooltip = "From the Noctalia palette, as of the last apply. Select the manual source to edit."
 
-local manualCell = colorCell(renderModel(gatedRing("manual")))
-equal(manualCell.children[2].props.glyph, "palette", "manual keeps the picker")
+local manualTree = renderModel(gatedRing("manual"))
+assert(colorCell(manualTree), "manual keeps the picker row")
+equal(#buttonsByGlyph(sourceCell(manualTree), "lock"), 0, "manual shows no lock beside the source")
 
-local reportedCell = colorCell(renderModel(gatedRing("noctalia", { value = "#a1b2c3", from = "the Noctalia palette" })))
-equal(reportedCell.children[1].children[1].props.fill, "#a1b2c3", "the swatch shows the reported color")
-equal(reportedCell.children[2].props.glyph, "lock")
-equal(reportedCell.children[2].props.tooltip,
-  "From the Noctalia palette, as of the last apply. Select the manual source to edit.")
-equal(#buttonsByGlyph(reportedCell, "restore"), 0, "a read-only cell offers no reset")
+local reportedTree = renderModel(gatedRing("noctalia", { value = "#a1b2c3", from = "the Noctalia palette" }))
+equal(colorCell(reportedTree), nil, "a read-only color has no row of its own")
+local reported = sourceCell(reportedTree)
+equal(reported.children[1].children[1].props.fill, "#a1b2c3", "the swatch beside the source shows the reported color")
+equal(buttonsByGlyph(reported, "lock")[1].props.tooltip, reportedTooltip)
+equal(#buttonsByGlyph(reported, "restore"), 1, "the source keeps its own reset only")
 
-local unreportedCell = colorCell(renderModel(gatedRing("familiar")))
-equal(unreportedCell.children[1].children[1].props.fill, nil, "no report draws a hollow swatch")
-equal(unreportedCell.children[2].props.tooltip,
+local unreported = sourceCell(renderModel(gatedRing("familiar")))
+equal(unreported.children[1].children[1].props.fill, nil, "no report draws a hollow swatch")
+equal(buttonsByGlyph(unreported, "lock")[1].props.tooltip,
   "No rendered color: the tint is bypassed, glass is off, or prism has not applied this source yet.")
 
 -- Switching the source flips the gate on the optimistic value, and the
 -- reconciled model decides the next render.
 local switchModel = gatedRing("noctalia", { value = "#a1b2c3", from = "the Noctalia palette" })
 local switchTree = renderModel(switchModel)
-byKey(switchTree, "glass.ring.colorSource")[1].children[2].props.onChange(2)
-equal(colorCell(rendered).children[2].props.glyph, "palette", "manual opens the picker at once")
+sourceCell(switchTree).children[2].props.onChange(2)
+assert(colorCell(rendered), "manual opens the picker at once")
 writeCallback({ exitCode = 1, stdout = "", stderr = "rejected" })
 switchModel.params[#switchModel.params - 1].value = "noctalia"
 described(host.describeOk())
-equal(colorCell(rendered).children[2].props.glyph, "lock", "a rejected switch closes it again")
+equal(colorCell(rendered), nil, "a rejected switch closes it again")
+equal(#buttonsByGlyph(sourceCell(rendered), "lock"), 1)
 
 -- A hidden shared key leaves the expanded card but still counts in its reset.
 local function tintRack(source)

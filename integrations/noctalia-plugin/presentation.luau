@@ -225,6 +225,19 @@ function M.gates(params)
   return gates
 end
 
+-- A read-only color has no row of its own: its swatch and lock sit beside the
+-- select that gates it. Maps a gating select's key to the first color it
+-- gates that is currently read-only; keys sharing a select report one color.
+function M.attachedSwatches(params, gates)
+  local attached = {}
+  for _, param in ipairs(params) do
+    if gates[param.key] == "effective" and attached[param.ui.when.param] == nil then
+      attached[param.ui.when.param] = param
+    end
+  end
+  return attached
+end
+
 function M.sectionParams(section)
   local list = {}
   if section.toggle then list[#list + 1] = section.toggle end

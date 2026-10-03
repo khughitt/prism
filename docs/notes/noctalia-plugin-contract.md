@@ -158,10 +158,13 @@ The presentation module defines the panel's stable layout contract:
   non-header row of a group names a subgroup or none does, and each subgroup is
   contiguous in `ui.order`.
 - `ui.when: {param, in, otherwise}` gates a control: it is live while `param`'s
-  value is in `in`. Otherwise `effective` draws a color-only read-only swatch of
-  the reported color behind a lock, with no per-parameter reset, and `hidden`
-  does not draw it. Gating is presentation only: gated parameters still count in
-  edits, neutral counts and every reset. A card's mix row cannot be hidden.
+  value is in `in`. Otherwise `hidden` does not draw it, and `effective` (color
+  only) draws no row of its own: the reported color's swatch and a lock stand
+  beside the `param` select that chose the source, with no per-parameter reset.
+  Colors gated on one select share its swatch (the first reported). A card's mix
+  row cannot be hidden, so a gated mix color keeps its own swatch and lock in
+  the card head. Gating is presentation only: gated parameters still count in
+  edits, neutral counts and every reset.
 - `describe --json` parameters may carry `effective: {value, from}`, only for
   keys a sink reports; the panel rejects a malformed one.
 - Each sink publishes its report at `<stateDir>/effective/<sink>.json`, shaped

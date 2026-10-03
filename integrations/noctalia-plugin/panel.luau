@@ -46,8 +46,11 @@ local refresh
 local enqueue
 local launch
 local gates = {}
+local attached = {}
 
 local function gateOf(param) return gates[param.key] or "control" end
+-- A read-only color is drawn beside its select, never as a row of its own.
+local function rowHidden(param) return gateOf(param) ~= "control" end
 
 local function run(argv, callback)
   return noctalia.runAsync(Shell.command(argv), callback, 10000)
@@ -557,23 +560,31 @@ local function headCell(text, param, indent)
 end
 
 -- A color its source supplies: the swatch shows what the sink installed, and a
--- lock stands where the picker would. Only buttons carry a tooltip, so the
--- lock is an enabled button whose click does nothing.
-local function readOnlyCell(param, grow)
-  local effective = param.effective
+-- lock stands beside the select that chose the source. Only buttons carry a
+-- tooltip, so the lock is an enabled button whose click does nothing.
+local function sourceSwatch(color)
+  return ui.box({
+    width = 28, height = 16, radius = 4,
+    fill = color.effective ~= nil and color.effective.value or nil,
+    border = "on_surface_variant/0.4",
+    borderWidth = 1,
+  })
+end
+
+local function sourceLock(color)
+  local effective = color.effective
   local tooltip = effective ~= nil
     and ("From " .. effective.from .. ", as of the last apply. Select the manual source to edit.")
     or "No rendered color: the tint is bypassed, glass is off, or prism has not applied this source yet."
+  return ui.button({glyph = "lock", variant = "ghost", controlSize = "sm", tooltip = tooltip, onClick = function() end})
+end
+
+-- The card head's mix row cannot be hidden, so a read-only mix color keeps its
+-- own swatch and lock in place of the picker.
+local function readOnlyCell(param, grow)
   return ui.row({key = param.key, gap = 6, align = "center", flexGrow = grow, opacity = 1.0}, {
-    ui.row({width = valueColumnWidth, justify = "end", align = "center"}, {
-      ui.box({
-        width = 28, height = 16, radius = 4,
-        fill = effective ~= nil and effective.value or nil,
-        border = "on_surface_variant/0.4",
-        borderWidth = 1,
-      }),
-    }),
-    ui.button({glyph = "lock", variant = "ghost", controlSize = "sm", tooltip = tooltip, onClick = function() end}),
+    ui.row({width = valueColumnWidth, justify = "end", align = "center"}, {sourceSwatch(param)}),
+    sourceLock(param),
     ui.spacer({flexGrow = 1}),
   })
 end
@@ -582,6 +593,7 @@ end
 -- single rows and both halves of a matrix row.
 local function controlCell(param, grow)
   if gateOf(param) == "effective" then return readOnlyCell(param, grow) end
+  local color = attached[param.key]
   local available = param.effectiveDrag ~= nil
   local formattedValue = param.ui.control == "slider" and Presentation.formatValue(param.value, param) or nil
   local children = {
@@ -590,7 +602,7 @@ local function controlCell(param, grow)
     -- A color cell has no text there: the swatch is the value, and its border
     -- keeps a pale tint visible on a pale surface.
     ui.row({width = valueColumnWidth, justify = "end", align = "center"}, {
-      param.ui.control == "color" and ui.box({
+      color ~= nil and sourceSwatch(color) or param.ui.control == "color" and ui.box({
         width = 28, height = 16, radius = 4,
         fill = tostring(param.value),
         border = "on_surface_variant/0.4",
@@ -599,6 +611,7 @@ local function controlCell(param, grow)
     }),
     nativeControl(param, available),
   }
+  if color ~= nil then children[#children + 1] = sourceLock(color) end
   -- Sliders absorb the cell's slack themselves; the other controls keep their
   -- natural width, so the slack goes here to hold the reset at the right edge.
   if param.ui.control ~= "slider" then children[#children + 1] = ui.spacer({flexGrow = 1}) end
@@ -708,10 +721,10 @@ local function deviceCard(card)
   if expanded then
     children[#children + 1] = singleRow(card.bypass, detailIndent)
     for _, row in ipairs(card.rows) do
-      if gateOf(row.focused) ~= "hidden" then children[#children + 1] = matrixRow(row, detailIndent) end
+      if not rowHidden(row.focused) then children[#children + 1] = matrixRow(row, detailIndent) end
     end
     for _, param in ipairs(card.shared) do
-      if gateOf(param) ~= "hidden" then children[#children + 1] = singleRow(param, detailIndent) end
+      if not rowHidden(param) then children[#children + 1] = singleRow(param, detailIndent) end
     end
   end
   return ui.column({
@@ -814,7 +827,7 @@ local function appendSection(children, section, color)
   local subgroup = nil
   for _, row in ipairs(section.rows) do
     local first = row.param or row.focused
-    if gateOf(first) ~= "hidden" then
+    if not rowHidden(first) then
       if first.ui.subgroup ~= nil and first.ui.subgroup ~= subgroup then
         subgroup = first.ui.subgroup
         children[#children + 1] = subgroupHeading(section.name, subgroup)
@@ -1095,6 +1108,7 @@ render = function()
     if header then children[#children + 1] = wallpaperHeaderRow(header) end
     children[#children + 1] = editsRow(state.model)
     gates = Presentation.gates(state.model.params)
+    attached = Presentation.attachedSwatches(state.model.params, gates)
     local rack = Presentation.rack(state.model)
     local sections = Presentation.sections(state.model.params, rack.group)
     local rackPlaced = false
