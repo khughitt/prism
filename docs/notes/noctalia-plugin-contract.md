@@ -153,6 +153,24 @@ The presentation module defines the panel's stable layout contract:
   contract error and shows as the banner.
 - A toggle flagged `ui.header` is its section's header control (the Focus
   section's focus-state toggle). A group may carry at most one.
+- Parameters flagged `ui.subgroup` lay a group out in subgroups: each subgroup
+  draws a heading row (key `<group>:<subgroup>:subgroup`). Every visible
+  non-header row of a group names a subgroup or none does, and each subgroup is
+  contiguous in `ui.order`.
+- A parameter flagged `ui.column: focused` is a single row drawn in the Focused
+  column, with a dash under Unfocused. A section holding such rows draws the
+  column header.
+- `ui.when: {param, in, otherwise}` gates a control: it is live while `param`'s
+  value is in `in`. Otherwise `effective` draws a color-only read-only swatch of
+  the reported color behind a lock, with no per-parameter reset, and `hidden`
+  does not draw it. Gating is presentation only: gated parameters still count in
+  edits, neutral counts and every reset. A card's mix row cannot be hidden.
+- `describe --json` parameters may carry `effective: {value, from}`, only for
+  keys a sink reports; the panel rejects a malformed one.
+- Each sink publishes its report at `<stateDir>/effective/<sink>.json`, shaped
+  `{"<key>": {"value": "#rrggbb", "from": "<phrase>"}}`. The niri sink writes it
+  together with its config (renamed after `niri validate`, before the reload).
+  `describe` fails naming the file when a report is malformed.
 - Sliders flagged `ui.state` (`focused` or `unfocused`) and `ui.row` pair into
   a matrix row: one label, the unfocused control on the left, the focused on
   the right, under `Unfocused` / `Focused` column labels. A row with a missing

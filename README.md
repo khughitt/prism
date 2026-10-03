@@ -251,9 +251,12 @@ still rests it on the manual ring color; a malformed file fails.
 
 The Tint device's details provide **Tint source** (`noctalia`/`manual`) and
 **Palette accent mix** (0–100%, default 10%). Both focus states share the
-Noctalia-derived color. Their pickers remain visible, showing the stored manual
-colors rather than the effective palette tint. Choosing manual makes those
-colors take effect on the next successful apply:
+Noctalia-derived color. The tint pickers, like the ring's Color picker, appear
+only under the manual source. Under any other source the cell shows the color
+from the last apply as a read-only swatch behind a lock; its tooltip reads
+"From <source>, as of the last apply. Select the manual source to edit." Palette
+accent mix is shown only under the Noctalia source. Choosing manual makes the
+stored colors take effect on the next successful apply:
 
 ```sh
 prism set glass.tintSource manual
