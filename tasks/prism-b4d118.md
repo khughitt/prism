@@ -1,15 +1,16 @@
 ---
 id: prism-b4d118
 title: Show color pickers only under the manual source; swatches of the effective color otherwise
-status: doing
+status: done
 priority: 2
 size: m
 complexity: mid
 process: planned
 owner: prism-4f8bab
 created: 2026-09-22T15:37:30Z
-updated: 2026-10-03T11:19:28Z
+updated: 2026-10-03T11:48:06Z
 started: 2026-10-03T10:57:35Z
+completed: 2026-10-03T11:48:05Z
 depends: [prism-4f8bab]
 parent: prism-980a29
 tags: [defs, noctalia, ui, material]
@@ -41,3 +42,11 @@ Scope: the def/UI mechanism, the Ring group's rendering in the Noctalia panel, a
 - 2026-10-03T11:08:15Z (prism-4f8bab): gates shipped: tint pickers and ring Color manual-only with sink-reported read-only swatches; Palette accent mix hidden outside noctalia; owner acceptance next (Task 7).
 - 2026-10-03T11:16:53Z (prism-4f8bab): review: impl round 1 — verdict: revise; findings: Important 2, Minor 3; reviewer: claude-code/claude-opus-5-5
 - 2026-10-03T11:19:28Z (prism-4f8bab): review: impl round 2 — verdict: accept; findings: none; reviewer: claude-code/claude-sonnet-5-5
+- 2026-10-03T11:20:40Z (prism-4f8bab): parked (waiting on user, review): owner opens the prism panel for acceptance (Ring subgroups, tint locks/swatches under Noctalia, pickers under manual, ring Color picker only under manual); on a pass, I close prism-600128 and prism-b4d118, set the spec status line, commit on main, and remove .worktrees/prism-4f8bab
+  provenance: {"harness_session":"claude-code:8eb178f6-5944-44f5-8688-c12bda8c37df","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-03T11:48:05Z (prism-4f8bab): resumed
+  provenance: {"harness_session":"claude-code:8eb178f6-5944-44f5-8688-c12bda8c37df","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-03T11:48:05Z (prism-4f8bab): done
+  provenance: {"harness_session":"claude-code:8eb178f6-5944-44f5-8688-c12bda8c37df","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-03T11:48:05Z (prism-4f8bab): Color pickers only under manual; other sources show the sink-reported color read-only; Palette accent mix hidden outside noctalia
+  provenance: {"harness_session":"claude-code:8eb178f6-5944-44f5-8688-c12bda8c37df","harness_session_source":"CLAUDE_CODE_SESSION_ID"}

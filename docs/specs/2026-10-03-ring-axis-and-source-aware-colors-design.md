@@ -1,7 +1,7 @@
 # Ring on the focus axis, and color controls that follow their source
 
 **Date:** 2026-10-03
-**Status:** draft for review, round 3 (round 1: familiar read-only, bypass omission, report labelled as last apply; round 2: report-publication failure rolls back the KDL)
+**Status:** implemented; owner acceptance passed 2026-10-03
 **Tasks:** `prism-4f8bab` (Ring layout), `prism-b4d118` (source-aware color controls), under goal `prism-980a29`
 **Leaves room for:** `prism-1bb833` (familiar tint source), which adds one enum value to what this spec defines and reuses its read-only swatch.
 
