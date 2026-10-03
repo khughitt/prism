@@ -25,7 +25,7 @@ test('the ring beam speed replaces the ring sweep', () => {
   const beamSpeed = defs.get('glass.ring.beamSpeed');
   assert.deepEqual([beamSpeed.type, beamSpeed.range, beamSpeed.default, beamSpeed.neutral], ['int', [0, 5000], 300, 300]);
   assert.equal(beamSpeed.replaces, 'glass.ring.sweepMs');
-  assert.deepEqual([beamSpeed.ui.group, beamSpeed.ui.order, beamSpeed.ui.unit], ['Ring', 530, 'px/s']);
+  assert.deepEqual([beamSpeed.ui.group, beamSpeed.ui.order, beamSpeed.ui.unit], ['Ring', 550, 'px/s']);
   assert.equal(defs.has('glass.ring.sweepMs'), false);
 });
 

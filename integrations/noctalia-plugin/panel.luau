@@ -583,7 +583,29 @@ local function paramRow(key, cells, hint)
   return ui.column({key = key, gap = 2, paddingV = 2}, children)
 end
 
+-- The cell a focused-only row leaves under Unfocused: a dash, so the row reads
+-- as a matrix row whose unfocused half does not exist.
+local function absentCell()
+  return ui.row({flexGrow = 1, justify = "center", align = "center"}, {
+    ui.label({text = "—", fontSize = 12, color = "on_surface_variant"}),
+  })
+end
+
+local function subgroupHeading(group, name)
+  return ui.row({key = group .. ":" .. name .. ":subgroup", paddingV = 2}, {
+    ui.label({text = name, fontSize = 12, fontWeight = "bold", color = "on_surface_variant"}),
+  })
+end
+
 local function singleRow(param, indent)
+  if param.ui.column == "focused" then
+    return paramRow(param.key .. ":row", {
+      headCell(param.ui.label or param.key, param, indent),
+      absentCell(),
+      ui.separator({orientation = "vertical", spacing = 4}),
+      controlCell(param, 1),
+    }, rowHint({param}))
+  end
   return paramRow(param.key .. ":row", {
     headCell(param.ui.label or param.key, param, indent),
     controlCell(param, 1),
@@ -765,10 +787,16 @@ local function appendSection(children, section, color)
   children[#children + 1] = sectionHeader(section.name, section.toggle, sectionParams, color)
   local hasMatrix = false
   for _, row in ipairs(section.rows) do
-    if row.param == nil then hasMatrix = true end
+    if row.param == nil or row.param.ui.column ~= nil then hasMatrix = true end
   end
   if hasMatrix then children[#children + 1] = matrixHeader(section.name) end
+  local subgroup = nil
   for _, row in ipairs(section.rows) do
+    local first = row.param or row.focused
+    if first.ui.subgroup ~= nil and first.ui.subgroup ~= subgroup then
+      subgroup = first.ui.subgroup
+      children[#children + 1] = subgroupHeading(section.name, subgroup)
+    end
     children[#children + 1] = row.param and singleRow(row.param) or matrixRow(row)
   end
 end

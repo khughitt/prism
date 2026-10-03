@@ -1,15 +1,16 @@
 ---
 id: prism-4f8bab
 title: Organize the Ring group on the Unfocused/Focused axis
-status: doing
+status: done
 priority: 2
 size: m
 complexity: mid
 process: planned
 owner: prism-4f8bab
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-03T10:51:08Z
+updated: 2026-10-03T10:56:41Z
 started: 2026-10-03T09:34:03Z
+completed: 2026-10-03T10:56:40Z
 depends: []
 parent: prism-980a29
 tags: [ui, material]
@@ -65,4 +66,9 @@ Start: defs/glass.yaml Ring section; integrations/noctalia-plugin/presentation.l
 - 2026-10-03T10:46:35Z (prism-4f8bab): parked (waiting on user, decision): plan approved; owner picks the execution method (recommended native), then I start Task 1 (prism-d114c1) in .worktrees/prism-4f8bab
   provenance: {"harness_session":"claude-code:41dbe03e-a467-49eb-9870-825e76fa1468","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
 - 2026-10-03T10:51:08Z (prism-4f8bab): resumed
+  provenance: {"harness_session":"claude-code:8eb178f6-5944-44f5-8688-c12bda8c37df","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-03T10:56:40Z (prism-4f8bab): Ring laid out in Band / Focus light / Signal accent subgroups; focus light in the Focused column; owner acceptance with Part 2 (Task 7).
+- 2026-10-03T10:56:40Z (prism-4f8bab): done
+  provenance: {"harness_session":"claude-code:8eb178f6-5944-44f5-8688-c12bda8c37df","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-03T10:56:40Z (prism-4f8bab): Ring group on the Unfocused/Focused axis: ui.subgroup and ui.column, Band, Focus light (focused-only) and Signal accent
   provenance: {"harness_session":"claude-code:8eb178f6-5944-44f5-8688-c12bda8c37df","harness_session_source":"CLAUDE_CODE_SESSION_ID"}

@@ -1681,6 +1681,60 @@ equal(commands[#commands], Shell.command({ "prism", "context", "clear", "wallpap
   "--expect-look", "default", "--expect-wallpaper", "id:f8eb0556" }))
 end)()
 
+-- Ring layout and gate tests share one function scope: the chunk is at Lua's
+-- 200-local limit, and these helpers are used by both. The leading semicolon
+-- keeps Lua from reading this call as an argument to the previous statement's
+-- result, the same guard every function block in this file carries.
+;(function()
+-- The Ring: a heading per subgroup, the column header although no row is a
+-- matrix row, and the focus light in the Focused column over a dash.
+local function ringParam(key, control, value, order, extra)
+  local ui = { control = control, group = "Ring", order = order, label = key }
+  for name, field in pairs(extra or {}) do ui[name] = field end
+  local param = { key = key, value = value, default = value, layer = "default", fallback = value, held = {},
+    neutral = value, effectiveDrag = "release", ui = ui }
+  if control == "slider" then param.range, ui.step = { 0, 3000 }, 1 end
+  if control == "select" then param.values = { "familiar", "noctalia", "manual" } end
+  return param
+end
+local function ringModel(params)
+  local m = layeredModel()
+  for _, param in ipairs(params) do m.params[#m.params + 1] = param end
+  return m
+end
+local ringParams = {
+  ringParam("glass.ring.focus", "toggle", true, 500, { header = true }),
+  ringParam("glass.ring.colorSource", "select", "manual", 510, { subgroup = "Band" }),
+  ringParam("glass.ring.color", "color", "#ccccff", 520, { subgroup = "Band" }),
+  ringParam("glass.ring.beamSpeed", "slider", 300, 550, { subgroup = "Focus light", column = "focused" }),
+  ringParam("glass.ring.accent", "slider", 1, 570, { subgroup = "Signal accent" }),
+}
+local ringTree = renderModel(ringModel(ringParams))
+local order = {}
+for index, node in ipairs(ringTree.children) do
+  if node.props.key then order[node.props.key] = index end
+end
+assert(order["Ring:columns"], "the Ring draws the column header for its focused-only rows")
+for _, key in ipairs({ "Ring:Band:subgroup", "glass.ring.colorSource:row", "Ring:Focus light:subgroup",
+  "glass.ring.beamSpeed:row", "Ring:Signal accent:subgroup", "glass.ring.accent:row" }) do
+  assert(order[key], "missing " .. key)
+end
+assert(order["Ring:columns"] < order["Ring:Band:subgroup"]
+  and order["Ring:Band:subgroup"] < order["glass.ring.colorSource:row"]
+  and order["glass.ring.color:row"] < order["Ring:Focus light:subgroup"]
+  and order["Ring:Focus light:subgroup"] < order["glass.ring.beamSpeed:row"]
+  and order["glass.ring.beamSpeed:row"] < order["Ring:Signal accent:subgroup"]
+  and order["Ring:Signal accent:subgroup"] < order["glass.ring.accent:row"], "headings lead their rows")
+equal(collect(ringTree.children[order["Ring:Band:subgroup"]], "label")[1].props.text, "Band")
+local beamCells = byKey(ringTree, "glass.ring.beamSpeed:row")[1].children[1]
+equal(#beamCells.children, 4, "a focused-only row has head, dash, separator and control")
+equal(collect(beamCells.children[2], "label")[1].props.text, "—", "the unfocused cell is a dash")
+equal(beamCells.children[4].props.key, "glass.ring.beamSpeed", "the control sits in the focused column")
+local accentCells = byKey(ringTree, "glass.ring.accent:row")[1].children[1]
+equal(#accentCells.children, 2, "a spanning row is head and one control")
+-- Task 6's gate tests go here, inside this function.
+end)()
+
 -- A full render costs 10-14 ms of the host's 25 ms per-callback CPU budget in
 -- the real shell, and three overruns in a row disable the panel until reload.
 -- No callback may render twice, and the idle re-read must cost nothing when
