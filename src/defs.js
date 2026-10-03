@@ -52,6 +52,7 @@ export function loadDefs(dir) {
       defs.set(def.key, def);
     }
   }
+  checkSubgroups(defs);
   // A replacement is a rename across a release: the old key must be gone
   // from the definitions, or the store could hold both with a straight face.
   const replacedBy = new Map();
@@ -105,6 +106,20 @@ export function validateDef(def, src) {
     if (def.ui.control !== 'toggle') fail('ui.header is toggle-only');
     if (def.ui.header !== true) fail('ui.header must be true when present');
   }
+  if (def.ui.control === 'none' && ['subgroup', 'column', 'when'].some(has)) {
+    fail('control: none takes no ui.subgroup, ui.column or ui.when');
+  }
+  if (has('subgroup')) {
+    if (typeof def.ui.subgroup !== 'string' || def.ui.subgroup.trim() === '') fail('ui.subgroup must be a non-empty string');
+    if (has('header')) fail('header toggle takes no ui.subgroup');
+  }
+  // A single row drawn under the Focused column alone, with a dash under
+  // Unfocused: the focus light shows only on the focused window.
+  if (has('column')) {
+    if (def.ui.column !== 'focused') fail('ui.column must be focused');
+    if (has('state')) fail('ui.column and ui.state are exclusive');
+    if (has('header')) fail('ui.column is not valid on a header toggle');
+  }
   if (has('state')) {
     if (!MATRIX_CONTROLS.includes(def.ui.control)) {
       fail(`ui.state and ui.row are not supported on control ${def.ui.control}`);
@@ -148,5 +163,33 @@ export function validateDef(def, src) {
     }
     if (declaresNeutralize && def.neutralize !== false) fail('neutralize must be false when present');
     if (declaresNeutral) validateValue(def, def.neutral);
+  }
+}
+
+// A subgroup is one run of rows under one heading: every visible non-header
+// row of a group names one or none does, and each name's rows are contiguous
+// in ui.order, or the panel would draw the same heading twice.
+function checkSubgroups(defs) {
+  const groups = new Map();
+  for (const def of defs.values()) {
+    if (def.ui.control === 'none' || def.ui.header === true) continue;
+    if (!groups.has(def.ui.group)) groups.set(def.ui.group, []);
+    groups.get(def.ui.group).push(def);
+  }
+  for (const [group, list] of groups) {
+    if (!list.some((def) => def.ui.subgroup !== undefined)) continue;
+    const bare = list.find((def) => def.ui.subgroup === undefined);
+    if (bare) {
+      throw new Error(`group ${group}: ${bare.key} has no ui.subgroup; either every row of a group names one or none does`);
+    }
+    list.sort((a, b) => a.ui.order - b.ui.order);
+    const closed = new Set();
+    list.forEach((def, index) => {
+      const name = def.ui.subgroup;
+      if (closed.has(name)) {
+        throw new Error(`group ${group}: ${def.key} splits subgroup ${name}; its rows must be contiguous in ui.order`);
+      }
+      if (list[index + 1]?.ui.subgroup !== name) closed.add(name);
+    });
   }
 }
