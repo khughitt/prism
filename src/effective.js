@@ -21,9 +21,15 @@ export function readEffective(defs, dir = effectiveDir()) {
   const owner = new Map();
   for (const name of names) {
     const file = path.join(dir, name);
+    let text;
+    try {
+      text = fs.readFileSync(file, 'utf8');
+    } catch (error) {
+      throw new Error(`${file}: ${error.message}`);
+    }
     let report;
     try {
-      report = JSON.parse(fs.readFileSync(file, 'utf8'));
+      report = JSON.parse(text);
     } catch {
       throw new Error(`${file}: not valid JSON`);
     }

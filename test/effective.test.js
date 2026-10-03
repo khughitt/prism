@@ -53,3 +53,12 @@ test('two sinks reporting one key is an error naming both', () => {
   });
   assert.throws(() => readEffective(defs, dir), /glass\.ring\.color is reported by both a\.json and b\.json/);
 });
+
+test('an unreadable report fails naming its file, not as invalid JSON', () => {
+  const dir = dirWith({});
+  fs.mkdirSync(path.join(dir, 'niri.json'));
+  assert.throws(
+    () => readEffective(defs, dir),
+    (error) => /niri\.json/.test(error.message) && !/not valid JSON/.test(error.message),
+  );
+});
