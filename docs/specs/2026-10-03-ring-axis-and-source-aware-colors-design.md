@@ -1,9 +1,9 @@
 # Ring on the focus axis, and color controls that follow their source
 
 **Date:** 2026-10-03
-**Status:** draft for review
+**Status:** draft for review, round 2 (revised for codex round 1: familiar read-only, bypass omission, report labelled as last apply)
 **Tasks:** `prism-4f8bab` (Ring layout), `prism-b4d118` (source-aware color controls), under goal `prism-980a29`
-**Leaves room for:** `prism-1bb833` (familiar tint source), which adds one enum value and one `in` entry to what this spec defines.
+**Leaves room for:** `prism-1bb833` (familiar tint source), which adds one enum value to what this spec defines and reuses its read-only swatch.
 
 ## Intent
 
@@ -20,9 +20,9 @@ The panel should say truthfully what each control does. Two places do not:
    under both sources; takes effect on apply only with manual source").
 
 Success: the Ring group reads on the same Unfocused/Focused axis as Focus; a color
-picker is offered only where editing it takes effect; every other color cell shows
-the color actually rendered; a control that does nothing under the current source
-is not shown.
+picker is offered only under the manual source; every other color cell shows the
+color of the last applied config and says where it came from; a control that does
+nothing under the current source is not shown.
 
 ## Scope
 
@@ -90,8 +90,9 @@ ui: {..., when: {param: glass.tintSource, in: [manual], otherwise: effective}}
 - `param` names an `enum` def; `in` is a non-empty subset of its `values`;
   `otherwise` is `effective` or `hidden`.
 - `effective` is valid only on `control: color`. The cell shows a read-only swatch
-  of the color the sink rendered, with no picker and no reset, and a tooltip naming
-  the source ("Rendered from the Noctalia palette").
+  of the color the sink reported, with no picker and no reset. Its tooltip names
+  where the color came from, in the sink's words, and how to edit it: "From the
+  Noctalia palette, as of the last apply. Select the manual source to edit."
 - `hidden` drops the row from the panel.
 - Both halves of a matrix row must declare the same `when`; `loadDefs` fails
   otherwise.
@@ -108,11 +109,14 @@ Applied to:
 |---|---|
 | `glass.attenuationColor`, `glass.inactive.attenuationColor` | `glass.tintSource in [manual]`, otherwise `effective` |
 | `glass.tintAccentMix` | `glass.tintSource in [noctalia]`, otherwise `hidden` |
-| `glass.ring.color` | `glass.ring.colorSource in [manual, familiar]`, otherwise `effective` |
+| `glass.ring.color` | `glass.ring.colorSource in [manual]`, otherwise `effective` |
 
-The ring Color stays editable under familiar because it is the resting color there.
-`prism-1bb833` will add `familiar` to `glass.tintSource`'s values and to the tint
-pickers' `in` list, for the same reason.
+Only manual edits a color, as the owner asked in `prism-b4d118`. Under familiar the
+ring Color still renders, as the resting color of windows without a session, so its
+swatch shows that stored color read-only; changing it means selecting manual,
+editing, and selecting familiar again. `prism-1bb833` follows the same rule: it adds
+`familiar` to `glass.tintSource`'s values and leaves the tint pickers' `in` list at
+`[manual]`.
 
 The Tint row is the tint card's mix row, the card's head. The rack draws it with
 the same control cell, so the gate covers it with no rack change. A hidden row in a
@@ -121,24 +125,44 @@ mix row is refused by the rack loader, since a card has no head without it.
 
 ### Where the rendered color comes from
 
-The niri sink reports what it rendered; core stays ignorant of Noctalia.
+The niri sink reports the colors in the config it installed; core stays ignorant
+of Noctalia. The report describes `prism.kdl`, not the screen: it is the config
+niri runs after a successful reload, or loads at its next start when the reload
+request fails because niri is not running.
 
-- After a successful apply (after `niri validate` and the reload request), the niri
-  sink writes `<stateDir>/effective/niri.json` atomically:
-  `{"glass.attenuationColor": "#rrggbb", "glass.inactive.attenuationColor": "#rrggbb", "glass.ring.color": "#rrggbb"}`.
-  Each value is the color the source resolved, taken from the same computation
-  `render.js` uses (exported from it, not duplicated): the Noctalia mix for the
-  tints and the colorscheme accent or its fallback for the ring. A bypass is not
-  applied to the reported tint; the bypassed card already shows that state.
-- A failed apply leaves the previous file, which still describes the screen. Keys
-  with no consumer (glass disabled, so no palette read) are omitted.
-- `prism describe --json` adds `effective` to a param when any `effective/*.json`
-  names its key. Two sinks naming the same key is an error naming both files.
-- A read-only cell with no `effective` value draws a hollow swatch with the tooltip
-  "Not applied yet".
+- The report is `<stateDir>/effective/niri.json`, one entry per reported key:
+  `{"glass.ring.color": {"value": "#rrggbb", "from": "the Noctalia palette"}}`.
+  `from` completes the tooltip's "From …, as of the last apply."
+- It travels with `prism.kdl` as a pair. The sink writes the report's temp file
+  with the KDL's, renames it into place once `niri validate` accepts the KDL, and
+  before the reload request. A rejected KDL is rolled back and the old report is
+  left untouched, so the pair always describes the same install. A failed reload
+  request keeps both, as it keeps the KDL today.
+- Each value comes from the computation `render.js` uses, exported from it rather
+  than duplicated.
+- A key is reported only when its color is resolved from a source and that source
+  was read:
+  - `glass.attenuationColor` and `glass.inactive.attenuationColor`: glass enabled,
+    `glass.tintSource` not manual, and tint not bypassed; the value is the Noctalia
+    mix, the same for both. A bypassed tint reads no palette, so a missing or
+    malformed palette still applies, exactly as today, and both tint keys are
+    omitted.
+  - `glass.ring.color`: glass enabled and `glass.ring.colorSource` not manual. Under
+    noctalia it is the colorscheme accent, or the stored Color when no palette
+    exists (`from`: "the stored Color; no Noctalia palette was found"); under
+    familiar it is the stored Color (`from`: "the resting color; each agent
+    session's hue replaces it on its window").
+- A key the sink does not report is absent from the file, so a manual source, a
+  bypass or a disabled glass never leaves a stale color behind.
+- `prism describe --json` adds `effective: {value, from}` to a param when any
+  `effective/*.json` names its key. Two sinks naming the same key is an error
+  naming both files.
+- A read-only cell with no `effective` entry draws a hollow swatch with the tooltip
+  "No rendered color: the tint is bypassed, glass is off, or prism has not applied
+  this source yet." The bypassed tint card is already dimmed, which says which.
 
-The reported color can lag a write by one apply, which is what the screen shows in
-that moment too.
+The report can lag a write by one apply. It is labelled "as of the last apply"
+rather than promised as the screen's current color.
 
 ### Descriptions
 
@@ -157,9 +181,13 @@ description is unchanged.
   cell; the column header appears for a Ring with no matrix rows; each `when`
   outcome renders as specified, both sources for each gated key; `hidden` on a mix
   row is refused.
-- Sink and describe (`test/niri-apply.test.js`, `test/cli.test.js`): the effective
-  file matches the rendered KDL for each source, survives a failed validate, and
-  reaches `describe`; the duplicate-key error.
+- Sink and describe (`test/niri-apply.test.js`, `test/cli.test.js`): the report
+  matches the rendered KDL for each source; a rejected KDL leaves the previous
+  report; a failed reload request keeps the new KDL and the new report together;
+  a bypassed Noctalia tint with a missing and with a malformed palette applies and
+  omits both tint keys; manual sources and disabled glass report nothing for their
+  keys; the familiar ring reports the stored Color; the report reaches `describe`;
+  the duplicate-key error.
 - Acceptance: the owner opens the live panel once per part, after `just gate`,
   and confirms the Ring layout and the swatches under both tint sources.
 

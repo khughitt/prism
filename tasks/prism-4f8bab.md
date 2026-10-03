@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: prism-4f8bab
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-03T09:42:47Z
+updated: 2026-10-03T09:53:39Z
 started: 2026-10-03T09:34:03Z
 depends: []
 parent: prism-980a29
@@ -33,3 +33,7 @@ Start: defs/glass.yaml Ring section; integrations/noctalia-plugin/presentation.l
 - 2026-10-03T09:42:43Z (prism-4f8bab): spec drafted: one spec with prism-b4d118. Owner chose layout-only for the ring axis (no per-state ring params). Choices: sink-reported effective colors (rejected: describe computing them, panel reading the palette); ui.when gate; ui.subgroup + ui.column.
 - 2026-10-03T09:42:47Z (prism-4f8bab): parked (waiting on user, review): owner reviews docs/specs/2026-10-03-ring-axis-and-source-aware-colors-design.md (in .worktrees/prism-4f8bab); then I write the implementation plan (writing-plans) in the same worktree
   provenance: {"harness_session":"claude-code:41dbe03e-a467-49eb-9870-825e76fa1468","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-03T09:51:44Z (prism-4f8bab): review: spec round 1 — verdict: revise; findings: P2 3; reviewer: codex
+- 2026-10-03T09:52:53Z (prism-4f8bab): resumed
+  provenance: {"harness_session":"claude-code:41dbe03e-a467-49eb-9870-825e76fa1468","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-03T09:53:39Z (prism-4f8bab): spec round 1 findings addressed: familiar ring Color read-only (only manual edits, per prism-b4d118 owner request); bypassed tint reads no palette and omits both tint keys; report travels with prism.kdl (renamed after validate, before reload) and is labelled 'as of the last apply', not the screen.
