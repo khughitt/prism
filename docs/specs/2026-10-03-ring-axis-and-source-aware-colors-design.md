@@ -1,7 +1,7 @@
 # Ring on the focus axis, and color controls that follow their source
 
 **Date:** 2026-10-03
-**Status:** draft for review, round 2 (revised for codex round 1: familiar read-only, bypass omission, report labelled as last apply)
+**Status:** draft for review, round 3 (round 1: familiar read-only, bypass omission, report labelled as last apply; round 2: report-publication failure rolls back the KDL)
 **Tasks:** `prism-4f8bab` (Ring layout), `prism-b4d118` (source-aware color controls), under goal `prism-980a29`
 **Leaves room for:** `prism-1bb833` (familiar tint source), which adds one enum value to what this spec defines and reuses its read-only swatch.
 
@@ -138,6 +138,12 @@ request fails because niri is not running.
   before the reload request. A rejected KDL is rolled back and the old report is
   left untouched, so the pair always describes the same install. A failed reload
   request keeps both, as it keeps the KDL today.
+- Publishing the report can fail after validation (the rename throws). The sink
+  then rolls the KDL back exactly as for a rejected one: it restores the previous
+  KDL, or removes the new one on a first apply. It also removes the report's temp
+  file, leaves the old report in place, and fails without requesting a reload.
+  This is the existing rollback path with one more trigger, not a new transaction
+  mechanism.
 - Each value comes from the computation `render.js` uses, exported from it rather
   than duplicated.
 - A key is reported only when its color is resolved from a source and that source
@@ -184,6 +190,9 @@ description is unchanged.
 - Sink and describe (`test/niri-apply.test.js`, `test/cli.test.js`): the report
   matches the rendered KDL for each source; a rejected KDL leaves the previous
   report; a failed reload request keeps the new KDL and the new report together;
+  an injected report-rename failure after a passing validate restores the previous
+  KDL (and removes the KDL on a first apply), keeps the old report, leaves no temp
+  file, requests no reload, and fails the sink;
   a bypassed Noctalia tint with a missing and with a malformed palette applies and
   omits both tint keys; manual sources and disabled glass report nothing for their
   keys; the familiar ring reports the stored Color; the report reaches `describe`;

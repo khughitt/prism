@@ -7,7 +7,7 @@ size: m
 complexity: mid
 process: planned
 created: 2026-09-22T15:37:30Z
-updated: 2026-10-03T09:51:44Z
+updated: 2026-10-03T09:55:28Z
 depends: [prism-4f8bab]
 parent: prism-980a29
 tags: [defs, noctalia, ui, material]
@@ -28,3 +28,4 @@ Scope: the def/UI mechanism, the Ring group's rendering in the Noctalia panel, a
 - 2026-09-22T15:37:52Z (main): Pairs with material-068639: the same Ring rows, and the familiar source is currently inert. Settle both descriptions together.
 - 2026-10-02T23:39:13Z (main): scope widened 2026-10-02 (owner): same rule for the glass tint pickers (glass.attenuationColor, glass.inactive.attenuationColor) and Palette accent mix under glass.tintSource, and for the familiar tint source (sibling task). Non-manual sources show read-only 'real only' swatches of the applied color (Noctalia surface mixed by Palette accent mix; colorscheme accent for the ring; per-window under familiar, so likely the resting color plus a note). Effective-color source to settle: palette.js reads it at apply; prism-d299f0 already shows the current tint on the button. Process moved to planned: the def-level visibility mechanism and the effective-color plumbing are design choices spanning two groups.
 - 2026-10-03T09:51:44Z (prism-4f8bab): review: spec round 1 — verdict: revise; findings: P2 3; reviewer: codex
+- 2026-10-03T09:55:28Z (prism-4f8bab): review: spec round 2 — verdict: revise; findings: P2 1; reviewer: codex

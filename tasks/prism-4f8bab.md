@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: prism-4f8bab
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-03T09:53:40Z
+updated: 2026-10-03T10:01:47Z
 started: 2026-10-03T09:34:03Z
 depends: []
 parent: prism-980a29
@@ -39,3 +39,7 @@ Start: defs/glass.yaml Ring section; integrations/noctalia-plugin/presentation.l
 - 2026-10-03T09:53:39Z (prism-4f8bab): spec round 1 findings addressed: familiar ring Color read-only (only manual edits, per prism-b4d118 owner request); bypassed tint reads no palette and omits both tint keys; report travels with prism.kdl (renamed after validate, before reload) and is labelled 'as of the last apply', not the screen.
 - 2026-10-03T09:53:39Z (prism-4f8bab): parked (waiting on user, review): spec round 2 review of docs/specs/2026-10-03-ring-axis-and-source-aware-colors-design.md (in .worktrees/prism-4f8bab); on accept, I write the implementation plan there
   provenance: {"harness_session":"claude-code:41dbe03e-a467-49eb-9870-825e76fa1468","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-03T09:55:28Z (prism-4f8bab): review: spec round 2 — verdict: revise; findings: P2 1; reviewer: codex
+- 2026-10-03T10:01:35Z (prism-4f8bab): resumed
+  provenance: {"harness_session":"claude-code:41dbe03e-a467-49eb-9870-825e76fa1468","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-03T10:01:47Z (prism-4f8bab): spec round 2 finding addressed: a report-publication failure after validate rolls the KDL back (restore previous, or remove on first apply), keeps the old report, cleans the temp file, skips reload, fails; failure-injection test specified.
