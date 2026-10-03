@@ -215,8 +215,10 @@ Append to `integrations/noctalia-plugin/plugin_test.lua`, immediately before the
 
 ```lua
 -- Ring layout and gate tests share one function scope: the chunk is at Lua's
--- 200-local limit, and these helpers are used by both.
-(function()
+-- 200-local limit, and these helpers are used by both. The leading semicolon
+-- keeps Lua from reading this call as an argument to the previous statement's
+-- result, the same guard every function block in this file carries.
+;(function()
 -- The Ring: a heading per subgroup, the column header although no row is a
 -- matrix row, and the focus light in the Focused column over a dash.
 local function ringParam(key, control, value, order, extra)
