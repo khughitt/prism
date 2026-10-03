@@ -16,6 +16,7 @@ import { UsageError, parseInvocation, helpText, rootHelp, candidatesFor, complet
 import { loadRack } from './rack.js';
 import { planReset, visibleGroups } from './reset.js';
 import { planMigration, replacements, writeBackup, writeMigrated, runPairMigration, assertPairLayout, pairLayoutSources } from './migrate.js';
+import { readEffective } from './effective.js';
 import {
   configDir,
   defsDir,
@@ -239,6 +240,7 @@ export async function run(argv, opts = {}) {
         const { defs, manifests } = load();
         const store = await snapshot(defs);
         const rack = loadRack(defsDir(), defs);
+        const effective = readEffective(defs);
         if (!json) {
           print(describeText(store, rack));
           return 0;
@@ -276,6 +278,7 @@ export async function run(argv, opts = {}) {
             bindings,
             effectiveLiveness,
             effectiveDrag,
+            ...(effective.has(key) ? { effective: effective.get(key) } : {}),
           });
         }
 

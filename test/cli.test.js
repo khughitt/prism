@@ -28,7 +28,7 @@ process.env.PRISM_INTEGRATIONS_DIR = integ;
 const cli = await import('../src/cli.js');
 const { readValues } = await import('../src/values.js');
 const { readScratch, writeScratch } = await import('../src/scratch.js');
-const { lockPath, resolvedPath, valuesPath, generatedPath, scratchPath, activePath } = await import('../src/paths.js');
+const { lockPath, resolvedPath, valuesPath, generatedPath, scratchPath, activePath, stateDir } = await import('../src/paths.js');
 const { writeActive, writeContext, contextPath, readContext } = await import('../src/contexts.js');
 const { VERB_KINDS } = await import('../src/contexts.js');
 const { MODES } = await import('../src/reset.js');
@@ -1051,4 +1051,20 @@ test('Focus neutral overrides profile tint through scratch without rewriting sav
   assert.equal(readScratch()['glass.tintAccentMix'], 0);
   assert.equal(fs.readFileSync(valuesPath(), 'utf8'), beforeBase);
   assert.equal(fs.readFileSync(saved, 'utf8'), beforeProfile);
+});
+
+test('describe carries a sink-reported color as effective on that param only', async () => {
+  fs.mkdirSync(path.join(stateDir(), 'effective'), { recursive: true });
+  fs.writeFileSync(path.join(stateDir(), 'effective', 'niri.json'),
+    JSON.stringify({ 'glass.ring.color': { value: '#a1b2c3', from: 'the Noctalia palette' } }));
+  try {
+    let out = '';
+    await cli.run(['describe', '--json'], { print: (s) => { out += s; } });
+    const params = JSON.parse(out).params;
+    assert.deepEqual(params.find((p) => p.key === 'glass.ring.color').effective,
+      { value: '#a1b2c3', from: 'the Noctalia palette' });
+    assert.equal(Object.hasOwn(params.find((p) => p.key === 'glass.attenuationColor'), 'effective'), false);
+  } finally {
+    fs.rmSync(path.join(stateDir(), 'effective'), { recursive: true, force: true });
+  }
 });
