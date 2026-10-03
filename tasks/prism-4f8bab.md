@@ -8,13 +8,14 @@ complexity: mid
 process: planned
 owner: prism-4f8bab
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-03T10:01:48Z
+updated: 2026-10-03T10:31:42Z
 started: 2026-10-03T09:34:03Z
 depends: []
 parent: prism-980a29
 tags: [ui, material]
 agent: claude-code/claude-opus-5-5
 spec: docs/specs/2026-10-03-ring-axis-and-source-aware-colors-design.md
+plan: docs/plans/2026-10-03-ring-axis-and-source-aware-colors.md
 ---
 
 Why: the Focus group pairs each optic into Unfocused/Focused rows (ui.state + ui.row in defs/glass.yaml); the Ring group is a flat list, though its controls act on different windows. The focus light (Ring of light, Beam speed, Head wander, Wander rate, Decay distance, Glow, Resting ring) lights only the focused window; the signal accent (Accent strength, Edge tint) and the band (Gap, Width, Color) apply to every window.
@@ -44,4 +45,7 @@ Start: defs/glass.yaml Ring section; integrations/noctalia-plugin/presentation.l
   provenance: {"harness_session":"claude-code:41dbe03e-a467-49eb-9870-825e76fa1468","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
 - 2026-10-03T10:01:47Z (prism-4f8bab): spec round 2 finding addressed: a report-publication failure after validate rolls the KDL back (restore previous, or remove on first apply), keeps the old report, cleans the temp file, skips reload, fails; failure-injection test specified.
 - 2026-10-03T10:01:47Z (prism-4f8bab): parked (waiting on user, review): spec round 3 review of docs/specs/2026-10-03-ring-axis-and-source-aware-colors-design.md (in .worktrees/prism-4f8bab); on accept, I write the implementation plan there
+  provenance: {"harness_session":"claude-code:41dbe03e-a467-49eb-9870-825e76fa1468","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-03T10:02:31Z (prism-4f8bab): review: spec round 3 — verdict: accept; findings: none; reviewer: codex
+- 2026-10-03T10:23:12Z (prism-4f8bab): resumed
   provenance: {"harness_session":"claude-code:41dbe03e-a467-49eb-9870-825e76fa1468","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
