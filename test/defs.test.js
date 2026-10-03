@@ -99,15 +99,9 @@ test('a matrix row may pair toggles and colors, but never a select', () => {
     /ui.state and ui.row are not supported on control select/);
 });
 
-test('ui.column places a single row in the focused column only', () => {
-  const ok = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, neutral: 0, ui: {group: A, control: slider, step: 0.1, label: B, order: 1, column: focused}, description: d}\n');
-  assert.equal(loadDefs(ok).get('a.b').ui.column, 'focused');
-  const unfocused = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, neutral: 0, ui: {group: A, control: slider, step: 0.1, label: B, order: 1, column: unfocused}, description: d}\n');
-  assert.throws(() => loadDefs(unfocused), /ui\.column must be focused/);
-  const withState = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, neutral: 0, ui: {group: A, control: slider, step: 0.1, label: B, order: 1, column: focused, state: focused, row: B}, description: d}\n');
-  assert.throws(() => loadDefs(withState), /ui\.column and ui\.state are exclusive/);
-  const onHeader = dirWith('- {key: a.b, type: bool, default: true, neutral: true, ui: {group: A, control: toggle, label: B, order: 1, header: true, column: focused}, description: d}\n');
-  assert.throws(() => loadDefs(onHeader), /ui\.column is not valid on a header toggle/);
+test('a ui field the panel does not read is refused, not ignored', () => {
+  const stray = dirWith('- {key: a.b, type: float, range: [0, 1], default: 0, neutral: 0, ui: {group: A, control: slider, step: 0.1, label: B, order: 1, column: focused}, description: d}\n');
+  assert.throws(() => loadDefs(stray), /ui has unknown field column/);
 });
 
 test('ui.subgroup is a non-empty name, never on a header or a hidden def', () => {
@@ -116,7 +110,7 @@ test('ui.subgroup is a non-empty name, never on a header or a hidden def', () =>
   const onHeader = dirWith('- {key: a.b, type: bool, default: true, neutral: true, ui: {group: A, control: toggle, label: B, order: 1, header: true, subgroup: S}, description: d}\n');
   assert.throws(() => loadDefs(onHeader), /header toggle takes no ui\.subgroup/);
   const hidden = dirWith('- {key: a.b, type: list, items: string, default: [], ui: {group: A, control: none, subgroup: S}, description: d}\n');
-  assert.throws(() => loadDefs(hidden), /control: none takes no ui\.subgroup, ui\.column or ui\.when/);
+  assert.throws(() => loadDefs(hidden), /control: none takes no ui\.subgroup or ui\.when/);
 });
 
 test('a group names a subgroup on every row or on none, and each subgroup is contiguous', () => {

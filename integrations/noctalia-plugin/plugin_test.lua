@@ -1686,8 +1686,8 @@ end)()
 -- keeps Lua from reading this call as an argument to the previous statement's
 -- result, the same guard every function block in this file carries.
 ;(function()
--- The Ring: a heading per subgroup, the column header although no row is a
--- matrix row, and the focus light in the Focused column over a dash.
+-- The Ring: a heading per subgroup naming whom its rows light, and no column
+-- header, since no Ring row differs between focused and unfocused windows.
 local function ringParam(key, control, value, order, extra)
   local ui = { control = control, group = "Ring", order = order, label = key }
   for name, field in pairs(extra or {}) do ui[name] = field end
@@ -1704,43 +1704,40 @@ local function ringModel(params)
 end
 local ringParams = {
   ringParam("glass.ring.focus", "toggle", true, 500, { header = true }),
-  ringParam("glass.ring.colorSource", "select", "manual", 510, { subgroup = "Band" }),
-  ringParam("glass.ring.color", "color", "#ccccff", 520, { subgroup = "Band" }),
-  ringParam("glass.ring.beamSpeed", "slider", 300, 550, { subgroup = "Focus light", column = "focused" }),
-  ringParam("glass.ring.accent", "slider", 1, 570, { subgroup = "Signal accent" }),
+  ringParam("glass.ring.colorSource", "select", "manual", 510, { subgroup = "Band — every window" }),
+  ringParam("glass.ring.color", "color", "#ccccff", 520, { subgroup = "Band — every window" }),
+  ringParam("glass.ring.accent", "slider", 1, 545, { subgroup = "Signal accent — any window with a signal" }),
+  ringParam("glass.ring.beamSpeed", "slider", 300, 550, { subgroup = "Focus light — focused window only" }),
 }
 local ringTree = renderModel(ringModel(ringParams))
 local order = {}
 for index, node in ipairs(ringTree.children) do
   if node.props.key then order[node.props.key] = index end
 end
-assert(order["Ring:columns"], "the Ring draws the column header for its focused-only rows")
-for _, key in ipairs({ "Ring:Band:subgroup", "glass.ring.colorSource:row", "Ring:Focus light:subgroup",
-  "glass.ring.beamSpeed:row", "Ring:Signal accent:subgroup", "glass.ring.accent:row" }) do
+equal(order["Ring:columns"], nil, "no Ring row splits by focus, so no column header")
+local bandHeading, accentHeading, lightHeading = "Ring:Band — every window:subgroup", "Ring:Signal accent — any window with a signal:subgroup", "Ring:Focus light — focused window only:subgroup"
+for _, key in ipairs({ bandHeading, "glass.ring.colorSource:row", accentHeading, "glass.ring.accent:row",
+  lightHeading, "glass.ring.beamSpeed:row" }) do
   assert(order[key], "missing " .. key)
 end
-assert(order["Ring:columns"] < order["Ring:Band:subgroup"]
-  and order["Ring:Band:subgroup"] < order["glass.ring.colorSource:row"]
-  and order["glass.ring.color:row"] < order["Ring:Focus light:subgroup"]
-  and order["Ring:Focus light:subgroup"] < order["glass.ring.beamSpeed:row"]
-  and order["glass.ring.beamSpeed:row"] < order["Ring:Signal accent:subgroup"]
-  and order["Ring:Signal accent:subgroup"] < order["glass.ring.accent:row"], "headings lead their rows")
-equal(collect(ringTree.children[order["Ring:Band:subgroup"]], "label")[1].props.text, "Band")
-local beamCells = byKey(ringTree, "glass.ring.beamSpeed:row")[1].children[1]
-equal(#beamCells.children, 4, "a focused-only row has head, dash, separator and control")
-equal(collect(beamCells.children[2], "label")[1].props.text, "—", "the unfocused cell is a dash")
-equal(beamCells.children[4].props.key, "glass.ring.beamSpeed", "the control sits in the focused column")
-local accentCells = byKey(ringTree, "glass.ring.accent:row")[1].children[1]
-equal(#accentCells.children, 2, "a spanning row is head and one control")
+assert(order[bandHeading] < order["glass.ring.colorSource:row"]
+  and order["glass.ring.color:row"] < order[accentHeading]
+  and order[accentHeading] < order["glass.ring.accent:row"]
+  and order["glass.ring.accent:row"] < order[lightHeading]
+  and order[lightHeading] < order["glass.ring.beamSpeed:row"], "headings lead their rows")
+equal(collect(ringTree.children[order[lightHeading]], "label")[1].props.text, "Focus light — focused window only")
+for _, key in ipairs({ "glass.ring.accent:row", "glass.ring.beamSpeed:row" }) do
+  equal(#byKey(ringTree, key)[1].children[1].children, 2, key .. " is head and one control")
+end
 -- Gates: only manual edits the ring Color; otherwise the cell is the reported
 -- color behind a lock that says where it came from.
 local function gatedRing(source, effective)
   local color = ringParam("glass.ring.color", "color", "#ccccff", 520,
-    { subgroup = "Band", when = { param = "glass.ring.colorSource", ["in"] = { "manual" }, otherwise = "effective" } })
+    { subgroup = "Band — every window", when = { param = "glass.ring.colorSource", ["in"] = { "manual" }, otherwise = "effective" } })
   color.effective = effective
   return ringModel({
     ringParam("glass.ring.focus", "toggle", true, 500, { header = true }),
-    ringParam("glass.ring.colorSource", "select", source, 510, { subgroup = "Band" }),
+    ringParam("glass.ring.colorSource", "select", source, 510, { subgroup = "Band — every window" }),
     color,
   })
 end

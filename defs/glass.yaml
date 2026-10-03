@@ -384,9 +384,10 @@
 # and signal accents (niri-material's response block). Inset and width stay at
 # the native defaults; the focus split carries the same block in both
 # materials, so the unfocused band stays dark until a signal lights it.
-# Its rows fall in three subgroups: the band every window shares, the focus light
-# only the focused window shows (drawn in the Focused column), and the signal
-# accent on any window.
+# No Ring param differs between focused and unfocused windows, so the rows fall
+# in three subgroups whose headings say whom they reach: the band every window
+# shares, the signal accent a window's signal hue draws on any window, and the
+# focus light only the focused window shows.
 - key: glass.ring.focus
   type: bool
   default: true
@@ -398,56 +399,27 @@
   values: [familiar, noctalia, manual]
   default: noctalia
   neutral: noctalia
-  ui: {group: Ring, control: select, label: Color source, order: 510, subgroup: Band}
+  ui: {group: Ring, control: select, label: Color source, order: 510, subgroup: Band — every window}
   description: "Who drives the ring color: the Noctalia colorscheme accent, the manual Color below, or familiar, which tints each terminal's ring with its agent session's hue and rests windows without a session on the manual Color"
 - key: glass.ring.color
   type: color
   default: '#ccccff'
   neutral: '#ccccff'
-  ui: {group: Ring, control: color, label: Color, order: 520, subgroup: Band, when: {param: glass.ring.colorSource, in: [manual], otherwise: effective}}
+  ui: {group: Ring, control: color, label: Color, order: 520, subgroup: Band — every window, when: {param: glass.ring.colorSource, in: [manual], otherwise: effective}}
   description: Ring color, editable under the manual source; under familiar it is the resting color of windows without a session, and under noctalia the fallback until a colorscheme exists, both shown read-only
-- key: glass.ring.beamSpeed
-  type: int
-  range: [0, 5000]
-  default: 300
-  neutral: 300
-  replaces: glass.ring.sweepMs
-  ui: {group: Ring, control: slider, step: 50, label: Beam speed, order: 550, unit: px/s, subgroup: Focus light, column: focused}
-  description: How fast the beam of light travels around the inside of the face when a window gains focus, in pixels per second; a lap takes the face's perimeter divided by this, and 0 shows only the resting glow
-- key: glass.ring.beamNoise
-  type: float
-  range: [0, 1]
-  default: 0
-  neutral: 0
-  ui: {group: Ring, control: slider, step: 0.05, label: Head wander, order: 552, subgroup: Focus light, column: focused}
-  description: How far the beam head's brightness wanders either side of itself as it travels, so the comet reads as a living light rather than a lamp on a track; 0 is a steady head, and the wander rides the head alone, never the tail or the resting glow
-- key: glass.ring.beamNoiseHz
-  type: float
-  range: [0, 30]
-  default: 3
-  neutral: 3
-  ui: {group: Ring, control: slider, step: 0.5, label: Wander rate, order: 554, unit: Hz, subgroup: Focus light, column: focused}
-  description: How fast the head's brightness wanders, in wanders per second; it has no effect while Head wander is 0
-- key: glass.ring.decay
-  type: int
-  range: [0, 20000]
-  default: 0
-  neutral: 0
-  ui: {group: Ring, control: slider, step: 50, label: Decay distance, order: 556, unit: px, subgroup: Focus light, column: focused}
-  description: How far the beam travels before its head and tail have faded out together, in pixels along the band, the same on every window and at every speed; below the window's perimeter the comet dies before its lap closes, and 0 keeps it bright for the whole lap
 - key: glass.ring.gap
   type: int
   range: [0, 128]
   default: 8
   neutral: 8
-  ui: {group: Ring, control: slider, step: 1, label: Gap, order: 530, unit: px, subgroup: Band}
+  ui: {group: Ring, control: slider, step: 1, label: Gap, order: 530, unit: px, subgroup: Band — every window}
   description: Clear glass between the edge of the face and the centre of the beam; the bevel may be shrunk to make room, and a pane whose face is narrower than twice this shows no ring at all
 - key: glass.ring.width
   type: float
   range: [0.2, 16]
   default: 2.6
   neutral: 2.6
-  ui: {group: Ring, control: slider, step: 0.1, label: Width, order: 535, unit: px, subgroup: Band}
+  ui: {group: Ring, control: slider, step: 0.1, label: Width, order: 535, unit: px, subgroup: Band — every window}
   description: Thickness of the lit filament, the one band the beam, its tail and the resting glow all share; it is centred Gap px inside the face edge, so a width past the Gap reaches that edge
 # light-ior bends only the light travelling inside the slab — the ring filament
 # and the aurora field — along the light path 1 + (ior - 1) * light-ior; the
@@ -461,32 +433,61 @@
   range: [1, 12]
   default: 6
   neutral: 6
-  ui: {group: Ring, control: slider, step: 0.5, label: Light bending, order: 540, subgroup: Band}
+  ui: {group: Ring, control: slider, step: 0.5, label: Light bending, order: 540, subgroup: Band — every window}
   description: How much harder the glass bends the light inside it — the ring filament and the aurora field — than it bends the backdrop, which Refraction alone drives
+- key: glass.ring.accent
+  type: float
+  range: [0, 3]
+  default: 1
+  neutral: 1
+  ui: {group: Ring, control: slider, step: 0.1, label: Accent strength, order: 545, subgroup: Signal accent — any window with a signal}
+  description: Brightness of the outline a window's signal hue draws on the band, on any window; 0 removes the outline while the hue still colors the beam and the resting ring. Glow and Resting ring do not reach it
+- key: glass.ring.edgeTint
+  type: bool
+  default: true
+  neutral: true
+  ui: {group: Ring, control: toggle, label: Edge tint, order: 547, subgroup: Signal accent — any window with a signal}
+  description: Tint the bevel's edge glint with a window's signal hue, swaying with the signal level; off keeps the glint neutral
+- key: glass.ring.beamSpeed
+  type: int
+  range: [0, 5000]
+  default: 300
+  neutral: 300
+  replaces: glass.ring.sweepMs
+  ui: {group: Ring, control: slider, step: 50, label: Beam speed, order: 550, unit: px/s, subgroup: Focus light — focused window only}
+  description: How fast the beam of light travels around the inside of the face when a window gains focus, in pixels per second; a lap takes the face's perimeter divided by this, and 0 shows only the resting glow
+- key: glass.ring.beamNoise
+  type: float
+  range: [0, 1]
+  default: 0
+  neutral: 0
+  ui: {group: Ring, control: slider, step: 0.05, label: Head wander, order: 552, subgroup: Focus light — focused window only}
+  description: How far the beam head's brightness wanders either side of itself as it travels, so the comet reads as a living light rather than a lamp on a track; 0 is a steady head, and the wander rides the head alone, never the tail or the resting glow
+- key: glass.ring.beamNoiseHz
+  type: float
+  range: [0, 30]
+  default: 3
+  neutral: 3
+  ui: {group: Ring, control: slider, step: 0.5, label: Wander rate, order: 554, unit: Hz, subgroup: Focus light — focused window only}
+  description: How fast the head's brightness wanders, in wanders per second; it has no effect while Head wander is 0
+- key: glass.ring.decay
+  type: int
+  range: [0, 20000]
+  default: 0
+  neutral: 0
+  ui: {group: Ring, control: slider, step: 50, label: Decay distance, order: 556, unit: px, subgroup: Focus light — focused window only}
+  description: How far the beam travels before its head and tail have faded out together, in pixels along the band, the same on every window and at every speed; below the window's perimeter the comet dies before its lap closes, and 0 keeps it bright for the whole lap
 - key: glass.ring.glow
   type: float
   range: [0, 3]
   default: 1
   neutral: 1
-  ui: {group: Ring, control: slider, step: 0.1, label: Glow, order: 560, subgroup: Focus light, column: focused}
+  ui: {group: Ring, control: slider, step: 0.1, label: Glow, order: 560, subgroup: Focus light — focused window only}
   description: Intensity of the whole focus light — beam, tail, resting glow and edge spill together
 - key: glass.ring.rest
   type: float
   range: [0, 3]
   default: 1
   neutral: 1
-  ui: {group: Ring, control: slider, step: 0.1, label: Resting ring, order: 562, subgroup: Focus light, column: focused}
+  ui: {group: Ring, control: slider, step: 0.1, label: Resting ring, order: 562, subgroup: Focus light — focused window only}
   description: Brightness of the ring that stays on the focused window once the beam has passed, as a share of Glow; 0 leaves no resting ring while the beam still runs on every focus change
-- key: glass.ring.accent
-  type: float
-  range: [0, 3]
-  default: 1
-  neutral: 1
-  ui: {group: Ring, control: slider, step: 0.1, label: Accent strength, order: 570, subgroup: Signal accent}
-  description: Brightness of the outline a window's signal hue draws on the band, on any window; 0 removes the outline while the hue still colors the beam and the resting ring. Glow and Resting ring do not reach it
-- key: glass.ring.edgeTint
-  type: bool
-  default: true
-  neutral: true
-  ui: {group: Ring, control: toggle, label: Edge tint, order: 572, subgroup: Signal accent}
-  description: Tint the bevel's edge glint with a window's signal hue, swaying with the signal level; off keeps the glint neutral

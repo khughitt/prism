@@ -17,6 +17,11 @@ export const MATRIX_CONTROLS = ['slider', 'toggle', 'color'];
 // the color the sink reported, or nothing.
 export const WHEN_OTHERWISE = ['effective', 'hidden'];
 
+// Every ui field the panel reads. Anything else is a typo or a field the panel
+// dropped, and ignoring it would leave the def looking configured when it is not.
+const UI_FIELDS = ['group', 'control', 'label', 'order', 'step', 'unit', 'display', 'scale', 'exponent',
+  'state', 'row', 'header', 'subgroup', 'when'];
+
 export function loadDefs(dir) {
   const defs = new Map();
   const orders = new Map();
@@ -86,6 +91,9 @@ export function validateDef(def, src) {
   if (!TYPES.includes(def.type)) fail(`type must be one of ${TYPES.join('|')}`);
   if (!CONTROLS.includes(def.ui?.control)) fail(`ui.control must be one of ${CONTROLS.join('|')}`);
   if (typeof def.ui?.group !== 'string') fail('ui.group required');
+  for (const field of Object.keys(def.ui)) {
+    if (!UI_FIELDS.includes(field)) fail(`ui has unknown field ${field}`);
+  }
   if (def.ui.control !== 'none') {
     if (typeof def.ui.label !== 'string' || def.ui.label.trim() === '') fail('ui.label required');
     if (!Number.isInteger(def.ui.order)) fail('ui.order must be an integer');
@@ -113,19 +121,12 @@ export function validateDef(def, src) {
     if (def.ui.control !== 'toggle') fail('ui.header is toggle-only');
     if (def.ui.header !== true) fail('ui.header must be true when present');
   }
-  if (def.ui.control === 'none' && ['subgroup', 'column', 'when'].some(has)) {
-    fail('control: none takes no ui.subgroup, ui.column or ui.when');
+  if (def.ui.control === 'none' && ['subgroup', 'when'].some(has)) {
+    fail('control: none takes no ui.subgroup or ui.when');
   }
   if (has('subgroup')) {
     if (typeof def.ui.subgroup !== 'string' || def.ui.subgroup.trim() === '') fail('ui.subgroup must be a non-empty string');
     if (has('header')) fail('header toggle takes no ui.subgroup');
-  }
-  // A single row drawn under the Focused column alone, with a dash under
-  // Unfocused: the focus light shows only on the focused window.
-  if (has('column')) {
-    if (def.ui.column !== 'focused') fail('ui.column must be focused');
-    if (has('state')) fail('ui.column and ui.state are exclusive');
-    if (has('header')) fail('ui.column is not valid on a header toggle');
   }
   if (has('when')) {
     const when = def.ui.when;

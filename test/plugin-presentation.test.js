@@ -60,14 +60,14 @@ test('shipped presentation is a Glass section, a Focus matrix, and a Ring sectio
     'glass.ring.gap',
     'glass.ring.width',
     'glass.lightIor',
+    'glass.ring.accent',
+    'glass.ring.edgeTint',
     'glass.ring.beamSpeed',
     'glass.ring.beamNoise',
     'glass.ring.beamNoiseHz',
     'glass.ring.decay',
     'glass.ring.glow',
     'glass.ring.rest',
-    'glass.ring.accent',
-    'glass.ring.edgeTint',
   ]);
   assert.equal(defs.find((def) => def.ui.group === 'Ring' && def.ui.header === true).key,
     'glass.ring.focus', 'the light switch heads the section');
@@ -177,23 +177,23 @@ assert(P.wallpaperHeader(model) == nil)
   assert.equal(result.status, 0, result.stderr || result.stdout);
 });
 
-test('the Ring reads band, focus light, then signal accent, with the focus light focused-only', () => {
+test('the Ring reads band, signal accent, then focus light, each heading naming whom it lights', () => {
   const defs = [...loadDefs(defsDir()).values()]
     .filter((def) => def.ui.group === 'Ring' && def.ui.header !== true)
     .sort((a, b) => a.ui.order - b.ui.order);
-  assert.deepEqual(defs.map((def) => [def.key, def.ui.subgroup, def.ui.column ?? 'spans']), [
-    ['glass.ring.colorSource', 'Band', 'spans'],
-    ['glass.ring.color', 'Band', 'spans'],
-    ['glass.ring.gap', 'Band', 'spans'],
-    ['glass.ring.width', 'Band', 'spans'],
-    ['glass.lightIor', 'Band', 'spans'],
-    ['glass.ring.beamSpeed', 'Focus light', 'focused'],
-    ['glass.ring.beamNoise', 'Focus light', 'focused'],
-    ['glass.ring.beamNoiseHz', 'Focus light', 'focused'],
-    ['glass.ring.decay', 'Focus light', 'focused'],
-    ['glass.ring.glow', 'Focus light', 'focused'],
-    ['glass.ring.rest', 'Focus light', 'focused'],
-    ['glass.ring.accent', 'Signal accent', 'spans'],
-    ['glass.ring.edgeTint', 'Signal accent', 'spans'],
+  assert.deepEqual(defs.map((def) => [def.key, def.ui.subgroup]), [
+    ['glass.ring.colorSource', 'Band — every window'],
+    ['glass.ring.color', 'Band — every window'],
+    ['glass.ring.gap', 'Band — every window'],
+    ['glass.ring.width', 'Band — every window'],
+    ['glass.lightIor', 'Band — every window'],
+    ['glass.ring.accent', 'Signal accent — any window with a signal'],
+    ['glass.ring.edgeTint', 'Signal accent — any window with a signal'],
+    ['glass.ring.beamSpeed', 'Focus light — focused window only'],
+    ['glass.ring.beamNoise', 'Focus light — focused window only'],
+    ['glass.ring.beamNoiseHz', 'Focus light — focused window only'],
+    ['glass.ring.decay', 'Focus light — focused window only'],
+    ['glass.ring.glow', 'Focus light — focused window only'],
+    ['glass.ring.rest', 'Focus light — focused window only'],
   ]);
 });

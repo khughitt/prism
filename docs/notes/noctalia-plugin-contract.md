@@ -157,9 +157,6 @@ The presentation module defines the panel's stable layout contract:
   draws a heading row (key `<group>:<subgroup>:subgroup`). Every visible
   non-header row of a group names a subgroup or none does, and each subgroup is
   contiguous in `ui.order`.
-- A parameter flagged `ui.column: focused` is a single row drawn in the Focused
-  column, with a dash under Unfocused. A section holding such rows draws the
-  column header.
 - `ui.when: {param, in, otherwise}` gates a control: it is live while `param`'s
   value is in `in`. Otherwise `effective` draws a color-only read-only swatch of
   the reported color behind a lock, with no per-parameter reset, and `hidden`
