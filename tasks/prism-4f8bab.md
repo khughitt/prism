@@ -1,13 +1,15 @@
 ---
 id: prism-4f8bab
 title: Organize the Ring group on the Unfocused/Focused axis
-status: todo
+status: doing
 priority: 2
 size: m
 complexity: mid
 process: planned
+owner: main
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-02T23:46:53Z
+updated: 2026-10-03T09:34:03Z
+started: 2026-10-03T09:34:03Z
 depends: []
 parent: prism-980a29
 tags: [ui, material]
@@ -23,3 +25,5 @@ Start: defs/glass.yaml Ring section; integrations/noctalia-plugin/presentation.l
 ## Notes
 
 - 2026-10-02T23:46:52Z (main): owner 2026-10-02: the '?' marks an open idea, not low priority; raised to P2.
+- 2026-10-03T09:34:03Z (main): started
+  provenance: {"harness_session":"claude-code:41dbe03e-a467-49eb-9870-825e76fa1468","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
