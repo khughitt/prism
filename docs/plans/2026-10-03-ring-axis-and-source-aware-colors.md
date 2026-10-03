@@ -211,9 +211,12 @@ test('the Ring reads band, focus light, then signal accent, with the focus light
 
 In `test/defs.test.js`, in `'the ring beam speed replaces the ring sweep'`, change `['Ring', 530, 'px/s']` to `['Ring', 550, 'px/s']`.
 
-Append to `integrations/noctalia-plugin/plugin_test.lua`, immediately before the final `(function() … end)()` block that ends the file:
+Append to `integrations/noctalia-plugin/plugin_test.lua`, immediately before the final `(function() … end)()` block that ends the file. The chunk is at Lua's limit of 200 active locals (`luac -p` rejects one more), so this block, and Task 6's after it, live in one function scope; the file's earlier helpers (`layeredModel`, `renderModel`, `byKey`, `collect`, `equal`, `buttonsByGlyph`, `panelError`, `host`) reach it as upvalues:
 
 ```lua
+-- Ring layout and gate tests share one function scope: the chunk is at Lua's
+-- 200-local limit, and these helpers are used by both.
+(function()
 -- The Ring: a heading per subgroup, the column header although no row is a
 -- matrix row, and the focus light in the Focused column over a dash.
 local function ringParam(key, control, value, order, extra)
@@ -260,6 +263,8 @@ equal(collect(beamCells.children[2], "label")[1].props.text, "—", "the unfocus
 equal(beamCells.children[4].props.key, "glass.ring.beamSpeed", "the control sits in the focused column")
 local accentCells = byKey(ringTree, "glass.ring.accent:row")[1].children[1]
 equal(#accentCells.children, 2, "a spanning row is head and one control")
+-- Task 6's gate tests go here, inside this function.
+end)()
 ```
 
 - [ ] **Step 2: Run to verify they fail**
@@ -811,7 +816,7 @@ git commit -m "feat(niri): report the source-resolved colors with the installed 
 
 **Interfaces:**
 - Consumes: `effectiveDir()` from Task 4.
-- Produces: `readEffective(dir = effectiveDir()) → Map<key, {value, from}>`; `describe --json` params gain `effective: {value, from}` only for reported keys, placed last.
+- Produces: `readEffective(defs, dir = effectiveDir()) → Map<key, {value, from}>`, which validates each reported value with the reported key's own def (`validateValue` from `src/values.js`); `describe --json` params gain `effective: {value, from}` only for reported keys, placed last.
 
 - [ ] **Step 1: Write the failing tests** — create `test/effective.test.js`:
 
@@ -822,6 +827,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { readEffective } from '../src/effective.js';
+import { loadDefs } from '../src/defs.js';
+import { defsDir } from '../src/paths.js';
+
+const defs = loadDefs(defsDir());
 
 const dirWith = (files) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-effective-'));
@@ -831,18 +840,18 @@ const dirWith = (files) => {
 const entry = (value) => ({ value, from: 'the Noctalia palette' });
 
 test('no report directory is no reports', () => {
-  assert.deepEqual(readEffective(path.join(os.tmpdir(), 'prism-effective-absent', 'x')), new Map());
+  assert.deepEqual(readEffective(defs, path.join(os.tmpdir(), 'prism-effective-absent', 'x')), new Map());
 });
 
 test('reports from every sink join by key, ignoring temp files', () => {
   const dir = dirWith({
     'niri.json': JSON.stringify({ 'glass.ring.color': entry('#a1b2c3') }),
-    'other.json': JSON.stringify({ 'other.color': entry('#000000') }),
+    'other.json': JSON.stringify({ 'glass.attenuationColor': entry('#000000') }),
     'niri.json.123.tmp': '{ half written',
   });
-  assert.deepEqual(readEffective(dir), new Map([
+  assert.deepEqual(readEffective(defs, dir), new Map([
     ['glass.ring.color', entry('#a1b2c3')],
-    ['other.color', entry('#000000')],
+    ['glass.attenuationColor', entry('#000000')],
   ]));
 });
 
@@ -852,8 +861,11 @@ test('a malformed report fails naming its file', () => {
     ['[]', /niri\.json: expected an object of reported values/],
     [JSON.stringify({ 'glass.ring.color': { value: 7, from: 'x' } }), /niri\.json: glass\.ring\.color needs a string value and from/],
     [JSON.stringify({ 'glass.ring.color': { value: '#000000' } }), /niri\.json: glass\.ring\.color needs a string value and from/],
+    [JSON.stringify({ 'glass.ring.color': entry('garbage') }), /niri\.json: glass\.ring\.color: not a #rrggbb\[aa\] color/],
+    [JSON.stringify({ 'glass.ring.color': entry('#zzzzzz') }), /niri\.json: glass\.ring\.color: not a #rrggbb\[aa\] color/],
+    [JSON.stringify({ 'other.color': entry('#000000') }), /niri\.json: reports other\.color, which no def declares/],
   ]) {
-    assert.throws(() => readEffective(dirWith({ 'niri.json': text })), pattern);
+    assert.throws(() => readEffective(defs, dirWith({ 'niri.json': text })), pattern);
   }
 });
 
@@ -862,7 +874,7 @@ test('two sinks reporting one key is an error naming both', () => {
     'a.json': JSON.stringify({ 'glass.ring.color': entry('#000000') }),
     'b.json': JSON.stringify({ 'glass.ring.color': entry('#ffffff') }),
   });
-  assert.throws(() => readEffective(dir), /glass\.ring\.color is reported by both a\.json and b\.json/);
+  assert.throws(() => readEffective(defs, dir), /glass\.ring\.color is reported by both a\.json and b\.json/);
 });
 ```
 
@@ -897,13 +909,15 @@ Expected: FAIL — `src/effective.js` does not exist.
 import fs from 'node:fs';
 import path from 'node:path';
 import { effectiveDir } from './paths.js';
+import { validateValue } from './values.js';
 
 // A sink that resolves a value from outside the store (a palette, a session
 // hue) reports what it installed, one file per sink. describe joins them onto
 // the params so the panel can show the color in force where the stored one is
 // not. A report that cannot be read fails describe: a wrong swatch is worse
-// than an error naming the file.
-export function readEffective(dir = effectiveDir()) {
+// than an error naming the file. Each value is checked by the def of the key it
+// reports, with the store's own validator.
+export function readEffective(defs, dir = effectiveDir()) {
   let names;
   try {
     names = fs.readdirSync(dir).filter((name) => name.endsWith('.json')).sort();
@@ -928,6 +942,13 @@ export function readEffective(dir = effectiveDir()) {
       if (typeof entry?.value !== 'string' || typeof entry?.from !== 'string') {
         throw new Error(`${file}: ${key} needs a string value and from`);
       }
+      const def = defs.get(key);
+      if (def === undefined) throw new Error(`${file}: reports ${key}, which no def declares`);
+      try {
+        validateValue(def, entry.value);
+      } catch (error) {
+        throw new Error(`${file}: ${error.message}`);
+      }
       if (owner.has(key)) throw new Error(`${key} is reported by both ${owner.get(key)} and ${name}`);
       owner.set(key, name);
       byKey.set(key, { value: entry.value, from: entry.from });
@@ -937,7 +958,7 @@ export function readEffective(dir = effectiveDir()) {
 }
 ```
 
-In `src/cli.js`, import `readEffective` from `./effective.js`; in `case 'describe':` after `const rack = loadRack(defsDir(), defs);` add `const effective = readEffective();`, and change the push to end with:
+In `src/cli.js`, import `readEffective` from `./effective.js`; in `case 'describe':` after `const rack = loadRack(defsDir(), defs);` add `const effective = readEffective(defs);`, and change the push to end with:
 
 ```js
             effectiveLiveness,
@@ -973,7 +994,7 @@ git commit -m "feat(describe): join sink-reported colors onto params as effectiv
 
 - [ ] **Step 1: Write the failing tests**
 
-Append to `plugin_test.lua`, after the Task 2 Ring block (it reuses `ringParam`, `ringModel`):
+In `plugin_test.lua`, insert inside the Task 2 function scope, replacing its `-- Task 6's gate tests go here, inside this function.` line and keeping the closing `end)()` after it (the block reuses `ringParam`, `ringModel`, and must not add top-level locals):
 
 ```lua
 -- Gates: only manual edits the ring Color; otherwise the cell is the reported
@@ -1061,9 +1082,28 @@ local badReport = gatedRing("noctalia", { value = 7, from = "x" })
 equal(panelError(badReport), "glass.ring.color has a malformed effective color")
 ```
 
-`panelError` is defined after the earlier tint-swatch block; this new block sits later in the file, so it is in scope.
+`panelError` is a top-level local defined earlier in the file, so it reaches this function as an upvalue. Confirm the scope with `luac -p integrations/noctalia-plugin/plugin_test.lua` before running the suite; it must print nothing.
 
-In `contract.test.mjs`, replace the `if (param.ui.control === 'color') { … }` assertion with:
+In `contract.test.mjs`, replace the whole test `'tint source and mix draw while both manual pickers stay visible'` (it pins the old behaviour: pickers under both sources and the mix under manual) with:
+
+```js
+test('tint pickers are editable only under manual, and the mix shows only under noctalia', () => {
+  for (const source of ['noctalia', 'manual']) {
+    const model = describeStore({ base: { 'glass.tintSource': source } });
+    const [report] = inspectModels([model]);
+    assert.equal(report.error, undefined);
+    assert.equal(report.cells['glass.tintSource'].kind, 'select');
+    if (source === 'noctalia') assert.equal(report.cells['glass.tintAccentMix'].kind, 'slider');
+    else assert.equal(report.cells['glass.tintAccentMix'], undefined, 'the mix hides under manual');
+    for (const key of ['glass.attenuationColor', 'glass.inactive.attenuationColor']) {
+      assert.equal(report.cells[key].glyph, source === 'manual' ? 'palette' : 'lock', `${key} under ${source}`);
+      assert.equal(model.params.find((param) => param.key === key).value, '#dfe8ff', 'the stored tint is untouched');
+    }
+  }
+});
+```
+
+Then replace the `if (param.ui.control === 'color') { … }` assertion in `'real describe output satisfies the panel model validator'` with:
 
 ```js
       if (param.ui.control === 'color') {
@@ -1269,18 +1309,30 @@ Expected: `ops-check` and `tasks check` clean, `npm test` 0 failures.
 
 - [ ] **Step 2: Whole-branch review** by a fresh reviewer against the spec; record it with `tasks note prism-b4d118 "review: impl round <n> — …"` and run corrective rounds per the global rules.
 
-- [ ] **Step 3: Merge to main** (personal checkout: local merge). If `prism-84d308` landed first, rebase onto main and rerun Step 1.
+- [ ] **Step 3: Verify where the live surfaces resolve** (read-only). Merging to main is a deploy: the launcher and the panel both run the main checkout.
+
+```bash
+readlink -f "$(command -v prism)"                      # a dotfiles wrapper; it must exec ~/d/prism/bin/prism
+grep -n 'exec' "$(readlink -f "$(command -v prism)")"
+readlink -f ~/.local/share/noctalia/plugins/prism      # must be the main checkout's integrations/noctalia-plugin
+```
+
+If either resolves anywhere else, stop and report it; do not repoint anything.
+
+- [ ] **Step 4: Ask the owner before touching the host.** One question, naming every host action and its effect: merge `prism-4f8bab` into main (the next palette change or apply then runs the new sink); `prism apply niri` (validates and reloads the niri config, writing the first report); `noctalia msg plugins disable khughitt/prism && noctalia msg plugins enable khughitt/prism` (the panel restarts); then the owner opens the panel to look. Proceed only on a yes; otherwise `tasks park prism-600128 "<the question>" --waiting-on user --reason approval`.
+
+- [ ] **Step 5: Merge and install** (only after Step 4's yes). If `prism-84d308` landed first, the rebase picks it up; rerun Step 1 after a non-trivial rebase.
 
 ```bash
 git -C .worktrees/prism-4f8bab rebase main
 git merge --ff-only prism-4f8bab
+prism apply niri
+noctalia msg plugins disable khughitt/prism && noctalia msg plugins enable khughitt/prism
 ```
 
-- [ ] **Step 4: Install on the host.** The live panel loads from the main checkout (`~/.local/share/noctalia/plugins/prism` links into `integrations/noctalia-plugin/`), so no pointer is repointed. Run `prism apply niri` to write the first report, then `noctalia msg plugins disable khughitt/prism && noctalia msg plugins enable khughitt/prism`.
+- [ ] **Step 6: Owner acceptance.** The owner opens the panel and confirms: the Ring's three subgroups with the focus light under Focused; under Noctalia tint, the Tint row shows the palette swatches behind locks and Palette accent mix shows; under manual tint, pickers return and Palette accent mix hides; the ring Color behaves the same across its three sources.
 
-- [ ] **Step 5: Owner acceptance (host use — ask first).** Ask the owner to open the panel and confirm: the Ring's three subgroups with the focus light under Focused; under Noctalia tint, the Tint row shows the palette swatches behind locks and Palette accent mix shows; under manual tint, pickers return and Palette accent mix hides; the ring Color behaves the same across its three sources.
-
-- [ ] **Step 6: Close**
+- [ ] **Step 7: Close**
 
 ```bash
 tasks done prism-600128 "Gate, merge and owner acceptance passed"

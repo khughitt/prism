@@ -7,7 +7,7 @@ size: m
 complexity: mid
 process: planned
 created: 2026-09-22T15:37:30Z
-updated: 2026-10-03T10:31:42Z
+updated: 2026-10-03T10:35:31Z
 depends: [prism-4f8bab]
 parent: prism-980a29
 tags: [defs, noctalia, ui, material]
@@ -31,3 +31,4 @@ Scope: the def/UI mechanism, the Ring group's rendering in the Noctalia panel, a
 - 2026-10-03T09:51:44Z (prism-4f8bab): review: spec round 1 — verdict: revise; findings: P2 3; reviewer: codex
 - 2026-10-03T09:55:28Z (prism-4f8bab): review: spec round 2 — verdict: revise; findings: P2 1; reviewer: codex
 - 2026-10-03T10:02:31Z (prism-4f8bab): review: spec round 3 — verdict: accept; findings: none; reviewer: codex
+- 2026-10-03T10:35:31Z (prism-4f8bab): review: plan round 1 — verdict: revise; findings: P2 4; reviewer: codex
