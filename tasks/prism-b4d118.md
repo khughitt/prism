@@ -1,13 +1,15 @@
 ---
 id: prism-b4d118
 title: Show color pickers only under the manual source; swatches of the effective color otherwise
-status: todo
+status: doing
 priority: 2
 size: m
 complexity: mid
 process: planned
+owner: prism-4f8bab
 created: 2026-09-22T15:37:30Z
-updated: 2026-10-03T10:46:34Z
+updated: 2026-10-03T10:57:35Z
+started: 2026-10-03T10:57:35Z
 depends: [prism-4f8bab]
 parent: prism-980a29
 tags: [defs, noctalia, ui, material]
@@ -34,3 +36,5 @@ Scope: the def/UI mechanism, the Ring group's rendering in the Noctalia panel, a
 - 2026-10-03T10:35:31Z (prism-4f8bab): review: plan round 1 — verdict: revise; findings: P2 4; reviewer: codex
 - 2026-10-03T10:42:58Z (prism-4f8bab): review: plan round 2 — verdict: revise; findings: P2 1; reviewer: codex
 - 2026-10-03T10:46:34Z (prism-4f8bab): review: plan round 3 — verdict: accept; findings: none; reviewer: human
+- 2026-10-03T10:57:35Z (prism-4f8bab): started
+  provenance: {"harness_session":"claude-code:8eb178f6-5944-44f5-8688-c12bda8c37df","harness_session_source":"CLAUDE_CODE_SESSION_ID"}

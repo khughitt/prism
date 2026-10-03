@@ -13,6 +13,9 @@ const KEY_RE = /^[a-z][a-zA-Z0-9]*(\.[a-z][a-zA-Z0-9]*)+$/;
 // Controls the panel can draw twice in one focus row. A select is left out:
 // an enum shared by both states belongs in a single-parameter row instead.
 export const MATRIX_CONTROLS = ['slider', 'toggle', 'color'];
+// What a gated control shows while its source holds none of the listed values:
+// the color the sink reported, or nothing.
+export const WHEN_OTHERWISE = ['effective', 'hidden'];
 
 export function loadDefs(dir) {
   const defs = new Map();
@@ -47,12 +50,16 @@ export function loadDefs(dir) {
         else if (!isDeepStrictEqual(twin.neutral, def.neutral)) {
           throw new Error(`group ${def.ui.group} row ${def.ui.row}: ${twin.key} and ${def.key} `
             + 'declare different neutrals; a row\'s halves must neutralize alike');
+        } else if (!isDeepStrictEqual(twin.ui.when, def.ui.when)) {
+          throw new Error(`group ${def.ui.group} row ${def.ui.row}: ${twin.key} and ${def.key} `
+            + 'declare different ui.when; a row\'s halves share one gate');
         }
       }
       defs.set(def.key, def);
     }
   }
   checkSubgroups(defs);
+  checkWhens(defs);
   // A replacement is a rename across a release: the old key must be gone
   // from the definitions, or the store could hold both with a straight face.
   const replacedBy = new Map();
@@ -119,6 +126,20 @@ export function validateDef(def, src) {
     if (def.ui.column !== 'focused') fail('ui.column must be focused');
     if (has('state')) fail('ui.column and ui.state are exclusive');
     if (has('header')) fail('ui.column is not valid on a header toggle');
+  }
+  if (has('when')) {
+    const when = def.ui.when;
+    if (typeof when !== 'object' || when === null || Array.isArray(when)) fail('ui.when must be a mapping');
+    for (const field of Object.keys(when)) {
+      if (!['param', 'in', 'otherwise'].includes(field)) fail(`ui.when has unknown field ${field}`);
+    }
+    if (typeof when.param !== 'string' || !KEY_RE.test(when.param)) fail('ui.when.param must name a key');
+    if (!Array.isArray(when.in) || when.in.length === 0 || !when.in.every((value) => typeof value === 'string')) {
+      fail('ui.when.in must be a non-empty list of values');
+    }
+    if (!WHEN_OTHERWISE.includes(when.otherwise)) fail(`ui.when.otherwise must be one of ${WHEN_OTHERWISE.join('|')}`);
+    if (when.otherwise === 'effective' && def.ui.control !== 'color') fail('ui.when otherwise: effective is color-only');
+    if (has('header')) fail('a header toggle takes no ui.when');
   }
   if (has('state')) {
     if (!MATRIX_CONTROLS.includes(def.ui.control)) {
@@ -191,5 +212,21 @@ function checkSubgroups(defs) {
       }
       if (list[index + 1]?.ui.subgroup !== name) closed.add(name);
     });
+  }
+}
+
+// A gate reads an enum the panel holds, under values that enum can take.
+function checkWhens(defs) {
+  for (const def of defs.values()) {
+    const when = def.ui.when;
+    if (when === undefined) continue;
+    const source = defs.get(when.param);
+    if (source?.type !== 'enum') {
+      throw new Error(`invalid def ${def.key}: ui.when.param ${when.param} is not an enum def`);
+    }
+    const unknown = when.in.filter((value) => !source.values.includes(value));
+    if (unknown.length > 0) {
+      throw new Error(`invalid def ${def.key}: ui.when.in names ${unknown.join(', ')}, not values of ${when.param}`);
+    }
   }
 }

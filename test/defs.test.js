@@ -310,3 +310,28 @@ test('a matrix half may not be exempt', () => {
   assert.throws(() => loadDefs(dirWith([half('focused', 1), half('unfocused', 2)].join('\n'))),
     /a\.focused.*must declare a neutral/);
 });
+
+test('ui.when gates a control on an enum and says what shows otherwise', () => {
+  const src = '- {key: a.src, type: enum, values: [noctalia, manual], default: noctalia, neutral: manual, ui: {group: A, control: select, label: Source, order: 1}, description: d}\n';
+  const color = (when) => `- {key: a.tint, type: color, default: '#ffffff', neutral: '#ffffff', ui: {group: A, control: color, label: Tint, order: 2, when: ${when}}, description: d}\n`;
+  assert.deepEqual(loadDefs(dirWith(src + color('{param: a.src, in: [manual], otherwise: effective}'))).get('a.tint').ui.when,
+    { param: 'a.src', in: ['manual'], otherwise: 'effective' });
+  assert.throws(() => loadDefs(dirWith(src + color('{param: a.src, in: [], otherwise: effective}'))), /ui\.when\.in must be a non-empty list/);
+  assert.throws(() => loadDefs(dirWith(src + color('{param: a.src, in: [manual], otherwise: grey}'))), /ui\.when\.otherwise must be one of effective\|hidden/);
+  assert.throws(() => loadDefs(dirWith(src + color('{param: a.src, in: [manual], otherwise: effective, extra: 1}'))), /ui\.when has unknown field extra/);
+  assert.throws(() => loadDefs(dirWith(src + color('{param: a.src, in: [familiar], otherwise: effective}'))), /ui\.when\.in names familiar, not values of a\.src/);
+  assert.throws(() => loadDefs(dirWith(color('{param: a.gone, in: [manual], otherwise: effective}'))), /ui\.when\.param a\.gone is not an enum def/);
+  const slider = '- {key: a.mix, type: float, range: [0, 1], default: 0, neutral: 0, ui: {group: A, control: slider, step: 0.1, label: Mix, order: 3, when: {param: a.src, in: [noctalia], otherwise: effective}}, description: d}\n';
+  assert.throws(() => loadDefs(dirWith(src + slider)), /otherwise: effective is color-only/);
+  const hiddenSlider = slider.replace('otherwise: effective', 'otherwise: hidden');
+  assert.equal(loadDefs(dirWith(src + hiddenSlider)).get('a.mix').ui.when.otherwise, 'hidden');
+});
+
+test('both halves of a matrix row share one gate', () => {
+  const src = '- {key: a.src, type: enum, values: [noctalia, manual], default: noctalia, neutral: manual, ui: {group: A, control: select, label: Source, order: 1}, description: d}\n';
+  const half = (key, state, order, when) => `- {key: ${key}, type: color, default: '#ffffff', neutral: '#ffffff', ui: {group: A, control: color, label: ${key}, order: ${order}, state: ${state}, row: Tint${when ? `, when: ${when}` : ''}}, description: d}\n`;
+  const gate = '{param: a.src, in: [manual], otherwise: effective}';
+  assert.doesNotThrow(() => loadDefs(dirWith(src + half('a.tint', 'focused', 2, gate) + half('a.inactive.tint', 'unfocused', 3, gate))));
+  assert.throws(() => loadDefs(dirWith(src + half('a.tint', 'focused', 2, gate) + half('a.inactive.tint', 'unfocused', 3))),
+    /a\.tint and a\.inactive\.tint declare different ui\.when; a row's halves share one gate/);
+});

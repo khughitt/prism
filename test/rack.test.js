@@ -99,3 +99,14 @@ test('bypass must be a bool toggle without state, and requires an earlier device
   assert.throws(() => validateRack(rackWith((r) => { r.devices[0].requires = 'two'; }), defs), /device one: requires must name an earlier device/);
   assert.throws(() => validateRack(rackWith((r) => { r.devices[1].requires = 'two'; }), defs), /device two: requires must name an earlier device/);
 });
+
+test('a card keeps its head: ui.when may hide a shared key but never the mix row', () => {
+  const gate = ', when: {param: r.kind, in: [a], otherwise: hidden}';
+  const hiddenShared = defsFrom(DEFS.replace('label: Amount, order: 9}', `label: Amount, order: 9${gate}}`));
+  assert.doesNotThrow(() => validateRack(complete, hiddenShared));
+  const hiddenMix = defsFrom(DEFS
+    .replace('order: 2, state: focused, row: Blur}', `order: 2, state: focused, row: Blur${gate}}`)
+    .replace('order: 3, state: unfocused, row: Blur}', `order: 3, state: unfocused, row: Blur${gate}}`));
+  assert.throws(() => validateRack(complete, hiddenMix),
+    /device one: mix row Blur cannot be hidden by ui\.when; a card has no head without it/);
+});

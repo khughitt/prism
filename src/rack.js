@@ -59,6 +59,9 @@ export function validateRack(rack, defs) {
       if (rowOwner.has(label)) fail(`${where}: row ${label} already belongs to ${rowOwner.get(label)}`);
       rowOwner.set(label, id);
     }
+    if (defs.get(rows.get(device.mix).focused).ui.when?.otherwise === 'hidden') {
+      fail(`${where}: mix row ${device.mix} cannot be hidden by ui.when; a card has no head without it`);
+    }
     for (const key of [...device.shared, device.bypass]) {
       if (typeof key !== 'string' || !singles.has(key)) fail(`${where}: no shared parameter ${key} in group ${group}`);
       if (keyOwner.has(key)) fail(`${where}: ${key} already belongs to ${keyOwner.get(key)}`);
