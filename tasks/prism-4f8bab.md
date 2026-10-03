@@ -6,14 +6,15 @@ priority: 2
 size: m
 complexity: mid
 process: planned
-owner: main
+owner: prism-4f8bab
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-03T09:34:03Z
+updated: 2026-10-03T09:42:44Z
 started: 2026-10-03T09:34:03Z
 depends: []
 parent: prism-980a29
 tags: [ui, material]
 agent: claude-code/claude-opus-5-5
+spec: docs/specs/2026-10-03-ring-axis-and-source-aware-colors-design.md
 ---
 
 Why: the Focus group pairs each optic into Unfocused/Focused rows (ui.state + ui.row in defs/glass.yaml); the Ring group is a flat list, though its controls act on different windows. The focus light (Ring of light, Beam speed, Head wander, Wander rate, Decay distance, Glow, Resting ring) lights only the focused window; the signal accent (Accent strength, Edge tint) and the band (Gap, Width, Color) apply to every window.
@@ -27,3 +28,6 @@ Start: defs/glass.yaml Ring section; integrations/noctalia-plugin/presentation.l
 - 2026-10-02T23:46:52Z (main): owner 2026-10-02: the '?' marks an open idea, not low priority; raised to P2.
 - 2026-10-03T09:34:03Z (main): started
   provenance: {"harness_session":"claude-code:41dbe03e-a467-49eb-9870-825e76fa1468","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-03T09:34:08Z (prism-4f8bab): resumed
+  provenance: {"harness_session":"claude-code:41dbe03e-a467-49eb-9870-825e76fa1468","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-03T09:42:43Z (prism-4f8bab): spec drafted: one spec with prism-b4d118. Owner chose layout-only for the ring axis (no per-state ring params). Choices: sink-reported effective colors (rejected: describe computing them, panel reading the palette); ui.when gate; ui.subgroup + ui.column.

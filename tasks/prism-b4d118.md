@@ -7,11 +7,12 @@ size: m
 complexity: mid
 process: planned
 created: 2026-09-22T15:37:30Z
-updated: 2026-10-02T23:46:51Z
+updated: 2026-10-03T09:42:43Z
 depends: [prism-4f8bab]
 parent: prism-980a29
 tags: [defs, noctalia, ui, material]
 agent: claude-code/claude-opus-5
+spec: docs/specs/2026-10-03-ring-axis-and-source-aware-colors-design.md
 ---
 
 Owner request 2026-09-22: when `glass.ring.colorSource` is `familiar` or `noctalia`, the Color control below it should not be adjustable; only `manual` should let the user set it.
