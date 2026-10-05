@@ -1,13 +1,15 @@
 ---
 id: prism-eef38f
 title: "Pipeline schema: the renderer's sites, scope, composition law, and coverage as data"
-status: todo
+status: doing
 priority: 2
 size: m
 complexity: high
 process: planned
+owner: main
 created: 2026-10-05T01:45:24Z
-updated: 2026-10-05T01:45:24Z
+updated: 2026-10-05T01:51:28Z
+started: 2026-10-05T01:51:28Z
 depends: []
 parent: prism-a03862
 tags: [material, bus, cross-project]
@@ -46,3 +48,8 @@ The renderer owns the truth: a checked-in schema file in niri-material with a te
 Spec under docs/specs/, reviewed; then a plan whose steps become children here and in niri-material (schema + test; prism validation + stale-order fix; contract test between the two). The noise placement tasks depend on this design.
 
 Related: prism-542904 (shelved reorder; this is its contract), material-e2f01a (shelved learnable order), material-3aa1f2 (layers lane), prism-569378 (rack appearance; independent).
+
+## Notes
+
+- 2026-10-05T01:51:28Z (main): started
+  provenance: {"harness_session":"claude-code:23285ff0-fcf8-4e52-93eb-5ccb34db3e4c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
