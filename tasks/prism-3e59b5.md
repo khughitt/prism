@@ -4,7 +4,7 @@ title: Wallpaper properties and user nudges as data
 status: idea
 priority: 2
 created: 2026-09-11T23:34:15Z
-updated: 2026-09-29T22:43:31Z
+updated: 2026-10-04T22:53:38Z
 depends: []
 parent: prism-179840
 tags: [quick-add, adaptive, cross-project, wallpaper, profiles]
@@ -19,3 +19,5 @@ Source: mindful:thought:a476e6bcd1fd4297b70824758235d821
 
 - 2026-09-11T23:39:09Z (main): prism-284a61 (dice) is a ready-made random-modulation surface; the explicit rating idea filed alongside supplies labels.
 - 2026-09-29T22:43:31Z (main): scope: briefed; parented under prism-179840; prism-6aca8a separates user gestures from rotation-carried scratch and checks image-property ownership; original Mindful source unavailable locally; brief: docs/notes/2026-09-29-look-exploration-brief.md
+- 2026-10-04T22:53:37Z (main): also raised in mindful:thought:2bbac923f0b258f2d9034dd79bf3c84b
+- 2026-10-04T22:53:37Z (main): From that thought, beyond wallpaper-conditioned sets: learn parameter ranges, default values and scales from the values the user nudges toward and settles on, with the wallpaper as context.
