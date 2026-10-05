@@ -39,3 +39,13 @@ test('a dry entry is a bypass key with at least one field', () => {
   assert.throws(() => loadDry(sinks({ 'a/dry.yaml': 'glass.ior: {x: 0}\n' })), /a\/dry\.yaml: glass\.ior is not a bypass key/);
   assert.throws(() => loadDry(sinks({ 'a/dry.yaml': 'glass.bypass.one: {}\n' })), /a\/dry\.yaml: glass\.bypass\.one must map to at least one field/);
 });
+
+test('an empty or non-map dry file is refused by name', () => {
+  assert.throws(() => loadDry(sinks({ 'a/dry.yaml': '' })), /a\/dry\.yaml: dry table must be a map of bypass keys/);
+  assert.throws(() => loadDry(sinks({ 'a/dry.yaml': '# nothing yet\n' })), /a\/dry\.yaml: dry table must be a map of bypass keys/);
+  assert.throws(() => loadDry(sinks({ 'a/dry.yaml': '- glass.bypass.one\n' })), /a\/dry\.yaml: dry table must be a map of bypass keys/);
+});
+
+test('a missing integrations directory has no dry tables, as it has no manifests', () => {
+  assert.deepEqual(loadDry(path.join(sinks({}), 'nowhere')), {});
+});

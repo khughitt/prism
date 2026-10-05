@@ -84,8 +84,8 @@ test('a complete rack validates and comes back resolved', () => {
   assert.deepEqual(one.interactions, []);
   assert.equal(two.requires, 'one');
   assert.deepEqual(two.interactions, [
-    { kind: 'attenuates', device: 'one', why: 'blur scales depth [expose]' },
-    { kind: 'requires', device: 'one', why: 'the r.bypass.one dry entry writes depth' },
+    { kind: 'attenuates', device: 'one', why: 'blur scales depth [expose]', source: 'schema' },
+    { kind: 'requires', device: 'one', why: 'the r.bypass.one dry entry writes depth', source: 'dry' },
   ]);
   assert.equal(Object.hasOwn(three, 'requires'), false, 'a device is not required by its own dry entry');
   assert.deepEqual(three.interactions, []);
@@ -105,7 +105,7 @@ test('the shipped rack loads against the shipped defs, schema, and dry file', ()
     [['fringing', 'refraction'], ['directionalBlur', 'refraction']]);
   const backdrop = rack.devices[0];
   assert.deepEqual([backdrop.stage, backdrop.site, backdrop.scope, backdrop.family], ['prefilter', 'source', 'material', 'source']);
-  assert.deepEqual(backdrop.interactions.map((i) => [i.kind, i.device]), [['attenuates', 'refraction']]);
+  assert.deepEqual(backdrop.interactions.map((i) => [i.kind, i.device, i.source]), [['attenuates', 'refraction', 'schema']]);
   assert.deepEqual(rack.devices.map((d) => d.family), [
     'source', 'geometry', 'transmission', 'transmission', 'transmission', 'transmission', 'transmission',
     'transmission', 'light', 'light',
@@ -163,6 +163,12 @@ test('the rack file shape is checked before its contents', () => {
   assert.throws(() => check({ group: 'R', shared: [], devices: [] }), /devices must be a non-empty list/);
   assert.throws(() => check({ group: 'R', devices: complete().devices }), /shared must be a list of stage ids/);
   assert.throws(() => check(rackWith((r) => { r.shared = ['nowhere']; })), /shared names unknown stage nowhere/);
+  assert.throws(() => check(rackWith((r) => { r.shared = ['four', 'four']; })), /shared lists stage four twice/);
+});
+
+test('a stage is a device or a shared stage, not both', () => {
+  assert.throws(() => check(rackWith((r) => { r.shared = ['four', 'one']; })),
+    /device one: stage one is in shared; a stage is a device or a shared stage, not both/);
 });
 
 test('device ids are camelCase and unique, labels present, no stray fields', () => {
@@ -269,7 +275,7 @@ test('a dry field resolves to its node through the manifest, so an = node derive
   const two = check(complete(), SCHEMA(), dry, NODES).devices[1];
   assert.equal(two.requires, 'one');
   assert.deepEqual(two.interactions.find((i) => i.kind === 'requires'),
-    { kind: 'requires', device: 'one', why: 'the r.bypass.one dry entry writes amount=' });
+    { kind: 'requires', device: 'one', why: 'the r.bypass.one dry entry writes amount=', source: 'dry' });
 });
 
 test('the shipped manifest resolves a dry field on an = node', () => {
@@ -281,7 +287,7 @@ test('the shipped manifest resolves a dry field on an = node', () => {
   const rack = parse(fs.readFileSync(path.join(defsDir(), 'rack', 'devices.yaml'), 'utf8'));
   const noise = validateRack(rack, shippedDefs, loadPipeline(defsDir()), dry, nodes).devices.find((d) => d.device === 'noise');
   assert.equal(noise.requires, 'distortion');
-  assert.deepEqual(noise.interactions, [{ kind: 'requires', device: 'distortion', why: 'the glass.bypass.distortion dry entry writes noise type=' }]);
+  assert.deepEqual(noise.interactions, [{ kind: 'requires', device: 'distortion', why: 'the glass.bypass.distortion dry entry writes noise type=', source: 'dry' }]);
 });
 
 test('a dry field with no manifest node fails naming the entry and its sink', () => {

@@ -8,6 +8,9 @@ import { parse } from 'yaml';
 // reads its own to render bypassed devices.
 export function readDry(file, label = file) {
   const dry = parse(fs.readFileSync(file, 'utf8'));
+  if (typeof dry !== 'object' || dry === null || Array.isArray(dry)) {
+    throw new Error(`${label}: dry table must be a map of bypass keys`);
+  }
   for (const [key, fields] of Object.entries(dry)) {
     if (!key.startsWith('glass.bypass.')) throw new Error(`${label}: ${key} is not a bypass key`);
     if (typeof fields !== 'object' || fields === null || Object.keys(fields).length === 0) {
@@ -20,6 +23,8 @@ export function readDry(file, label = file) {
 // Every sink's table, merged: each bypass key maps to `{sink, fields}`, the
 // sink being the directory that declared it, so a rack error can name it.
 export function loadDry(dir) {
+  // No integrations directory is no sinks, as loadManifests reads it.
+  if (!fs.existsSync(dir)) return {};
   const merged = {};
   const declaredBy = new Map();
   const entries = fs.readdirSync(dir, { withFileTypes: true })

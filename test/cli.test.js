@@ -190,12 +190,13 @@ test('describe carries the resolved rack', async (t) => {
     device: 'fringing', label: 'Fringing', stage: 'fringing', mix: 'Fringing',
     rows: [], shared: [], bypass: 'glass.bypass.fringing',
     site: 'taps', scope: 'material', family: 'transmission', requires: 'refraction',
-    interactions: [{ kind: 'requires', device: 'refraction', why: 'the glass.bypass.refraction dry entry writes chromatic-aberration' }],
+    interactions: [{ kind: 'requires', device: 'refraction', why: 'the glass.bypass.refraction dry entry writes chromatic-aberration', source: 'dry' }],
   });
   assert.equal(Object.hasOwn(rack.devices[0], 'requires'), false);
   assert.deepEqual(rack.devices[0].interactions, [{
     kind: 'attenuates', device: 'refraction',
     why: rack.devices[0].interactions[0].why,
+    source: 'schema',
   }]);
   assert.match(rack.devices[0].interactions[0].why, /roughness/);
 });

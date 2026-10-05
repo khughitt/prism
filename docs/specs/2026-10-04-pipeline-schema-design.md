@@ -453,8 +453,12 @@ golden output is unchanged.
   `anisotropic-blur`, the mixes of Fringing and Directional blur). At most one
   device may result; two is a load error until a consumer needs more.
 - `interactions`: every schema edge whose source and target stages are both
-  devices, resolved as `{kind, device, why}` on the target device, plus the
-  dry-derived `requires` in the same form with `why` naming the dry entry.
+  devices, resolved as `{kind, device, why, source}` naming the other device.
+  A `requires` edge lands on the dependent, its source stage (Fringing's
+  entry names Refraction); an `attenuates` or `shadows` edge lands on the
+  affected stage, its target (Backdrop's entry names Refraction). The
+  dry-derived `requires` takes the same form on the dependent, with `why`
+  naming the dry entry; `source` is `schema` or `dry`.
 
 The panel's silenced light reads `requires` exactly as today. An
 `attenuates` entry whose named device is bypassed adds one line to the card's

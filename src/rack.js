@@ -40,8 +40,11 @@ export function validateRack(rack, defs, schema, dry, nodes) {
   if (typeof rack?.group !== 'string' || rack.group.trim() === '') fail('group must be a non-empty string');
   if (!Array.isArray(rack.devices) || rack.devices.length === 0) fail('devices must be a non-empty list');
   if (!Array.isArray(rack.shared) || rack.shared.some((s) => typeof s !== 'string')) fail('shared must be a list of stage ids');
+  const shared = new Set();
   for (const stage of rack.shared) {
     if (!schema.stageById.has(stage)) fail(`shared names unknown stage ${stage}`);
+    if (shared.has(stage)) fail(`shared lists stage ${stage} twice`);
+    shared.add(stage);
   }
   const group = rack.group;
 
@@ -92,6 +95,7 @@ export function validateRack(rack, defs, schema, dry, nodes) {
     if (device.stage === undefined) fail(`${where}: stage required`);
     const stage = schema.stageById.get(device.stage);
     if (stage === undefined) fail(`${where}: unknown stage ${device.stage}`);
+    if (shared.has(stage.id)) fail(`${where}: stage ${stage.id} is in shared; a stage is a device or a shared stage, not both`);
     if (stageOwner.has(stage.id)) fail(`${where}: stage ${stage.id} already belongs to ${stageOwner.get(stage.id)}`);
     const index = schema.stageIndex.get(stage.id);
     if (index < lastStage) {
@@ -143,7 +147,7 @@ export function validateRack(rack, defs, schema, dry, nodes) {
     if (owner !== undefined && !written.has(owner)) written.set(owner, { key, node });
   }
   for (const [stageId, { key, node }] of written) {
-    if (!stageOwner.has(stageId) && !rack.shared.includes(stageId)) {
+    if (!stageOwner.has(stageId) && !shared.has(stageId)) {
       fail(`stage ${stageId} owns ${node}, written by ${key}, but has no device and is not in shared`);
     }
   }
@@ -162,12 +166,14 @@ export function validateRack(rack, defs, schema, dry, nodes) {
     // A requires edge lands on the dependent (its `from`) naming what it needs;
     // an attenuates or shadows edge lands on the affected stage (its `on`)
     // naming what acts on it. Both read as "this card, because of that one".
+    // Each entry carries its source (schema edge or dry entry) so a consumer
+    // never has to infer it from the text.
     for (const edge of schema.interactions) {
       const [here, there] = edge.kind === 'requires' ? [edge.from, edge.on] : [edge.on, edge.from];
       if (here !== device.stage) continue;
       const other = deviceOfStage.get(there);
       if (other === undefined) continue;
-      interactions.push({ kind: edge.kind, device: other, why: edge.why });
+      interactions.push({ kind: edge.kind, device: other, why: edge.why, source: 'schema' });
       if (edge.kind === 'requires') requiresFrom.push({ device: other, source: 'schema' });
     }
     for (const [bypassKey, { sink, fields }] of Object.entries(dry)) {
@@ -176,7 +182,7 @@ export function validateRack(rack, defs, schema, dry, nodes) {
       const mine = nodesOfDevice.get(device.device);
       const written = Object.keys(fields).map((f) => fieldNode(bypassKey, sink, f, nodes)).filter((n) => mine.has(n));
       if (written.length === 0) continue;
-      interactions.push({ kind: 'requires', device: other, why: `the ${bypassKey} dry entry writes ${written.join(', ')}` });
+      interactions.push({ kind: 'requires', device: other, why: `the ${bypassKey} dry entry writes ${written.join(', ')}`, source: 'dry' });
       requiresFrom.push({ device: other, source: 'dry' });
     }
     const distinct = [...new Set(requiresFrom.map((r) => r.device))];
