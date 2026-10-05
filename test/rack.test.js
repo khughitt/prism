@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { parse } from 'yaml';
 import { loadDefs } from '../src/defs.js';
 import { loadRack, validateRack, familyOf } from '../src/rack.js';
 import { loadPipeline, validatePipeline } from '../src/pipeline.js';
@@ -108,6 +109,26 @@ test('the shipped rack loads against the shipped defs, schema, and dry file', ()
   ]);
   assert.deepEqual(rack.devices.find((d) => d.device === 'tint').shared, ['glass.tintSource', 'glass.tintAccentMix']);
   assert.equal(rack.devices.some((d) => 'category' in d), false);
+});
+
+test('the drift case: a vendored schema that swaps the two behind optics fails the shipped rack load naming both devices', () => {
+  // The spec's acceptance (Section 6): the shipped devices.yaml against the
+  // shipped pipeline.json with saturation and noise swapped, as a regenerated
+  // schema from a renderer whose ORDER moved them would read.
+  const shippedDefs = loadDefs(defsDir());
+  const schema = JSON.parse(fs.readFileSync(path.join(defsDir(), 'rack', 'pipeline.json'), 'utf8'));
+  const at = (id) => schema.stages.findIndex((s) => s.id === id);
+  const [saturation, noise] = [at('saturation'), at('noise')];
+  assert.ok(saturation !== -1 && noise !== -1 && saturation < noise, 'the shipped schema orders saturation before noise');
+  [schema.stages[saturation], schema.stages[noise]] = [schema.stages[noise], schema.stages[saturation]];
+  const swapped = validatePipeline(schema);
+  const rack = parse(fs.readFileSync(path.join(defsDir(), 'rack', 'devices.yaml'), 'utf8'));
+  const dry = loadDry();
+  const nodes = nodeMap(loadManifests(integrationsDir(), shippedDefs));
+  assert.throws(() => validateRack(rack, shippedDefs, swapped, dry, nodes),
+    /device noise: out of stage order; stage noise precedes stage saturation in the schema/);
+  // The same inputs against the shipped schema still load: the swap is the whole difference.
+  assert.doesNotThrow(() => validateRack(rack, shippedDefs, loadPipeline(defsDir()), dry, nodes));
 });
 
 test('families follow the site', () => {
