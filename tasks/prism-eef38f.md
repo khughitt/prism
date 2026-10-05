@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: prism-eef38f
 created: 2026-10-05T01:45:24Z
-updated: 2026-10-05T11:49:50Z
+updated: 2026-10-05T12:04:03Z
 started: 2026-10-05T01:51:28Z
 depends: []
 parent: prism-a03862
@@ -96,3 +96,4 @@ Related: prism-542904 (shelved reorder; this is its contract), material-e2f01a (
 - 2026-10-05T10:49:55Z (prism-eef38f): review: plan round 3 — verdict: accept; findings: none; reviewer: codex
 - 2026-10-05T10:49:55Z (prism-eef38f): Scoped re-review of a454deb: ownership and duplicate-row fixtures now each reach their intended validation, verified by evaluating the plan snippets in memory. Prior plan findings remain resolved. Accepted for native execution after the renderer plan, with a fresh whole-branch review before integration.
 - 2026-10-05T11:49:50Z (prism-eef38f): Spec correction needed before the prism plan's Task 1 vendors pipeline.json: the renderer's implementation review (material-a00785, merged in niri-material 4cdbbe90) found Section 1 rows disagree with glass_signal_inputs. As built: distortion, fringing, directional-blur and tint are animated; distortion, ripple, fringing, directional-blur and ring list responses ping/done/error (flash boosts CA, distortion and the tap count; ripple raises jelly activity, which scales the ring glow); fringing and directional-blur also read backdrop-blur and roughness (every tap samples the prefilter). The niri tables and resources/materials/pipeline.json carry the corrected rows and pin them; Section 1 should match. Pending on the renderer side: material-5b2bc5 adds accent to the sweeps row.
+- 2026-10-05T12:04:03Z (prism-eef38f): review: impl round 1 — verdict: revise; findings: Important 3, Minor 5; reviewer: claude-code/claude-fable-5-1

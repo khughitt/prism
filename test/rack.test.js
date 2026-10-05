@@ -215,3 +215,25 @@ test('a card keeps its head: ui.when may hide a shared key but never the mix row
   assert.throws(() => validateRack(complete(), hiddenMix, SCHEMA(), DRY, NODES),
     /device one: mix row Blur cannot be hidden by ui\.when; a card has no head without it/);
 });
+
+test('a derived requires names an earlier device', () => {
+  // Each device's dry entry zeroes the other's mix: a cycle the panel cannot resolve.
+  const mutual = { ...DRY, 'r.bypass.one': { depth: 0 }, 'r.bypass.two': { blur: 0 } };
+  assert.throws(() => check(complete(), SCHEMA(), mutual, NODES),
+    /device one: requires two, which comes after it; a device may only require an earlier one/);
+  // A forward coupling alone is refused the same way.
+  const forward = { ...DRY, 'r.bypass.one': { blur: 0 }, 'r.bypass.two': { blur: 0 } };
+  assert.throws(() => check(complete(), SCHEMA(), forward, NODES),
+    /device one: requires two, which comes after it/);
+});
+
+test('a manifest node no stage owns fails at load, naming key and node', () => {
+  const typo = new Map(NODES);
+  typo.set('g.gap', 'gapp');
+  assert.throws(() => check(complete(), SCHEMA(), DRY, typo), /g\.gap binds node gapp, which no stage owns/);
+});
+
+test('a dry entry names a device bypass', () => {
+  assert.throws(() => check(complete(), SCHEMA(), { ...DRY, 'r.bypass.ghost': { gain: 0 } }, NODES),
+    /dry entry r\.bypass\.ghost names no device's bypass/);
+});

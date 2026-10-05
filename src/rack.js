@@ -69,6 +69,9 @@ export function validateRack(rack, defs, schema, dry, nodes) {
   for (const stage of schema.stages) {
     for (const node of stage.owns) ownerOf.set(node, stage.id);
   }
+  for (const [key, node] of nodes) {
+    if (!ownerOf.has(node)) fail(`${key} binds node ${node}, which no stage owns`);
+  }
 
   const ids = new Set();
   const rowOwner = new Map();
@@ -148,6 +151,10 @@ export function validateRack(rack, defs, schema, dry, nodes) {
   // Derived requires and resolved interactions.
   const deviceOfStage = new Map(devices.map((d) => [d.stage, d.device]));
   const deviceOfBypass = new Map(devices.map((d) => [d.bypass, d.device]));
+  for (const bypassKey of Object.keys(dry)) {
+    if (!deviceOfBypass.has(bypassKey)) fail(`dry entry ${bypassKey} names no device's bypass`);
+  }
+  const position = new Map(devices.map((d, i) => [d.device, i]));
   const nodesOfDevice = new Map(devices.map((d) => [d.device, new Set(d.keys.map((k) => nodes.get(k)).filter((n) => n !== undefined))]));
   for (const device of devices) {
     const interactions = [];
@@ -179,7 +186,14 @@ export function validateRack(rack, defs, schema, dry, nodes) {
     }
     delete device.keys;
     device.interactions = interactions;
-    if (distinct.length === 1) device.requires = distinct[0];
+    if (distinct.length === 1) {
+      // The panel resolves requires against the cards before this one, which
+      // also rules out cycles.
+      if (position.get(distinct[0]) > position.get(device.device)) {
+        fail(`device ${device.device}: requires ${distinct[0]}, which comes after it; a device may only require an earlier one`);
+      }
+      device.requires = distinct[0];
+    }
   }
   return { group, shared: rack.shared, devices };
 }
