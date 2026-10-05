@@ -1,8 +1,8 @@
 # Pipeline schema: the renderer's sites, scope, composition law, and coverage as data
 
 **Date:** 2026-10-04
-**Status:** accepted for planning 2026-10-05 after spec review rounds 1 to 3
-(codex).
+**Status:** implemented 2026-10-05 (prism side; renderer side in niri-material
+`material-a00785`), after spec review rounds 1 to 3 (codex).
 **Task:** `prism-eef38f`, first design child of goal `prism-a03862` (device
 chain). Spans prism and niri-material; the renderer-side steps are filed in
 niri-material and reference this document by path.
