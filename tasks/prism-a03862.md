@@ -6,7 +6,7 @@ priority: 2
 size: xl
 complexity: high
 created: 2026-09-09T00:48:50Z
-updated: 2026-09-12T16:46:10Z
+updated: 2026-10-05T01:46:01Z
 depends: []
 tags: [ui, material, noctalia, bus]
 spec: docs/specs/2026-09-08-device-chain-rack-design.md
@@ -48,3 +48,4 @@ Related: prism-686374 (VST panel), prism-7e4766 (inactive follows focused), pris
 ## Notes
 
 - 2026-09-09T03:03:30Z (device-chain): Promoted to a goal 2026-09-08 after brainstorming; first piece is the rack presentation (docs/specs/2026-09-08-device-chain-rack-design.md); stacked noise, focus as modulation, and reordering are separate children
+- 2026-10-05T01:46:01Z (main): 2026-10-04: order modelled as per-device site over the renderer's hook sites, not a permutation; first child is the pipeline schema design prism-eef38f (sites, scope, composition law, coverage, dominance matrix), then noise placement material-cf32e5 + prism-be5abe; stale rack order filed as prism-ba8c59

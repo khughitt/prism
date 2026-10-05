@@ -1,0 +1,48 @@
+---
+id: prism-eef38f
+title: "Pipeline schema: the renderer's sites, scope, composition law, and coverage as data"
+status: todo
+priority: 2
+size: m
+complexity: high
+process: planned
+created: 2026-10-05T01:45:24Z
+updated: 2026-10-05T01:45:24Z
+depends: []
+parent: prism-a03862
+tags: [material, bus, cross-project]
+agent: claude-code/claude-fable-5-1
+---
+
+Design task for goal prism-a03862, spanning prism and niri-material. Make the material pipeline's structure explicit as renderer-owned data, so the rack, the niri sink, and later exploration are derived from it instead of restating it by hand.
+
+## Why now
+
+The rack already drifted: niri-material moved saturation and noise to the behind hook on 2026-09-18 (its docs/specs/2026-09-12-material-render-order-design.md), nine days after defs/rack/devices.yaml was written, so the rack shows them last while main.frag runs them before tint. The first reorderable device (noise before frost) needs a contract for what "order" means in a pipeline that has no list to permute: stages are bound to hook sites, and blur is a source selection, not a pass.
+
+## The model the spec must settle
+
+A short ordered list of sites, each with four attributes:
+
+- carrier: the value type flowing through it. Per-output texture (source), surface normal (normal), linear RGB per fragment (behind), additive light (within, specular, emissive), encoded sRGB (post/film).
+- scope: where a parameter at that site can vary. Per output (source textures are shared by every window), per material (uniforms, so per focus state), per frame (animated).
+- composition law: how two devices at one site combine, and whether it commutes. Additive light commutes (ring vs aurora order is meaningless); function composition on RGB does not (saturation then noise differs from noise then saturation); attenuation commutes with itself.
+- coverage: what the result lands on. Everything in the material shader is glass only (opaque client pixels bypass it); the background-effect element covers the window area.
+
+Each optic declares, per site it can be written for, its signature on that carrier and the parameters it takes. Noise: texture, linear RGB, encoded RGB. Saturation: linear, encoded. Distortion: normal only. Refraction consumes the normal and yields RGB, so it is the boundary between sites, not a device inside one.
+
+Consequences that become lookups: order is a parameter exactly at non-commutative sites; a device at a per-output site has no focus split and its card must say so rather than drop a slider; film grain covers glass only; legal drop zones are the carriers an optic has code for; cost class per site (source work cached per backdrop damage, fragment work per frame) frames measurement without replacing it. The explorable space is placements x orders at non-commutative sites x parameter ranges, minus what scope forbids: the legal space for the dice button, profiles, and the adaptive lane (material-e2f01a).
+
+## Dominance and synergy (owner's question, 2026-10-04)
+
+The spec also records which transformations dominate others under the schema: pairs where one setting makes another invisible or inert (heavy roughness erasing source-site grain; refraction bypass silencing fringing and directional blur; saturation 0 removing tint hue; opaque windows hiding every fragment-site effect). Represent it as an interaction matrix over devices and sites, derived where the schema allows and measured where it does not. For each dominating transformation decide: keep and expose the interaction in the rack (an upstream-silenced style light), prefer a cooperative alternative, or drop the dominated device.
+
+## Where it lives
+
+The renderer owns the truth: a checked-in schema file in niri-material with a test pinning it to the OPTICS registry (src/render_helpers/material/optics/mod.rs) and the hook calls in main.frag, after the dry-table cross-check pattern. Prism's loadRack validates devices.yaml against it; the rack file keeps only presentation (labels, categories, mix rows). First slice is the schema for today's pipeline with no behaviour change; its rack test fails on the stale order and the fix lands with it.
+
+## Deliverables
+
+Spec under docs/specs/, reviewed; then a plan whose steps become children here and in niri-material (schema + test; prism validation + stale-order fix; contract test between the two). The noise placement tasks depend on this design.
+
+Related: prism-542904 (shelved reorder; this is its contract), material-e2f01a (shelved learnable order), material-3aa1f2 (layers lane), prism-569378 (rack appearance; independent).
