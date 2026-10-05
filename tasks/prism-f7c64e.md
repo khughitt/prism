@@ -8,7 +8,7 @@ complexity: low
 process: direct
 owner: prism-902869
 created: 2026-10-05T12:08:05Z
-updated: 2026-10-05T12:32:11Z
+updated: 2026-10-05T12:51:09Z
 started: 2026-10-05T12:28:51Z
 completed: 2026-10-05T12:32:09Z
 depends: []
@@ -29,3 +29,5 @@ Deferred minors from the prism-eef38f final review, one failing test each: (1) r
   provenance: {"harness_session":"claude-code:23285ff0-fcf8-4e52-93eb-5ccb34db3e4c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
 - 2026-10-05T12:32:09Z (prism-902869): rack rejects a shared stage listed twice or also held by a device; an empty or non-map dry.yaml is refused by name and a missing integrations dir is no dry tables; interactions carry source and renderInteractions reads it; spec Section 3 sentence fixed; fixture sinks stay without dry tables (noted)
   provenance: {"harness_session":"claude-code:23285ff0-fcf8-4e52-93eb-5ccb34db3e4c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-05T12:51:08Z (main): review: impl round 1 — verdict: accept; findings: Minor 4; reviewer: claude-code/claude-fable-5-1
+- 2026-10-05T12:51:08Z (main): Deferred minors from the branch review: dry fields are resolved only while iterating another device (a one-device rack never reports a nodeless field); spec Section 3 still shows loadRack(dir, defs) and validateRack without nodes; Lua fixtures imitate describe without source
