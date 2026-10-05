@@ -1,8 +1,8 @@
 # Pipeline schema: the renderer's sites, scope, composition law, and coverage as data
 
 **Date:** 2026-10-04
-**Status:** draft, revised 2026-10-05 after spec review round 1 (codex);
-awaiting owner re-review
+**Status:** draft, revised 2026-10-05 after spec review rounds 1 and 2
+(codex); awaiting owner re-review
 **Task:** `prism-eef38f`, first design child of goal `prism-a03862` (device
 chain). Spans prism and niri-material; the renderer-side steps are filed in
 niri-material and reference this document by path.
@@ -44,6 +44,9 @@ the promised noise extension could not fit the pinning rules or the JSON
 shape; and the panel hint had no data to read. The three smaller
 contradictions it named (authored versus derived `requires`, carrier values
 outside their enum, test-only versus load-time freshness) are also resolved.
+Round 2 corrected two more: `thickness` is owned by `refraction`, whose Depth
+row already binds it, with `slab` reading it; and registry order is checked
+per `(program, site)`, since one optic may appear at several sites.
 
 ## Decisions
 
@@ -159,10 +162,10 @@ Today's stages, in order. The site order of Section 1 and the call order in
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | `blur` | source | output | `blur passes`, `blur offset` | | | | | |
 | 2 | `prefilter` | source | material | `backdrop-blur`, `roughness` | `ior` (level = `roughness * clamp(ior*2-2, 0, 1)`) | | | | `backdrop` |
-| 3 | `slab` | normal | material | `bevel`, `offset-x`, `offset-y`, `thickness`, `jelly-flex` | | | | yes (residuals) | |
+| 3 | `slab` | normal | material | `bevel`, `offset-x`, `offset-y`, `jelly-flex` | `thickness` (chamfer rise) | | | yes (residuals) | |
 | 4 | `distortion` | normal | material | `distortion`, `distortion scale=` | | | | | `distortion` |
 | 5 | `ripple` | normal | material | `jelly-ripple` | | | | yes | |
-| 6 | `refraction` | taps | material | `ior` | `thickness`, `backdrop-blur`, `roughness` (which pyramid levels the taps sample) | | | | `refraction` |
+| 6 | `refraction` | taps | material | `ior`, `thickness` | `backdrop-blur`, `roughness` (which pyramid levels the taps sample) | | | | `refraction` |
 | 7 | `fringing` | taps | material | `chromatic-aberration` | `ior`, `thickness`, `anisotropic-blur` (shared tap loop) | | | | `fringing` |
 | 8 | `directional-blur` | taps | material | `anisotropic-blur` | `ior`, `thickness`, `chromatic-aberration` (shared tap loop) | | | | `directionalBlur` |
 | 9 | `saturation` | behind | material | `saturation` | `blur saturation`, `backdrop-blur` (the inherit-or-neutral rule) | | `saturation_behind` / material | | `saturation` |
@@ -188,8 +191,11 @@ overrides them per window, which is what `window` scope records. Prism's
 terminal rule pins both neutral.
 
 A parameter with more than one reader is why a device and a stage are not
-the same thing: the device `refraction` owns the `ior` slider, and `reads`
-says where else it reaches.
+the same thing: the device `refraction` owns the `ior` and `thickness`
+sliders (Refraction and Depth), and `reads` says where else they reach: the
+slab's chamfer rise, the tint's optical distance, the ring's and aurora's
+landing depth. Ownership follows the control, not the first reader in
+pipeline order.
 
 ### Interactions
 
@@ -280,8 +286,11 @@ In niri-config:
 - Every stage's `site` names an entry of `SITES`; stages are grouped by site
   in site order (no stage of site 4 appears after a stage of site 5).
 - Every optic in `ORDER` has at least one stage whose `optic.name` is it; no
-  two stages share an `(optic.name, optic.hook)` pair; stages of one optic
-  within one program appear in `ORDER` relative to other optics' stages.
+  two stages share an `(optic.name, optic.hook)` pair. Within each
+  `(program, site)`, optic stages appear in `ORDER` relative to one another;
+  across sites, site order governs, and `ORDER` says nothing. An optic with
+  stages at several sites (noise after Section 5: source, behind, post) is
+  therefore legal with one registry name.
 - A `selector` names an `Enum` `ParamSpec` and one of its variants; every
   variant of a selector parameter selects exactly one stage, and all those
   stages belong to one optic. A stage with a selector has it listed in
@@ -293,7 +302,8 @@ In niri (the renderer crate), beside the existing `OPTICS`-matches-`ORDER`
 test:
 
 - For every stage whose `optic.program` is `material`, `main.frag` contains a
-  call to `<name>_<hook>(`, and those calls appear in stage order. For
+  call to `<name>_<hook>(`, and those calls appear in stage order (which is
+  site order, then `ORDER` within a site). For
   `effect` and `postprocess`, the named shader source for that program
   contains the call. The "one call per used hook" rule in `adding-an-optic.md`
   becomes checked, per program.
@@ -377,7 +387,7 @@ failing test says which direction to copy.
 
 ```yaml
 group: Focus
-shared: [slab, ring]
+shared: [slab, ripple, ring]
 devices:
   - device: backdrop
     label: Backdrop
@@ -397,7 +407,8 @@ devices:
 ```
 
 `category` and `requires` are gone; `stage` is new and required; the
-top-level `shared` list names stages prism exposes outside the rack.
+top-level `shared` list names stages prism exposes outside the rack: the
+slab frame, pane motion, and ripple in the Glass section, the ring in its own.
 `loadRack(dir, defs)` reads the vendored schema and the sink's dry file
 itself, and `validateRack(rack, defs, schema, dry)` adds these rules to the
 existing ones:
