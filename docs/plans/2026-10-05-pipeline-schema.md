@@ -803,9 +803,8 @@ test('stage must exist, be unique, and keep schema order', () => {
 });
 
 test('a device key owned by another stage', () => {
-  // Depth's node is owned by stage two; putting the Depth row on device one fails.
-  assert.throws(() => check(rackWith((r) => { r.devices[0].rows = ['Depth']; r.devices[1].mix = 'Blur'; r.devices[0].mix = 'Blur'; })),
-    /row Blur already belongs to one/);
+  // Depth's node is owned by stage two; swapping the mixes puts r.depth on
+  // device one, and ownership fires while device one is still being read.
   const swapped = rackWith((r) => { r.devices[0].mix = 'Depth'; r.devices[1].mix = 'Blur'; });
   assert.throws(() => check(swapped), /device one: r.depth writes depth, which stage two owns, not stage one/);
 });
@@ -835,6 +834,9 @@ test('requires derivation refuses two sources', () => {
 test('rows and keys must exist in the group and belong to exactly one device', () => {
   assert.throws(() => check(rackWith((r) => { r.devices[0].mix = 'Gap'; })), /device one: no matrix row Gap in group R/);
   assert.throws(() => check(rackWith((r) => { r.devices[0].shared = ['r.kind', 'r.kind']; })), /device one: r.kind already belongs to one/);
+  // A row claimed twice: device three takes Blur before device one's turn never comes, so
+  // the duplicate is reported on the later device.
+  assert.throws(() => check(rackWith((r) => { r.devices[2].rows = ['Blur']; })), /device three: row Blur already belongs to one/);
   assert.throws(() => check(rackWith((r) => { r.devices[0].shared = ['r.blur']; })), /device one: no shared parameter r.blur in group R/);
   assert.throws(() => check(rackWith((r) => { r.devices[0].shared = ['g.gap']; })), /device one: no shared parameter g.gap in group R/);
   assert.throws(() => check(rackWith((r) => { r.devices[1].shared = []; })), /r.amount in group R belongs to no device/);

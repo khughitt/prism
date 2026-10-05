@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: prism-eef38f
 created: 2026-10-05T01:45:24Z
-updated: 2026-10-05T10:13:18Z
+updated: 2026-10-05T10:43:10Z
 started: 2026-10-05T01:51:28Z
 depends: []
 parent: prism-a03862
@@ -82,4 +82,11 @@ Related: prism-542904 (shelved reorder; this is its contract), material-e2f01a (
 - 2026-10-05T10:00:34Z (prism-eef38f): review: plan round 1 — verdict: revise; findings: Important 3; reviewer: codex
 - 2026-10-05T10:01:06Z (prism-eef38f): Plan review details: (1) lines 1041-1046 resolve every schema edge on edge.from. For attenuates/shadows the affected card is edge.on; current refraction -> prefilter attaches the hint to Refraction referencing Backdrop, reversing the spec and tests. Keep requires dependency semantics separate. (2) synthetic SCHEMA sites alpha/beta at 682-689 are rejected by familyOf (911-914), so happy-path and later validation tests never reach their intended gates. Read-only execution of the proposed snippets reproduced site alpha has no family; after using supported sites it reproduced reversed attenuation. The two-source error at 1060 also omits device while test820 requires it. Correct fixtures/messages and check each expected failure reaches its intended rule. (3) Task4 removes category and returns family before Task5 updates presentation.luau, yet Step6 promises just test-fast passes. Existing integrations/noctalia-plugin/contract.test.mjs exercises real describe through the old panel, whose category validation fails. Land the breaking producer/consumer change atomically without a compatibility layer. Recommend native execution and a fresh whole-branch review per repository after revised plans are accepted; renderer plan has three separately recorded Important findings.
 - 2026-10-05T10:13:18Z (prism-eef38f): resumed
+  provenance: {"harness_session":"claude-code:23285ff0-fcf8-4e52-93eb-5ccb34db3e4c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-05T10:15:59Z (prism-eef38f): Plan revised for review round 1: interaction attach rule (requires on the dependent, attenuates on the affected), real site ids in the rack fixtures and device-prefixed two-source message, Tasks 4 and 5 merged so category leaves describe and the panel in one commit (prism-19fa40 dropped, Task 6 renumbered to 5)
+- 2026-10-05T10:15:59Z (prism-eef38f): parked (waiting on user, review): Re-review docs/plans/2026-10-05-pipeline-schema.md (.worktrees/prism-eef38f) after round 1 corrections, with the niri-material plan; on acceptance execute natively, renderer plan first
+  provenance: {"harness_session":"claude-code:23285ff0-fcf8-4e52-93eb-5ccb34db3e4c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-05T10:20:57Z (prism-eef38f): review: plan round 2 — verdict: revise; findings: Important 1; reviewer: codex
+- 2026-10-05T10:21:15Z (prism-eef38f): Plan round 2 details: original interaction direction, real site ids, two-source diagnostic, and atomic rack/panel changes are resolved. One negative fixture remains wrong at lines807-808: assigning Depth to device one trips ownership before visiting device two, producing invalid rack: device one: r.depth writes depth, which stage two owns, not stage one; the assertion expects row Blur already belongs to one. Reproduced by evaluating the plan snippets in memory. Remove this redundant assertion (the swapped fixture immediately below already covers ownership), or construct a separate duplicate-row fixture that passes ownership on the first device. No broader changes requested.
+- 2026-10-05T10:43:10Z (prism-eef38f): resumed
   provenance: {"harness_session":"claude-code:23285ff0-fcf8-4e52-93eb-5ccb34db3e4c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
