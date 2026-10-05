@@ -4,10 +4,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { parse } from 'yaml';
-import { renderNiriFragment, DRY, sourceColors } from '../integrations/niri/render.js';
+import { renderNiriFragment, DRY, loadDry, sourceColors } from '../integrations/niri/render.js';
 import { noctaliaColorsPath, readNoctaliaPalette } from '../integrations/niri/palette.js';
 import { loadDefs } from '../src/defs.js';
-import { defsDir, stateDir } from '../src/paths.js';
+import { defsDir, integrationsDir, stateDir } from '../src/paths.js';
 import { resolveParams } from '../src/resolve.js';
 
 const resolved = { params: {
@@ -565,6 +565,13 @@ test('bypassing refraction also silences fringing and directional blur', () => {
 test('every rack device has a dry entry and every dry entry is a rack device', () => {
   const rack = parse(fs.readFileSync(path.join(defsDir(), 'rack', 'devices.yaml'), 'utf8'));
   assert.deepEqual(Object.keys(DRY).sort(), rack.devices.map((device) => device.bypass).sort());
+});
+
+test('the dry table is the yaml file, verbatim', () => {
+  const file = parse(fs.readFileSync(path.join(integrationsDir(), 'niri', 'dry.yaml'), 'utf8'));
+  assert.deepEqual(DRY, file);
+  assert.deepEqual(loadDry(), file);
+  assert.deepEqual(DRY['glass.bypass.refraction'], { ior: 1, chromaticAberration: 0, anisotropicBlur: 0 });
 });
 
 test('a literal containing a raw-string terminator selects a longer delimiter', () => {

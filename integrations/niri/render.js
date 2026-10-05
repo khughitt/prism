@@ -1,3 +1,7 @@
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { parse } from 'yaml';
+
 const MATERIAL = 'terminal-glass';
 const INACTIVE_MATERIAL = 'terminal-glass-inactive';
 
@@ -94,24 +98,21 @@ const OPTICS = [
   'iridescence', 'aurora', 'auroraDriftHz', 'auroraColorA', 'auroraColorB',
 ];
 
-// What "off" means for each rack device, keyed by its bypass parameter. The
-// rack (defs/rack/devices.yaml) says where a device sits in the chain; this
-// table says what the material does without it, which is sink knowledge.
-// Refraction carries fringing and directional blur on its taps, so its bypass
-// zeroes both: at ior 1 the depth-jittered taps coincide, but fringing's green
-// and blue channels would keep an index above 1 and refract on their own.
-export const DRY = {
-  'glass.bypass.backdrop': { roughness: 0, backdropBlur: false },
-  'glass.bypass.distortion': { distortion: 0 },
-  'glass.bypass.refraction': { ior: 1, chromaticAberration: 0, anisotropicBlur: 0 },
-  'glass.bypass.fringing': { chromaticAberration: 0 },
-  'glass.bypass.iridescence': { iridescence: 0 },
-  'glass.bypass.directionalBlur': { anisotropicBlur: 0 },
-  'glass.bypass.tint': { attenuationColor: '#ffffff' },
-  'glass.bypass.aurora': { aurora: 0 },
-  'glass.bypass.saturation': { saturation: 1 },
-  'glass.bypass.noise': { noise: 0 },
-};
+// What "off" means for each rack device lives in dry.yaml beside this file;
+// the rack loader reads the same file to derive which device requires which.
+export function loadDry() {
+  const file = fileURLToPath(new URL('./dry.yaml', import.meta.url));
+  const dry = parse(fs.readFileSync(file, 'utf8'));
+  for (const [key, fields] of Object.entries(dry)) {
+    if (!key.startsWith('glass.bypass.')) throw new Error(`dry.yaml: ${key} is not a bypass key`);
+    if (typeof fields !== 'object' || fields === null || Object.keys(fields).length === 0) {
+      throw new Error(`dry.yaml: ${key} must map to at least one field`);
+    }
+  }
+  return dry;
+}
+
+export const DRY = loadDry();
 
 const paletteTint = (surface, accent, mix) => mix === 0
   ? surface.toLowerCase()
