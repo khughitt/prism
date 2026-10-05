@@ -8,13 +8,14 @@ complexity: high
 process: planned
 owner: prism-eef38f
 created: 2026-10-05T01:45:24Z
-updated: 2026-10-05T02:52:51Z
+updated: 2026-10-05T09:44:40Z
 started: 2026-10-05T01:51:28Z
 depends: []
 parent: prism-a03862
 tags: [material, bus, cross-project]
 agent: claude-code/claude-fable-5-1
 spec: docs/specs/2026-10-04-pipeline-schema-design.md
+plan: docs/plans/2026-10-05-pipeline-schema.md
 ---
 
 Design task for goal prism-a03862, spanning prism and niri-material. Make the material pipeline's structure explicit as renderer-owned data, so the rack, the niri sink, and later exploration are derived from it instead of restating it by hand.
@@ -68,4 +69,11 @@ Related: prism-542904 (shelved reorder; this is its contract), material-e2f01a (
 - 2026-10-05T02:50:43Z (prism-eef38f): review: spec round 2 — verdict: revise; findings: Important 2; reviewer: codex
 - 2026-10-05T02:51:01Z (prism-eef38f): Round 2 details: (1) current rack cannot satisfy the new ownership rule: spec line 162 assigns thickness to slab, line 165 leaves refraction owning only ior, while the shipped Refraction card includes Depth (glass.thickness and glass.inactive.thickness); lines 411-413 reject that card. Prefer assigning thickness ownership to refraction and retaining it in slab reads, preserving current controls. Also include ripple in the top-level shared-stage inventory: glass.jellyRipple is exposed outside the rack. (2) lines 282-284 still pin ORDER across an entire program. Section 5 makes the material optic sequence saturation, noise, aurora, iridescence, noise; unique-name ORDER cannot place noise on both sides. Pin registry order within each (program, site), retaining stage-order checks across sites. Other original findings are resolved; no further design expansion requested. Revise these two points before writing-plans.
 - 2026-10-05T02:52:51Z (prism-eef38f): resumed
+  provenance: {"harness_session":"claude-code:23285ff0-fcf8-4e52-93eb-5ccb34db3e4c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-05T02:53:25Z (prism-eef38f): Spec revised for review round 2: thickness ownership moved to refraction with slab reading it; ripple added to the shared-stage list; ORDER checked within each (program, site) so one optic may sit at several sites
+- 2026-10-05T02:53:25Z (prism-eef38f): parked (waiting on user, review): Re-review docs/specs/2026-10-04-pipeline-schema-design.md (in .worktrees/prism-eef38f) after round 2 corrections; on acceptance run writing-plans
+  provenance: {"harness_session":"claude-code:23285ff0-fcf8-4e52-93eb-5ccb34db3e4c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-05T09:08:20Z (prism-eef38f): review: spec round 3 — verdict: accept; findings: none; reviewer: codex
+- 2026-10-05T09:08:20Z (prism-eef38f): Round 3 scoped re-review of b15978b: both remaining Important findings resolved. Thickness ownership now matches the existing Refraction/Depth controls while slab retains its read; shared includes ripple. Registry pins apply within (program, site), with cross-site call order governed by site order, so the documented multi-site noise extension no longer conflicts with ORDER. Spec accepted for writing-plans; the implementation plan remains subject to its separate review. Controller completed this re-review directly after the delegated renderer reviewer could not run due to model capacity.
+- 2026-10-05T09:25:18Z (prism-eef38f): resumed
   provenance: {"harness_session":"claude-code:23285ff0-fcf8-4e52-93eb-5ccb34db3e4c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
