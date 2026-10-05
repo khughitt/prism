@@ -163,15 +163,15 @@ Today's stages, in order. The site order of Section 1 and the call order in
 | 1 | `blur` | source | output | `blur passes`, `blur offset` | | | | | |
 | 2 | `prefilter` | source | material | `backdrop-blur`, `roughness` | `ior` (level = `roughness * clamp(ior*2-2, 0, 1)`) | | | | `backdrop` |
 | 3 | `slab` | normal | material | `bevel`, `offset-x`, `offset-y`, `jelly-flex` | `thickness` (chamfer rise) | | | yes (residuals) | |
-| 4 | `distortion` | normal | material | `distortion`, `distortion scale=` | | | | | `distortion` |
-| 5 | `ripple` | normal | material | `jelly-ripple` | | | | yes | |
+| 4 | `distortion` | normal | material | `distortion`, `distortion scale=` | | `ping`, `done`, `error` | | yes (flash) | `distortion` |
+| 5 | `ripple` | normal | material | `jelly-ripple` | | `ping`, `done`, `error` | | yes | |
 | 6 | `refraction` | taps | material | `ior`, `thickness` | `backdrop-blur`, `roughness` (which pyramid levels the taps sample) | | | | `refraction` |
-| 7 | `fringing` | taps | material | `chromatic-aberration` | `ior`, `thickness`, `anisotropic-blur` (shared tap loop) | | | | `fringing` |
-| 8 | `directional-blur` | taps | material | `anisotropic-blur` | `ior`, `thickness`, `chromatic-aberration` (shared tap loop) | | | | `directionalBlur` |
+| 7 | `fringing` | taps | material | `chromatic-aberration` | `ior`, `thickness`, `anisotropic-blur` (shared tap loop), `backdrop-blur`, `roughness` (every tap samples the prefilter) | `ping`, `done`, `error` | | yes (flash) | `fringing` |
+| 8 | `directional-blur` | taps | material | `anisotropic-blur` | `ior`, `thickness`, `chromatic-aberration` (shared tap loop), `backdrop-blur`, `roughness` (every tap samples the prefilter) | `ping`, `done`, `error` | | yes (flash) | `directionalBlur` |
 | 9 | `saturation` | behind | material | `saturation` | `blur saturation`, `backdrop-blur` (the inherit-or-neutral rule) | | `saturation_behind` / material | | `saturation` |
 | 10 | `noise` | behind | material | `noise`, `noise type=` | `blur noise`, `backdrop-blur` (same rule) | | `noise_behind` / material | | `noise` |
-| 11 | `tint` | attenuation | material | `attenuation-color`, `attenuation-distance` | `thickness` | `accent-tint`, `accent` | | | `tint` |
-| 12 | `ring` | within | material | `light-ior` | `ior`, `thickness`, `roughness`, `chromatic-aberration` | `ring-gap`, `ring-width`, `ring-color`, `ring-glow`, `ring-rest`, `ring-accent`, `ring-beam-speed`, `ring-beam-noise`, `ring-beam-noise-hz`, `ring-beam-decay`, `focus`, `accent`, `attention` | | yes (signal) | |
+| 11 | `tint` | attenuation | material | `attenuation-color`, `attenuation-distance` | `thickness` | `accent-tint`, `accent` | | yes (signal) | `tint` |
+| 12 | `ring` | within | material | `light-ior` | `ior`, `thickness`, `roughness`, `chromatic-aberration` | `ring-gap`, `ring-width`, `ring-color`, `ring-glow`, `ring-rest`, `ring-accent`, `ring-beam-speed`, `ring-beam-noise`, `ring-beam-noise-hz`, `ring-beam-decay`, `focus`, `accent`, `attention`, `ping`, `done`, `error` | | yes (signal) | |
 | 13 | `aurora` | within | material | `aurora`, `aurora drift-hz`, `aurora color` | `ior`, `light-ior`, `thickness` (landing point through `lightShift`) | | `aurora_within` / material | yes | `aurora` |
 | 14 | `glint` | specular | material | | `ior` | `attention`, `accent` | | yes (signal light) | |
 | 15 | `iridescence` | specular | material | `iridescence` | | | `iridescence_specular` / material | | `iridescence` |
@@ -179,6 +179,10 @@ Today's stages, in order. The site order of Section 1 and the call order in
 | 17 | `encode` | encode | material | | | | | | |
 | 18 | `effect-saturation` | background-effect | window | `blur saturation` | | | | | |
 | 19 | `effect-noise` | background-effect | window | `blur noise` | | | | | |
+
+As built (`material-a00785`), a flash boosts chromatic aberration, distortion,
+and the tap count, and ripple raises jelly activity, which scales the ring
+glow; those stages list the flash responses and are animated.
 
 `reads` is the direct-input map and formalizes §5 of `render-pipeline.md`
 with the rows that table omitted: `ior` reaches the prefilter selection and
