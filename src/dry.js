@@ -17,6 +17,8 @@ export function readDry(file, label = file) {
   return dry;
 }
 
+// Every sink's table, merged: each bypass key maps to `{sink, fields}`, the
+// sink being the directory that declared it, so a rack error can name it.
 export function loadDry(dir) {
   const merged = {};
   const declaredBy = new Map();
@@ -30,7 +32,7 @@ export function loadDry(dir) {
     for (const [key, fields] of Object.entries(readDry(file, label))) {
       if (declaredBy.has(key)) throw new Error(`${label}: ${key} is already declared by ${declaredBy.get(key)}`);
       declaredBy.set(key, label);
-      merged[key] = fields;
+      merged[key] = { sink: entry.name, fields };
     }
   }
   return merged;

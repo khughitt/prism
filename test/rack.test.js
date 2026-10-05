@@ -7,7 +7,7 @@ import { parse } from 'yaml';
 import { loadDefs } from '../src/defs.js';
 import { loadRack, validateRack, familyOf } from '../src/rack.js';
 import { loadPipeline, validatePipeline } from '../src/pipeline.js';
-import { loadDry } from '../integrations/niri/render.js';
+import { loadDry } from '../src/dry.js';
 import { loadManifests } from '../src/manifest.js';
 import { nodeMap } from '../src/nodes.js';
 import { defsDir, integrationsDir } from '../src/paths.js';
@@ -51,7 +51,7 @@ const SCHEMA = () => validatePipeline({
   ],
   stages: [
     { id: 'one', site: 'behind', scope: 'material', owns: ['blur', 'kind'], reads: ['blur', 'kind'], responses: [], animated: false },
-    { id: 'two', site: 'behind', scope: 'material', owns: ['depth', 'amount'], reads: ['depth', 'amount', 'blur'], responses: [], animated: false },
+    { id: 'two', site: 'behind', scope: 'material', owns: ['depth', 'amount='], reads: ['depth', 'amount=', 'blur'], responses: [], animated: false },
     { id: 'three', site: 'behind', scope: 'material', owns: ['gain'], reads: ['gain'], responses: [], animated: false },
     { id: 'four', site: 'within', scope: 'output', owns: ['gap'], reads: ['gap'], responses: [], animated: false },
   ],
@@ -61,10 +61,13 @@ const SCHEMA = () => validatePipeline({
 });
 const NODES = new Map([
   ['r.blur', 'blur'], ['r.inactive.blur', 'blur'], ['r.depth', 'depth'], ['r.inactive.depth', 'depth'],
-  ['r.kind', 'kind'], ['r.amount', 'amount'], ['r.gain', 'gain'], ['r.inactive.gain', 'gain'], ['g.gap', 'gap'],
+  ['r.kind', 'kind'], ['r.amount', 'amount='], ['r.gain', 'gain'], ['r.inactive.gain', 'gain'], ['g.gap', 'gap'],
 ]);
-// Device one's dry entry zeroes depth, which device two's mix writes: two requires one.
-const DRY = { 'r.bypass.one': { blur: 0, depth: 0 }, 'r.bypass.two': { depth: 0 }, 'r.bypass.three': { gain: 0 } };
+// A dry entry as src/dry.js merges it: the fields under the sink that declared
+// them. Device one's dry entry zeroes depth, which device two's mix writes:
+// two requires one.
+const entry = (fields) => ({ sink: 'a', fields });
+const DRY = { 'r.bypass.one': entry({ blur: 0, depth: 0 }), 'r.bypass.two': entry({ depth: 0 }), 'r.bypass.three': entry({ gain: 0 }) };
 
 const complete = () => ({ group: 'R', shared: ['four'], devices: [
   { device: 'one', label: 'One', stage: 'one', mix: 'Blur', rows: [], shared: ['r.kind'], bypass: 'r.bypass.one' },
@@ -91,7 +94,7 @@ test('a complete rack validates and comes back resolved', () => {
 test('the shipped rack loads against the shipped defs, schema, and dry file', () => {
   const shippedDefs = loadDefs(defsDir());
   const rack = loadRack(defsDir(), shippedDefs, {
-    dry: loadDry(), nodes: nodeMap(loadManifests(integrationsDir(), shippedDefs)),
+    dry: loadDry(integrationsDir()), nodes: nodeMap(loadManifests(integrationsDir(), shippedDefs)),
   });
   assert.equal(rack.group, 'Focus');
   assert.deepEqual(rack.shared, ['slab', 'ripple', 'ring']);
@@ -123,7 +126,7 @@ test('the drift case: a vendored schema that swaps the two behind optics fails t
   [schema.stages[saturation], schema.stages[noise]] = [schema.stages[noise], schema.stages[saturation]];
   const swapped = validatePipeline(schema);
   const rack = parse(fs.readFileSync(path.join(defsDir(), 'rack', 'devices.yaml'), 'utf8'));
-  const dry = loadDry();
+  const dry = loadDry(integrationsDir());
   const nodes = nodeMap(loadManifests(integrationsDir(), shippedDefs));
   assert.throws(() => validateRack(rack, shippedDefs, swapped, dry, nodes),
     /device noise: out of stage order; stage noise precedes stage saturation in the schema/);
@@ -201,7 +204,7 @@ test('requires derivation refuses two sources', () => {
   // gain, three's mix. Two different devices from two sources is an error.
   const twoSources = SCHEMA();
   twoSources.interactions.push({ kind: 'requires', from: 'three', on: 'two', why: 'x [expose]' });
-  const dry = { ...DRY, 'r.bypass.one': { blur: 0, depth: 0, gain: 0 } };
+  const dry = { ...DRY, 'r.bypass.one': entry({ blur: 0, depth: 0, gain: 0 }) };
   assert.throws(() => check(complete(), twoSources, dry, NODES),
     /device three: requires would name one \(dry\) and two \(schema\); one source only until a consumer needs more/);
   // The same device from both sources is one requires.
@@ -239,11 +242,11 @@ test('a card keeps its head: ui.when may hide a shared key but never the mix row
 
 test('a derived requires names an earlier device', () => {
   // Each device's dry entry zeroes the other's mix: a cycle the panel cannot resolve.
-  const mutual = { ...DRY, 'r.bypass.one': { depth: 0 }, 'r.bypass.two': { blur: 0 } };
+  const mutual = { ...DRY, 'r.bypass.one': entry({ depth: 0 }), 'r.bypass.two': entry({ blur: 0 }) };
   assert.throws(() => check(complete(), SCHEMA(), mutual, NODES),
     /device one: requires two, which comes after it; a device may only require an earlier one/);
   // A forward coupling alone is refused the same way.
-  const forward = { ...DRY, 'r.bypass.one': { blur: 0 }, 'r.bypass.two': { blur: 0 } };
+  const forward = { ...DRY, 'r.bypass.one': entry({ blur: 0 }), 'r.bypass.two': entry({ blur: 0 }) };
   assert.throws(() => check(complete(), SCHEMA(), forward, NODES),
     /device one: requires two, which comes after it/);
 });
@@ -255,6 +258,34 @@ test('a manifest node no stage owns fails at load, naming key and node', () => {
 });
 
 test('a dry entry names a device bypass', () => {
-  assert.throws(() => check(complete(), SCHEMA(), { ...DRY, 'r.bypass.ghost': { gain: 0 } }, NODES),
+  assert.throws(() => check(complete(), SCHEMA(), { ...DRY, 'r.bypass.ghost': entry({ gain: 0 }) }, NODES),
     /dry entry r\.bypass\.ghost names no device's bypass/);
+});
+
+test('a dry field resolves to its node through the manifest, so an = node derives requires', () => {
+  // Device two's amount writes `amount=`, a node no spelling rule reaches
+  // from the field name. Device one's entry writing it makes two require one.
+  const dry = { ...DRY, 'r.bypass.one': entry({ blur: 0, amount: 0 }) };
+  const two = check(complete(), SCHEMA(), dry, NODES).devices[1];
+  assert.equal(two.requires, 'one');
+  assert.deepEqual(two.interactions.find((i) => i.kind === 'requires'),
+    { kind: 'requires', device: 'one', why: 'the r.bypass.one dry entry writes amount=' });
+});
+
+test('the shipped manifest resolves a dry field on an = node', () => {
+  const shippedDefs = loadDefs(defsDir());
+  const nodes = nodeMap(loadManifests(integrationsDir(), shippedDefs));
+  const shipped = loadDry(integrationsDir());
+  const distortion = shipped['glass.bypass.distortion'];
+  const dry = { ...shipped, 'glass.bypass.distortion': { ...distortion, fields: { ...distortion.fields, noiseType: 'fine' } } };
+  const rack = parse(fs.readFileSync(path.join(defsDir(), 'rack', 'devices.yaml'), 'utf8'));
+  const noise = validateRack(rack, shippedDefs, loadPipeline(defsDir()), dry, nodes).devices.find((d) => d.device === 'noise');
+  assert.equal(noise.requires, 'distortion');
+  assert.deepEqual(noise.interactions, [{ kind: 'requires', device: 'distortion', why: 'the glass.bypass.distortion dry entry writes noise type=' }]);
+});
+
+test('a dry field with no manifest node fails naming the entry and its sink', () => {
+  const dry = { ...DRY, 'r.bypass.one': entry({ blur: 0, ghost: 0 }) };
+  assert.throws(() => check(complete(), SCHEMA(), dry, NODES),
+    /dry entry r\.bypass\.one \(sink a\) writes ghost, but no manifest binds r\.ghost to a native node/);
 });

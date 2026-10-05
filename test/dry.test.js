@@ -16,8 +16,10 @@ function sinks(files) {
   return root;
 }
 
-test('the shipped dry tables are the niri sink table', () => {
-  assert.deepEqual(loadDry(integrationsDir()), DRY);
+test('the shipped dry tables are the niri sink table, each entry naming its sink', () => {
+  const merged = loadDry(integrationsDir());
+  assert.deepEqual(Object.keys(merged).sort(), Object.keys(DRY).sort());
+  for (const [key, fields] of Object.entries(DRY)) assert.deepEqual(merged[key], { sink: 'niri', fields });
 });
 
 test('dry tables merge across sinks and a bypass key belongs to one sink', () => {
@@ -26,7 +28,7 @@ test('dry tables merge across sinks and a bypass key belongs to one sink', () =>
     'b/dry.yaml': 'glass.bypass.two: {y: 1}\n',
     'c/manifest.yaml': 'sink: c\nbinds: []\n',
   }));
-  assert.deepEqual(merged, { 'glass.bypass.one': { x: 0 }, 'glass.bypass.two': { y: 1 } });
+  assert.deepEqual(merged, { 'glass.bypass.one': { sink: 'a', fields: { x: 0 } }, 'glass.bypass.two': { sink: 'b', fields: { y: 1 } } });
   assert.throws(() => loadDry(sinks({
     'a/dry.yaml': 'glass.bypass.one: {x: 0}\n',
     'b/dry.yaml': 'glass.bypass.one: {x: 0}\n',

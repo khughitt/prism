@@ -28,8 +28,8 @@ export function familyOf(site) {
   return family;
 }
 
-// `dry` is the sinks' dry tables (src/dry.js), `nodes` the
-// prism-key-to-native-node map from the manifests (src/nodes.js).
+// `dry` is the sinks' dry tables (src/dry.js: bypass key to `{sink, fields}`),
+// `nodes` the prism-key-to-native-node map from the manifests (src/nodes.js).
 export function loadRack(dir, defs, { dry, nodes }) {
   const file = path.join(dir, 'rack', 'devices.yaml');
   return validateRack(parse(fs.readFileSync(file, 'utf8')), defs, loadPipeline(dir), dry, nodes);
@@ -170,11 +170,11 @@ export function validateRack(rack, defs, schema, dry, nodes) {
       interactions.push({ kind: edge.kind, device: other, why: edge.why });
       if (edge.kind === 'requires') requiresFrom.push({ device: other, source: 'schema' });
     }
-    for (const [bypassKey, fields] of Object.entries(dry)) {
+    for (const [bypassKey, { sink, fields }] of Object.entries(dry)) {
       const other = deviceOfBypass.get(bypassKey);
       if (other === undefined || other === device.device) continue;
       const mine = nodesOfDevice.get(device.device);
-      const written = Object.keys(fields).map((f) => fieldNode(f, ownerOf)).filter((n) => mine.has(n));
+      const written = Object.keys(fields).map((f) => fieldNode(bypassKey, sink, f, nodes)).filter((n) => mine.has(n));
       if (written.length === 0) continue;
       interactions.push({ kind: 'requires', device: other, why: `the ${bypassKey} dry entry writes ${written.join(', ')}` });
       requiresFrom.push({ device: other, source: 'dry' });
@@ -198,12 +198,18 @@ export function validateRack(rack, defs, schema, dry, nodes) {
   return { group, shared: rack.shared, devices };
 }
 
-// The dry file spells fields as render.js does (camelCase); the schema
-// spells nodes as the renderer does (kebab-case). A field whose node is not
-// owned by any stage is an error, not a silent miss: the `=` nodes
-// (`noise type=`) have no dry entry today and would need a table here.
-function fieldNode(field, ownerOf) {
-  const node = field.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
-  if (!ownerOf.has(node)) throw new Error(`invalid rack: dry field ${field} maps to ${node}, which no stage owns`);
+// A dry field is the last segment of a parameter in the bypass key's namespace
+// (`glass.bypass.noise: {noiseType: …}` writes `glass.noiseType`), and the
+// manifest says which native node that parameter writes; there is no second
+// spelling rule between field and node, so the `=` nodes (`noise type=`)
+// resolve like any other. A field with no node is an error, not a silent miss.
+function fieldNode(bypassKey, sink, field, nodes) {
+  const namespace = /^(.*\.)bypass\./.exec(bypassKey);
+  if (namespace === null) throw new Error(`invalid rack: dry entry ${bypassKey} (sink ${sink}) is not a <namespace>.bypass.<device> key`);
+  const key = namespace[1] + field;
+  const node = nodes.get(key);
+  if (node === undefined) {
+    throw new Error(`invalid rack: dry entry ${bypassKey} (sink ${sink}) writes ${field}, but no manifest binds ${key} to a native node`);
+  }
   return node;
 }

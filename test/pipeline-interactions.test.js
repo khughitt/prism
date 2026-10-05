@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { loadDefs } from '../src/defs.js';
 import { loadRack } from '../src/rack.js';
 import { loadPipeline } from '../src/pipeline.js';
-import { loadDry } from '../integrations/niri/render.js';
+import { loadDry } from '../src/dry.js';
 import { loadManifests } from '../src/manifest.js';
 import { nodeMap } from '../src/nodes.js';
 import { renderInteractions } from '../src/interactions.js';
@@ -18,7 +18,7 @@ const END = '<!-- interactions:end -->';
 
 test('the structural block of the interaction document is generated', () => {
   const defs = loadDefs(defsDir());
-  const rack = loadRack(defsDir(), defs, { dry: loadDry(), nodes: nodeMap(loadManifests(integrationsDir(), defs)) });
+  const rack = loadRack(defsDir(), defs, { dry: loadDry(integrationsDir()), nodes: nodeMap(loadManifests(integrationsDir(), defs)) });
   const expected = `\n${renderInteractions(rack, loadPipeline(defsDir()))}\n`;
   const doc = fs.readFileSync(DOC, 'utf8');
   const a = doc.indexOf(BEGIN) + BEGIN.length;
@@ -33,7 +33,7 @@ test('the structural block of the interaction document is generated', () => {
 
 test('the table has one row per structural cell and keeps the decision', () => {
   const defs = loadDefs(defsDir());
-  const rack = loadRack(defsDir(), defs, { dry: loadDry(), nodes: nodeMap(loadManifests(integrationsDir(), defs)) });
+  const rack = loadRack(defsDir(), defs, { dry: loadDry(integrationsDir()), nodes: nodeMap(loadManifests(integrationsDir(), defs)) });
   const table = renderInteractions(rack, loadPipeline(defsDir()));
   const rows = table.trim().split('\n').slice(2);
   assert.equal(rows.length, 3);
