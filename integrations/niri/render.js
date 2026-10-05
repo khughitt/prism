@@ -1,6 +1,5 @@
-import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { parse } from 'yaml';
+import { readDry } from '../../src/dry.js';
 
 const MATERIAL = 'terminal-glass';
 const INACTIVE_MATERIAL = 'terminal-glass-inactive';
@@ -101,15 +100,7 @@ const OPTICS = [
 // What "off" means for each rack device lives in dry.yaml beside this file;
 // the rack loader reads the same file to derive which device requires which.
 export function loadDry() {
-  const file = fileURLToPath(new URL('./dry.yaml', import.meta.url));
-  const dry = parse(fs.readFileSync(file, 'utf8'));
-  for (const [key, fields] of Object.entries(dry)) {
-    if (!key.startsWith('glass.bypass.')) throw new Error(`dry.yaml: ${key} is not a bypass key`);
-    if (typeof fields !== 'object' || fields === null || Object.keys(fields).length === 0) {
-      throw new Error(`dry.yaml: ${key} must map to at least one field`);
-    }
-  }
-  return dry;
+  return readDry(fileURLToPath(new URL('./dry.yaml', import.meta.url)), 'dry.yaml');
 }
 
 export const DRY = loadDry();

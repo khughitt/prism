@@ -666,14 +666,14 @@ end
 local detailIndent = 26
 local lightWidth = 20
 
--- The light: category color while the device is active, grey and hollow while
--- its own bypass is set, hollow in the category color while the device it
+-- The light: family color while the device is active, grey and hollow while
+-- its own bypass is set, hollow in the family color while the device it
 -- requires is bypassed. A glyph in a clickable row, because a toggle carries
 -- no tooltip and a button no color at the API this plugin declares. The click
 -- is a plain set when available: the bypass row inside the card carries the reset.
 local function lightRow(card)
   local available = card.bypass.effectiveDrag ~= nil
-  local color = card.bypassed and "on_surface_variant" or Presentation.categoryColors[card.category]
+  local color = card.bypassed and "on_surface_variant" or Presentation.familyColors[card.family]
   local name = (card.bypassed or card.silenced) and "circle" or "circle-filled"
   return ui.row({
     key = card.device .. ":light", width = lightWidth, align = "center", justify = "center",
@@ -718,6 +718,14 @@ local function deviceCard(card)
   }
   local hint = rowHint({card.bypass, mix.focused, mix.unfocused})
   if hint then children[#children + 1] = ui.row({gap = 8, align = "center", justify = "end"}, {hint}) end
+  for _, entry in ipairs(card.attenuatedBy) do
+    children[#children + 1] = ui.row({gap = 8, align = "center", justify = "end"}, {
+      ui.label({
+        text = mix.focused.ui.row .. " is flattened while " .. entry.card.label .. " is bypassed",
+        fontSize = 11, color = "on_surface_variant",
+      }),
+    })
+  end
   if expanded then
     children[#children + 1] = singleRow(card.bypass, detailIndent)
     for _, row in ipairs(card.rows) do
@@ -729,7 +737,7 @@ local function deviceCard(card)
   end
   return ui.column({
     key = card.device .. ":card", gap = 2, paddingV = 4, paddingH = cardPadding, radius = 8,
-    fill = Presentation.categoryColors[card.category] .. "1f",
+    fill = Presentation.familyColors[card.family] .. "1f",
     opacity = card.bypassed and dimOpacity or 1.0,
   }, children)
 end

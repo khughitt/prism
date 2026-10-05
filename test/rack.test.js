@@ -4,11 +4,15 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { loadDefs } from '../src/defs.js';
-import { loadRack, validateRack } from '../src/rack.js';
-import { defsDir } from '../src/paths.js';
+import { loadRack, validateRack, familyOf } from '../src/rack.js';
+import { loadPipeline, validatePipeline } from '../src/pipeline.js';
+import { loadDry } from '../integrations/niri/render.js';
+import { loadManifests } from '../src/manifest.js';
+import { nodeMap } from '../src/nodes.js';
+import { defsDir, integrationsDir } from '../src/paths.js';
 
-// A small group with one matrix row, one shared select, one header toggle,
-// and one bypass toggle, so every validation rule has something to bite.
+// A small group with two matrix rows, one shared select, one header toggle,
+// and two bypass toggles, so every validation rule has something to bite.
 const DEFS = `
 - {key: t.on, type: bool, default: true, neutral: true, ui: {group: Title, control: toggle, label: On, order: 0}, description: d}
 - {key: r.split, type: bool, default: true, neutral: true, ui: {group: R, control: toggle, label: Split, order: 1, header: true}, description: d}
@@ -20,7 +24,10 @@ const DEFS = `
 - {key: r.bypass.one, type: bool, default: false, neutral: false, ui: {group: R, control: toggle, label: Bypass one, order: 7}, description: d}
 - {key: r.bypass.two, type: bool, default: false, neutral: false, ui: {group: R, control: toggle, label: Bypass two, order: 8}, description: d}
 - {key: r.amount, type: float, range: [0, 1], default: 0, neutral: 0, ui: {group: R, control: slider, step: 0.1, label: Amount, order: 9}, description: d}
-- {key: g.gap, type: int, range: [0, 9], default: 1, neutral: 1, ui: {group: G, control: slider, step: 1, label: Gap, order: 10}, description: d}
+- {key: r.gain, type: float, range: [0, 1], default: 0, neutral: 0, ui: {group: R, control: slider, step: 0.1, label: Gain, order: 10, state: focused, row: Gain}, description: d}
+- {key: r.inactive.gain, type: float, range: [0, 1], default: 0, neutral: 0, ui: {group: R, control: slider, step: 0.1, label: Unfocused gain, order: 11, state: unfocused, row: Gain}, description: d}
+- {key: r.bypass.three, type: bool, default: false, neutral: false, ui: {group: R, control: toggle, label: Bypass three, order: 12}, description: d}
+- {key: g.gap, type: int, range: [0, 9], default: 1, neutral: 1, ui: {group: G, control: slider, step: 1, label: Gap, order: 13}, description: d}
 `;
 
 function defsFrom(yamlText) {
@@ -31,82 +38,180 @@ function defsFrom(yamlText) {
 
 const defs = defsFrom(DEFS);
 
-// Covers every row and key in group R except the header toggle.
-const complete = { group: 'R', devices: [
-  { device: 'one', label: 'One', category: 'optic', mix: 'Blur', rows: [], shared: ['r.kind'], bypass: 'r.bypass.one' },
-  { device: 'two', label: 'Two', category: 'post', mix: 'Depth', rows: [], shared: ['r.amount'], bypass: 'r.bypass.two', requires: 'one' },
-] };
+// A two-site schema on real site ids (familyOf knows only those): `one`,
+// `two`, and `three` are devices at behind, a sequence site; `four` owns gap
+// at within and is a shared stage (g.gap is in group G, so no device can
+// carry it).
+const SCHEMA = () => validatePipeline({
+  version: 1,
+  sites: [
+    { id: 'behind', carrier: 'linear', law: 'sequence', orderable: false, coverage: 'glass', cost: 'fragment' },
+    { id: 'within', carrier: 'light', law: 'sum', orderable: false, coverage: 'glass', cost: 'fragment' },
+  ],
+  stages: [
+    { id: 'one', site: 'behind', scope: 'material', owns: ['blur', 'kind'], reads: ['blur', 'kind'], responses: [], animated: false },
+    { id: 'two', site: 'behind', scope: 'material', owns: ['depth', 'amount'], reads: ['depth', 'amount', 'blur'], responses: [], animated: false },
+    { id: 'three', site: 'behind', scope: 'material', owns: ['gain'], reads: ['gain'], responses: [], animated: false },
+    { id: 'four', site: 'within', scope: 'output', owns: ['gap'], reads: ['gap'], responses: [], animated: false },
+  ],
+  interactions: [
+    { kind: 'attenuates', from: 'one', on: 'two', why: 'blur scales depth [expose]' },
+  ],
+});
+const NODES = new Map([
+  ['r.blur', 'blur'], ['r.inactive.blur', 'blur'], ['r.depth', 'depth'], ['r.inactive.depth', 'depth'],
+  ['r.kind', 'kind'], ['r.amount', 'amount'], ['r.gain', 'gain'], ['r.inactive.gain', 'gain'], ['g.gap', 'gap'],
+]);
+// Device one's dry entry zeroes depth, which device two's mix writes: two requires one.
+const DRY = { 'r.bypass.one': { blur: 0, depth: 0 }, 'r.bypass.two': { depth: 0 }, 'r.bypass.three': { gain: 0 } };
 
-test('a complete rack validates and comes back verbatim', () => {
-  assert.deepEqual(validateRack(complete, defs), complete);
+const complete = () => ({ group: 'R', shared: ['four'], devices: [
+  { device: 'one', label: 'One', stage: 'one', mix: 'Blur', rows: [], shared: ['r.kind'], bypass: 'r.bypass.one' },
+  { device: 'two', label: 'Two', stage: 'two', mix: 'Depth', rows: [], shared: ['r.amount'], bypass: 'r.bypass.two' },
+  { device: 'three', label: 'Three', stage: 'three', mix: 'Gain', rows: [], shared: [], bypass: 'r.bypass.three' },
+] });
+
+test('a complete rack validates and comes back resolved', () => {
+  const rack = validateRack(complete(), defs, SCHEMA(), DRY, NODES);
+  assert.deepEqual(rack.shared, ['four']);
+  const [one, two, three] = rack.devices;
+  assert.deepEqual([one.site, one.scope, one.family], ['behind', 'material', 'transmission']);
+  assert.equal(Object.hasOwn(one, 'requires'), false);
+  assert.deepEqual(one.interactions, []);
+  assert.equal(two.requires, 'one');
+  assert.deepEqual(two.interactions, [
+    { kind: 'attenuates', device: 'one', why: 'blur scales depth [expose]' },
+    { kind: 'requires', device: 'one', why: 'the r.bypass.one dry entry writes depth' },
+  ]);
+  assert.equal(Object.hasOwn(three, 'requires'), false, 'a device is not required by its own dry entry');
+  assert.deepEqual(three.interactions, []);
 });
 
-test('the shipped rack loads against the shipped defs in shader order', () => {
-  const rack = loadRack(defsDir(), loadDefs(defsDir()));
+test('the shipped rack loads against the shipped defs, schema, and dry file', () => {
+  const shippedDefs = loadDefs(defsDir());
+  const rack = loadRack(defsDir(), shippedDefs, {
+    dry: loadDry(), nodes: nodeMap(loadManifests(integrationsDir(), shippedDefs)),
+  });
   assert.equal(rack.group, 'Focus');
+  assert.deepEqual(rack.shared, ['slab', 'ripple', 'ring']);
   assert.deepEqual(rack.devices.map((d) => d.device), [
     'backdrop', 'distortion', 'refraction', 'fringing', 'directionalBlur', 'saturation', 'noise', 'tint', 'aurora', 'iridescence',
   ]);
   assert.deepEqual(rack.devices.filter((d) => d.requires).map((d) => [d.device, d.requires]),
     [['fringing', 'refraction'], ['directionalBlur', 'refraction']]);
+  const backdrop = rack.devices[0];
+  assert.deepEqual([backdrop.stage, backdrop.site, backdrop.scope, backdrop.family], ['prefilter', 'source', 'material', 'source']);
+  assert.deepEqual(backdrop.interactions.map((i) => [i.kind, i.device]), [['attenuates', 'refraction']]);
+  assert.deepEqual(rack.devices.map((d) => d.family), [
+    'source', 'geometry', 'transmission', 'transmission', 'transmission', 'transmission', 'transmission',
+    'transmission', 'light', 'light',
+  ]);
   assert.deepEqual(rack.devices.find((d) => d.device === 'tint').shared, ['glass.tintSource', 'glass.tintAccentMix']);
-  assert.deepEqual(rack.devices.find((d) => d.device === 'noise').shared, ['glass.noiseType']);
+  assert.equal(rack.devices.some((d) => 'category' in d), false);
+});
+
+test('families follow the site', () => {
+  assert.equal(familyOf('source'), 'source');
+  assert.equal(familyOf('normal'), 'geometry');
+  for (const s of ['taps', 'behind', 'attenuation']) assert.equal(familyOf(s), 'transmission');
+  for (const s of ['within', 'specular', 'emissive']) assert.equal(familyOf(s), 'light');
+  assert.equal(familyOf('post'), 'post');
+  assert.throws(() => familyOf('encode'), /site encode has no family; no device may sit there/);
 });
 
 test('loadDefs still loads with the rack directory beside the def files', () => {
   const shipped = loadDefs(defsDir());
   assert.ok(shipped.has('glass.bypass.noise'));
   assert.ok(fs.existsSync(path.join(defsDir(), 'rack', 'devices.yaml')));
+  assert.ok(fs.existsSync(path.join(defsDir(), 'rack', 'pipeline.json')));
 });
 
 test('a row with two parameters of one state is rejected before a device can claim it', () => {
-  const doubled = defsFrom(DEFS + `- {key: r.blur2, type: float, range: [0, 1], default: 0, neutral: 0, ui: {group: R, control: slider, step: 0.1, label: Blur again, order: 11, state: focused, row: Blur}, description: d}\n`);
-  assert.throws(() => validateRack(complete, doubled), /row Blur in group R has two focused parameters/);
+  const doubled = defsFrom(DEFS + `- {key: r.blur2, type: float, range: [0, 1], default: 0, neutral: 0, ui: {group: R, control: slider, step: 0.1, label: Blur again, order: 14, state: focused, row: Blur}, description: d}\n`);
+  assert.throws(() => validateRack(complete(), doubled, SCHEMA(), DRY, NODES), /row Blur in group R has two focused parameters/);
 });
 
-const rackWith = (edit) => {
-  const rack = structuredClone(complete);
-  edit(rack);
-  return rack;
-};
+const rackWith = (edit) => { const rack = complete(); edit(rack); return rack; };
+const check = (rack, schema = SCHEMA(), dry = DRY, nodes = NODES) => validateRack(rack, defs, schema, dry, nodes);
 
 test('the rack file shape is checked before its contents', () => {
-  assert.throws(() => validateRack({ devices: complete.devices }, defs), /group must be a non-empty string/);
-  assert.throws(() => validateRack({ group: 'R', devices: [] }, defs), /devices must be a non-empty list/);
+  assert.throws(() => check({ shared: [], devices: complete().devices }), /group must be a non-empty string/);
+  assert.throws(() => check({ group: 'R', shared: [], devices: [] }), /devices must be a non-empty list/);
+  assert.throws(() => check({ group: 'R', devices: complete().devices }), /shared must be a list of stage ids/);
+  assert.throws(() => check(rackWith((r) => { r.shared = ['nowhere']; })), /shared names unknown stage nowhere/);
 });
 
-test('device ids are camelCase and unique, categories fixed, labels present', () => {
-  assert.throws(() => validateRack(rackWith((r) => { r.devices[0].device = 'One'; }), defs), /device One: bad id/);
-  assert.throws(() => validateRack(rackWith((r) => { r.devices[1].device = 'one'; }), defs), /device one: duplicate id/);
-  assert.throws(() => validateRack(rackWith((r) => { r.devices[0].category = 'light'; }), defs), /category must be one of source\|geometry\|optic\|post/);
-  assert.throws(() => validateRack(rackWith((r) => { r.devices[0].label = ' '; }), defs), /device one: label required/);
-  assert.throws(() => validateRack(rackWith((r) => { r.devices[0].colour = 'red'; }), defs), /device one: unknown field colour/);
+test('device ids are camelCase and unique, labels present, no stray fields', () => {
+  assert.throws(() => check(rackWith((r) => { r.devices[0].device = 'One'; })), /device One: bad id/);
+  assert.throws(() => check(rackWith((r) => { r.devices[1].device = 'one'; })), /device one: duplicate id/);
+  assert.throws(() => check(rackWith((r) => { r.devices[0].label = ' '; })), /device one: label required/);
+  assert.throws(() => check(rackWith((r) => { r.devices[0].colour = 'red'; })), /device one: unknown field colour/);
+});
+
+test('category and requires are derived, so authoring them is an error', () => {
+  assert.throws(() => check(rackWith((r) => { r.devices[0].category = 'optic'; })), /device one: category is derived from the stage's site; remove it/);
+  assert.throws(() => check(rackWith((r) => { r.devices[1].requires = 'one'; })), /device two: requires is derived from the schema and the dry file; remove it/);
+});
+
+test('stage must exist, be unique, and keep schema order', () => {
+  assert.throws(() => check(rackWith((r) => { delete r.devices[0].stage; })), /device one: stage required/);
+  assert.throws(() => check(rackWith((r) => { r.devices[0].stage = 'ghost'; })), /device one: unknown stage ghost/);
+  assert.throws(() => check(rackWith((r) => { r.devices[1].stage = 'one'; })), /device two: stage one already belongs to one/);
+  assert.throws(() => check(rackWith((r) => { r.devices.reverse(); })), /device two: out of stage order; stage two precedes stage three in the schema/);
+});
+
+test('a device key owned by another stage', () => {
+  // Depth's node is owned by stage two; swapping the mixes puts r.depth on
+  // device one, and ownership fires while device one is still being read.
+  const swapped = rackWith((r) => { r.devices[0].mix = 'Depth'; r.devices[1].mix = 'Blur'; });
+  assert.throws(() => check(swapped), /device one: r.depth writes depth, which stage two owns, not stage one/);
+});
+
+test('a stage with bound parameters needs a device or a place in shared', () => {
+  assert.throws(() => check(rackWith((r) => { r.shared = []; })), /stage four owns gap, written by g.gap, but has no device and is not in shared/);
+  // A stage whose parameters prism never binds needs neither.
+  const unbound = new Map(NODES);
+  unbound.delete('g.gap');
+  assert.doesNotThrow(() => check(rackWith((r) => { r.shared = []; }), SCHEMA(), DRY, unbound));
+});
+
+test('requires derivation refuses two sources', () => {
+  // The schema says three requires two; the dry file says one's entry writes
+  // gain, three's mix. Two different devices from two sources is an error.
+  const twoSources = SCHEMA();
+  twoSources.interactions.push({ kind: 'requires', from: 'three', on: 'two', why: 'x [expose]' });
+  const dry = { ...DRY, 'r.bypass.one': { blur: 0, depth: 0, gain: 0 } };
+  assert.throws(() => check(complete(), twoSources, dry, NODES),
+    /device three: requires would name one \(dry\) and two \(schema\); one source only until a consumer needs more/);
+  // The same device from both sources is one requires.
+  const agree = SCHEMA();
+  agree.interactions.push({ kind: 'requires', from: 'two', on: 'one', why: 'x [expose]' });
+  assert.equal(check(complete(), agree, DRY, NODES).devices[1].requires, 'one');
 });
 
 test('rows and keys must exist in the group and belong to exactly one device', () => {
-  assert.throws(() => validateRack(rackWith((r) => { r.devices[0].mix = 'Gap'; }), defs), /device one: no matrix row Gap in group R/);
-  assert.throws(() => validateRack(rackWith((r) => { r.devices[0].rows = ['Depth']; }), defs), /device two: row Depth already belongs to one/);
-  assert.throws(() => validateRack(rackWith((r) => { r.devices[0].shared = ['r.kind', 'r.kind']; }), defs), /device one: r.kind already belongs to one/);
-  assert.throws(() => validateRack(rackWith((r) => { r.devices[0].shared = ['r.blur']; }), defs), /device one: no shared parameter r.blur in group R/);
-  assert.throws(() => validateRack(rackWith((r) => { r.devices[0].shared = ['g.gap']; }), defs), /device one: no shared parameter g.gap in group R/);
-  assert.throws(() => validateRack(rackWith((r) => { r.devices[1].shared = []; }), defs), /r.amount in group R belongs to no device/);
-  // Rows are checked before keys, so dropping device two reports its row first.
-  assert.throws(() => validateRack(rackWith((r) => { r.devices.pop(); }), defs), /row Depth in group R belongs to no device/);
+  assert.throws(() => check(rackWith((r) => { r.devices[0].mix = 'Gap'; })), /device one: no matrix row Gap in group R/);
+  assert.throws(() => check(rackWith((r) => { r.devices[0].shared = ['r.kind', 'r.kind']; })), /device one: r.kind already belongs to one/);
+  // A row claimed twice: device three takes Blur before device one's turn never comes, so
+  // the duplicate is reported on the later device.
+  assert.throws(() => check(rackWith((r) => { r.devices[2].rows = ['Blur']; })), /device three: row Blur already belongs to one/);
+  assert.throws(() => check(rackWith((r) => { r.devices[0].shared = ['r.blur']; })), /device one: no shared parameter r.blur in group R/);
+  assert.throws(() => check(rackWith((r) => { r.devices[0].shared = ['g.gap']; })), /device one: no shared parameter g.gap in group R/);
+  assert.throws(() => check(rackWith((r) => { r.devices[1].shared = []; })), /r.amount in group R belongs to no device/);
+  assert.throws(() => check(rackWith((r) => { r.devices.pop(); })), /row Gain in group R belongs to no device/);
 });
 
-test('bypass must be a bool toggle without state, and requires an earlier device', () => {
-  assert.throws(() => validateRack(rackWith((r) => { r.devices[0].bypass = 'r.amount'; r.devices[1].shared = ['r.bypass.one']; }), defs), /device one: bypass r.amount must be a bool toggle/);
-  assert.throws(() => validateRack(rackWith((r) => { r.devices[0].requires = 'two'; }), defs), /device one: requires must name an earlier device/);
-  assert.throws(() => validateRack(rackWith((r) => { r.devices[1].requires = 'two'; }), defs), /device two: requires must name an earlier device/);
+test('bypass must be a bool toggle without state', () => {
+  assert.throws(() => check(rackWith((r) => { r.devices[0].bypass = 'r.amount'; r.devices[1].shared = ['r.bypass.one']; })), /device one: bypass r.amount must be a bool toggle/);
 });
 
 test('a card keeps its head: ui.when may hide a shared key but never the mix row', () => {
   const gate = ', when: {param: r.kind, in: [a], otherwise: hidden}';
   const hiddenShared = defsFrom(DEFS.replace('label: Amount, order: 9}', `label: Amount, order: 9${gate}}`));
-  assert.doesNotThrow(() => validateRack(complete, hiddenShared));
+  assert.doesNotThrow(() => validateRack(complete(), hiddenShared, SCHEMA(), DRY, NODES));
   const hiddenMix = defsFrom(DEFS
     .replace('order: 2, state: focused, row: Blur}', `order: 2, state: focused, row: Blur${gate}}`)
     .replace('order: 3, state: unfocused, row: Blur}', `order: 3, state: unfocused, row: Blur${gate}}`));
-  assert.throws(() => validateRack(complete, hiddenMix),
+  assert.throws(() => validateRack(complete(), hiddenMix, SCHEMA(), DRY, NODES),
     /device one: mix row Blur cannot be hidden by ui\.when; a card has no head without it/);
 });

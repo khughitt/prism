@@ -172,19 +172,32 @@ test('describe emits only the public counter-free JSON shape', async () => {
   assert.equal(p.fallback, p.value);
 });
 
-test('describe carries the rack verbatim', async () => {
+test('describe carries the resolved rack', async (t) => {
+  // requires and the ownership checks come from the sinks' dry tables and
+  // manifest nodes, so this one reads the real integrations.
+  const restore = process.env.PRISM_INTEGRATIONS_DIR;
+  process.env.PRISM_INTEGRATIONS_DIR = fileURLToPath(new URL('../integrations/', import.meta.url));
+  t.after(() => { process.env.PRISM_INTEGRATIONS_DIR = restore; });
   let out = '';
   await cli.run(['describe', '--json'], { runner: () => {}, print: (s) => { out += s; } });
   const { rack } = JSON.parse(out);
   assert.equal(rack.group, 'Focus');
+  assert.deepEqual(rack.shared, ['slab', 'ripple', 'ring']);
   assert.deepEqual(rack.devices.map((d) => d.device), [
     'backdrop', 'distortion', 'refraction', 'fringing', 'directionalBlur', 'saturation', 'noise', 'tint', 'aurora', 'iridescence',
   ]);
   assert.deepEqual(rack.devices[3], {
-    device: 'fringing', label: 'Fringing', category: 'optic', mix: 'Fringing',
-    rows: [], shared: [], bypass: 'glass.bypass.fringing', requires: 'refraction',
+    device: 'fringing', label: 'Fringing', stage: 'fringing', mix: 'Fringing',
+    rows: [], shared: [], bypass: 'glass.bypass.fringing',
+    site: 'taps', scope: 'material', family: 'transmission', requires: 'refraction',
+    interactions: [{ kind: 'requires', device: 'refraction', why: 'the glass.bypass.refraction dry entry writes chromatic-aberration' }],
   });
   assert.equal(Object.hasOwn(rack.devices[0], 'requires'), false);
+  assert.deepEqual(rack.devices[0].interactions, [{
+    kind: 'attenuates', device: 'refraction',
+    why: rack.devices[0].interactions[0].why,
+  }]);
+  assert.match(rack.devices[0].interactions[0].why, /roughness/);
 });
 
 test('get, list, and describe read through the active layers', async () => {

@@ -66,7 +66,7 @@ stage in the shader's order (Backdrop, Distortion, Refraction, Fringing,
 Directional blur, Saturation, Noise, Tint, Aurora, Iridescence). The rack's mix columns place the
 unfocused state on the left and the focused on the right. Each card shows its
 mix for both focus states, a light
-colored by category that bypasses the stage when clicked, and a chevron that
+colored by its stage's site family (source, geometry, transmission, light, post) that bypasses the stage when clicked, and a chevron that
 reveals its other parameters. Bypass is a real `glass.bypass.<device>` value:
 the niri sink writes the stage's dry value into both materials while it is
 set and the mix keeps its number. Bypassing Refraction also silences Fringing
