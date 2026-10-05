@@ -6,14 +6,15 @@ priority: 2
 size: m
 complexity: high
 process: planned
-owner: main
+owner: prism-eef38f
 created: 2026-10-05T01:45:24Z
-updated: 2026-10-05T01:51:28Z
+updated: 2026-10-05T01:58:07Z
 started: 2026-10-05T01:51:28Z
 depends: []
 parent: prism-a03862
 tags: [material, bus, cross-project]
 agent: claude-code/claude-fable-5-1
+spec: docs/specs/2026-10-04-pipeline-schema-design.md
 ---
 
 Design task for goal prism-a03862, spanning prism and niri-material. Make the material pipeline's structure explicit as renderer-owned data, so the rack, the niri sink, and later exploration are derived from it instead of restating it by hand.
@@ -52,4 +53,6 @@ Related: prism-542904 (shelved reorder; this is its contract), material-e2f01a (
 ## Notes
 
 - 2026-10-05T01:51:28Z (main): started
+  provenance: {"harness_session":"claude-code:23285ff0-fcf8-4e52-93eb-5ccb34db3e4c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-05T01:51:29Z (prism-eef38f): resumed
   provenance: {"harness_session":"claude-code:23285ff0-fcf8-4e52-93eb-5ccb34db3e4c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
