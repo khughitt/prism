@@ -311,9 +311,11 @@ function M.profileSection(model)
   return { options = options, selectedIndex = selectedIndex, activeName = model.active.profile }
 end
 
--- One color per device category. Noctalia gives a plugin no theme palette, so
--- these are constants; a card's fill is the same color at hex alpha 1f.
-M.categoryColors = { source = "#5b9cf6", geometry = "#c78bfa", optic = "#4fd1c5", post = "#f6ad55" }
+-- One color per site family (docs/specs/2026-10-04-pipeline-schema-design.md,
+-- Section 3). Noctalia gives a plugin no theme palette, so these are
+-- constants; a card's fill is the same color at hex alpha 1f. Light is the
+-- yellow: distinct from post's orange at the light's 12 px size.
+M.familyColors = { source = "#5b9cf6", geometry = "#c78bfa", transmission = "#4fd1c5", light = "#f6e05e", post = "#f6ad55" }
 
 -- One theme role per section, so a group is findable without reading its
 -- header. Roles resolve against the live theme; the cycle is longer than the
@@ -371,10 +373,10 @@ function M.rack(model)
   end
   for _, device in ipairs(rack.devices) do
     local id = tostring(device.device)
-    if M.categoryColors[device.category] == nil then
-      error("device " .. id .. " has unknown category " .. tostring(device.category))
+    if M.familyColors[device.family] == nil then
+      error("device " .. id .. " has unknown family " .. tostring(device.family))
     end
-    local card = { device = id, label = device.label, category = device.category, rows = {}, shared = {} }
+    local card = { device = id, label = device.label, family = device.family, rows = {}, shared = {}, interactions = device.interactions or {} }
     card.mix = takeRow(device.mix, id)
     local mixWhen = card.mix.focused.ui.when
     if mixWhen ~= nil and mixWhen.otherwise == "hidden" then
@@ -399,6 +401,18 @@ function M.rack(model)
   for _, card in ipairs(cards) do
     card.bypassed = card.bypass.value == true
     card.silenced = card.requires ~= nil and card.requires.bypass.value == true
+  end
+  for _, card in ipairs(cards) do
+    card.attenuatedBy = {}
+    for _, interaction in ipairs(card.interactions) do
+      if interaction.kind == "attenuates" then
+        local source = byId[interaction.device]
+          or error("device " .. card.device .. " names unknown device " .. tostring(interaction.device))
+        if source.bypassed then
+          card.attenuatedBy[#card.attenuatedBy + 1] = { card = source, why = interaction.why }
+        end
+      end
+    end
   end
   return { group = rack.group, header = header, cards = cards }
 end

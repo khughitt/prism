@@ -4,6 +4,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { loadManifests } from '../src/manifest.js';
+import { nodeMap } from '../src/nodes.js';
+import { loadDefs } from '../src/defs.js';
+import { defsDir } from '../src/paths.js';
 
 const defs = new Map([
   ['a.x', { key: 'a.x' }],
@@ -132,4 +135,18 @@ test('a probe directory and a probe name with a separator are manifest errors', 
 test('when must name a defined bool param', () => {
   assert.throws(loadRequires('  - {command: qs, when: a.nope, fix: x}\n'), /undefined param a\.nope/);
   assert.throws(loadRequires('  - {command: qs, when: a.x, fix: x}\n'), /a\.x must be type bool/);
+});
+
+test('a bind may carry a native node, and it must be a non-empty string', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-manifest-node-'));
+  fs.mkdirSync(path.join(dir, 'niri'));
+  fs.writeFileSync(path.join(dir, 'niri', 'manifest.yaml'),
+    'sink: niri\nbinds:\n  - {param: glass.roughness, node: roughness, liveness: reload}\n');
+  const [m] = loadManifests(dir, loadDefs(defsDir()));
+  assert.equal(m.binds[0].node, 'roughness');
+  assert.deepEqual([...nodeMap([m])], [['glass.roughness', 'roughness']]);
+
+  fs.writeFileSync(path.join(dir, 'niri', 'manifest.yaml'),
+    'sink: niri\nbinds:\n  - {param: glass.roughness, node: "", liveness: reload}\n');
+  assert.throws(() => loadManifests(dir, loadDefs(defsDir())), /manifest\.yaml: bad node "" for glass\.roughness/);
 });

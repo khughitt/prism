@@ -8,40 +8,40 @@ binds:
   - {param: compositor.gaps, liveness: reload}
   - {param: terminal.apps, liveness: reload}
   - {param: glass.enabled, liveness: reload}
-  - {param: glass.paneLip, liveness: reload}
-  - {param: glass.paneShiftX, liveness: reload}
-  - {param: glass.paneShiftY, liveness: reload}
-  - {param: glass.ior, liveness: reload}
-  - {param: glass.inactive.ior, liveness: reload}
-  - {param: glass.lightIor, liveness: reload}
-  - {param: glass.thickness, liveness: reload}
-  - {param: glass.inactive.thickness, liveness: reload}
+  - {param: glass.paneLip, node: bevel, liveness: reload}
+  - {param: glass.paneShiftX, node: offset-x, liveness: reload}
+  - {param: glass.paneShiftY, node: offset-y, liveness: reload}
+  - {param: glass.ior, node: ior, liveness: reload}
+  - {param: glass.inactive.ior, node: ior, liveness: reload}
+  - {param: glass.lightIor, node: light-ior, liveness: reload}
+  - {param: glass.thickness, node: thickness, liveness: reload}
+  - {param: glass.inactive.thickness, node: thickness, liveness: reload}
   - {param: glass.tintSource, liveness: reload}
   - {param: glass.tintAccentMix, liveness: reload}
-  - {param: glass.attenuationColor, liveness: reload}
-  - {param: glass.inactive.attenuationColor, liveness: reload}
-  - {param: glass.attenuationDistance, liveness: reload}
-  - {param: glass.chromaticAberration, liveness: reload}
-  - {param: glass.distortion, liveness: reload}
-  - {param: glass.distortionScale, liveness: reload}
-  - {param: glass.inactive.distortionScale, liveness: reload}
-  - {param: glass.anisotropicBlur, liveness: reload}
-  - {param: glass.roughness, liveness: reload}
-  - {param: glass.backdropBlur, liveness: reload}
-  - {param: glass.inactive.backdropBlur, liveness: reload}
-  - {param: glass.jellyFlex, liveness: reload}
-  - {param: glass.jellyRipple, liveness: reload}
+  - {param: glass.attenuationColor, node: attenuation-color, liveness: reload}
+  - {param: glass.inactive.attenuationColor, node: attenuation-color, liveness: reload}
+  - {param: glass.attenuationDistance, node: attenuation-distance, liveness: reload}
+  - {param: glass.chromaticAberration, node: chromatic-aberration, liveness: reload}
+  - {param: glass.distortion, node: distortion, liveness: reload}
+  - {param: glass.distortionScale, node: "distortion scale=", liveness: reload}
+  - {param: glass.inactive.distortionScale, node: "distortion scale=", liveness: reload}
+  - {param: glass.anisotropicBlur, node: anisotropic-blur, liveness: reload}
+  - {param: glass.roughness, node: roughness, liveness: reload}
+  - {param: glass.backdropBlur, node: backdrop-blur, liveness: reload}
+  - {param: glass.inactive.backdropBlur, node: backdrop-blur, liveness: reload}
+  - {param: glass.jellyFlex, node: jelly-flex, liveness: reload}
+  - {param: glass.jellyRipple, node: jelly-ripple, liveness: reload}
   - {param: glass.focusSplit, liveness: reload}
-  - {param: glass.inactive.roughness, liveness: reload}
-  - {param: glass.inactive.attenuationDistance, liveness: reload}
-  - {param: glass.inactive.chromaticAberration, liveness: reload}
-  - {param: glass.inactive.distortion, liveness: reload}
-  - {param: glass.inactive.anisotropicBlur, liveness: reload}
-  - {param: glass.noise, liveness: reload}
-  - {param: glass.noiseType, liveness: reload}
-  - {param: glass.saturation, liveness: reload}
-  - {param: glass.inactive.noise, liveness: reload}
-  - {param: glass.inactive.saturation, liveness: reload}
+  - {param: glass.inactive.roughness, node: roughness, liveness: reload}
+  - {param: glass.inactive.attenuationDistance, node: attenuation-distance, liveness: reload}
+  - {param: glass.inactive.chromaticAberration, node: chromatic-aberration, liveness: reload}
+  - {param: glass.inactive.distortion, node: distortion, liveness: reload}
+  - {param: glass.inactive.anisotropicBlur, node: anisotropic-blur, liveness: reload}
+  - {param: glass.noise, node: noise, liveness: reload}
+  - {param: glass.noiseType, node: "noise type=", liveness: reload}
+  - {param: glass.saturation, node: saturation, liveness: reload}
+  - {param: glass.inactive.noise, node: noise, liveness: reload}
+  - {param: glass.inactive.saturation, node: saturation, liveness: reload}
   - {param: glass.bypass.backdrop, liveness: reload}
   - {param: glass.bypass.distortion, liveness: reload}
   - {param: glass.bypass.refraction, liveness: reload}
@@ -50,16 +50,16 @@ binds:
   - {param: glass.bypass.tint, liveness: reload}
   - {param: glass.bypass.saturation, liveness: reload}
   - {param: glass.bypass.noise, liveness: reload}
-  - {param: glass.iridescence, liveness: reload}
-  - {param: glass.aurora, liveness: reload}
-  - {param: glass.auroraDriftHz, liveness: reload}
-  - {param: glass.auroraColorA, liveness: reload}
-  - {param: glass.auroraColorB, liveness: reload}
-  - {param: glass.inactive.iridescence, liveness: reload}
-  - {param: glass.inactive.aurora, liveness: reload}
-  - {param: glass.inactive.auroraDriftHz, liveness: reload}
-  - {param: glass.inactive.auroraColorA, liveness: reload}
-  - {param: glass.inactive.auroraColorB, liveness: reload}
+  - {param: glass.iridescence, node: iridescence, liveness: reload}
+  - {param: glass.aurora, node: aurora, liveness: reload}
+  - {param: glass.auroraDriftHz, node: "aurora drift-hz", liveness: reload}
+  - {param: glass.auroraColorA, node: "aurora color", liveness: reload}
+  - {param: glass.auroraColorB, node: "aurora color", liveness: reload}
+  - {param: glass.inactive.iridescence, node: iridescence, liveness: reload}
+  - {param: glass.inactive.aurora, node: aurora, liveness: reload}
+  - {param: glass.inactive.auroraDriftHz, node: "aurora drift-hz", liveness: reload}
+  - {param: glass.inactive.auroraColorA, node: "aurora color", liveness: reload}
+  - {param: glass.inactive.auroraColorB, node: "aurora color", liveness: reload}
   - {param: glass.bypass.iridescence, liveness: reload}
   - {param: glass.bypass.aurora, liveness: reload}
   - {param: glass.ring.focus, liveness: reload}

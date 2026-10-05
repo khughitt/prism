@@ -1,81 +1,81 @@
-# The rack: the Focus group as an ordered list of devices, in the order the
-# material shader applies them (niri-material docs/materials/render-pipeline.md):
-# source selection, normal, refraction taps, the behind hook (saturation, noise),
-# Beer-Lambert tint, the within hook (aurora), the specular hook (iridescence).
-# `mix` and `rows` name matrix rows by their ui.row label; `shared` names keys
-# with no state; `bypass` names the device's bool toggle. `requires` names an
-# earlier device whose bypass also silences this one. Every visible parameter
-# in the group other than its header toggle must belong to exactly one device.
+# The rack: the Focus group as an ordered list of devices, each naming the
+# pipeline stage it controls (defs/rack/pipeline.json, vendored from
+# niri-material). Order, families, and `requires` are derived from the schema
+# and the niri sink's dry file (integrations/niri/dry.yaml); the file carries
+# only presentation. `shared` names stages prism exposes outside the rack.
+# `mix` and `rows` name matrix rows by their ui.row label; `shared` on a device
+# names keys with no state; `bypass` names the device's bool toggle. Every
+# visible parameter in the group other than its header toggle must belong to
+# exactly one device.
 group: Focus
+shared: [slab, ripple, ring]
 devices:
   - device: backdrop
     label: Backdrop
-    category: source
+    stage: prefilter
     mix: Blur
     rows: [Frosted backdrop]
     shared: []
     bypass: glass.bypass.backdrop
   - device: distortion
     label: Distortion
-    category: geometry
+    stage: distortion
     mix: Distortion
     rows: [Distortion detail]
     shared: []
     bypass: glass.bypass.distortion
   - device: refraction
     label: Refraction
-    category: optic
+    stage: refraction
     mix: Refraction
     rows: [Depth]
     shared: []
     bypass: glass.bypass.refraction
   - device: fringing
     label: Fringing
-    category: optic
+    stage: fringing
     mix: Fringing
     rows: []
     shared: []
     bypass: glass.bypass.fringing
-    requires: refraction
   - device: directionalBlur
     label: Directional blur
-    category: optic
+    stage: directional-blur
     mix: Directional blur
     rows: []
     shared: []
     bypass: glass.bypass.directionalBlur
-    requires: refraction
   - device: saturation
     label: Saturation
-    category: post
+    stage: saturation
     mix: Saturation
     rows: []
     shared: []
     bypass: glass.bypass.saturation
   - device: noise
     label: Noise
-    category: post
+    stage: noise
     mix: Noise
     rows: []
     shared: [glass.noiseType]
     bypass: glass.bypass.noise
   - device: tint
     label: Tint
-    category: optic
+    stage: tint
     mix: Tint
     rows: [Tint distance]
     shared: [glass.tintSource, glass.tintAccentMix]
     bypass: glass.bypass.tint
   - device: aurora
     label: Aurora
-    category: optic
+    stage: aurora
     mix: Aurora
     rows: [Drift rate, Color A, Color B]
     shared: []
     bypass: glass.bypass.aurora
   - device: iridescence
     label: Iridescence
-    category: optic
+    stage: iridescence
     mix: Iridescence
     rows: []
     shared: []

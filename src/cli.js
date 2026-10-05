@@ -14,6 +14,8 @@ import { runCommit } from './commit.js';
 import { runContext } from './context-cli.js';
 import { UsageError, parseInvocation, helpText, rootHelp, candidatesFor, completionScript } from './commands.js';
 import { loadRack } from './rack.js';
+import { loadDry } from './dry.js';
+import { nodeMap } from './nodes.js';
 import { planReset, visibleGroups } from './reset.js';
 import { planMigration, replacements, writeBackup, writeMigrated, runPairMigration, assertPairLayout, pairLayoutSources } from './migrate.js';
 import { readEffective } from './effective.js';
@@ -239,7 +241,7 @@ export async function run(argv, opts = {}) {
       case 'describe': {
         const { defs, manifests } = load();
         const store = await snapshot(defs);
-        const rack = loadRack(defsDir(), defs);
+        const rack = loadRack(defsDir(), defs, { dry: loadDry(integrationsDir()), nodes: nodeMap(manifests) });
         const effective = readEffective(defs);
         if (!json) {
           print(describeText(store, rack));

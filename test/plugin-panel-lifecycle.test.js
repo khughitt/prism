@@ -22,7 +22,7 @@ local function newHost()
   }
   local model = {active = {}, profiles = {"new"}, layers = {"default", "base", "profile", "wallpaper", "state", "scratch"},
     rack = {group = "Focus", devices = {
-      {device = "noise", label = "Noise", category = "post", mix = "Noise", rows = {}, shared = {}, bypass = "glass.bypass.noise"},
+      {device = "noise", label = "Noise", family = "transmission", mix = "Noise", rows = {}, shared = {}, bypass = "glass.bypass.noise", interactions = {}},
     }}, params = {
     {
       key = "glass.enabled", value = true, default = true, layer = "default", fallback = true,

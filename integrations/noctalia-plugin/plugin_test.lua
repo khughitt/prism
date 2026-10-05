@@ -91,8 +91,9 @@ local rackParams = {
   { key = "hidden", value = 1, ui = { control = "none", group = "Rack" } },
 }
 local rackModel = { params = rackParams, rack = { group = "Rack", devices = {
-  { device = "one", label = "One", category = "optic", mix = "Blur", rows = {}, shared = { "r.kind" }, bypass = "r.bypass.one" },
-  { device = "two", label = "Two", category = "post", mix = "Depth", rows = {}, shared = {}, bypass = "r.bypass.two", requires = "one" },
+  { device = "one", label = "One", family = "transmission", mix = "Blur", rows = {}, shared = { "r.kind" }, bypass = "r.bypass.one", interactions = {} },
+  { device = "two", label = "Two", family = "post", mix = "Depth", rows = {}, shared = {}, bypass = "r.bypass.two", requires = "one",
+    interactions = { { kind = "attenuates", device = "one", why = "blur scales depth" }, { kind = "requires", device = "one", why = "dry" } } },
 } } }
 local rack = Presentation.rack(rackModel)
 equal(rack.group, "Rack")
@@ -100,7 +101,7 @@ equal(rack.header, rackParams[1])
 equal(#rack.cards, 2)
 equal(rack.cards[1].device, "one")
 equal(rack.cards[1].label, "One")
-equal(rack.cards[1].category, "optic")
+equal(rack.cards[1].family, "transmission")
 equal(rack.cards[1].mix, { row = "Blur", focused = rackParams[2], unfocused = rackParams[3] })
 equal(rack.cards[1].rows, {})
 equal(rack.cards[1].shared, { rackParams[6] })
@@ -114,10 +115,18 @@ equal(Presentation.cardParams(rack.cards[1]), { rackParams[7], rackParams[2], ra
 equal(Presentation.rackParams(rack), {
   rackParams[1], rackParams[7], rackParams[2], rackParams[3], rackParams[6], rackParams[8], rackParams[4], rackParams[5],
 })
-equal(Presentation.categoryColors.optic, "#4fd1c5")
-equal(Presentation.categoryColors.post, "#f6ad55")
-equal(Presentation.categoryColors.source, "#5b9cf6")
-equal(Presentation.categoryColors.geometry, "#c78bfa")
+equal(Presentation.familyColors.transmission, "#4fd1c5")
+equal(Presentation.familyColors.post, "#f6ad55")
+equal(Presentation.familyColors.source, "#5b9cf6")
+equal(Presentation.familyColors.geometry, "#c78bfa")
+equal(Presentation.familyColors.light, "#f6e05e")
+do
+  local seen = {}
+  for family, color in pairs(Presentation.familyColors) do
+    assert(seen[color] == nil, "family colors are distinct: " .. family .. " repeats " .. color)
+    seen[color] = family
+  end
+end
 
 -- A bypassed upstream silences its dependents; the dependent's own key stands.
 rackParams[7].value = true
@@ -126,6 +135,10 @@ equal(bypassed.cards[1].bypassed, true)
 equal(bypassed.cards[1].silenced, false)
 equal(bypassed.cards[2].bypassed, false)
 equal(bypassed.cards[2].silenced, true)
+equal(#bypassed.cards[2].attenuatedBy, 1, "a bypassed source lights its attenuates entry on the target")
+equal(bypassed.cards[2].attenuatedBy[1].card.device, "one")
+equal(bypassed.cards[2].attenuatedBy[1].why, "blur scales depth")
+equal(#rack.cards[2].attenuatedBy, 0, "no hint while the source is active")
 rackParams[7].value = false
 
 -- The rack's group is served by the rack, not by sections.
@@ -137,7 +150,7 @@ local function rackFails(edit, pattern)
   local params, devices = {}, {}
   for i, p in ipairs(rackParams) do params[i] = { key = p.key, value = p.value, ui = p.ui } end
   for i, d in ipairs(rackModel.rack.devices) do
-    devices[i] = { device = d.device, label = d.label, category = d.category, mix = d.mix, rows = {}, shared = {}, bypass = d.bypass, requires = d.requires }
+    devices[i] = { device = d.device, label = d.label, family = d.family, mix = d.mix, rows = {}, shared = {}, bypass = d.bypass, requires = d.requires, interactions = d.interactions }
     for j, s in ipairs(d.shared) do devices[i].shared[j] = s end
   end
   local model = { params = params, rack = { group = "Rack", devices = devices } }
@@ -154,7 +167,18 @@ rackFails(function(m) m.rack.devices[2].shared = { "r.kind" } end, "parameter r.
 rackFails(function(m) m.rack.devices[2] = nil end, "row Depth belongs to no device")
 rackFails(function(m) m.rack.devices[1].shared = {} end, "parameter r.kind belongs to no device")
 rackFails(function(m) m.rack.devices[2].requires = "three" end, "device two requires unknown device three")
-rackFails(function(m) m.rack.devices[1].category = "light" end, "device one has unknown category light")
+rackFails(function(m) m.rack.devices[1].family = "glow" end, "device one has unknown family glow")
+
+-- An older describe without interactions still renders: the list reads as empty.
+do
+  local devices = {}
+  for i, d in ipairs(rackModel.rack.devices) do
+    devices[i] = { device = d.device, label = d.label, family = d.family, mix = d.mix, rows = {}, shared = {}, bypass = d.bypass, requires = d.requires }
+    for j, sh in ipairs(d.shared) do devices[i].shared[j] = sh end
+  end
+  local older = Presentation.rack({ params = rackParams, rack = { group = "Rack", devices = devices } })
+  equal(#older.cards[1].attenuatedBy, 0, "a device without interactions renders")
+end
 -- sections() rejects these two shapes; the rack path must not let them through.
 rackFails(function(m)
   m.params[#m.params + 1] = { key = "r.blur2", value = 0, ui = { control = "slider", group = "Rack", order = 12, state = "focused", row = "Blur" } }
@@ -307,9 +331,10 @@ local model = { active = {}, profiles = {}, layers = resolutionOrder, params = {
     ui = { control = "slider", group = "Extra", order = 211, step = 0.01, label = "Unfocused dim", display = "percent", state = "unfocused", row = "Dim" },
   },
 }, rack = { group = "Focus", devices = {
-  { device = "backdrop", label = "Backdrop", category = "source", mix = "Blur", rows = {}, shared = {}, bypass = "glass.bypass.backdrop" },
-  { device = "saturation", label = "Saturation", category = "post", mix = "Saturation", rows = {}, shared = {}, bypass = "glass.bypass.saturation", requires = "backdrop" },
-  { device = "noise", label = "Noise", category = "post", mix = "Noise", rows = {}, shared = { "glass.noiseType" }, bypass = "glass.bypass.noise" },
+  { device = "backdrop", label = "Backdrop", family = "source", mix = "Blur", rows = {}, shared = {}, bypass = "glass.bypass.backdrop",
+    interactions = { { kind = "attenuates", device = "saturation", why = "the prefilter level scales with ior" } } },
+  { device = "saturation", label = "Saturation", family = "transmission", mix = "Saturation", rows = {}, shared = {}, bypass = "glass.bypass.saturation", requires = "backdrop", interactions = {} },
+  { device = "noise", label = "Noise", family = "transmission", mix = "Noise", rows = {}, shared = { "glass.noiseType" }, bypass = "glass.bypass.noise", interactions = {} },
 } } }
 
 for _, param in ipairs(model.params) do
@@ -583,6 +608,7 @@ equal(light("noise").props.opacity, 1.0, "nothing is shadowed any more")
 local hintLabels = {}
 for _, label in ipairs(collect(rendered, "label")) do hintLabels[label.props.text or ""] = true end
 assert(hintLabels["wallpaper"], "a collapsed card reports the wallpaper's nudge")
+assert(hintLabels["Blur is flattened while Saturation is bypassed"], "the attenuates hint names the bypassed source")
 local commandsBeforeNudgedLight = #commands
 light("noise").props.onClick()
 equal(#commands, commandsBeforeNudgedLight + 1, "a nudged bypass light writes like any other")
@@ -612,7 +638,7 @@ onOpen({})
 described(host.describeOk())
 local _, silencedLight = light("saturation")
 equal(silencedLight.props.name, "circle")
-equal(silencedLight.props.color, "#f6ad55", "a silenced light keeps its category color, hollow")
+equal(silencedLight.props.color, "#4fd1c5", "a silenced light keeps its family color, hollow")
 for _, param in ipairs(model.params) do
   if param.key == "glass.bypass.backdrop" then param.value, param.layer = false, "default" end
   if param.key == "glass.bypass.saturation" then param.value, param.layer = true, "base" end
@@ -974,7 +1000,7 @@ local function layeredModel(overrides)
         ui = { control = "none", group = "Debug" } },
     },
     rack = { group = "Focus", devices = {
-      { device = "backdrop", label = "Backdrop", category = "source", mix = "Blur", rows = {}, shared = {}, bypass = "glass.bypass.backdrop" },
+      { device = "backdrop", label = "Backdrop", family = "source", mix = "Blur", rows = {}, shared = {}, bypass = "glass.bypass.backdrop", interactions = {} },
     } },
   }
   for key, value in pairs(overrides or {}) do m[key] = value end
