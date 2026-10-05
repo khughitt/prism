@@ -5,12 +5,15 @@ status: todo
 priority: 2
 size: xl
 complexity: high
+lane: true
 created: 2026-09-09T00:48:50Z
-updated: 2026-10-05T01:46:01Z
+updated: 2026-10-05T12:19:01Z
 depends: []
 tags: [ui, material, noctalia, bus]
 spec: docs/specs/2026-09-08-device-chain-rack-design.md
 ---
+
+Reframe the glass bus and its panel as a device chain over the renderer's hook sites, with the pipeline schema (prism-eef38f, done) as the contract. First milestone: noise as the first movable device (prism-be5abe), once material-cf32e5 lands the site attribute; clear the schema loader follow-ups first (prism-902869, prism-e11d93, prism-f7c64e) so placement builds on the manifest node map. The rack appearance feasibility pass (prism-569378) runs alongside and needs no renderer work.
 
 Reframe the parameter bus and its panel as a device chain, after the insert chains in DAWs and VST racks (eq, filter, reverb, saturation, compression, ...). Today the bus is a flat key/value map and the panel is a Focus matrix of one row per optic; the shader in niri-material already applies those optics in a fixed sequence, but nothing in prism names that sequence.
 

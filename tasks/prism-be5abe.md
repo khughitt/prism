@@ -6,8 +6,8 @@ priority: 2
 size: m
 complexity: mid
 created: 2026-10-05T01:45:48Z
-updated: 2026-10-05T01:46:02Z
-depends: [prism-eef38f, material-cf32e5]
+updated: 2026-10-05T12:18:49Z
+depends: [prism-eef38f, material-cf32e5, prism-e11d93]
 parent: prism-a03862
 tags: [ui, noctalia, material, bus]
 agent: claude-code/claude-fable-5-1
