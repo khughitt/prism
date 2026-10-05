@@ -26,7 +26,7 @@
 2. A prism key bound with a `node` that no stage owns (a typo such as `node: roughnes`) must fail the manifest test, not silently exempt the key from ownership (Task 3 test `every manifest node is owned by a stage`).
 3. A device whose `mix` row binds to a node owned by a different stage (Depth placed on Tint) must fail with the device and the owning stage named (Task 4 test `a device key owned by another stage`).
 4. Two devices that would both derive `requires` on each other through the dry file must fail rather than loop (Task 4 test `requires derivation refuses two sources`).
-5. The panel must not crash on a device without `interactions` (an older `describe`): the hint reads an absent list as empty, and the light still renders (Task 5 Lua test `a device without interactions renders`).
+5. The panel must not crash on a device without `interactions` (an older `describe`): the hint reads an absent list as empty, and the light still renders (Task 4 Lua test `a device without interactions renders`).
 
 ---
 
@@ -528,18 +528,25 @@ git commit -m "feat(niri): declare the native node each bound parameter writes (
 
 ---
 
-### Task 4: The rack validates against the schema and derives `requires`
+### Task 4: The rack validates against the schema, derives `requires`, and the panel follows
+
+One task, not two: `describe` stops emitting `category` and the panel stops reading it, and the plugin contract test feeds real `describe` output through the panel, so the producer and the consumer change in one commit.
 
 **Files:**
 - Modify: `defs/rack/devices.yaml`
 - Modify: `src/rack.js`
 - Modify: `src/cli.js:239-245` (pass dry and nodes to `loadRack`)
+- Modify: `integrations/noctalia-plugin/presentation.luau:314-316, 372-392`
+- Modify: `integrations/noctalia-plugin/panel.luau:674-685, 708-735`
+- Modify: `integrations/noctalia-plugin/plugin_test.lua` (fixtures and the category assertions)
+- Modify: `test/plugin-panel-lifecycle.test.js:25`
+- Modify: `README.md:66-70`
 - Test: `test/rack.test.js`
 - Test: `test/cli.test.js:175-189`
 
 **Interfaces:**
 - Consumes: `loadPipeline` (Task 1), `loadDry` (Task 2), `nodeMap` (Task 3).
-- Produces: `loadRack(dir, defs, { dry, nodes }) -> rack`; `validateRack(rack, defs, schema, dry, nodes) -> rack`; `FAMILIES`, `familyOf(siteId)`. Each returned device carries `stage`, `site`, `scope`, `family`, `interactions: [{kind, device, why}]`, and `requires` when derived. `rack.shared` is the list of stage ids from the file.
+- Produces: `loadRack(dir, defs, { dry, nodes }) -> rack`; `validateRack(rack, defs, schema, dry, nodes) -> rack`; `FAMILIES`, `familyOf(siteId)`. Each returned device carries `stage`, `site`, `scope`, `family`, `interactions: [{kind, device, why}]`, and `requires` when derived. `rack.shared` is the list of stage ids from the file. On the panel side: `Presentation.familyColors` (five entries) and cards with `family` and `attenuatedBy` (a list of `{card, why}` for `attenuates` entries whose named device is bypassed).
 
 - [ ] **Step 1: Rewrite `defs/rack/devices.yaml`**
 
@@ -673,20 +680,21 @@ function defsFrom(yamlText) {
 
 const defs = defsFrom(DEFS);
 
-// A two-site schema: `one`, `two`, and `three` are devices at a sequence
-// site; `four` owns gap at the next site and is a shared stage (g.gap is in
-// group G, so no device can carry it).
+// A two-site schema on real site ids (familyOf knows only those): `one`,
+// `two`, and `three` are devices at behind, a sequence site; `four` owns gap
+// at within and is a shared stage (g.gap is in group G, so no device can
+// carry it).
 const SCHEMA = () => validatePipeline({
   version: 1,
   sites: [
-    { id: 'alpha', carrier: 'linear', law: 'sequence', orderable: false, coverage: 'glass', cost: 'fragment' },
-    { id: 'beta', carrier: 'light', law: 'sum', orderable: false, coverage: 'glass', cost: 'fragment' },
+    { id: 'behind', carrier: 'linear', law: 'sequence', orderable: false, coverage: 'glass', cost: 'fragment' },
+    { id: 'within', carrier: 'light', law: 'sum', orderable: false, coverage: 'glass', cost: 'fragment' },
   ],
   stages: [
-    { id: 'one', site: 'alpha', scope: 'material', owns: ['blur', 'kind'], reads: ['blur', 'kind'], responses: [], animated: false },
-    { id: 'two', site: 'alpha', scope: 'material', owns: ['depth', 'amount'], reads: ['depth', 'amount', 'blur'], responses: [], animated: false },
-    { id: 'three', site: 'alpha', scope: 'material', owns: ['gain'], reads: ['gain'], responses: [], animated: false },
-    { id: 'four', site: 'beta', scope: 'output', owns: ['gap'], reads: ['gap'], responses: [], animated: false },
+    { id: 'one', site: 'behind', scope: 'material', owns: ['blur', 'kind'], reads: ['blur', 'kind'], responses: [], animated: false },
+    { id: 'two', site: 'behind', scope: 'material', owns: ['depth', 'amount'], reads: ['depth', 'amount', 'blur'], responses: [], animated: false },
+    { id: 'three', site: 'behind', scope: 'material', owns: ['gain'], reads: ['gain'], responses: [], animated: false },
+    { id: 'four', site: 'within', scope: 'output', owns: ['gap'], reads: ['gap'], responses: [], animated: false },
   ],
   interactions: [
     { kind: 'attenuates', from: 'one', on: 'two', why: 'blur scales depth [expose]' },
@@ -709,7 +717,7 @@ test('a complete rack validates and comes back resolved', () => {
   const rack = validateRack(complete(), defs, SCHEMA(), DRY, NODES);
   assert.deepEqual(rack.shared, ['four']);
   const [one, two, three] = rack.devices;
-  assert.deepEqual([one.site, one.scope, one.family], ['alpha', 'material', 'transmission']);
+  assert.deepEqual([one.site, one.scope, one.family], ['behind', 'material', 'transmission']);
   assert.equal(Object.hasOwn(one, 'requires'), false);
   assert.deepEqual(one.interactions, []);
   assert.equal(two.requires, 'one');
@@ -879,7 +887,7 @@ test('describe carries the resolved rack', async () => {
 - [ ] **Step 3: Run the suite to see the new tests fail**
 
 Run: `just test-fast`
-Expected: FAIL in `test/rack.test.js` (`familyOf` not exported; `validateRack` rejects `stage` as an unknown field) and in `test/cli.test.js`.
+Expected: FAIL in `test/rack.test.js` (`familyOf` not exported; `validateRack` rejects `stage` as an unknown field) and in `test/cli.test.js`. The Lua suite does not run yet because `npm test` stops at the first failing Node file.
 
 - [ ] **Step 4: Rewrite `src/rack.js`**
 
@@ -1038,12 +1046,16 @@ export function validateRack(rack, defs, schema, dry, nodes) {
   for (const device of devices) {
     const interactions = [];
     const requiresFrom = [];
+    // A requires edge lands on the dependent (its `from`) naming what it needs;
+    // an attenuates or shadows edge lands on the affected stage (its `on`)
+    // naming what acts on it. Both read as "this card, because of that one".
     for (const edge of schema.interactions) {
-      if (edge.from !== device.stage) continue;
-      const target = deviceOfStage.get(edge.on);
-      if (target === undefined) continue;
-      interactions.push({ kind: edge.kind, device: target, why: edge.why });
-      if (edge.kind === 'requires') requiresFrom.push({ device: target, source: 'schema' });
+      const [here, there] = edge.kind === 'requires' ? [edge.from, edge.on] : [edge.on, edge.from];
+      if (here !== device.stage) continue;
+      const other = deviceOfStage.get(there);
+      if (other === undefined) continue;
+      interactions.push({ kind: edge.kind, device: other, why: edge.why });
+      if (edge.kind === 'requires') requiresFrom.push({ device: other, source: 'schema' });
     }
     for (const [bypassKey, fields] of Object.entries(dry)) {
       const other = deviceOfBypass.get(bypassKey);
@@ -1057,7 +1069,7 @@ export function validateRack(rack, defs, schema, dry, nodes) {
     const distinct = [...new Set(requiresFrom.map((r) => r.device))];
     if (distinct.length > 1) {
       const named = [...requiresFrom].sort((a, b) => a.source.localeCompare(b.source)).map((r) => `${r.device} (${r.source})`).join(' and ');
-      fail(`${device.device}: requires would name ${named}; one source only until a consumer needs more`);
+      fail(`device ${device.device}: requires would name ${named}; one source only until a consumer needs more`);
     }
     delete device.keys;
     device.interactions = interactions;
@@ -1099,35 +1111,7 @@ import { nodeMap } from './nodes.js';
 
 `describeText` already prints `rack.devices.map((device) => device.device)`; it needs no change.
 
-- [ ] **Step 6: Run the suite to see them pass**
-
-Run: `just test-fast`
-Expected: PASS for `test/rack.test.js`, `test/cli.test.js`, and the rest of the Node suite. The Lua suite still passes because the panel ignores unknown device fields until Task 5 (`plugin_test.lua` fixtures still carry `category`, which the panel still reads at this point).
-
-- [ ] **Step 7: Commit**
-
-```bash
-tasks done <step id> "rack validates stage, order, ownership, and shared stages against the schema; requires and interactions derived; describe carries site, scope, family, requires, interactions"
-git add defs/rack/devices.yaml src/rack.js src/cli.js test/rack.test.js test/cli.test.js tasks/
-git commit -m "feat(rack): validate devices against the pipeline schema and derive requires (prism-eef38f)"
-```
-
----
-
-### Task 5: The panel colors by family and hints from interactions
-
-**Files:**
-- Modify: `integrations/noctalia-plugin/presentation.luau:314-316, 372-392`
-- Modify: `integrations/noctalia-plugin/panel.luau:674-685, 708-735`
-- Modify: `integrations/noctalia-plugin/plugin_test.lua` (fixtures and the category assertions)
-- Modify: `test/plugin-panel-lifecycle.test.js:25`
-- Modify: `README.md:66-70`
-
-**Interfaces:**
-- Consumes: `describe` devices with `family`, `requires`, `interactions` (Task 4).
-- Produces: `Presentation.familyColors` (five entries), cards with `family` and `attenuatedBy` (a list of `{card, why}` for `attenuates` entries whose source device is bypassed).
-
-- [ ] **Step 1: Update the Lua tests**
+- [ ] **Step 6: Update the Lua tests and the lifecycle fixture**
 
 In `integrations/noctalia-plugin/plugin_test.lua`:
 
@@ -1225,12 +1209,7 @@ In `test/plugin-panel-lifecycle.test.js` line 25 becomes:
       {device = "noise", label = "Noise", family = "transmission", mix = "Noise", rows = {}, shared = {}, bypass = "glass.bypass.noise", interactions = {}},
 ```
 
-- [ ] **Step 2: Run the suite to see the Lua tests fail**
-
-Run: `just test-fast`
-Expected: FAIL in the Lua step with `device one has unknown category nil` (the presentation still reads `category`).
-
-- [ ] **Step 3: Update `presentation.luau`**
+- [ ] **Step 7: Update `presentation.luau`**
 
 Replace lines 314 to 316:
 
@@ -1274,7 +1253,7 @@ Replace the loop that sets `bypassed` and `silenced` (lines 398 to 401) with two
 
 `byId` is the table the device loop above already fills.
 
-- [ ] **Step 4: Update `panel.luau`**
+- [ ] **Step 8: Update `panel.luau`**
 
 Line 676 becomes:
 
@@ -1301,28 +1280,28 @@ In `deviceCard`, after the `hint` row (line 720), add the attenuates hint:
   end
 ```
 
-`ui.label` takes no tooltip at any plugin API, so the mechanism (`entry.why`) is not shown; the sentence carries the fact and the interaction document (Task 6) carries the mechanism.
+`ui.label` takes no tooltip at any plugin API, so the mechanism (`entry.why`) is not shown; the sentence carries the fact and the interaction document (Task 5) carries the mechanism.
 
-- [ ] **Step 5: Update the README sentence**
+- [ ] **Step 9: Update the README sentence**
 
 `README.md` line 69, `colored by category that bypasses the stage when clicked`, becomes `colored by its stage's site family (source, geometry, transmission, light, post) that bypasses the stage when clicked`.
 
-- [ ] **Step 6: Run the suite to see it pass**
+- [ ] **Step 10: Run the suite to see it pass**
 
 Run: `just test-fast`
-Expected: PASS, Node and Lua.
+Expected: PASS, Node and Lua, including `integrations/noctalia-plugin/contract.test.mjs`, which feeds real `describe` output through the panel. Nothing is committed between the rack change and the panel change: `category` leaves `describe` and the panel stops reading it in one commit.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 11: Commit**
 
 ```bash
-tasks done <step id> "panel colors cards by site family, five colors; attenuates hint reads describe interactions; fixtures carry family and interactions"
-git add integrations/noctalia-plugin/presentation.luau integrations/noctalia-plugin/panel.luau integrations/noctalia-plugin/plugin_test.lua test/plugin-panel-lifecycle.test.js README.md tasks/
-git commit -m "feat(panel): color rack cards by site family and hint attenuated devices (prism-eef38f)"
+tasks done <step id> "rack validates stage, order, ownership, and shared stages; requires and interactions derived; describe carries site, scope, family, requires, interactions; panel colors by family and hints attenuated devices"
+git add defs/rack/devices.yaml src/rack.js src/cli.js test/rack.test.js test/cli.test.js integrations/noctalia-plugin/presentation.luau integrations/noctalia-plugin/panel.luau integrations/noctalia-plugin/plugin_test.lua test/plugin-panel-lifecycle.test.js README.md tasks/
+git commit -m "feat(rack): validate devices against the pipeline schema, derive requires, and color the panel by family (prism-eef38f)"
 ```
 
 ---
 
-### Task 6: The interaction matrix document
+### Task 5: The interaction matrix document
 
 **Files:**
 - Create: `docs/notes/pipeline-interactions.md`
@@ -1463,4 +1442,4 @@ git commit -m "docs(notes): generate the interaction matrix from the schema and 
 
 ## Closing the task
 
-After Task 6, in the task worktree: `just gate` (check plus the full suite), then `tasks done prism-eef38f "<what landed>"` in a final commit that also marks the spec's status line `implemented`. Then the finishing-a-development-branch skill: a personal-profile checkout merges locally. Before removing the worktree, run `tt-report`, and confirm the Noctalia plugin symlink (`~/.config/noctalia/plugins/prism`) does not resolve into it.
+After Task 5, in the task worktree: `just gate` (check plus the full suite), then `tasks done prism-eef38f "<what landed>"` in a final commit that also marks the spec's status line `implemented`. Then the finishing-a-development-branch skill: a personal-profile checkout merges locally. Before removing the worktree, run `tt-report`, and confirm the Noctalia plugin symlink (`~/.config/noctalia/plugins/prism`) does not resolve into it.

@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: prism-eef38f
 created: 2026-10-05T01:45:24Z
-updated: 2026-10-05T09:44:40Z
+updated: 2026-10-05T10:13:18Z
 started: 2026-10-05T01:51:28Z
 depends: []
 parent: prism-a03862
@@ -76,4 +76,10 @@ Related: prism-542904 (shelved reorder; this is its contract), material-e2f01a (
 - 2026-10-05T09:08:20Z (prism-eef38f): review: spec round 3 — verdict: accept; findings: none; reviewer: codex
 - 2026-10-05T09:08:20Z (prism-eef38f): Round 3 scoped re-review of b15978b: both remaining Important findings resolved. Thickness ownership now matches the existing Refraction/Depth controls while slab retains its read; shared includes ripple. Registry pins apply within (program, site), with cross-site call order governed by site order, so the documented multi-site noise extension no longer conflicts with ORDER. Spec accepted for writing-plans; the implementation plan remains subject to its separate review. Controller completed this re-review directly after the delegated renderer reviewer could not run due to model capacity.
 - 2026-10-05T09:25:18Z (prism-eef38f): resumed
+  provenance: {"harness_session":"claude-code:23285ff0-fcf8-4e52-93eb-5ccb34db3e4c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-05T09:45:27Z (prism-eef38f): parked (waiting on user, review): Review docs/plans/2026-10-05-pipeline-schema.md (prism, .worktrees/prism-eef38f) and niri-material docs/plans/2026-10-05-pipeline-schema.md (.worktrees/material-a00785 there); on acceptance choose the execution method (recommended: native, this session implements with one whole-branch review at the end), then execute the niri-material plan first and the prism plan from its Task 1
+  provenance: {"harness_session":"claude-code:23285ff0-fcf8-4e52-93eb-5ccb34db3e4c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-05T10:00:34Z (prism-eef38f): review: plan round 1 — verdict: revise; findings: Important 3; reviewer: codex
+- 2026-10-05T10:01:06Z (prism-eef38f): Plan review details: (1) lines 1041-1046 resolve every schema edge on edge.from. For attenuates/shadows the affected card is edge.on; current refraction -> prefilter attaches the hint to Refraction referencing Backdrop, reversing the spec and tests. Keep requires dependency semantics separate. (2) synthetic SCHEMA sites alpha/beta at 682-689 are rejected by familyOf (911-914), so happy-path and later validation tests never reach their intended gates. Read-only execution of the proposed snippets reproduced site alpha has no family; after using supported sites it reproduced reversed attenuation. The two-source error at 1060 also omits device while test820 requires it. Correct fixtures/messages and check each expected failure reaches its intended rule. (3) Task4 removes category and returns family before Task5 updates presentation.luau, yet Step6 promises just test-fast passes. Existing integrations/noctalia-plugin/contract.test.mjs exercises real describe through the old panel, whose category validation fails. Land the breaking producer/consumer change atomically without a compatibility layer. Recommend native execution and a fresh whole-branch review per repository after revised plans are accepted; renderer plan has three separately recorded Important findings.
+- 2026-10-05T10:13:18Z (prism-eef38f): resumed
   provenance: {"harness_session":"claude-code:23285ff0-fcf8-4e52-93eb-5ccb34db3e4c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
