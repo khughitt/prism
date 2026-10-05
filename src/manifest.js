@@ -28,6 +28,9 @@ export function loadManifests(dir, defs) {
       if (b.drag === 'release' && b.liveness !== 'live') {
         throw new Error(`${file}: drag: release requires liveness: live`);
       }
+      if (b.node !== undefined && (typeof b.node !== 'string' || b.node.trim() === '')) {
+        throw new Error(`${file}: bad node ${JSON.stringify(b.node)} for ${b.param}`);
+      }
     }
     const generates = m.generates ?? [];
     if (!Array.isArray(generates) || generates.some((g) =>

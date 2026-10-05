@@ -9,6 +9,9 @@ import { noctaliaColorsPath, readNoctaliaPalette } from '../integrations/niri/pa
 import { loadDefs } from '../src/defs.js';
 import { defsDir, integrationsDir, stateDir } from '../src/paths.js';
 import { resolveParams } from '../src/resolve.js';
+import { loadManifests } from '../src/manifest.js';
+import { nodeMap } from '../src/nodes.js';
+import { loadPipeline } from '../src/pipeline.js';
 
 const resolved = { params: {
   'compositor.gaps': 54,
@@ -854,4 +857,31 @@ test('sourceColors names exactly the colors a source resolved', () => {
   { 'glass.ring.color': { value: stored, from: 'the stored Color; no Noctalia palette was found' } });
   assert.deepEqual(sourceColors(params({ 'glass.tintSource': 'manual', 'glass.ring.colorSource': 'familiar' }), {}),
     { 'glass.ring.color': { value: stored, from: "the resting color; each agent session's hue replaces it on its window" } });
+});
+
+test('every manifest node is owned by a stage', () => {
+  const schema = loadPipeline(defsDir());
+  const owned = new Set(schema.stages.flatMap((st) => st.owns));
+  const nodes = nodeMap(loadManifests(integrationsDir(), loadDefs(defsDir())));
+  for (const [key, node] of nodes) {
+    assert.ok(owned.has(node), `${key} binds node ${node}, which no stage owns`);
+  }
+  // Every material parameter the sink writes carries its node.
+  for (const key of [
+    'glass.ior', 'glass.thickness', 'glass.roughness', 'glass.backdropBlur', 'glass.noise', 'glass.noiseType',
+    'glass.saturation', 'glass.attenuationColor', 'glass.attenuationDistance', 'glass.chromaticAberration',
+    'glass.anisotropicBlur', 'glass.distortion', 'glass.distortionScale', 'glass.iridescence', 'glass.aurora',
+    'glass.auroraDriftHz', 'glass.auroraColorA', 'glass.auroraColorB', 'glass.paneLip', 'glass.paneShiftX',
+    'glass.paneShiftY', 'glass.jellyFlex', 'glass.jellyRipple', 'glass.lightIor',
+    'glass.inactive.ior', 'glass.inactive.thickness', 'glass.inactive.roughness', 'glass.inactive.noise',
+  ]) {
+    assert.ok(nodes.has(key), `${key} has no node in the niri manifest`);
+  }
+  assert.equal(nodes.get('glass.noiseType'), 'noise type=');
+  assert.equal(nodes.get('glass.distortionScale'), 'distortion scale=');
+  assert.equal(nodes.get('glass.auroraColorA'), 'aurora color');
+  assert.equal(nodes.get('glass.paneLip'), 'bevel');
+  assert.equal(nodes.has('glass.tintSource'), false);
+  assert.equal(nodes.has('glass.bypass.noise'), false);
+  assert.equal(nodes.has('glass.ring.gap'), false, 'ring keys write response fields, not parameters');
 });
