@@ -1,18 +1,20 @@
 ---
 id: prism-ba8c59
 title: "Rack order is stale: saturation and noise run before tint since the behind hook landed"
-status: doing
+status: done
 priority: 2
 size: xs
 complexity: low
 process: direct
-owner: main
+owner: prism-ba8c59
 created: 2026-10-05T01:45:48Z
-updated: 2026-10-05T01:48:01Z
+updated: 2026-10-05T01:51:02Z
 started: 2026-10-05T01:48:01Z
+completed: 2026-10-05T01:51:02Z
 depends: []
 parent: prism-a03862
 tags: [ui, material, bug]
+model: claude-fable-5-1
 agent: claude-code/claude-fable-5-1
 ---
 
@@ -23,4 +25,10 @@ Fix the order in devices.yaml and the rack golden; keep the post category or ren
 ## Notes
 
 - 2026-10-05T01:48:01Z (main): started
+  provenance: {"harness_session":"claude-code:23285ff0-fcf8-4e52-93eb-5ccb34db3e4c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-05T01:48:49Z (prism-ba8c59): resumed
+  provenance: {"harness_session":"claude-code:23285ff0-fcf8-4e52-93eb-5ccb34db3e4c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-05T01:51:02Z (prism-ba8c59): done
+  provenance: {"harness_session":"claude-code:23285ff0-fcf8-4e52-93eb-5ccb34db3e4c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-05T01:51:02Z (prism-ba8c59): Reordered defs/rack/devices.yaml to the shader's order (saturation, noise before tint; aurora before iridescence), pinned it in the rack and describe tests, updated README and the rack spec's revision note; 520/520 pass
   provenance: {"harness_session":"claude-code:23285ff0-fcf8-4e52-93eb-5ccb34db3e4c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}

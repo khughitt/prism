@@ -1,5 +1,7 @@
 # The rack: the Focus group as an ordered list of devices, in the order the
-# material shader applies them (niri-material docs/materials/render-pipeline.md).
+# material shader applies them (niri-material docs/materials/render-pipeline.md):
+# source selection, normal, refraction taps, the behind hook (saturation, noise),
+# Beer-Lambert tint, the within hook (aurora), the specular hook (iridescence).
 # `mix` and `rows` name matrix rows by their ui.row label; `shared` names keys
 # with no state; `bypass` names the device's bool toggle. `requires` names an
 # earlier device whose bypass also silences this one. Every visible parameter
@@ -43,27 +45,6 @@ devices:
     shared: []
     bypass: glass.bypass.directionalBlur
     requires: refraction
-  - device: tint
-    label: Tint
-    category: optic
-    mix: Tint
-    rows: [Tint distance]
-    shared: [glass.tintSource, glass.tintAccentMix]
-    bypass: glass.bypass.tint
-  - device: iridescence
-    label: Iridescence
-    category: optic
-    mix: Iridescence
-    rows: []
-    shared: []
-    bypass: glass.bypass.iridescence
-  - device: aurora
-    label: Aurora
-    category: optic
-    mix: Aurora
-    rows: [Drift rate, Color A, Color B]
-    shared: []
-    bypass: glass.bypass.aurora
   - device: saturation
     label: Saturation
     category: post
@@ -78,3 +59,24 @@ devices:
     rows: []
     shared: [glass.noiseType]
     bypass: glass.bypass.noise
+  - device: tint
+    label: Tint
+    category: optic
+    mix: Tint
+    rows: [Tint distance]
+    shared: [glass.tintSource, glass.tintAccentMix]
+    bypass: glass.bypass.tint
+  - device: aurora
+    label: Aurora
+    category: optic
+    mix: Aurora
+    rows: [Drift rate, Color A, Color B]
+    shared: []
+    bypass: glass.bypass.aurora
+  - device: iridescence
+    label: Iridescence
+    category: optic
+    mix: Iridescence
+    rows: []
+    shared: []
+    bypass: glass.bypass.iridescence

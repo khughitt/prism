@@ -63,7 +63,7 @@ The Noctalia integration is a native
 v5 plugin under `integrations/noctalia-plugin/`; its panel is a shared `Glass`
 section for the frame and pane motion and a `Focus` rack with one card per glass
 stage in the shader's order (Backdrop, Distortion, Refraction, Fringing,
-Directional blur, Tint, Iridescence, Aurora, Saturation, Noise). The rack's mix columns place the
+Directional blur, Saturation, Noise, Tint, Aurora, Iridescence). The rack's mix columns place the
 unfocused state on the left and the focused on the right. Each card shows its
 mix for both focus states, a light
 colored by category that bypasses the stage when clicked, and a chevron that

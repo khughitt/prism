@@ -5,6 +5,10 @@
 Revised 2026-09-09 after review: the rack file moves out of the defs scan,
 every bypass gets an individual reset, and Refraction's bypass also silences
 the two devices that ride its taps.
+Revised 2026-10-04 (`prism-ba8c59`): niri-material moved saturation and noise
+to its behind hook on 2026-09-18, before tint, and aurora (within) precedes
+iridescence (specular); `defs/rack/devices.yaml` now follows that order. The
+device table below keeps the order of the original eight-device rack.
 **Task:** `prism-9331c1`, first piece of goal `prism-a03862`
 
 ## Context

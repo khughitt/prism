@@ -178,7 +178,7 @@ test('describe carries the rack verbatim', async () => {
   const { rack } = JSON.parse(out);
   assert.equal(rack.group, 'Focus');
   assert.deepEqual(rack.devices.map((d) => d.device), [
-    'backdrop', 'distortion', 'refraction', 'fringing', 'directionalBlur', 'tint', 'iridescence', 'aurora', 'saturation', 'noise',
+    'backdrop', 'distortion', 'refraction', 'fringing', 'directionalBlur', 'saturation', 'noise', 'tint', 'aurora', 'iridescence',
   ]);
   assert.deepEqual(rack.devices[3], {
     device: 'fringing', label: 'Fringing', category: 'optic', mix: 'Fringing',
