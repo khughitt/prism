@@ -31,11 +31,11 @@ test('rejects a malformed shape and names the field', () => {
   assert.throws(() => validatePipeline(missing), /site source: law must be one of sequence\|sum\|product\|coupled/);
 
   const badScope = shipped();
-  badScope.stages[0].scope = 'global';
+  badScope.stages.find((st) => st.id === 'blur').scope = 'global';
   assert.throws(() => validatePipeline(badScope), /stage blur: scope must be one of output\|material\|window/);
 
   const orphan = shipped();
-  orphan.stages[0].site = 'nowhere';
+  orphan.stages.find((st) => st.id === 'blur').site = 'nowhere';
   assert.throws(() => validatePipeline(orphan), /stage blur: unknown site nowhere/);
 
   const badOptic = shipped();
