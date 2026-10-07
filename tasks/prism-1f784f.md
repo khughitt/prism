@@ -1,13 +1,15 @@
 ---
 id: prism-1f784f
 title: "Light bending, Head wander and Wander rate are wired but read as inert"
-status: todo
+status: doing
 priority: 2
 size: s
 complexity: mid
 process: direct
+owner: main
 created: 2026-10-02T00:09:28Z
-updated: 2026-10-02T00:14:55Z
+updated: 2026-10-07T10:06:38Z
+started: 2026-10-07T10:06:38Z
 depends: []
 tags: [noctalia, ui, material]
 agent: claude-code/claude-opus-5-5
@@ -19,3 +21,5 @@ Owner report (2026-10-01): the three Ring knobs seem to do nothing. They are wir
 
 - 2026-10-02T00:14:54Z (main): Light bending: the 'no effect' finding (material-a85a18, byte-identical light-ior 1 vs 6) was at ring-gap 2. The owner now runs gap 6, which triples the cap to 3 px, so light-ior 4.5 may now move the halo. Re-measure with niri-material's ring_pair test at gap 6 before deciding this knob.
 - 2026-10-02T00:14:54Z (main): Head wander: brightness flicker at 12 Hz on a fast, decaying head is below notice. Option to weigh against relabelling: wander the head's position or width (or default to about 3 Hz), visible at the same strength; that is a native change in niri-material ring.rs head_gain.
+- 2026-10-07T10:06:38Z (main): started
+  provenance: {"harness_session":"codex:01a115d3-f017-7310-9b8f-d57428601236","harness_session_source":"CODEX_THREAD_ID"}
