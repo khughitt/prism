@@ -130,11 +130,15 @@ test('every glass definition matches the native range and default', () => {
     const def = defs.get(key);
     assert.ok(def, `missing def ${key}`);
     // Edge profile and reflection ship the owner's pick from niri-material's
-    // glass-edge contact sheet rather than the native off values.
+    // glass-edge contact sheet rather than the native off values, and the ring
+    // and light bending ship the owner's tuned look.
     assert.deepEqual(def.default, ({ 'glass.attenuationDistance': 30,
       'glass.inactive.attenuationDistance': 35,
       'glass.bevelProfile': 2, 'glass.inactive.bevelProfile': 2,
-      'glass.reflection': 0.6, 'glass.inactive.reflection': 0.6 })[key] ?? native.default, `${key} default`);
+      'glass.reflection': 0.6, 'glass.inactive.reflection': 0.6,
+      'glass.ring.beamSpeed': 4350, 'glass.ring.beamNoise': 0.55, 'glass.ring.beamNoiseHz': 12,
+      'glass.ring.decay': 4150, 'glass.ring.gap': 6, 'glass.ring.width': 1.1,
+      'glass.ring.glow': 1.2, 'glass.lightIor': 4.5 })[key] ?? native.default, `${key} default`);
     if (native.range) {
       assert.ok(def.range[0] >= native.range[0] && def.range[1] <= native.range[1],
         `${key} range [${def.range}] leaves the native [${native.range}]`);

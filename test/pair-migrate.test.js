@@ -147,8 +147,8 @@ test('replacement-era keys are copied unchanged and plain migration changes all 
   try { assert.equal((await runCaptured(['migrate'])).code, 0); }
   finally { fs.renameSync = rename; }
   assert.equal(writes.filter((file) => file === contextPath('profile', 'Inactive')).length, 1);
-  assert.deepEqual(readLook('Inactive'), { values: { 'glass.ring.beamSpeed': 300 }, wallpapers: {
-    other: { source: '/other', values: { 'glass.ring.beamSpeed': 300 } },
+  assert.deepEqual(readLook('Inactive'), { values: { 'glass.ring.beamSpeed': 4350 }, wallpapers: {
+    other: { source: '/other', values: { 'glass.ring.beamSpeed': 4350 } },
     w1: { source: '/w', values: { 'glass.ring.beamSpeed': 0 } },
   } });
 });

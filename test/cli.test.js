@@ -943,13 +943,13 @@ test('migrate rewrites the replaced ring key everywhere, backs the files up, rep
   } }), 0);
   const backup = out.match(/^migrate: backup (.+)$/m)[1];
   assert.ok(backup.startsWith(path.join(process.env.PRISM_STATE_DIR, 'migrations', '')), backup);
-  assert.match(out, /^migrate: base: glass\.ring\.sweepMs 9000 -> glass\.ring\.beamSpeed 300$/m);
+  assert.match(out, /^migrate: base: glass\.ring\.sweepMs 9000 -> glass\.ring\.beamSpeed 4350$/m);
   assert.match(out, /^migrate: profile dusk: glass\.ring\.sweepMs 0 -> glass\.ring\.beamSpeed 0$/m);
   assert.match(out, /^migrate: base \/ wallpaper abc12345: glass\.ring\.sweepMs 1200 removed; glass\.ring\.beamSpeed 450 kept$/m);
   assert.match(out, /^migrate: done — run 'prism apply' to hand the new keys to the sinks$/m);
   assert.doesNotMatch(out, /plain/);
   assert.deepEqual(fs.readFileSync(path.join(backup, 'values.yaml')), base);
-  assert.deepEqual(readValues(), { 'glass.ring.beamSpeed': 300, 'glass.ior': 1.3 });
+  assert.deepEqual(readValues(), { 'glass.ring.beamSpeed': 4350, 'glass.ior': 1.3 });
   assert.deepEqual(readContext('wallpaper', 'abc12345').values, { 'glass.ring.beamSpeed': 450 });
 
   out = '';
@@ -1022,10 +1022,10 @@ test('migrate reports the backup before a later physical-file write fails', asyn
   const failure = await runCaptured(['migrate'], { print: (s) => { out += s; } });
   assert.equal(failure.code, 1);
   const backup = out.match(/^migrate: backup (.+)$/m)[1];
-  assert.match(out, /^migrate: base: glass\.ring\.sweepMs 9000 -> glass\.ring\.beamSpeed 300$/m);
+  assert.match(out, /^migrate: base: glass\.ring\.sweepMs 9000 -> glass\.ring\.beamSpeed 4350$/m);
   assert.match(failure.stderr, /migrate: profile dusk: injected profile failure/);
   assert.ok(failure.stderr.includes(backup));
-  assert.deepEqual(readValues(), { 'glass.ring.beamSpeed': 300 });
+  assert.deepEqual(readValues(), { 'glass.ring.beamSpeed': 4350 });
   assert.deepEqual(fs.readFileSync(contextPath('profile', 'dusk')), original);
   assert.deepEqual(fs.readFileSync(path.join(backup, 'values.yaml'), 'utf8'), 'glass.ring.sweepMs: 9000\n');
 });
