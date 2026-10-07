@@ -4,6 +4,8 @@ compositor.gaps: 24
 debug.backdrop: false
 glass.enabled: true
 glass.paneLip: 6
+glass.bevelProfile: 2
+glass.inactive.bevelProfile: 2
 glass.paneShiftX: 6
 glass.paneShiftY: 6
 glass.jellyFlex: 0.004
@@ -45,6 +47,10 @@ glass.auroraColorA: "#3dffb0"
 glass.inactive.auroraColorA: "#3dffb0"
 glass.auroraColorB: "#7a5cff"
 glass.inactive.auroraColorB: "#7a5cff"
+glass.reflection: 0.6
+glass.inactive.reflection: 0.6
+glass.edgeHighlight: 0
+glass.inactive.edgeHighlight: 0
 glass.bypass.backdrop: false
 glass.bypass.distortion: false
 glass.bypass.refraction: false
@@ -55,6 +61,8 @@ glass.bypass.saturation: false
 glass.bypass.noise: false
 glass.bypass.iridescence: false
 glass.bypass.aurora: false
+glass.bypass.reflection: false
+glass.bypass.edgeHighlight: false
 # familiar keeps the native accent channel on; the resting color is the
 # native filament default.
 glass.ring.focus: true

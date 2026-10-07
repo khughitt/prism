@@ -19,6 +19,14 @@ const NATIVE = {
   'glass.inactive.auroraColorB': { default: "#7a5cff" },
   'glass.bypass.iridescence': { default: false },
   'glass.bypass.aurora': { default: false },
+  'glass.bevelProfile': { range: [1, 8], default: 1 },
+  'glass.inactive.bevelProfile': { range: [1, 8], default: 1 },
+  'glass.reflection': { range: [0, 1], default: 0 },
+  'glass.inactive.reflection': { range: [0, 1], default: 0 },
+  'glass.edgeHighlight': { range: [0, 1], default: 0 },
+  'glass.inactive.edgeHighlight': { range: [0, 1], default: 0 },
+  'glass.bypass.reflection': { default: false },
+  'glass.bypass.edgeHighlight': { default: false },
   'glass.ior': { range: [1, 3], default: 1.5 },
   'glass.inactive.ior': { range: [1, 3], default: 1.5 },
   'glass.lightIor': { range: [1, 12], default: 6 },
@@ -121,8 +129,12 @@ test('every glass definition matches the native range and default', () => {
   for (const [key, native] of Object.entries(NATIVE)) {
     const def = defs.get(key);
     assert.ok(def, `missing def ${key}`);
+    // Edge profile and reflection ship the owner's pick from niri-material's
+    // glass-edge contact sheet rather than the native off values.
     assert.deepEqual(def.default, ({ 'glass.attenuationDistance': 30,
-      'glass.inactive.attenuationDistance': 35 })[key] ?? native.default, `${key} default`);
+      'glass.inactive.attenuationDistance': 35,
+      'glass.bevelProfile': 2, 'glass.inactive.bevelProfile': 2,
+      'glass.reflection': 0.6, 'glass.inactive.reflection': 0.6 })[key] ?? native.default, `${key} default`);
     if (native.range) {
       assert.ok(def.range[0] >= native.range[0] && def.range[1] <= native.range[1],
         `${key} range [${def.range}] leaves the native [${native.range}]`);
@@ -259,6 +271,15 @@ const MATRIX = [
   ['Directional blur', 'glass.anisotropicBlur', 'glass.inactive.anisotropicBlur'],
   ['Noise', 'glass.noise', 'glass.inactive.noise'],
   ['Saturation', 'glass.saturation', 'glass.inactive.saturation'],
+  ['Reflection', 'glass.reflection', 'glass.inactive.reflection'],
+  ['Edge highlight', 'glass.edgeHighlight', 'glass.inactive.edgeHighlight'],
+];
+
+// The one matrix row outside the Focus rack: the bevel's profile belongs to the
+// shared slab stage, but it shapes the bevel without resizing the slab, so a
+// focus swap cannot make the glass jump.
+const GLASS_MATRIX = [
+  ['Edge profile', 'glass.bevelProfile', 'glass.inactive.bevelProfile'],
 ];
 
 // The terminal opacity pair is a kitty sink parameter, not a glass stage, and
@@ -292,6 +313,8 @@ const BYPASS = [
   ['glass.bypass.tint', 'Bypass tint', 450],
   ['glass.bypass.saturation', 'Bypass saturation', 460],
   ['glass.bypass.noise', 'Bypass noise', 470],
+  ['glass.bypass.reflection', 'Bypass reflection', 456],
+  ['glass.bypass.edgeHighlight', 'Bypass edge highlight', 457],
 ];
 
 // The optics split by this change default to their focused value, so widening
@@ -336,7 +359,15 @@ test('the focus matrix pairs every focused optic with an unfocused twin', () => 
   assert.equal(split.ui.state, undefined);
   assert.equal(defs.get('glass.backdropBlur').ui.header, undefined);
   const stateful = [...defs.values()].filter((def) => def.ui.state !== undefined).map((def) => def.key);
-  assert.deepEqual(stateful.sort(), MATRIX.flatMap(([, a, b]) => [a, b]).sort());
+  assert.deepEqual(stateful.sort(), [...MATRIX, ...GLASS_MATRIX].flatMap(([, a, b]) => [a, b]).sort());
+});
+
+test('the edge profile pairs its focused and unfocused values in the Glass group', () => {
+  const defs = loadDefs(defsDir());
+
+  for (const pair of GLASS_MATRIX) assertPair(defs, 'Glass', pair);
+  assert.equal(defs.get('glass.bevelProfile').ui.order, defs.get('glass.paneLip').ui.order + 2,
+    'Edge profile follows Edge bevel');
 });
 
 test('every rack device has one shared bool bypass toggle in the Focus group', () => {
@@ -415,7 +446,8 @@ test('geometry and pane motion stay shared across focus states', () => {
 test('everything outside the matrix is shared glass', () => {
   const defs = loadDefs(defsDir());
   const shared = [...defs.values()]
-    .filter((def) => def.ui.control !== 'none' && def.ui.group !== 'Focus' && def.ui.group !== 'Title')
+    .filter((def) => def.ui.control !== 'none' && def.ui.group !== 'Focus' && def.ui.group !== 'Title'
+      && def.ui.state === undefined)
     .map((def) => def.key);
 
   assert.deepEqual(shared.sort(), [
@@ -466,6 +498,10 @@ const NEUTRAL = {
   'glass.inactive.auroraColorA': "#3dffb0",
   'glass.inactive.auroraColorB': "#7a5cff",
   'glass.bypass.iridescence': false, 'glass.bypass.aurora': false,
+  'glass.bevelProfile': 1, 'glass.inactive.bevelProfile': 1,
+  'glass.reflection': 0, 'glass.inactive.reflection': 0,
+  'glass.edgeHighlight': 0, 'glass.inactive.edgeHighlight': 0,
+  'glass.bypass.reflection': false, 'glass.bypass.edgeHighlight': false,
   'glass.enabled': true, 'compositor.gaps': 24,
   'glass.paneLip': 8, 'glass.paneShiftX': 0, 'glass.paneShiftY': 0,
   'glass.jellyFlex': 0, 'glass.jellyRipple': 0,

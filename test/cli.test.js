@@ -184,7 +184,8 @@ test('describe carries the resolved rack', async (t) => {
   assert.equal(rack.group, 'Focus');
   assert.deepEqual(rack.shared, ['slab', 'ripple', 'ring']);
   assert.deepEqual(rack.devices.map((d) => d.device), [
-    'backdrop', 'distortion', 'refraction', 'fringing', 'directionalBlur', 'saturation', 'noise', 'tint', 'aurora', 'iridescence',
+    'backdrop', 'distortion', 'refraction', 'fringing', 'directionalBlur', 'saturation', 'noise', 'tint', 'aurora',
+    'reflection', 'edgeHighlight', 'iridescence',
   ]);
   assert.deepEqual(rack.devices[3], {
     device: 'fringing', label: 'Fringing', stage: 'fringing', mix: 'Fringing',

@@ -16,6 +16,23 @@
   neutral: 8
   ui: {group: Glass, control: slider, step: 1, label: Edge bevel, order: 70, unit: px}
   description: Width the glass slab is inflated beyond the window on each edge
+# The bevel's cross-section, not its width, so a per-state value never resizes
+# the slab. The default 2 is the owner's pick from niri-material's glass-edge
+# contact sheet; 1 is the planar chamfer the glass had before the profile existed.
+- key: glass.bevelProfile
+  type: float
+  range: [1, 8]
+  default: 2
+  neutral: 1
+  ui: {group: Glass, control: slider, step: 0.1, label: Edge profile, order: 72, state: focused, row: Edge profile}
+  description: Shape of the bevel between face and silhouette; 1 is a flat chamfer, 2 a quarter-round, and higher values stay flat longer and roll off harder
+- key: glass.inactive.bevelProfile
+  type: float
+  range: [1, 8]
+  default: 2
+  neutral: 1
+  ui: {group: Glass, control: slider, step: 0.1, label: Unfocused edge profile, order: 73, state: unfocused, row: Edge profile}
+  description: Shape of the bevel of unfocused terminals; 1 is a flat chamfer, 2 a quarter-round, and higher values stay flat longer and roll off harder
 - key: glass.paneShiftX
   type: int
   range: [-64, 64]
@@ -313,6 +330,36 @@
   neutral: '#7a5cff'
   ui: {group: Focus, control: color, label: Unfocused Color B, order: 381, state: unfocused, row: Color B}
   description: Second color of the aurora field on unfocused terminals
+# Reflection's default 0.6 is the owner's pick from niri-material's glass-edge
+# contact sheet; edge highlight's pick was 0, its native neutral.
+- key: glass.reflection
+  type: float
+  range: [0, 1]
+  default: 0.6
+  neutral: 0
+  ui: {group: Focus, control: slider, step: 0.01, label: Reflection, order: 390, display: percent, state: focused, row: Reflection}
+  description: The scene beyond the edge mirrored in the bevel, untinted, so a dark edge still shows the wallpaper's colors; roughness softens it
+- key: glass.inactive.reflection
+  type: float
+  range: [0, 1]
+  default: 0.6
+  neutral: 0
+  ui: {group: Focus, control: slider, step: 0.01, label: Unfocused reflection, order: 391, display: percent, state: unfocused, row: Reflection}
+  description: The scene beyond the edge mirrored in the bevel of unfocused terminals, untinted; roughness softens it
+- key: glass.edgeHighlight
+  type: float
+  range: [0, 1]
+  default: 0
+  neutral: 0
+  ui: {group: Focus, control: slider, step: 0.01, label: Edge highlight, order: 395, display: percent, state: focused, row: Edge highlight}
+  description: Key-light glint on the bevel from the top left, which sways with a window's signal while Edge tint is on; roughness widens it
+- key: glass.inactive.edgeHighlight
+  type: float
+  range: [0, 1]
+  default: 0
+  neutral: 0
+  ui: {group: Focus, control: slider, step: 0.01, label: Unfocused edge highlight, order: 396, display: percent, state: unfocused, row: Edge highlight}
+  description: Key-light glint on the bevel of unfocused terminals from the top left; roughness widens it
 
 # Bypass: one per rack device, shared by both focus states. The niri sink
 # writes the device's dry value into both materials while the key is true; the
@@ -379,6 +426,18 @@
   neutral: false
   ui: {group: Focus, control: toggle, label: Bypass aurora, order: 455}
   description: Silence aurora in both materials while retaining all its controls
+- key: glass.bypass.reflection
+  type: bool
+  default: false
+  neutral: false
+  ui: {group: Focus, control: toggle, label: Bypass reflection, order: 456}
+  description: Silence the bevel reflection in both materials while retaining its values
+- key: glass.bypass.edgeHighlight
+  type: bool
+  default: false
+  neutral: false
+  ui: {group: Focus, control: toggle, label: Bypass edge highlight, order: 457}
+  description: Silence the bevel's key-light glint in both materials while retaining its values
 
 # Ring: the lit filament in the slab's edge band, shared by the focus light
 # and signal accents (niri-material's response block). Inset and width stay at

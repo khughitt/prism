@@ -62,6 +62,13 @@ const resolved = { params: {
   'glass.inactive.auroraColorA': "#3dffb0",
   'glass.inactive.auroraColorB': "#7a5cff",
   'glass.bypass.iridescence': false, 'glass.bypass.aurora': false,
+  'glass.bevelProfile': 2.5,
+  'glass.inactive.bevelProfile': 1.5,
+  'glass.reflection': 0.6,
+  'glass.inactive.reflection': 0.3,
+  'glass.edgeHighlight': 0.2,
+  'glass.inactive.edgeHighlight': 0,
+  'glass.bypass.reflection': false, 'glass.bypass.edgeHighlight': false,
   'glass.bypass.backdrop': false,
   'glass.bypass.distortion': false,
   'glass.bypass.refraction': false,
@@ -105,6 +112,8 @@ material "terminal-glass" {
         distortion 0.32 scale=0.05
         anisotropic-blur 0
         roughness 0.08
+        reflection 0.6
+        edge-highlight 0.2
         iridescence 0
         aurora 0 {
             drift-hz 4
@@ -117,6 +126,7 @@ material "terminal-glass" {
         jelly-flex 0.0038
         jelly-ripple 0.15
         bevel 9
+        bevel-profile 2.5
         offset-x 4
         offset-y 4
     }
@@ -147,6 +157,8 @@ material "terminal-glass-inactive" {
         distortion 0.1 scale=0.4
         anisotropic-blur 0.02
         roughness 0.5
+        reflection 0.3
+        edge-highlight 0
         iridescence 0
         aurora 0 {
             drift-hz 4
@@ -159,6 +171,7 @@ material "terminal-glass-inactive" {
         jelly-flex 0.0038
         jelly-ripple 0.15
         bevel 9
+        bevel-profile 1.5
         offset-x 4
         offset-y 4
     }
@@ -215,6 +228,8 @@ material "terminal-glass" {
         distortion 0.32 scale=0.05
         anisotropic-blur 0
         roughness 0.08
+        reflection 0.6
+        edge-highlight 0.2
         iridescence 0
         aurora 0 {
             drift-hz 4
@@ -227,6 +242,7 @@ material "terminal-glass" {
         jelly-flex 0.0038
         jelly-ripple 0.15
         bevel 9
+        bevel-profile 2.5
         offset-x 4
         offset-y 4
     }
@@ -332,7 +348,8 @@ test('the material definition carries every supported native parameter', () => {
     'distortion 0.32 scale=0.05', 'anisotropic-blur 0', 'roughness 0.08', 'noise 0 type="fine"', 'saturation 1',
     'backdrop-blur true',
     'jelly-flex 0.0038',
-    'jelly-ripple 0.15', 'bevel 9', 'offset-x 4', 'offset-y 4',
+    'jelly-ripple 0.15', 'bevel 9', 'bevel-profile 2.5', 'offset-x 4', 'offset-y 4',
+    'reflection 0.6', 'edge-highlight 0.2',
   ]) {
     assert.ok(kdl.includes(`        ${line}\n`), `missing glass line: ${line}`);
   }
@@ -658,6 +675,35 @@ test('optic bypasses silence both states while retaining their settings', () => 
     'glass.bypass.iridescence': false, 'glass.bypass.aurora': false } });
   assert.match(wet, /iridescence 0.8/);
   assert.match(wet, /aurora 0.5 \{/);
+});
+
+test('edge profile, reflection and edge highlight are independent across focus states', () => {
+  const [active, inactive] = renderNiriFragment(resolved).match(/^material [^]*?^\}/gm);
+  for (const line of ['bevel-profile 2.5', 'reflection 0.6', 'edge-highlight 0.2']) {
+    assert.ok(active.includes(`        ${line}\n`), `focused: ${line}`);
+  }
+  for (const line of ['bevel-profile 1.5', 'reflection 0.3', 'edge-highlight 0']) {
+    assert.ok(inactive.includes(`        ${line}\n`), `unfocused: ${line}`);
+  }
+});
+
+test('reflection and edge highlight bypasses silence both states and keep the edge profile', () => {
+  const params = with_({ 'glass.bypass.reflection': true, 'glass.bypass.edgeHighlight': true });
+  const before = structuredClone(params);
+  const dry = renderNiriFragment(params);
+  assert.equal(count(dry, 'reflection 0\n'), 2);
+  assert.equal(count(dry, 'edge-highlight 0\n'), 2);
+  assert.equal(count(dry, 'bevel-profile 2.5\n'), 1);
+  assert.equal(count(dry, 'bevel-profile 1.5\n'), 1);
+  assert.deepEqual(params, before);
+});
+
+test('the shipped edge optics are the owner-picked starting values in both materials', () => {
+  const kdl = renderNiriFragment({ params: resolveParams(loadDefs(defsDir()), {}) },
+    { noctaliaSurface: '#101010', noctaliaAccent: '#202020' });
+  assert.equal(count(kdl, 'bevel-profile 2\n'), 2, kdl);
+  assert.equal(count(kdl, 'reflection 0.6\n'), 2, kdl);
+  assert.equal(count(kdl, 'edge-highlight 0\n'), 2, kdl);
 });
 
 // The ring response is one block, emitted identically into every material the

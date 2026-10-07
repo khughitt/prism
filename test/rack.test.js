@@ -99,7 +99,8 @@ test('the shipped rack loads against the shipped defs, schema, and dry file', ()
   assert.equal(rack.group, 'Focus');
   assert.deepEqual(rack.shared, ['slab', 'ripple', 'ring']);
   assert.deepEqual(rack.devices.map((d) => d.device), [
-    'backdrop', 'distortion', 'refraction', 'fringing', 'directionalBlur', 'saturation', 'noise', 'tint', 'aurora', 'iridescence',
+    'backdrop', 'distortion', 'refraction', 'fringing', 'directionalBlur', 'saturation', 'noise', 'tint', 'aurora',
+    'reflection', 'edgeHighlight', 'iridescence',
   ]);
   assert.deepEqual(rack.devices.filter((d) => d.requires).map((d) => [d.device, d.requires]),
     [['fringing', 'refraction'], ['directionalBlur', 'refraction']]);
@@ -108,7 +109,7 @@ test('the shipped rack loads against the shipped defs, schema, and dry file', ()
   assert.deepEqual(backdrop.interactions.map((i) => [i.kind, i.device, i.source]), [['attenuates', 'refraction', 'schema']]);
   assert.deepEqual(rack.devices.map((d) => d.family), [
     'source', 'geometry', 'transmission', 'transmission', 'transmission', 'transmission', 'transmission',
-    'transmission', 'light', 'light',
+    'transmission', 'light', 'light', 'light', 'light',
   ]);
   assert.deepEqual(rack.devices.find((d) => d.device === 'tint').shared, ['glass.tintSource', 'glass.tintAccentMix']);
   assert.equal(rack.devices.some((d) => 'category' in d), false);
