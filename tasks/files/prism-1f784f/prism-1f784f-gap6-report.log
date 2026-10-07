@@ -1,0 +1,47 @@
+stock:
+renderer NVIDIA GeForce RTX 3070/PCIe/SSE2, jelly seed [0.0, 0.0, 0.0]
+mid (window 740.0x360.0 at 8.0,8.0): 65674 px lit, max 82
+    left peak +20.5 (82) half +18.5..+22.5 c +20.34; right peak +8.5 (82) half +6.5..+10.5 c +8.34; top peak +20.5 (82) half +18.5..+22.5 c +20.34; bottom peak +8.5 (82) half +6.5..+10.5 c +8.34
+repeat after off/on reload: 0 px, max 0
+shifted +10 ms: 21529 px, max 49
+mid flex 0.0066 (window 740.0x360.0 at 8.0,8.0): 65617 px lit, max 85
+    left peak +20.5 (85) half +18.5..+22.5 c +20.46; right peak +8.5 (85) half +6.5..+10.5 c +8.46; top peak +20.5 (82) half +18.5..+22.5 c +20.34; bottom peak +8.5 (82) half +6.5..+10.5 c +8.34
+    vs base, ring on: 17984 px, max 9
+mid flex 0.02 (window 740.0x360.0 at 8.0,8.0): 64468 px lit, max 83
+    left peak +20.5 (83) half +19.5..+22.5 c +20.98; right peak +8.5 (83) half +7.5..+10.5 c +8.98; top peak +20.5 (82) half +18.5..+22.5 c +20.34; bottom peak +8.5 (82) half +6.5..+10.5 c +8.34
+    vs base, ring on: 23042 px, max 22
+mid light-ior 1 (window 740.0x360.0 at 8.0,8.0): 63434 px lit, max 82
+    left peak +20.5 (82) half +18.5..+22.5 c +20.34; right peak +8.5 (82) half +6.5..+10.5 c +8.34; top peak +20.5 (82) half +18.5..+22.5 c +20.34; bottom peak +8.5 (82) half +6.5..+10.5 c +8.34
+    vs base, ring on: 11993 px, max 3
+repeat after all variants: 0 px, max 0
+rest (window 840.0x360.0 at 8.0,8.0): 67396 px lit, max 64
+    left peak +20.5 (64) half +18.5..+21.5 c +20.02; right peak +8.5 (64) half +6.5..+9.5 c +8.02; top peak +20.5 (64) half +18.5..+21.5 c +20.02; bottom peak +8.5 (64) half +6.5..+9.5 c +8.02
+opaque client at rest: 0 px lit inside the window, 8336 outside
+
+binding-gap6:
+renderer NVIDIA GeForce RTX 3070/PCIe/SSE2, jelly seed [12.83292, 9.687284, 7.4509296]
+mid (window 740.0x360.0 at 6.0,6.0): 63028 px lit, max 83
+    left peak +18.5 (83) half +16.5..+19.5 c +18.03; right peak +6.5 (83) half +4.5..+7.5 c +6.03; top peak +18.5 (83) half +16.5..+19.5 c +18.03; bottom peak +6.5 (83) half +4.5..+7.5 c +6.03
+repeat after off/on reload: 0 px, max 0
+shifted +10 ms: 16883 px, max 49
+mid flex 0.0066 (window 740.0x360.0 at 6.0,6.0): 62664 px lit, max 85
+    left peak +18.5 (85) half +16.5..+20.5 c +18.47; right peak +6.5 (85) half +4.5..+8.5 c +6.46; top peak +18.5 (83) half +16.5..+19.5 c +18.03; bottom peak +6.5 (83) half +4.5..+7.5 c +6.03
+    vs base, ring on: 17876 px, max 9
+mid flex 0.02 (window 740.0x360.0 at 6.0,6.0): 62220 px lit, max 84
+    left peak +18.5 (84) half +17.5..+20.5 c +18.96; right peak +6.5 (84) half +5.5..+8.5 c +6.96; top peak +18.5 (83) half +16.5..+19.5 c +18.03; bottom peak +6.5 (83) half +4.5..+7.5 c +6.03
+    vs base, ring on: 20526 px, max 21
+mid light-ior 1 (window 740.0x360.0 at 6.0,6.0): 59709 px lit, max 83
+    left peak +18.5 (83) half +16.5..+19.5 c +18.03; right peak +6.5 (83) half +4.5..+7.5 c +6.03; top peak +18.5 (83) half +16.5..+19.5 c +18.03; bottom peak +6.5 (83) half +4.5..+7.5 c +6.03
+    vs base, ring on: 18516 px, max 9
+repeat after all variants: 0 px, max 0
+rest (window 840.0x360.0 at 6.0,6.0): 66647 px lit, max 65
+    left peak +18.5 (65) half +16.5..+19.5 c +18.02; right peak +6.5 (65) half +4.5..+7.5 c +6.02; top peak +18.5 (65) half +16.5..+19.5 c +18.02; bottom peak +6.5 (65) half +4.5..+7.5 c +6.02
+opaque client at rest: 0 px lit inside the window, 8373 outside
+
+test tests::ring_pair::ring_pair_is_reproducible_at_a_frozen_instant ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 518 filtered out; finished in 5.32s
+
+        PASS [   5.370s] (1/1) niri tests::ring_pair::ring_pair_is_reproducible_at_a_frozen_instant
+────────────
+     Summary [   5.371s] 1 test run: 1 passed, 518 skipped

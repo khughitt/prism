@@ -488,14 +488,15 @@
 # the image behind the glass. Shared by both focus states: the ring lights the
 # focused window, and a divergent multiplier would make a material swap jump the
 # aurora. The native default is 6 and Prism ships the owner's 4.5; the ring's
-# own shift is capped at half the Gap, which the stock glass stays under.
+# shared shift is capped at half the Gap; once it reaches that cap, only
+# fringing, perturbed normals and aurora retain light-ior dependence.
 - key: glass.lightIor
   type: float
   range: [1, 12]
   default: 4.5
   neutral: 6
-  ui: {group: Ring, control: slider, step: 0.5, label: Light bending, order: 540, subgroup: Band — every window}
-  description: How much harder the glass bends the light inside it — the ring filament and the aurora field — than it bends the backdrop, which Refraction alone drives
+  ui: {group: Ring, control: slider, step: 0.5, label: Halo bending, order: 540, subgroup: Band — every window}
+  description: Bends the ring's halo on the bevel and the aurora field when enabled; the band on an undistorted flat face stays put. The ring's shared shift stops at half the Gap, so higher values can look unchanged, especially at small Gap; Fringing and motion can still respond. Refraction controls the backdrop
 - key: glass.ring.accent
   type: float
   range: [0, 3]
@@ -522,15 +523,15 @@
   range: [0, 1]
   default: 0.55
   neutral: 0
-  ui: {group: Ring, control: slider, step: 0.05, label: Head wander, order: 552, subgroup: Focus light — focused window only}
-  description: How far the beam head's brightness wanders either side of itself as it travels, so the comet reads as a living light rather than a lamp on a track; 0 is a steady head, and the wander rides the head alone, never the tail or the resting glow
+  ui: {group: Ring, control: slider, step: 0.05, label: Head shimmer, order: 552, subgroup: Focus light — focused window only}
+  description: Varies only the moving focus beam head's brightness, not its position or width; 0 keeps it steady. Refocus a window to see it; Beam speed 0 prevents new beams. The shimmer leaves the tail and resting ring unchanged. Try a slower beam and lower Shimmer rate; Decay distance 0 disables distance fading
 - key: glass.ring.beamNoiseHz
   type: float
   range: [0, 30]
   default: 12
   neutral: 3
-  ui: {group: Ring, control: slider, step: 0.5, label: Wander rate, order: 554, unit: Hz, subgroup: Focus light — focused window only}
-  description: How fast the head's brightness wanders, in wanders per second; it has no effect while Head wander is 0
+  ui: {group: Ring, control: slider, step: 0.5, label: Shimmer rate, order: 554, unit: Hz, subgroup: Focus light — focused window only}
+  description: Speed of the moving focus beam head's brightness variation in Hz; try about 3 Hz to see a slower shimmer. Has no effect when Head shimmer is 0 or the head has faded or completed its lap; 0 keeps the head's brightness steady. Refocus a window to replay the beam; Beam speed 0 prevents new beams
 - key: glass.ring.decay
   type: int
   range: [0, 20000]

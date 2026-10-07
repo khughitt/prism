@@ -66,10 +66,10 @@ New orders keep each subgroup contiguous:
 | Band | Color | `glass.ring.color` | spans |
 | Band | Gap | `glass.ring.gap` | spans |
 | Band | Width | `glass.ring.width` | spans |
-| Band | Light bending | `glass.lightIor` | spans |
+| Band | Halo bending | `glass.lightIor` | spans |
 | Focus light | Beam speed | `glass.ring.beamSpeed` | Focused |
-| Focus light | Head wander | `glass.ring.beamNoise` | Focused |
-| Focus light | Wander rate | `glass.ring.beamNoiseHz` | Focused |
+| Focus light | Head shimmer | `glass.ring.beamNoise` | Focused |
+| Focus light | Shimmer rate | `glass.ring.beamNoiseHz` | Focused |
 | Focus light | Decay distance | `glass.ring.decay` | Focused |
 | Focus light | Glow | `glass.ring.glow` | Focused |
 | Focus light | Resting ring | `glass.ring.rest` | Focused |
@@ -78,6 +78,12 @@ New orders keep each subgroup contiguous:
 
 Band comes first because it carries the color, which the eye reads first. The
 store keys do not change, so saved looks are unaffected.
+
+`prism-1f784f` clarified these three labels and tooltips: Halo bending affects
+the bevel halo and enabled aurora, with the ring's shared shift capped at half
+Gap; Head shimmer and Shimmer rate affect only the moving head's brightness
+after focus gain. They retain their values and placement. Fast beams with
+distance decay can make the shimmer hard to notice.
 
 ## Part 2: Source-aware color controls (`prism-b4d118`)
 
