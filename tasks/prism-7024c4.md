@@ -1,13 +1,15 @@
 ---
 id: prism-7024c4
 title: "Glass edge optics keys: glass.bevelProfile, glass.reflection, glass.edgeHighlight"
-status: todo
+status: doing
 priority: 2
 size: s
 complexity: low
 process: direct
+owner: main
 created: 2026-10-03T00:52:40Z
-updated: 2026-10-06T23:35:49Z
+updated: 2026-10-07T00:19:33Z
+started: 2026-10-07T00:19:33Z
 depends: [material-be611b]
 tags: [glass]
 agent: claude-code/claude-opus-5-5
@@ -18,3 +20,5 @@ niri material-be611b adds three glass parameters: bevel-profile (FloatOrInt<1,8>
 ## Notes
 
 - 2026-10-06T23:35:49Z (main): Unblocked 2026-10-06: niri material-be611b merged into materials-26.04 (23a2e37b), not yet pushed or installed. Owner's starting values from the glass-edge sheet (cell inactive-k2-r0.6-h0-g0): bevel-profile 2, reflection 0.6, edge-highlight 0; the pick was on the inactive look (thickness 62.3, attenuation #2e3034 at 42). Still needs the keys in an installed niri (arch package pin rollout) before Prism writes them live.
+- 2026-10-07T00:19:33Z (main): started
+  provenance: {"harness_session":"claude-code:f7b19c11-c11a-4877-b729-b41176218ea1","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
