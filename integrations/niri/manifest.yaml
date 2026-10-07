@@ -11,6 +11,8 @@ binds:
   - {param: glass.paneLip, node: bevel, liveness: reload}
   - {param: glass.paneShiftX, node: offset-x, liveness: reload}
   - {param: glass.paneShiftY, node: offset-y, liveness: reload}
+  - {param: glass.bevelProfile, node: bevel-profile, liveness: reload}
+  - {param: glass.inactive.bevelProfile, node: bevel-profile, liveness: reload}
   - {param: glass.ior, node: ior, liveness: reload}
   - {param: glass.inactive.ior, node: ior, liveness: reload}
   - {param: glass.lightIor, node: light-ior, liveness: reload}
@@ -62,6 +64,12 @@ binds:
   - {param: glass.inactive.auroraColorB, node: "aurora color", liveness: reload}
   - {param: glass.bypass.iridescence, liveness: reload}
   - {param: glass.bypass.aurora, liveness: reload}
+  - {param: glass.reflection, node: reflection, liveness: reload}
+  - {param: glass.inactive.reflection, node: reflection, liveness: reload}
+  - {param: glass.edgeHighlight, node: edge-highlight, liveness: reload}
+  - {param: glass.inactive.edgeHighlight, node: edge-highlight, liveness: reload}
+  - {param: glass.bypass.reflection, liveness: reload}
+  - {param: glass.bypass.edgeHighlight, liveness: reload}
   - {param: glass.ring.focus, liveness: reload}
   - {param: glass.ring.colorSource, liveness: reload}
   - {param: glass.ring.color, liveness: reload}

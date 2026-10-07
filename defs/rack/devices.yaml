@@ -73,6 +73,20 @@ devices:
     rows: [Drift rate, Color A, Color B]
     shared: []
     bypass: glass.bypass.aurora
+  - device: reflection
+    label: Reflection
+    stage: reflection
+    mix: Reflection
+    rows: []
+    shared: []
+    bypass: glass.bypass.reflection
+  - device: edgeHighlight
+    label: Edge highlight
+    stage: edge-highlight
+    mix: Edge highlight
+    rows: []
+    shared: []
+    bypass: glass.bypass.edgeHighlight
   - device: iridescence
     label: Iridescence
     stage: iridescence

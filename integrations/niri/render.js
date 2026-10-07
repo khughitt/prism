@@ -67,6 +67,8 @@ function definition(name, params, glass, sources) {
     `        distortion ${glass.distortion} scale=${glass.distortionScale}`,
     `        anisotropic-blur ${glass.anisotropicBlur}`,
     `        roughness ${glass.roughness}`,
+    `        reflection ${glass.reflection}`,
+    `        edge-highlight ${glass.edgeHighlight}`,
     `        iridescence ${glass.iridescence}`,
     `        aurora ${glass.aurora} {`,
     `            drift-hz ${glass.auroraDriftHz}`,
@@ -79,6 +81,7 @@ function definition(name, params, glass, sources) {
     `        jelly-flex ${params['glass.jellyFlex']}`,
     `        jelly-ripple ${params['glass.jellyRipple']}`,
     `        bevel ${bevel}`,
+    `        bevel-profile ${glass.bevelProfile}`,
     `        offset-x ${params['glass.paneShiftX']}`,
     `        offset-y ${params['glass.paneShiftY']}`,
     '    }',
@@ -87,14 +90,16 @@ function definition(name, params, glass, sources) {
   ].join('\n');
 }
 
-// Every optic the Focus matrix splits. The slab frame, the pane motion, and the
-// grain type stay in `params`: they are shared, because a material swap is a hard
-// cut and a divergent frame would make focus resize the glass.
+// Every optic split by focus state: the Focus matrix, and the Glass group's Edge
+// profile, which shapes the bevel without resizing it. The slab frame, the pane
+// motion, and the grain type stay in `params`: they are shared, because a
+// material swap is a hard cut and a divergent frame would make focus resize the glass.
 const OPTICS = [
   'backdropBlur', 'roughness', 'attenuationColor', 'attenuationDistance',
   'ior', 'thickness', 'chromaticAberration', 'distortion', 'distortionScale',
   'anisotropicBlur', 'noise', 'saturation',
   'iridescence', 'aurora', 'auroraDriftHz', 'auroraColorA', 'auroraColorB',
+  'reflection', 'edgeHighlight', 'bevelProfile',
 ];
 
 // What "off" means for each rack device lives in dry.yaml beside this file;

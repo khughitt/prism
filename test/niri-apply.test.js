@@ -47,6 +47,9 @@ const PARAMS = {
   'glass.auroraDriftHz': 4,
   'glass.auroraColorA': "#3dffb0",
   'glass.auroraColorB': "#7a5cff",
+  'glass.bevelProfile': 2,
+  'glass.reflection': 0.6,
+  'glass.edgeHighlight': 0,
   'glass.ring.focus': true,
   'glass.ring.colorSource': 'manual',
   'glass.ring.color': '#f2c14e',
@@ -263,7 +266,7 @@ test('probe-material names niri-material and what is installed', (t) => {
 // The case three shipped packages were in: they knew `material`, and predated the
 // type= prism emits on noise. A probe of a minimal block says yes and apply then
 // fails, so the probe is the fragment the sink writes, rendered from the same code.
-for (const property of ['type=', 'iridescence', 'aurora']) test(`probe-material rejects a build too old for ${property}`, (t) => {
+for (const property of ['type=', 'iridescence', 'aurora', 'bevel-profile', 'reflection', 'edge-highlight']) test(`probe-material rejects a build too old for ${property}`, (t) => {
   const { dir } = fixture(t);
   const probe = fileURLToPath(new URL('../integrations/niri/probe-material', import.meta.url));
 

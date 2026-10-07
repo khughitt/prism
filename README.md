@@ -39,10 +39,13 @@ marks the focused window. Terminal background opacity defaults to
 zero so the glass is the only surface behind the text; with the focus split on,
 unfocused terminals get a second material whose optics are the `glass.inactive.*`
 overrides: frosted backdrop, blur, tint, tint distance, refraction, depth,
-fringing, distortion, distortion detail, directional blur, noise, and
-saturation, iridescence, aurora amount, drift rate, and two aurora colors. Blur,
+fringing, distortion, distortion detail, directional blur, noise,
+saturation, iridescence, aurora amount, drift rate, two aurora colors,
+reflection, edge highlight, and edge profile. Blur,
 tint distance, fringing, distortion, noise, and saturation ship already receded;
-the remaining pairs start level. Iridescence and aurora start at zero. Aurora
+the remaining pairs start level. Iridescence, aurora, and edge highlight start at
+zero; reflection (0.6) and edge profile (2, a quarter-round bevel) start at the
+owner's pick from niri-material's glass-edge contact sheet. Aurora
 drift uses whole Hz from 0 to 30; 0 pins the field, and niri halves the rate
 under reduced motion.
 
@@ -59,11 +62,14 @@ The two materials share the slab frame (`glass.paneLip`,
 `glass.jellyRipple`), and `glass.noiseType`: `white` or `fine` (the Prism
 default). The frame is shared deliberately — a per-state frame would resize and
 shift the slab on every focus change, and niri swaps materials as a hard cut.
+Edge profile (`glass.bevelProfile`) shapes the bevel without resizing it, so it
+is the one focused/unfocused row in the `Glass` section.
 The Noctalia integration is a native
 v5 plugin under `integrations/noctalia-plugin/`; its panel is a shared `Glass`
 section for the frame and pane motion and a `Focus` rack with one card per glass
 stage in the shader's order (Backdrop, Distortion, Refraction, Fringing,
-Directional blur, Saturation, Noise, Tint, Aurora, Iridescence). The rack's mix columns place the
+Directional blur, Saturation, Noise, Tint, Aurora, Reflection, Edge highlight,
+Iridescence). The rack's mix columns place the
 unfocused state on the left and the focused on the right. Each card shows its
 mix for both focus states, a light
 colored by its stage's site family (source, geometry, transmission, light, post) that bypasses the stage when clicked, and a chevron that
@@ -387,8 +393,8 @@ prism context activate profile Aurora
 
 Choose `Rainbow` instead for the rainbow preset, or select either in the panel's
 profile picker. `prism context deactivate profile` restores the lower layers.
-The installed niri must accept `iridescence` and `aurora`; the material capability
-probe checks this before applying glass.
+The installed niri must accept `iridescence`, `aurora`, `bevel-profile`, `reflection`,
+and `edge-highlight`; the material capability probe checks this before applying glass.
 
 ## Reset modes
 
