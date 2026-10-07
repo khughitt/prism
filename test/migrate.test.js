@@ -32,17 +32,17 @@ test('the shipped definitions declare exactly one replacement', () => {
 
 test('zero carries over; any other value takes the new default', () => {
   assert.equal(convertValue(0, beamSpeed), 0);
-  assert.equal(convertValue(9000, beamSpeed), 300);
-  assert.equal(convertValue(1, beamSpeed), 300);
+  assert.equal(convertValue(9000, beamSpeed), 4350);
+  assert.equal(convertValue(1, beamSpeed), 4350);
   // a replacing def whose range excludes zero cannot keep it
-  assert.equal(convertValue(0, { ...beamSpeed, range: [1, 10] }), 300);
+  assert.equal(convertValue(0, { ...beamSpeed, range: [1, 10] }), 4350);
 });
 
 test('migrateValues rewrites one flat store and reports each change', () => {
   const converted = migrateValues({ 'glass.ior': 1.3, 'glass.ring.sweepMs': 9000 }, defs);
-  assert.deepEqual(converted.values, { 'glass.ior': 1.3, 'glass.ring.beamSpeed': 300 });
+  assert.deepEqual(converted.values, { 'glass.ior': 1.3, 'glass.ring.beamSpeed': 4350 });
   assert.deepEqual(converted.changes,
-    [{ from: 'glass.ring.sweepMs', to: 'glass.ring.beamSpeed', old: 9000, value: 300, kept: false }]);
+    [{ from: 'glass.ring.sweepMs', to: 'glass.ring.beamSpeed', old: 9000, value: 4350, kept: false }]);
 
   const zero = migrateValues({ 'glass.ring.sweepMs': 0 }, defs);
   assert.deepEqual(zero.values, { 'glass.ring.beamSpeed': 0 });
@@ -126,7 +126,7 @@ test('writeMigrated rewrites one file through the store writers, and a migrated 
 
   const plan = planMigration(defs);
   writeMigrated(plan[0]);
-  assert.deepEqual(readValues(), { 'glass.ring.beamSpeed': 300, 'glass.ior': 1.3 });
+  assert.deepEqual(readValues(), { 'glass.ring.beamSpeed': 4350, 'glass.ior': 1.3 });
   assert.deepEqual(readContext('profile', 'dusk').values, { 'glass.ring.sweepMs': 0 }, 'one file at a time');
   writeMigrated(plan[1]);
   assert.deepEqual(readContext('profile', 'dusk').values, { 'glass.ring.beamSpeed': 0 });

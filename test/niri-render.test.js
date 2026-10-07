@@ -453,7 +453,7 @@ test('the ring gap is the small-pane limit, and prism reports it instead of clam
   // the window, so the range stays native and the description carries the
   // limit; narrowing it here would silently rewrite stored profiles.
   assert.deepEqual(gap.range, [0, 128]);
-  assert.equal(gap.default, 8);
+  assert.equal(gap.default, 6);
   assert.match(gap.description, /twice/);
 });
 
@@ -727,10 +727,16 @@ test('the resolved shipped defaults reach both material response blocks', () => 
   const kdl = renderNiriFragment({ params: resolveParams(loadDefs(defsDir()), {}) },
     { noctaliaSurface: '#101010', noctaliaAccent: '#202020' });
 
-  assert.equal(count(kdl, 'ring-beam-speed 300'), 2, kdl);
-  assert.equal(count(kdl, 'ring-gap 8'), 2, kdl);
-  assert.equal(count(kdl, 'ring-width 2.6'), 2, kdl);
-  assert.equal(count(kdl, 'ring-glow 1'), 2, kdl);
+  assert.equal(count(kdl, 'accent "ring"'), 2, kdl);
+  assert.equal(count(kdl, 'ring-color "#ccccff"'), 2, kdl);
+  assert.equal(count(kdl, 'ring-beam-speed 4350\n'), 2, kdl);
+  assert.equal(count(kdl, 'ring-beam-noise 0.55\n'), 2, kdl);
+  assert.equal(count(kdl, 'ring-beam-noise-hz 12\n'), 2, kdl);
+  assert.equal(count(kdl, 'ring-beam-decay 4150\n'), 2, kdl);
+  assert.equal(count(kdl, 'light-ior 4.5\n'), 2, kdl);
+  assert.equal(count(kdl, 'ring-gap 6'), 2, kdl);
+  assert.equal(count(kdl, 'ring-width 1.1'), 2, kdl);
+  assert.equal(count(kdl, 'ring-glow 1.2'), 2, kdl);
   assert.equal(count(kdl, 'ring-rest 1'), 2, kdl);
   assert.equal(count(kdl, 'ring-accent 1'), 2, kdl);
   assert.equal(count(kdl, 'attention "rim-orbit"'), 2, kdl);
