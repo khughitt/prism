@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: prism-1bb833
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-09T04:59:04Z
+updated: 2026-10-09T05:07:12Z
 started: 2026-10-09T04:42:38Z
 depends: [material-6f45a0, prism-b4d118]
 parent: prism-980a29
@@ -49,3 +49,8 @@ Start: defs/glass.yaml tintSource/tintAccentMix; integrations/niri/render.js; in
 - 2026-10-09T04:59:03Z (prism-1bb833): plan written: docs/plans/2026-10-09-familiar-tint-source.md — 3 tasks (prism-531768 defs/rack/panel, prism-f8faee render, prism-21452c apply/probe/README); deviation: starter profiles carry the new keys (full-snapshot test), recorded in plan and corrected in spec by Task 1
 - 2026-10-09T04:59:04Z (prism-1bb833): parked (waiting on user, review): owner reviews docs/plans/2026-10-09-familiar-tint-source.md in .worktrees/prism-1bb833 and picks an execution method; then agent runs Setup (npm install if needed, just test-fast baseline) and Task 1 (prism-531768)
   provenance: {"harness_session":"claude-code:5d047455-4e28-45eb-87c5-552951a08175","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-09T05:05:39Z (prism-1bb833): review: plan round 1 — verdict: revise; findings: P2 1; reviewer: codex
+- 2026-10-09T05:05:39Z (prism-1bb833): Plan review: implementation and starter-profile adjustment match current contracts. Fix After the tasks live check (line 644): use .worktrees/prism-1bb833/bin/prism explicitly for set, apply, and restore; plain prism resolves to the main checkout, whose enum rejects familiar. Keep desktop permission and restore the previous source on failure too.
+- 2026-10-09T05:06:28Z (prism-1bb833): resumed
+  provenance: {"harness_session":"claude-code:5d047455-4e28-45eb-87c5-552951a08175","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-09T05:07:12Z (prism-1bb833): plan revised for plan review round 1: live check runs .worktrees/prism-1bb833/bin/prism by explicit path for set, apply and restore; restore recorded from describe (layer+value) and run by an ERR trap and unconditionally after the verdict; setup uses npm ci
