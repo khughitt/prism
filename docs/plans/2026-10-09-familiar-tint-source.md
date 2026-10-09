@@ -1,6 +1,6 @@
 # Familiar Glass Tint Source Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Add `familiar` to `glass.tintSource`, so each terminal's glass body takes its agent session's hue through niri-material's `accent-tint` response, with a focused/unfocused weight pair.
 
@@ -47,7 +47,7 @@
 **Interfaces:**
 - Produces: def keys `glass.accentTint` and `glass.inactive.accentTint` (float 0–1). Every resolved param set now carries them, which Task 2's renderer reads as `params[`${prefix}accentTint`]`. It also produces the enum value `familiar` on `glass.tintSource`.
 
-- [ ] **Step 1: Write the failing defs tests**
+- [x] **Step 1: Write the failing defs tests**
 
 In `test/glass-defs.test.js`:
 
@@ -107,7 +107,7 @@ In `'palette tint controls are shared with explicit source and mix contracts'`, 
 
 `'exactly the receding optics ship with a divergent unfocused default'` needs no edit: the pair defaults level (1 and 1), and it is not in `RECEDED`.
 
-- [ ] **Step 2: Write the failing rack, presentation, profile and panel tests**
+- [x] **Step 2: Write the failing rack, presentation, profile and panel tests**
 
 `test/rack.test.js`, after the tint `shared` assertion (line ~114):
 
@@ -184,12 +184,12 @@ equal(byKey(familiarRack, "glass.tintAccentMix:row")[1], nil, "the mix hides und
 
 The pair sits at the default layer, so the existing `"Revert section (1)"` assertion still counts only the edited mix.
 
-- [ ] **Step 3: Run the suite to verify the new tests fail**
+- [x] **Step 3: Run the suite to verify the new tests fail**
 
 Run: `just test-fast`
 Expected: FAIL. `glass-defs` reports a missing def `glass.accentTint` and values `['noctalia','manual']`. The rack and presentation tests fail on the missing `Session hue` row, and starter-profiles on `undefined !== 1`. The contract test fails on `cells['glass.accentTint']`. The Lua assertions run on a synthetic model and exercise panel code that already exists (`panel.luau` drops a card's matrix row whose focused half is gated `hidden`). They are expected to pass at once: they pin behaviour this change relies on, and are not RED for new code. If one fails, stop: the spec's claim that the panel needs no code change is wrong.
 
-- [ ] **Step 4: Implement the defs**
+- [x] **Step 4: Implement the defs**
 
 `defs/glass.yaml`: replace the tint color descriptions, the source, and add the pair after `glass.tintAccentMix`:
 
@@ -238,7 +238,7 @@ Expected: FAIL. `glass-defs` reports a missing def `glass.accentTint` and values
   description: Under the familiar source, how far unfocused terminals' glass moves toward their agent session's hue; it changes hue and saturation and keeps the glass's darkness over a neutral backdrop, barely shows on light glass, and 0 leaves the manual tint
 ```
 
-- [ ] **Step 5: Implement rack, manifest and profiles**
+- [x] **Step 5: Implement rack, manifest and profiles**
 
 `defs/rack/devices.yaml`, tint device:
 
@@ -267,12 +267,12 @@ glass.inactive.accentTint: 1
   the new keys at their defaults, which do nothing under manual.
 ```
 
-- [ ] **Step 6: Run the suite to verify it passes**
+- [x] **Step 6: Run the suite to verify it passes**
 
 Run: `just test-fast`
 Expected: PASS, with no other test changed. If `'the resolved shipped defaults reach both material response blocks'` or any render golden changes, stop. Task 1 must not change render output, because the default source is still noctalia.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 just check
@@ -292,7 +292,7 @@ git commit -m "feat(defs): familiar tint source and session hue weights"
 - Consumes: `params['glass.accentTint']`, `params['glass.inactive.accentTint']`, and `params['glass.tintSource'] === 'familiar'` from Task 1.
 - Produces: `sourceColors(params, sources)` returns, under familiar with glass on and tint not bypassed, `{'glass.attenuationColor': {value, from}, 'glass.inactive.attenuationColor': {value, from}}`. Each value is its own stored color and `from` is the familiar text. Task 3's apply writes this to the effective report unchanged. Rendered KDL gains `        accent-tint <weight>` after `accent` under familiar.
 
-- [ ] **Step 1: Add the weights to the fixture and write the failing tests**
+- [x] **Step 1: Add the weights to the fixture and write the failing tests**
 
 In `test/niri-render.test.js`, add to the `resolved` fixture after `'glass.tintAccentMix': 0.1,`:
 
@@ -363,12 +363,12 @@ In `'sourceColors names exactly the colors a source resolved'`, before its closi
     'glass.ring.colorSource': 'manual' }), {}), {}, 'glass off reports nothing');
 ```
 
-- [ ] **Step 2: Run the suite to verify the new tests fail**
+- [x] **Step 2: Run the suite to verify the new tests fail**
 
 Run: `just test-fast`
 Expected: FAIL on the four new tests (no `accent-tint` line) and on the `sourceColors` familiar assertion (`{}` returned). `EXPECTED`, `'fragment is stable'` and every noctalia/manual test still pass.
 
-- [ ] **Step 3: Implement the renderer**
+- [x] **Step 3: Implement the renderer**
 
 In `integrations/niri/render.js`:
 
@@ -442,12 +442,12 @@ In `renderNiriFragment`, pass the prefixes:
 
 Update the comment above `responseBlock` to say that the tint source, not the ring source, decides `accent-tint`.
 
-- [ ] **Step 4: Run the suite to verify it passes**
+- [x] **Step 4: Run the suite to verify it passes**
 
 Run: `just test-fast`
 Expected: PASS, including the unchanged `EXPECTED` golden.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 just check
@@ -470,7 +470,7 @@ git commit -m "feat(niri): render the familiar tint as a per-material accent-tin
 - Consumes: Task 2's `renderNiriFragment` (familiar emits `accent-tint`) and `sourceColors` (familiar reports both resting tints).
 - Produces: nothing later tasks use.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `test/niri-apply.test.js`, `PARAMS`: after `'glass.tintAccentMix': 0.1,` add the following. `PARAMS` is written as `resolved.json` verbatim, with no defaults filled, so every key a familiar render reads must be present:
 
@@ -529,7 +529,7 @@ test('the familiar tint reports each stored resting tint and installs the sessio
 
 (`file` still holds `'{ broken'` at that point.)
 
-- [ ] **Step 2: Run the suite to verify the new tests fail**
+- [x] **Step 2: Run the suite to verify the new tests fail**
 
 Run: `just test-fast`
 Expected: FAIL in four places:
@@ -538,7 +538,7 @@ Expected: FAIL in four places:
 - the render remedy assertion;
 - the four new source-matrix cases and the familiar report test, unless Task 2's render already makes them pass. Those may already pass, which is fine: they pin the apply path. Record which.
 
-- [ ] **Step 3: Implement probe and remedy texts**
+- [x] **Step 3: Implement probe and remedy texts**
 
 `integrations/niri/probe-material`: render familiar, and update the comment:
 
@@ -565,12 +565,12 @@ const PROBE = renderNiriFragment({
       throw new Error(`${file}: palette missing — run 'noctalia msg templates-apply', verify primary and surface, then rerun 'prism apply niri'; see the README for direct wallpaper refresh or select manual or familiar tint`);
 ```
 
-- [ ] **Step 4: Run the suite to verify it passes**
+- [x] **Step 4: Run the suite to verify it passes**
 
 Run: `just test-fast`
 Expected: PASS.
 
-- [ ] **Step 5: Update the README**
+- [x] **Step 5: Update the README**
 
 Requirements, replace the niri bullet:
 
@@ -629,7 +629,7 @@ zero session hue.
 
 Keep the paragraph that follows ("The ring keeps its own Color source; …") as it is.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 just check
