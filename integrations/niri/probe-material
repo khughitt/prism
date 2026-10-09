@@ -25,10 +25,12 @@ const defaults = Object.fromEntries(
   [...loadDefs(defsDir())].map(([key, def]) => [key, def.default]),
 );
 // Both states, whatever the defaults say: the inactive material is emitted only
-// under focusSplit, and it carries the same properties. Manual tint makes
-// this synthetic capability check independent of the host palette.
+// under focusSplit, and it carries the same properties. Familiar tint makes
+// this synthetic capability check independent of the host palette and is the
+// source that emits every response field (accent-tint), so a build without one
+// fails here, for every glass apply, rather than at apply time.
 const PROBE = renderNiriFragment({
-  params: { ...defaults, 'glass.enabled': true, 'glass.focusSplit': true, 'glass.tintSource': 'manual' },
+  params: { ...defaults, 'glass.enabled': true, 'glass.focusSplit': true, 'glass.tintSource': 'familiar' },
 });
 
 // Both calls carry their own bound. The fan-out's SINK_TIMEOUT kills this

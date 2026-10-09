@@ -8,9 +8,12 @@ shell panel or the `prism` command line.
 
 ## Requirements
 
-- niri built with the native glass material (`niri-material`). Stock niri does
-  not accept the material config; `prism requirements` and the material
-  capability probe say so before glass is applied.
+- niri built with the native glass material (`niri-material`), recent enough to
+  accept the response field `accent-tint`. Stock niri does not accept the
+  material config, and an older niri-material fails the capability probe for
+  every glass apply, whatever the tint source; `prism requirements` and the
+  probe say so before glass is applied. Selecting manual tint does not restore
+  apply on such a build; updating niri-material does.
 - Noctalia v5, for the panel plugin and the wallpaper and palette hooks
   (optional: the command line works without it).
 - Node.js 20 or newer.
@@ -227,7 +230,7 @@ repaired with `prism apply`.
 
 ## Noctalia palette
 
-Glass tint (`glass.tintSource: noctalia`, the default) and the ring's optional
+The Noctalia glass tint (`glass.tintSource: noctalia`, the default) and the ring's optional
 `noctalia` color source (`glass.ring.colorSource`) read
 `$XDG_STATE_HOME/prism/noctalia-palette.json` (prism's state directory), which a
 Noctalia user template renders on every palette change. Noctalia's `colors_changed` hook, which fires
@@ -255,23 +258,41 @@ generated config. When the ring is the sole palette consumer, a missing file
 still rests it on the manual ring color; a malformed file fails.
 `PRISM_NOCTALIA_COLORS` points the sink at another file.
 
-The Tint device's details provide **Tint source** (`noctalia`/`manual`) and
-**Palette accent mix** (0–100%, default 10%). Both focus states share the
-Noctalia-derived color. The tint pickers, like the ring's Color picker, appear
-only under the manual source. Under any other source the cell shows the color
-from the last apply as a read-only swatch behind a lock; its tooltip reads
-"From <source>, as of the last apply. Select the manual source to edit." Palette
-accent mix is shown only under the Noctalia source. Choosing manual makes the
-stored colors take effect on the next successful apply:
+### Glass tint
+
+The Tint device's details provide **Tint source** with three values:
+
+- `noctalia` (the default): the palette surface mixed with its primary by
+  **Palette accent mix** (0–100%, default 10%). Both focus states share it.
+- `manual`: the stored focused and unfocused tints.
+- `familiar`: the stored tints, moved per window toward that terminal's agent
+  session's hue by **Session hue** (focused and unfocused, 0–100%, default
+  100%). A window without a session keeps its manual tint. Session hue changes
+  hue and saturation and keeps the glass's darkness over a neutral backdrop. A
+  saturated backdrop shifts brighter in the channels the hue opens and darker in
+  the others. It barely shows on light glass such as the default `#dfe8ff`, and
+  reads best on dark glass. Familiar needs no Noctalia palette.
+
+The tint pickers, like the ring's Color picker, appear only under the manual
+source. Under any other source the cell shows the color from the last apply as a
+read-only swatch behind a lock; its tooltip reads "From <source>, as of the last
+apply. Select the manual source to edit." Palette accent mix is shown only under
+noctalia and Session hue only under familiar. Choosing manual makes the stored
+colors take effect on the next successful apply:
 
 ```sh
 prism set glass.tintSource manual
 prism set glass.tintSource noctalia
 prism set glass.tintAccentMix 0.1
+prism set glass.tintSource familiar
+prism set glass.accentTint 1
 ```
 
-Tint bypass emits white under either source and needs no tint palette. Neutral
-reset selects manual white tint with zero mix. The ring keeps its own Color
+Tint bypass emits white under every source, needs no tint palette, and removes
+the session hue too. Neutral reset selects manual white tint with zero mix and
+zero session hue.
+
+The ring keeps its own Color
 source; if a malformed palette blocks that consumer, select its manual Color
 source too. Aurora and Rainbow starter snapshots select manual tint to retain
 their curated colors. Existing user looks without an explicit source follow

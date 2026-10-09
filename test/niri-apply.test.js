@@ -29,6 +29,9 @@ const PARAMS = {
   'glass.thickness': 32,
   'glass.tintSource': 'manual',
   'glass.tintAccentMix': 0.1,
+  'glass.accentTint': 0.8,
+  'glass.inactive.accentTint': 0.4,
+  'glass.inactive.attenuationColor': '#2a2f3a',
   'glass.attenuationColor': '#bbc7db',
   'glass.attenuationDistance': 178,
   'glass.chromaticAberration': 0.68,
@@ -266,7 +269,7 @@ test('probe-material names niri-material and what is installed', (t) => {
 // The case three shipped packages were in: they knew `material`, and predated the
 // type= prism emits on noise. A probe of a minimal block says yes and apply then
 // fails, so the probe is the fragment the sink writes, rendered from the same code.
-for (const property of ['type=', 'iridescence', 'aurora', 'bevel-profile', 'reflection', 'edge-highlight']) test(`probe-material rejects a build too old for ${property}`, (t) => {
+for (const property of ['type=', 'iridescence', 'aurora', 'bevel-profile', 'reflection', 'edge-highlight', 'accent-tint']) test(`probe-material rejects a build too old for ${property}`, (t) => {
   const { dir } = fixture(t);
   const probe = fileURLToPath(new URL('../integrations/niri/probe-material', import.meta.url));
 
@@ -464,12 +467,17 @@ test('apply reads only the palette fields its enabled consumers need', (t) => {
     ['bypass/manual', { 'glass.bypass.tint': true, 'glass.ring.colorSource': 'manual' }, '{ broken', null],
     ['bypass/noctalia', { 'glass.bypass.tint': true, 'glass.ring.colorSource': 'noctalia' }, primaryOnly, null],
     ['manual/noctalia', { 'glass.tintSource': 'manual', 'glass.ring.colorSource': 'noctalia' }, primaryOnly, null],
+    ['familiar/familiar', { 'glass.tintSource': 'familiar' }, '{ broken', null],
+    ['familiar/manual', { 'glass.tintSource': 'familiar', 'glass.ring.colorSource': 'manual' }, null, null],
+    ['familiar/noctalia', { 'glass.tintSource': 'familiar', 'glass.ring.colorSource': 'noctalia' }, primaryOnly, null],
+    ['familiar tint, noctalia ring still needs primary', { 'glass.tintSource': 'familiar',
+      'glass.ring.colorSource': 'noctalia' }, surfaceOnly, /primary missing/],
     ['surface only', { 'glass.tintAccentMix': 0 }, surfaceOnly, null],
     ['ring still needs primary', { 'glass.tintAccentMix': 0, 'glass.ring.colorSource': 'noctalia' }, surfaceOnly, /primary missing/],
     ['missing surface', {}, primaryOnly, /surface missing/],
     ['missing primary', {}, surfaceOnly, /primary missing/],
     ['mix one still needs surface', { 'glass.tintAccentMix': 1 }, primaryOnly, /surface missing/],
-    ['absent tint palette', {}, null, /palette missing/],
+    ['absent tint palette', {}, null, /palette missing.*select manual or familiar tint/],
     ['malformed tint palette', {}, '{ broken', /not valid JSON/],
     ['invalid surface type', {}, '{"surface":[],"primary":"#202020"}', /surface missing/],
   ];
@@ -526,6 +534,21 @@ test('the familiar ring reports its stored resting Color', (t) => {
   assert.equal(run().status, 0);
   assert.deepEqual(readReport(report), { 'glass.ring.color':
     { value: '#f2c14e', from: "the resting color; each agent session's hue replaces it on its window" } });
+});
+
+test('the familiar tint reports each stored resting tint and installs the session-hue weight', (t) => {
+  const { target, report, run, writeParams } = fixture(t);
+  writeParams({ 'glass.tintSource': 'familiar', 'glass.ring.colorSource': 'manual' });
+  const result = run();
+  assert.equal(result.status, 0, result.stderr);
+  const kdl = fs.readFileSync(target, 'utf8');
+  assert.match(kdl, /attenuation-color "#bbc7db"/);
+  assert.match(kdl, /accent "none"\n        accent-tint 0\.8\n/);
+  const resting = "the resting tint; each agent session's hue tints it on its window";
+  assert.deepEqual(readReport(report), {
+    'glass.attenuationColor': { value: '#bbc7db', from: resting },
+    'glass.inactive.attenuationColor': { value: '#2a2f3a', from: resting },
+  });
 });
 
 test('a bypassed noctalia tint applies over a missing or malformed palette and reports no tint', (t) => {

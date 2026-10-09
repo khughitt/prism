@@ -34,7 +34,7 @@ sinkMain(() => {
     const file = noctaliaColorsPath();
     const palette = readNoctaliaPalette(file, fields, tint ? 'tint' : 'ring');
     if (tint && palette === null) {
-      throw new Error(`${file}: palette missing — run 'noctalia msg templates-apply', verify primary and surface, then rerun 'prism apply niri'; see the README for direct wallpaper refresh or select manual tint`);
+      throw new Error(`${file}: palette missing — run 'noctalia msg templates-apply', verify primary and surface, then rerun 'prism apply niri'; see the README for direct wallpaper refresh or select manual or familiar tint`);
     }
     sources.noctaliaAccent = palette?.primary ?? null;
     sources.noctaliaSurface = palette?.surface;
