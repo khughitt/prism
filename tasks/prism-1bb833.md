@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: prism-1bb833
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-09T04:45:09Z
+updated: 2026-10-09T04:45:14Z
 started: 2026-10-09T04:42:38Z
 depends: [material-6f45a0, prism-b4d118]
 parent: prism-980a29
@@ -33,3 +33,5 @@ Start: defs/glass.yaml tintSource/tintAccentMix; integrations/niri/render.js; in
 - 2026-10-09T04:42:44Z (prism-1bb833): resumed
   provenance: {"harness_session":"claude-code:5d047455-4e28-45eb-87c5-552951a08175","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
 - 2026-10-09T04:45:08Z (prism-1bb833): spec drafted: docs/specs/2026-10-09-familiar-tint-source-design.md — new glass.accentTint + inactive twin (default 1, hidden outside familiar), accent-tint emitted only under familiar and unbypassed, pickers stay manual-only, probe renders familiar
+- 2026-10-09T04:45:14Z (prism-1bb833): parked (waiting on user, review): owner reviews docs/specs/2026-10-09-familiar-tint-source-design.md in .worktrees/prism-1bb833; on approval, agent writes the implementation plan (docs/plans/) for review
+  provenance: {"harness_session":"claude-code:5d047455-4e28-45eb-87c5-552951a08175","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
