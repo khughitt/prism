@@ -1,7 +1,7 @@
 # Familiar as a glass tint source
 
 **Date:** 2026-10-09
-**Status:** draft, awaiting owner review
+**Status:** draft, revised after spec review round 1 (revise: minimum niri stated; ring/tint independence and weight-0 tests added)
 **Task:** `prism-1bb833`, under goal `prism-980a29`
 **Upstream:** niri-material `material-6f45a0` (done): response field `accent-tint`;
 design in niri-material `docs/specs/2026-10-03-accent-tint-design.md`, reference in
@@ -106,10 +106,11 @@ selecting familiar again.
   `glass.inactive.`. When the tint source is familiar and tint is not bypassed, it
   emits `accent-tint <params[prefix + 'accentTint']>`, placed after `accent`.
   Otherwise it emits no `accent-tint` line. niri's default is 0, so leaving the
-  line out keeps every noctalia and manual output identical to today's. It also
-  keeps a config that never selects familiar loadable on a niri without the
-  field. The unsplit material uses the focused prefix. The inactive material
-  under the split uses the inactive one.
+  line out keeps every noctalia and manual output identical to today's: the KDL
+  itself would load on a niri without the field. It does not keep such a niri
+  usable, because the capability probe below runs for every glass-enabled apply
+  under every source. The unsplit material uses the focused prefix. The inactive
+  material under the split uses the inactive one.
 - **Bypass.** The tint device's dry value already forces `attenuation-color`
   white. Under a bypassed tint `accent-tint` is not emitted either, so "bypass
   Tint" means no tint at all, session hue included.
@@ -130,6 +131,13 @@ selecting familiar again.
   fix line rather than at apply time. That fix line is "install or update
   niri-material". This holds while the probe's rule stands: render it from the
   defaults so that every property prism can emit is probed.
+- **Minimum niri.** The probe runs for every glass-enabled apply, whatever the
+  tint source. After this change, a niri-material build without `accent-tint`
+  fails glass apply under manual and noctalia too, even though their KDL is
+  unchanged. Selecting manual does not restore apply on such a build; updating
+  niri-material does. This is the probe's existing policy: prism requires
+  everything it can emit. The README's Requirements section states the minimum:
+  a niri-material build with the response field `accent-tint`.
 
 ## Panel and rack
 
@@ -150,6 +158,10 @@ The README's Noctalia palette section moves its source paragraph into a short
 hue does, and notes that the tint barely shows on light glass. It also says
 familiar needs no palette, and that tint bypass removes the session hue too. The
 `prism set` examples gain `glass.tintSource familiar` and `glass.accentTint 1`.
+
+The Requirements section's niri-material line says the build must accept the
+response field `accent-tint`. An older build fails the capability probe for every
+glass apply, whatever the tint source.
 
 ## Out of scope
 
@@ -174,6 +186,12 @@ familiar needs no palette, and that tint bypass removes the session hue too. The
   - Under familiar with tint bypassed: white attenuation and no `accent-tint`.
   - Under noctalia and manual: no `accent-tint` line. The existing golden
     outputs are unchanged.
+  - Ring and tint stay independent. Familiar tint with a manual ring:
+    `accent "none"` and an `accent-tint` line. Familiar ring with manual tint:
+    `accent "ring"` and no `accent-tint` line. Familiar for both: `accent "ring"`
+    and an `accent-tint` line.
+  - Familiar with weight 0 (both states, split): `accent-tint 0` is emitted as
+    given, not dropped, and the stored tints are unchanged.
   - `sourceColors` under familiar reports both keys with their own stored values
     and the familiar `from`. It reports nothing when bypassed or with glass off.
 - **Apply** (`test/niri-apply.test.js`). The source matrix gains familiar rows. A
@@ -181,6 +199,9 @@ familiar needs no palette, and that tint bypass removes the session hue too. The
   ring. A noctalia ring still needs primary. The effective report under familiar
   matches the KDL.
 - **Probe.** The rendered probe fragment contains `accent-tint` in both materials.
+  The existing rejected-property tests (`test/niri-apply.test.js`, "probe-material
+  rejects a build too old for …") add `accent-tint` to their list, so a niri that
+  refuses the field fails the probe.
 - **Rack and presentation** (`test/rack.test.js`,
   `test/plugin-presentation.test.js`). The tint device's rows include Session hue.
   The shipped `when` table includes the new row.
