@@ -30,7 +30,7 @@
 
 **Spec deviation, recorded:** the spec's "Out of scope" line says the starter profiles do not set the new keys. `test/starter-profiles.test.js` requires every key to resolve from the profile layer ("full snapshot"), so Task 1 adds both keys at their defaults to `Aurora.yaml` and `Rainbow.yaml`. Task 1 also corrects that spec line. The spec's "Prism-only key whitelist" placement also changes: the new keys are niri response fields, so they join the defs test's `NATIVE` table, with a Prism default override, as the ring keys do. The spec's probe check ("the rendered probe fragment contains `accent-tint` in both materials") is covered by two tests together: the `accent-tint` rejected-property test proves the probe emits the field, and Task 2's split test proves a familiar render puts it in both materials. The probe script renders at import and exposes no fragment to test directly.
 
-**Setup:** in a fresh worktree, if `node_modules/` is missing, run `npm install` (the README's install step) before the first test run. Then run `just test-fast` for the baseline; it must pass before Task 1.
+**Setup:** in a fresh worktree, if `node_modules/` is missing, run `npm ci` in the worktree (the command `bin/prism` prints when dependencies are absent) before the first test run. Then run `just test-fast` for the baseline; it must pass before Task 1.
 
 ---
 
@@ -641,5 +641,29 @@ git commit -m "feat(niri): probe accent-tint and document the familiar tint sour
 
 ## After the tasks
 
-- Live check, owner-judged, which takes the live desktop: ask at that moment. On a dark look, run `prism set glass.tintSource familiar`, then `prism apply niri`. Each terminal with an agent session should show its hue in the glass body, and a terminal without one should keep its manual tint. Afterwards restore the previous source with `prism set glass.tintSource <previous>`.
+- **Live check, owner-judged.** It takes the live desktop, so ask at that moment and name what changes: niri reloads its config, and terminals with agent sessions take their session's hue for a few minutes.
+  - **Which prism.** Every command uses the worktree's binary by explicit path, `.worktrees/prism-1bb833/bin/prism`. Plain `prism` resolves to the main checkout, which does not know `familiar`. While the store holds `familiar`, the main checkout's `prism` rejects it, and so does anything that calls it: the Noctalia panel, and the wallpaper and palette hooks. Keep the window short, and restore before anything else.
+  - **Host-state note.** Before the first command, record the change on the task. Notes are append-only, so a second note records the restore:
+    `tasks note prism-1bb833 "live check: store glass.tintSource set to familiar in scratch via .worktrees/prism-1bb833/bin/prism; restore with the restore script below"`.
+  - **Set and apply.** Run from the main checkout. Restoration runs on any failure, through the `ERR` trap:
+
+    ```bash
+    P=.worktrees/prism-1bb833/bin/prism
+    STATE=<scratchpad>/familiar-live-check.prev   # outside the repo
+    "$P" --json describe | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const p=JSON.parse(s).params.find(p=>p.key==="glass.tintSource");console.log(p.layer+" "+p.value)})' > "$STATE"
+    restore() {
+      trap - ERR; set +e   # a failing restore step must not re-enter the trap
+      read -r layer value < "$STATE"
+      if [ "$layer" = scratch ]; then "$P" set glass.tintSource "$value"; else "$P" unset glass.tintSource; fi
+      "$P" apply niri
+    }
+    set -eE; trap 'restore' ERR
+    "$P" set glass.tintSource familiar
+    "$P" apply niri
+    trap - ERR; set +eE
+    ```
+
+    `$STATE` records the source's layer and value as they were. Restoring drops the scratch edit, or puts the earlier scratch value back if there was one. Either way the store returns to exactly the state it had before.
+  - **Judge.** On a dark look, each terminal with an agent session should show its hue in the glass body. A terminal without a session should keep its manual tint.
+  - **Restore, always.** Do this after the owner's verdict, after any failure, and before the turn ends, whatever the outcome. Define `P`, `STATE` and `restore` exactly as above, then run `restore`. Confirm the main checkout reads the store again: `bin/prism get glass.tintSource` from the main checkout prints the earlier value. Then note `live check restored` on the task.
 - Close `prism-1bb833` with a one-line result in the final commit. Then the parent goal `prism-980a29` has `prism-1b7231` and `prism-2bfc35` still open.
