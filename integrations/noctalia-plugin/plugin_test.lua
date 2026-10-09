@@ -1804,12 +1804,21 @@ local function tintRack(source)
   local m = layeredModel()
   local function add(param) m.params[#m.params + 1] = param end
   add({ key = "glass.tintSource", value = source, default = "noctalia", layer = "default", fallback = "noctalia",
-    held = {}, neutral = "manual", effectiveDrag = "release", values = { "noctalia", "manual" },
+    held = {}, neutral = "manual", effectiveDrag = "release", values = { "familiar", "noctalia", "manual" },
     ui = { control = "select", group = "Focus", order = 242, label = "Tint source" } })
   add({ key = "glass.tintAccentMix", value = 0.3, default = 0.1, layer = "scratch", fallback = 0.1,
     held = { "scratch" }, neutral = 0, effectiveDrag = "release", range = { 0, 1 },
     ui = { control = "slider", group = "Focus", order = 244, step = 0.01, label = "Palette accent mix",
       when = { param = "glass.tintSource", ["in"] = { "noctalia" }, otherwise = "hidden" } } })
+  for _, half in ipairs({ { "glass.accentTint", 245, "focused", "Session hue" },
+                          { "glass.inactive.accentTint", 246, "unfocused", "Unfocused session hue" } }) do
+    add({ key = half[1], value = 1, default = 1, layer = "default", fallback = 1,
+      held = {}, neutral = 0, effectiveDrag = "release", range = { 0, 1 },
+      ui = { control = "slider", group = "Focus", order = half[2], step = 0.01, label = half[4],
+        state = half[3], row = "Session hue",
+        when = { param = "glass.tintSource", ["in"] = { "familiar" }, otherwise = "hidden" } } })
+  end
+  m.rack.devices[1].rows = { "Session hue" }
   m.rack.devices[1].shared = { "glass.tintSource", "glass.tintAccentMix" }
   return m
 end
@@ -1823,6 +1832,11 @@ local noctaliaRack = expandBackdrop(renderModel(tintRack("noctalia")))
 assert(byKey(noctaliaRack, "glass.tintAccentMix:row")[1], "the mix shows under noctalia")
 local manualRack = expandBackdrop(renderModel(tintRack("manual")))
 equal(byKey(manualRack, "glass.tintAccentMix:row")[1], nil, "the mix hides under manual")
+equal(byKey(noctaliaRack, "Session hue:row")[1], nil, "session hue hides under noctalia")
+equal(byKey(manualRack, "Session hue:row")[1], nil, "session hue hides under manual")
+local familiarRack = expandBackdrop(renderModel(tintRack("familiar")))
+assert(byKey(familiarRack, "Session hue:row")[1], "session hue shows under familiar")
+equal(byKey(familiarRack, "glass.tintAccentMix:row")[1], nil, "the mix hides under familiar")
 local revertsHidden = false
 for _, button in ipairs(collect(manualRack, "button")) do
   if button.props.tooltip == "Revert section (1)" and button.props.opacity == 1.0 then revertsHidden = true end

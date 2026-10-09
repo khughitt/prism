@@ -63,7 +63,7 @@ devices:
     label: Tint
     stage: tint
     mix: Tint
-    rows: [Tint distance]
+    rows: [Session hue, Tint distance]
     shared: [glass.tintSource, glass.tintAccentMix]
     bypass: glass.bypass.tint
   - device: aurora

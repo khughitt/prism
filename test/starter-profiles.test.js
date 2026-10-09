@@ -38,6 +38,8 @@ test('starter profiles load as complete snapshots and render both native preset 
     assert.equal(params['glass.enabled'], true);
     assert.equal(params['glass.tintSource'], 'manual');
     assert.equal(params['glass.tintAccentMix'], 0.1);
+    assert.equal(params['glass.accentTint'], 1);
+    assert.equal(params['glass.inactive.accentTint'], 1);
     assert.equal(params['glass.focusSplit'], true);
     for (const prefix of ['glass.', 'glass.inactive.']) {
       assert.equal(params[`${prefix}ior`], name === 'Rainbow' ? 1.7 : 1.5);

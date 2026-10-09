@@ -25,6 +25,8 @@ const NATIVE = {
   'glass.inactive.reflection': { range: [0, 1], default: 0 },
   'glass.edgeHighlight': { range: [0, 1], default: 0 },
   'glass.inactive.edgeHighlight': { range: [0, 1], default: 0 },
+  'glass.accentTint': { range: [0, 1], default: 0 },
+  'glass.inactive.accentTint': { range: [0, 1], default: 0 },
   'glass.bypass.reflection': { default: false },
   'glass.bypass.edgeHighlight': { default: false },
   'glass.ior': { range: [1, 3], default: 1.5 },
@@ -138,7 +140,8 @@ test('every glass definition matches the native range and default', () => {
       'glass.reflection': 0.6, 'glass.inactive.reflection': 0.6,
       'glass.ring.beamSpeed': 4350, 'glass.ring.beamNoise': 0.55, 'glass.ring.beamNoiseHz': 12,
       'glass.ring.decay': 4150, 'glass.ring.gap': 6, 'glass.ring.width': 1.1,
-      'glass.ring.glow': 1.2, 'glass.lightIor': 4.5 })[key] ?? native.default, `${key} default`);
+      'glass.ring.glow': 1.2, 'glass.lightIor': 4.5,
+      'glass.accentTint': 1, 'glass.inactive.accentTint': 1 })[key] ?? native.default, `${key} default`);
     if (native.range) {
       assert.ok(def.range[0] >= native.range[0] && def.range[1] <= native.range[1],
         `${key} range [${def.range}] leaves the native [${native.range}]`);
@@ -266,6 +269,7 @@ const MATRIX = [
   ['Frosted backdrop', 'glass.backdropBlur', 'glass.inactive.backdropBlur'],
   ['Blur', 'glass.roughness', 'glass.inactive.roughness'],
   ['Tint', 'glass.attenuationColor', 'glass.inactive.attenuationColor'],
+  ['Session hue', 'glass.accentTint', 'glass.inactive.accentTint'],
   ['Tint distance', 'glass.attenuationDistance', 'glass.inactive.attenuationDistance'],
   ['Refraction', 'glass.ior', 'glass.inactive.ior'],
   ['Depth', 'glass.thickness', 'glass.inactive.thickness'],
@@ -491,6 +495,8 @@ test('everything outside the matrix is shared glass', () => {
 const NEUTRAL = {
   'glass.tintSource': 'manual',
   'glass.tintAccentMix': 0,
+  'glass.accentTint': 0,
+  'glass.inactive.accentTint': 0,
   'glass.iridescence': 0,
   'glass.aurora': 0,
   'glass.auroraDriftHz': 4,
@@ -562,7 +568,7 @@ test('palette tint controls are shared with explicit source and mix contracts', 
   const defs = loadDefs(defsDir());
   const source = defs.get('glass.tintSource');
   assert.equal(source?.type, 'enum');
-  assert.deepEqual(source.values, ['noctalia', 'manual']);
+  assert.deepEqual(source.values, ['familiar', 'noctalia', 'manual']);
   assert.equal(source.default, 'noctalia');
   assert.equal(source.neutral, 'manual');
   assert.deepEqual(source.ui, { group: 'Focus', control: 'select', label: 'Tint source', order: 242 });
@@ -584,4 +590,22 @@ test('palette tint controls are shared with explicit source and mix contracts', 
   assert.deepEqual(defs.get('glass.ring.color').ui.when,
     { param: 'glass.ring.colorSource', in: ['manual'], otherwise: 'effective' });
   assert.match(defs.get('glass.ring.color').description, /editable under the manual source/);
+  for (const [key, label, order, state] of [
+    ['glass.accentTint', 'Session hue', 245, 'focused'],
+    ['glass.inactive.accentTint', 'Unfocused session hue', 246, 'unfocused'],
+  ]) {
+    const hue = defs.get(key);
+    assert.equal(hue.type, 'float', key);
+    assert.deepEqual(hue.range, [0, 1], key);
+    assert.equal(hue.default, 1, key);
+    assert.equal(hue.neutral, 0, key);
+    assert.deepEqual(hue.ui, { group: 'Focus', control: 'slider', step: 0.01, label, order,
+      display: 'percent', state, row: 'Session hue',
+      when: { param: 'glass.tintSource', in: ['familiar'], otherwise: 'hidden' } }, key);
+    assert.match(hue.description, /session's hue/, key);
+  }
+  assert.match(defs.get('glass.tintSource').description, /familiar/);
+  for (const prefix of ['glass.', 'glass.inactive.']) {
+    assert.match(defs.get(`${prefix}attenuationColor`).description, /resting tint/);
+  }
 });

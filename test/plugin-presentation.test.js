@@ -37,7 +37,7 @@ test('shipped presentation is a Glass section, a Focus matrix, and a Ring sectio
     }
   }
   assert.deepEqual(rows.map((row) => row.row), [
-    'Frosted backdrop', 'Blur', 'Tint', 'Tint source', 'Palette accent mix', 'Tint distance', 'Refraction',
+    'Frosted backdrop', 'Blur', 'Tint', 'Tint source', 'Palette accent mix', 'Session hue', 'Tint distance', 'Refraction',
     'Depth', 'Fringing', 'Distortion', 'Distortion detail', 'Directional blur',
     'Noise', 'Noise type', 'Saturation', 'Iridescence', 'Aurora', 'Drift rate', 'Color A', 'Color B',
     'Reflection', 'Edge highlight',

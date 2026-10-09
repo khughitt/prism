@@ -20,6 +20,8 @@ binds:
   - {param: glass.inactive.thickness, node: thickness, liveness: reload}
   - {param: glass.tintSource, liveness: reload}
   - {param: glass.tintAccentMix, liveness: reload}
+  - {param: glass.accentTint, liveness: reload}
+  - {param: glass.inactive.accentTint, liveness: reload}
   - {param: glass.attenuationColor, node: attenuation-color, liveness: reload}
   - {param: glass.inactive.attenuationColor, node: attenuation-color, liveness: reload}
   - {param: glass.attenuationDistance, node: attenuation-distance, liveness: reload}
