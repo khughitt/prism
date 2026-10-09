@@ -1,15 +1,16 @@
 ---
 id: prism-1bb833
 title: Add familiar to glass.tintSource
-status: doing
+status: done
 priority: 2
 size: m
 complexity: mid
 process: planned
 owner: prism-1bb833
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-09T14:05:05Z
+updated: 2026-10-09T14:07:46Z
 started: 2026-10-09T04:42:38Z
+completed: 2026-10-09T14:07:43Z
 depends: [material-6f45a0, prism-b4d118]
 parent: prism-980a29
 tags: [material, niri]
@@ -75,4 +76,12 @@ Start: defs/glass.yaml tintSource/tintAccentMix; integrations/niri/render.js; in
 - 2026-10-09T14:01:29Z (prism-1bb833): Ruling: integrate the reviewed branch locally before retrying owner acceptance — the panel runs main prism and needs its familiar schema to adjust settings — cost if wrong: revert local integration; no push or launcher repoint.
 - 2026-10-09T14:03:32Z (prism-1bb833): Reviewed branch integrated locally as f297b7d before visual retry. Main panel command prism describe succeeds and lists familiar/noctalia/manual; merged just test-fast passes 563 Node tests plus Lua, tasks check/just check clean. Retry requires fresh desktop permission; first check restored noctalia.
 - 2026-10-09T14:05:05Z (prism-1bb833): parked (waiting on user, review): Owner grants a fresh 3-minute live retry or selects familiar in the now-updated panel and reports the visual verdict; controller then records acceptance, closes the task and completes worktree cleanup.
+  provenance: {"harness_session":"codex:01a11f11-6a8b-7d53-b950-22ef98c5de0b","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-09T14:07:43Z (prism-1bb833): resumed
+  provenance: {"harness_session":"codex:01a11f11-6a8b-7d53-b950-22ef98c5de0b","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-09T14:07:43Z (prism-1bb833): review: impl round 2 — verdict: accept; findings: none; reviewer: human
+- 2026-10-09T14:07:43Z (prism-1bb833): Owner reports tint looks good and accepts. Current source familiar was selected by owner after the agent restored its temporary live check; leave the owner-selected setting in place. No further desktop retry needed.
+- 2026-10-09T14:07:43Z (prism-1bb833): done
+  provenance: {"harness_session":"codex:01a11f11-6a8b-7d53-b950-22ef98c5de0b","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-09T14:07:43Z (prism-1bb833): Familiar tint source and per-focus session hue weights shipped; 563 Node tests plus Lua and all reviews passed, owner accepted live tint.
   provenance: {"harness_session":"codex:01a11f11-6a8b-7d53-b950-22ef98c5de0b","harness_session_source":"CODEX_THREAD_ID"}

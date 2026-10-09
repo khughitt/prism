@@ -1,7 +1,7 @@
 # Familiar as a glass tint source
 
 **Date:** 2026-10-09
-**Status:** accepted; implementation plan records the starter-profile and NATIVE-table corrections below
+**Status:** implemented and accepted by owner on 2026-10-09; starter-profile and NATIVE-table corrections recorded below
 **Task:** `prism-1bb833`, under goal `prism-980a29`
 **Upstream:** niri-material `material-6f45a0` (done): response field `accent-tint`;
 design in niri-material `docs/specs/2026-10-03-accent-tint-design.md`, reference in

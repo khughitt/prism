@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
+**Status:** completed; implementation reviewed and owner accepted live tint on 2026-10-09.
+
 **Goal:** Add `familiar` to `glass.tintSource`, so each terminal's glass body takes its agent session's hue through niri-material's `accent-tint` response, with a focused/unfocused weight pair.
 
 **Architecture:** The defs gain the enum value and a `glass.accentTint` / `glass.inactive.accentTint` matrix row. That row is gated to the familiar source and sits in the rack's Tint card. The niri renderer keeps the stored manual tints as `attenuation-color` under familiar. Each material's response block gains an `accent-tint` line carrying its own weight. `sourceColors` reports those resting tints for the panel's read-only swatches. The capability probe renders familiar so the new field is probed.
