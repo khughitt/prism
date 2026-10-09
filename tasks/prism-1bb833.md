@@ -7,7 +7,7 @@ size: m
 complexity: mid
 process: planned
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-02T23:46:51Z
+updated: 2026-10-09T04:34:40Z
 depends: [material-6f45a0, prism-b4d118]
 parent: prism-980a29
 tags: [material, niri]
@@ -21,3 +21,7 @@ Outcome: glass.tintSource values [familiar, noctalia, manual]. Under familiar, e
 Blocked upstream: niri-material's accent selector is ring|none only. material-3bdffc designs the attenuation-tint response (spelling, weight, coexistence with the ring accent, missing-accent behaviour); material-6f45a0 implements it. Prism's render (integrations/niri/render.js responseBlock, which emits accent 'ring' or 'none' today) must emit whatever spelling that design settles, and expose its weight if it has one, possibly reusing glass.tintAccentMix.
 
 Start: defs/glass.yaml tintSource/tintAccentMix; integrations/niri/render.js; integrations/niri/palette.js (remedy text names the sources); test/niri-render.test.js, test/glass-defs.test.js, test/niri-apply.test.js source matrix. Planned because the param shape depends on the upstream design.
+
+## Notes
+
+- 2026-10-09T04:34:40Z (main): Upstream unblocked: material-6f45a0 done; the response key is 'accent-tint' (0-1, default 0; recommended 1 on dark glass), independent of 'accent ring|none'; see niri-material docs/specs/2026-10-03-accent-tint-design.md and docs/materials/material-config.md. Absorbs prism-2b9a40; whether its weight gets a glass.inactive.* twin is a design choice here (prism-9bbe0a covers the Noctalia palette mix twin).
