@@ -85,3 +85,5 @@ terminal.apps:
   - com.mitchellh.ghostty
 glass.tintSource: manual
 glass.tintAccentMix: 0.1
+glass.accentTint: 1
+glass.inactive.accentTint: 1

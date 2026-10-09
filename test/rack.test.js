@@ -112,6 +112,7 @@ test('the shipped rack loads against the shipped defs, schema, and dry file', ()
     'transmission', 'light', 'light', 'light', 'light',
   ]);
   assert.deepEqual(rack.devices.find((d) => d.device === 'tint').shared, ['glass.tintSource', 'glass.tintAccentMix']);
+  assert.deepEqual(rack.devices.find((d) => d.device === 'tint').rows, ['Session hue', 'Tint distance']);
   assert.equal(rack.devices.some((d) => 'category' in d), false);
 });
 

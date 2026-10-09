@@ -383,14 +383,18 @@ test('pair controls reconcile real CLI transitions, locality, guards, and replac
     });
 });
 
-test('tint pickers are editable only under manual, and the mix shows only under noctalia', () => {
-  for (const source of ['noctalia', 'manual']) {
+test('each tint source shows its own controls: pickers under manual, mix under noctalia, session hue under familiar', () => {
+  for (const source of ['familiar', 'noctalia', 'manual']) {
     const model = describeStore({ base: { 'glass.tintSource': source } });
     const [report] = inspectModels([model]);
     assert.equal(report.error, undefined);
     assert.equal(report.cells['glass.tintSource'].kind, 'select');
     if (source === 'noctalia') assert.equal(report.cells['glass.tintAccentMix'].kind, 'slider');
-    else assert.equal(report.cells['glass.tintAccentMix'], undefined, 'the mix hides under manual');
+    else assert.equal(report.cells['glass.tintAccentMix'], undefined, `the mix hides under ${source}`);
+    for (const key of ['glass.accentTint', 'glass.inactive.accentTint']) {
+      if (source === 'familiar') assert.equal(report.cells[key].kind, 'slider', key);
+      else assert.equal(report.cells[key], undefined, `${key} hides under ${source}`);
+    }
     for (const key of ['glass.attenuationColor', 'glass.inactive.attenuationColor']) {
       assert.equal(report.cells[key].glyph, source === 'manual' ? 'palette' : 'lock', `${key} under ${source}`);
       assert.equal(model.params.find((param) => param.key === key).value, '#dfe8ff', 'the stored tint is untouched');

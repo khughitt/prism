@@ -103,20 +103,20 @@
   default: '#dfe8ff'
   neutral: '#ffffff'
   ui: {group: Focus, control: color, label: Tint, order: 240, state: focused, row: Tint, when: {param: glass.tintSource, in: [manual], otherwise: effective}}
-  description: Focused tint, editable under the manual source; under Noctalia the panel shows the palette tint the last apply installed
+  description: Focused tint, editable under the manual source; under familiar it is the resting tint of windows without a session, and under Noctalia the panel shows the palette tint the last apply installed
 - key: glass.inactive.attenuationColor
   type: color
   default: '#dfe8ff'
   neutral: '#ffffff'
   ui: {group: Focus, control: color, label: Unfocused tint, order: 241, state: unfocused, row: Tint, when: {param: glass.tintSource, in: [manual], otherwise: effective}}
-  description: Unfocused tint, editable under the manual source; under Noctalia the panel shows the palette tint the last apply installed
+  description: Unfocused tint, editable under the manual source; under familiar it is the resting tint of windows without a session, and under Noctalia the panel shows the palette tint the last apply installed
 - key: glass.tintSource
   type: enum
-  values: [noctalia, manual]
+  values: [familiar, noctalia, manual]
   default: noctalia
   neutral: manual
   ui: {group: Focus, control: select, label: Tint source, order: 242}
-  description: Select the Noctalia surface and palette-accent mix or the stored focused and unfocused manual tints
+  description: "Who drives the glass tint: the Noctalia surface and palette-accent mix, the stored focused and unfocused manual tints, or familiar, which tints each terminal toward its agent session's hue and rests windows without a session on the manual tints"
 - key: glass.tintAccentMix
   type: float
   range: [0, 1]
@@ -124,6 +124,24 @@
   neutral: 0
   ui: {group: Focus, control: slider, step: 0.01, label: Palette accent mix, order: 244, display: percent, when: {param: glass.tintSource, in: [noctalia], otherwise: hidden}}
   description: Share of the palette primary mixed into its surface color under Noctalia tint; 0 uses only the surface and 1 only the primary
+# niri's accent-tint: a per-material response weight, so it splits by focus like
+# the optics. It moves hue and saturation toward the window's signal accent and
+# keeps the face's darkness over a neutral backdrop. The sink emits it only under
+# the familiar source.
+- key: glass.accentTint
+  type: float
+  range: [0, 1]
+  default: 1
+  neutral: 0
+  ui: {group: Focus, control: slider, step: 0.01, label: Session hue, order: 245, display: percent, state: focused, row: Session hue, when: {param: glass.tintSource, in: [familiar], otherwise: hidden}}
+  description: Under the familiar source, how far the focused terminal's glass moves toward its agent session's hue; it changes hue and saturation and keeps the glass's darkness over a neutral backdrop, barely shows on light glass, and 0 leaves the manual tint
+- key: glass.inactive.accentTint
+  type: float
+  range: [0, 1]
+  default: 1
+  neutral: 0
+  ui: {group: Focus, control: slider, step: 0.01, label: Unfocused session hue, order: 246, display: percent, state: unfocused, row: Session hue, when: {param: glass.tintSource, in: [familiar], otherwise: hidden}}
+  description: Under the familiar source, how far unfocused terminals' glass moves toward their agent session's hue; it changes hue and saturation and keeps the glass's darkness over a neutral backdrop, barely shows on light glass, and 0 leaves the manual tint
 # An enabler: at the 65535 ceiling tint absorbs nothing; at the floor of 1 it
 # goes black at once.
 - key: glass.attenuationDistance

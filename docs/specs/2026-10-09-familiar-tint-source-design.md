@@ -1,7 +1,7 @@
 # Familiar as a glass tint source
 
 **Date:** 2026-10-09
-**Status:** draft, revised after spec review round 1 (revise: minimum niri stated; ring/tint independence and weight-0 tests added)
+**Status:** accepted; implementation plan records the starter-profile and NATIVE-table corrections below
 **Task:** `prism-1bb833`, under goal `prism-980a29`
 **Upstream:** niri-material `material-6f45a0` (done): response field `accent-tint`;
 design in niri-material `docs/specs/2026-10-03-accent-tint-design.md`, reference in
@@ -167,8 +167,8 @@ glass apply, whatever the tint source.
 
 - A familiar hue over a Noctalia resting tint, i.e. combining sources. Familiar
   rests on the manual tints, as the ring rests on its manual Color.
-- Starter profiles. They select manual tint and do not set the new keys, which
-  resolve to their defaults and do nothing under manual.
+- Starter profile looks. They select manual tint; as full snapshots they carry
+  the new keys at their defaults, which do nothing under manual.
 - `prism-9bbe0a`'s Palette accent mix twin, and `prism-1b7231`'s ring Accent
   strength visibility.
 
@@ -176,8 +176,8 @@ glass apply, whatever the tint source.
 
 - **Defs** (`test/glass-defs.test.js`). The enum's values. The new keys' range,
   default, neutral, `ui` row and state, and `when`. The tint pickers' `when` is
-  still `[manual]`. The Prism-only key whitelist now includes both new keys, and
-  the neutral table includes their 0.
+  still `[manual]`. The niri response fields join the `NATIVE` table with upstream default 0
+  and Prism default overrides of 1; the neutral table includes their 0.
 - **Render** (`test/niri-render.test.js`):
   - Under familiar, unsplit: the material's `attenuation-color` is the stored
     focused tint, and the response carries `accent-tint` with the focused weight.
