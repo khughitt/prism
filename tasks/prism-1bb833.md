@@ -8,13 +8,14 @@ complexity: mid
 process: planned
 owner: prism-1bb833
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-09T04:52:31Z
+updated: 2026-10-09T04:59:03Z
 started: 2026-10-09T04:42:38Z
 depends: [material-6f45a0, prism-b4d118]
 parent: prism-980a29
 tags: [material, niri]
 agent: claude-code/claude-opus-5-5
 spec: docs/specs/2026-10-09-familiar-tint-source-design.md
+plan: docs/plans/2026-10-09-familiar-tint-source.md
 ---
 
 Why: glass.ring.colorSource already offers familiar (each terminal's ring takes its agent session's hue through niri-material's 'accent "ring"'); the glass tint offers only noctalia and manual (defs/glass.yaml glass.tintSource).
@@ -42,3 +43,7 @@ Start: defs/glass.yaml tintSource/tintAccentMix; integrations/niri/render.js; in
 - 2026-10-09T04:52:30Z (prism-1bb833): spec revised for round 1: minimum niri (accent-tint) stated for every glass apply and in README requirements; render tests for familiar tint/manual ring, familiar ring/manual tint, both, and weight 0; accent-tint joins the probe rejected-property tests
 - 2026-10-09T04:52:31Z (prism-1bb833): parked (waiting on user, review): owner re-reviews the round-1 revision of docs/specs/2026-10-09-familiar-tint-source-design.md in .worktrees/prism-1bb833; on approval, agent writes the implementation plan
   provenance: {"harness_session":"claude-code:5d047455-4e28-45eb-87c5-552951a08175","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-09T04:53:10Z (prism-1bb833): review: spec round 2 — verdict: accept; findings: none; reviewer: codex
+- 2026-10-09T04:53:59Z (prism-1bb833): resumed
+  provenance: {"harness_session":"claude-code:5d047455-4e28-45eb-87c5-552951a08175","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-09T04:59:03Z (prism-1bb833): plan written: docs/plans/2026-10-09-familiar-tint-source.md — 3 tasks (prism-531768 defs/rack/panel, prism-f8faee render, prism-21452c apply/probe/README); deviation: starter profiles carry the new keys (full-snapshot test), recorded in plan and corrected in spec by Task 1
