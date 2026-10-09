@@ -21,19 +21,29 @@ function appMatcher(apps) {
     : rawKdl(`^(${apps.map(escapeRegex).join('|')})$`);
 }
 
+// familiar hands the glass body to niri's per-window accent: the stored manual
+// tint stays the attenuation color and accent-tint moves each window toward its
+// session's hue, so a window without a session keeps the manual tint. A bypassed
+// tint is no tint at all, and noctalia and manual leave the line out, which is
+// niri's own 0, so their output is unchanged.
+const familiarTint = (params) => params['glass.tintSource'] === 'familiar'
+  && params['glass.bypass.tint'] !== true;
+
 // The one filament is shared by the focus light and signal accents, so the
 // ring's color has one driver at a time. familiar tints it live through its
 // per-window signal (accent stays on only then); noctalia hands over the
 // colorscheme accent the apply read (resolved by sourceColors); manual pins the palette's own color.
+// The tint source, independently of the ring source, decides accent-tint.
 // The band's own geometry is prism's now: ring-gap places it under the face
 // and ring-width sizes it. niri rejects a width of zero, so the def's lower
 // bound is strictly positive and no slider position can reach the error.
-function responseBlock(params, sources) {
+function responseBlock(params, sources, prefix) {
   const source = params['glass.ring.colorSource'];
   const color = sourceColors(params, sources)['glass.ring.color']?.value ?? params['glass.ring.color'];
   return [
     '    response "default" {',
     `        accent ${JSON.stringify(source === 'familiar' ? 'ring' : 'none')}`,
+    ...(familiarTint(params) ? [`        accent-tint ${params[`${prefix}accentTint`]}`] : []),
     `        focus ${JSON.stringify(params['glass.ring.focus'] ? 'ring-light' : 'none')}`,
     `        attention ${JSON.stringify(params['glass.ring.edgeTint'] ? 'rim-orbit' : 'none')}`,
     `        ring-color ${JSON.stringify(color)}`,
@@ -50,7 +60,7 @@ function responseBlock(params, sources) {
   ];
 }
 
-function definition(name, params, glass, sources) {
+function definition(name, params, glass, sources, prefix) {
   const bevel = params['glass.paneLip'] + Math.max(
     Math.abs(params['glass.paneShiftX']),
     Math.abs(params['glass.paneShiftY']),
@@ -85,7 +95,7 @@ function definition(name, params, glass, sources) {
     `        offset-x ${params['glass.paneShiftX']}`,
     `        offset-y ${params['glass.paneShiftY']}`,
     '    }',
-    ...responseBlock(params, sources),
+    ...responseBlock(params, sources, prefix),
     '}',
   ].join('\n');
 }
@@ -118,6 +128,7 @@ const paletteTint = (surface, accent, mix) => mix === 0
   ).toString(16).padStart(2, '0')).join('');
 
 const NOCTALIA = 'the Noctalia palette';
+const FAMILIAR_TINT = "the resting tint; each agent session's hue tints it on its window";
 
 // The colors a source resolves, keyed as the store names them. The render
 // emits these and the apply reports them, so the KDL and the report cannot
@@ -131,6 +142,10 @@ export function sourceColors(params, sources) {
       params['glass.tintAccentMix']), from: NOCTALIA };
     colors['glass.attenuationColor'] = tint;
     colors['glass.inactive.attenuationColor'] = tint;
+  } else if (familiarTint(params)) {
+    for (const key of ['glass.attenuationColor', 'glass.inactive.attenuationColor']) {
+      colors[key] = { value: params[key], from: FAMILIAR_TINT };
+    }
   }
   const ring = params['glass.ring.colorSource'];
   if (ring === 'noctalia') {
@@ -201,8 +216,8 @@ export function renderNiriFragment(resolved, sources = {}) {
     // Glass off leaves no material node behind: the node is niri-material's
     // own, and a niri without it rejects the whole config over one it does not
     // know. Everything that remains is upstream vocabulary.
-    ...(glass ? [definition(MATERIAL, params, activeGlass(params, sources), sources)] : []),
-    ...(split ? [definition(INACTIVE_MATERIAL, params, inactiveGlass(params, sources), sources)] : []),
+    ...(glass ? [definition(MATERIAL, params, activeGlass(params, sources), sources, 'glass.')] : []),
+    ...(split ? [definition(INACTIVE_MATERIAL, params, inactiveGlass(params, sources), sources, 'glass.inactive.')] : []),
     ...(matcher === null ? []
       : split ? [
         assignmentRule(matcher, MATERIAL, true),

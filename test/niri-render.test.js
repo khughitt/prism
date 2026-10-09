@@ -25,6 +25,8 @@ const resolved = { params: {
   'glass.thickness': 32,
   'glass.tintSource': 'manual',
   'glass.tintAccentMix': 0.1,
+  'glass.accentTint': 1,
+  'glass.inactive.accentTint': 1,
   'glass.attenuationColor': '#bbc7db',
   'glass.attenuationDistance': 178,
   'glass.chromaticAberration': 0.68,
@@ -779,6 +781,50 @@ test('the manual source ignores a palette accent', () => {
   assert.equal(count(kdl, '#bad065'), 0);
 });
 
+test('the familiar tint keeps each stored tint and hands each material its own session-hue weight', () => {
+  const familiar = { 'glass.tintSource': 'familiar', 'glass.accentTint': 0.9, 'glass.inactive.accentTint': 0.3 };
+  const [active, inactive] = renderNiriFragment(with_(familiar)).match(/^material [^]*?^\}/gm);
+  assert.match(active, /attenuation-color "#bbc7db"/);
+  assert.match(active, /\n        accent "none"\n        accent-tint 0\.9\n        focus /);
+  assert.match(inactive, /attenuation-color "#2a2f3a"/);
+  assert.match(inactive, /\n        accent "none"\n        accent-tint 0\.3\n        focus /);
+
+  const unsplit = renderNiriFragment(with_({ ...familiar, 'glass.focusSplit': false }));
+  assert.equal(count(unsplit, 'accent-tint 0.9\n'), 1, 'unsplit glass carries the focused weight');
+  assert.equal(count(unsplit, 'accent-tint 0.3'), 0, 'and never the unfocused one');
+  assert.equal(count(unsplit, 'attenuation-color "#bbc7db"'), 1);
+});
+
+test('the tint and ring sources drive accent-tint and the accent band independently', () => {
+  const palette = { noctaliaSurface: '#101010', noctaliaAccent: '#202020' };
+  for (const [tint, ring, accent, tinted] of [
+    ['familiar', 'manual', 'none', true],
+    ['manual', 'familiar', 'ring', false],
+    ['familiar', 'familiar', 'ring', true],
+    ['noctalia', 'familiar', 'ring', false],
+    ['manual', 'manual', 'none', false],
+  ]) {
+    const kdl = renderNiriFragment(with_({ 'glass.tintSource': tint, 'glass.ring.colorSource': ring }), palette);
+    const label = `${tint} tint, ${ring} ring`;
+    assert.equal(count(kdl, `accent "${accent}"`), 2, label);
+    assert.equal(count(kdl, 'accent-tint'), tinted ? 2 : 0, label);
+  }
+});
+
+test('a zero session-hue weight is written as given and leaves the stored tints alone', () => {
+  const kdl = renderNiriFragment(with_({ 'glass.tintSource': 'familiar',
+    'glass.accentTint': 0, 'glass.inactive.accentTint': 0 }));
+  assert.equal(count(kdl, 'accent-tint 0\n'), 2);
+  assert.equal(count(kdl, 'attenuation-color "#bbc7db"'), 1);
+  assert.equal(count(kdl, 'attenuation-color "#2a2f3a"'), 1);
+});
+
+test('a bypassed familiar tint is no tint at all: white glass and no session hue', () => {
+  const kdl = renderNiriFragment(with_({ 'glass.tintSource': 'familiar', 'glass.bypass.tint': true }));
+  assert.equal(count(kdl, 'attenuation-color "#ffffff"'), 2);
+  assert.equal(count(kdl, 'accent-tint'), 0);
+});
+
 test('a zero beam speed shows only the resting glow, and the retired sweep key never reaches the config', () => {
   const kdl = renderNiriFragment(with_({ 'glass.ring.beamSpeed': 0 }));
 
@@ -909,6 +955,15 @@ test('sourceColors names exactly the colors a source resolved', () => {
   { 'glass.ring.color': { value: stored, from: 'the stored Color; no Noctalia palette was found' } });
   assert.deepEqual(sourceColors(params({ 'glass.tintSource': 'manual', 'glass.ring.colorSource': 'familiar' }), {}),
     { 'glass.ring.color': { value: stored, from: "the resting color; each agent session's hue replaces it on its window" } });
+  const resting = "the resting tint; each agent session's hue tints it on its window";
+  assert.deepEqual(sourceColors(params({ 'glass.tintSource': 'familiar', 'glass.ring.colorSource': 'manual' }), {}), {
+    'glass.attenuationColor': { value: '#bbc7db', from: resting },
+    'glass.inactive.attenuationColor': { value: '#2a2f3a', from: resting },
+  }, 'each state reports its own stored tint and reads no palette');
+  assert.deepEqual(sourceColors(params({ 'glass.tintSource': 'familiar', 'glass.bypass.tint': true,
+    'glass.ring.colorSource': 'manual' }), {}), {}, 'a bypassed familiar tint reports nothing');
+  assert.deepEqual(sourceColors(params({ 'glass.enabled': false, 'glass.tintSource': 'familiar',
+    'glass.ring.colorSource': 'manual' }), {}), {}, 'glass off reports nothing');
 });
 
 test('every manifest node is owned by a stage', () => {
