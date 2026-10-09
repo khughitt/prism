@@ -6,14 +6,15 @@ priority: 2
 size: m
 complexity: mid
 process: planned
-owner: main
+owner: prism-1bb833
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-09T04:42:38Z
+updated: 2026-10-09T04:45:09Z
 started: 2026-10-09T04:42:38Z
 depends: [material-6f45a0, prism-b4d118]
 parent: prism-980a29
 tags: [material, niri]
 agent: claude-code/claude-opus-5-5
+spec: docs/specs/2026-10-09-familiar-tint-source-design.md
 ---
 
 Why: glass.ring.colorSource already offers familiar (each terminal's ring takes its agent session's hue through niri-material's 'accent "ring"'); the glass tint offers only noctalia and manual (defs/glass.yaml glass.tintSource).
@@ -29,3 +30,6 @@ Start: defs/glass.yaml tintSource/tintAccentMix; integrations/niri/render.js; in
 - 2026-10-09T04:34:40Z (main): Upstream unblocked: material-6f45a0 done; the response key is 'accent-tint' (0-1, default 0; recommended 1 on dark glass), independent of 'accent ring|none'; see niri-material docs/specs/2026-10-03-accent-tint-design.md and docs/materials/material-config.md. Absorbs prism-2b9a40; whether its weight gets a glass.inactive.* twin is a design choice here (prism-9bbe0a covers the Noctalia palette mix twin).
 - 2026-10-09T04:42:38Z (main): started
   provenance: {"harness_session":"claude-code:5d047455-4e28-45eb-87c5-552951a08175","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-09T04:42:44Z (prism-1bb833): resumed
+  provenance: {"harness_session":"claude-code:5d047455-4e28-45eb-87c5-552951a08175","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-09T04:45:08Z (prism-1bb833): spec drafted: docs/specs/2026-10-09-familiar-tint-source-design.md — new glass.accentTint + inactive twin (default 1, hidden outside familiar), accent-tint emitted only under familiar and unbypassed, pickers stay manual-only, probe renders familiar
