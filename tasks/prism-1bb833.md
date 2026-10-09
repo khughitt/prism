@@ -1,13 +1,15 @@
 ---
 id: prism-1bb833
 title: Add familiar to glass.tintSource
-status: todo
+status: doing
 priority: 2
 size: m
 complexity: mid
 process: planned
+owner: main
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-09T04:34:40Z
+updated: 2026-10-09T04:42:38Z
+started: 2026-10-09T04:42:38Z
 depends: [material-6f45a0, prism-b4d118]
 parent: prism-980a29
 tags: [material, niri]
@@ -25,3 +27,5 @@ Start: defs/glass.yaml tintSource/tintAccentMix; integrations/niri/render.js; in
 ## Notes
 
 - 2026-10-09T04:34:40Z (main): Upstream unblocked: material-6f45a0 done; the response key is 'accent-tint' (0-1, default 0; recommended 1 on dark glass), independent of 'accent ring|none'; see niri-material docs/specs/2026-10-03-accent-tint-design.md and docs/materials/material-config.md. Absorbs prism-2b9a40; whether its weight gets a glass.inactive.* twin is a design choice here (prism-9bbe0a covers the Noctalia palette mix twin).
+- 2026-10-09T04:42:38Z (main): started
+  provenance: {"harness_session":"claude-code:5d047455-4e28-45eb-87c5-552951a08175","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
