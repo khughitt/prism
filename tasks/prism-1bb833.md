@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: prism-1bb833
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-09T04:52:30Z
+updated: 2026-10-09T04:52:31Z
 started: 2026-10-09T04:42:38Z
 depends: [material-6f45a0, prism-b4d118]
 parent: prism-980a29
@@ -40,3 +40,5 @@ Start: defs/glass.yaml tintSource/tintAccentMix; integrations/niri/render.js; in
 - 2026-10-09T04:52:00Z (prism-1bb833): resumed
   provenance: {"harness_session":"claude-code:5d047455-4e28-45eb-87c5-552951a08175","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
 - 2026-10-09T04:52:30Z (prism-1bb833): spec revised for round 1: minimum niri (accent-tint) stated for every glass apply and in README requirements; render tests for familiar tint/manual ring, familiar ring/manual tint, both, and weight 0; accent-tint joins the probe rejected-property tests
+- 2026-10-09T04:52:31Z (prism-1bb833): parked (waiting on user, review): owner re-reviews the round-1 revision of docs/specs/2026-10-09-familiar-tint-source-design.md in .worktrees/prism-1bb833; on approval, agent writes the implementation plan
+  provenance: {"harness_session":"claude-code:5d047455-4e28-45eb-87c5-552951a08175","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
