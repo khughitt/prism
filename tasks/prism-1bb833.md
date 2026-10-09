@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: prism-1bb833
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-09T05:22:50Z
+updated: 2026-10-09T05:31:45Z
 started: 2026-10-09T04:42:38Z
 depends: [material-6f45a0, prism-b4d118]
 parent: prism-980a29
@@ -62,3 +62,7 @@ Start: defs/glass.yaml tintSource/tintAccentMix; integrations/niri/render.js; in
 - 2026-10-09T05:11:20Z (prism-1bb833): Execution authorized with subagent-driven development; reusing .worktrees/prism-1bb833. Live desktop check remains a separate owner gate.
 - 2026-10-09T05:17:49Z (prism-1bb833): Task 1 accepted: defs, gated rack row and starter snapshots committed fdc63f2; renderer/probe requirements are assigned to Tasks 2 and 3.
 - 2026-10-09T05:22:50Z (prism-1bb833): Task 2 accepted: familiar keeps stored resting tints and emits each material weight; unchanged golden and 561 Node tests plus Lua pass. Task 1 schema was reviewed separately; remaining apply/probe/docs checks belong to Task 3.
+- 2026-10-09T05:27:56Z (prism-1bb833): Task 3 accepted: familiar capability probe, apply source matrix, palette remedies and README committed 412b2e2; installed /usr/bin/niri passed worktree probe without desktop reload. Whole-branch review next.
+- 2026-10-09T05:31:04Z (prism-1bb833): review: impl round 1 — verdict: accept; findings: none; reviewer: codex/gpt-6-astra
+- 2026-10-09T05:31:35Z (prism-1bb833): All three implementation tasks and whole-branch review accepted. Fresh just test-fast: 563 Node tests plus Lua pass; tasks check/just check clean. Awaiting separate live desktop permission and owner visual judgment; host unchanged.
+- 2026-10-09T05:31:45Z (prism-1bb833): Rulings: carry full-snapshot defaults and native-field wording into spec (revert docs/snapshots if wrong); reserve live appearance for owner judgment (extra visual check if wrong); consume upstream accent-tint contract without shader/signal audit (upstream investigation if wrong); exclude combined sources and Noctalia focus-mix twin (additional scoped work if wrong). No deferred review findings.
