@@ -642,7 +642,7 @@ git commit -m "feat(niri): probe accent-tint and document the familiar tint sour
 ## After the tasks
 
 - **Live check, owner-judged.** It takes the live desktop, so ask at that moment and name what changes: niri reloads its config, and terminals with agent sessions take their session's hue for a few minutes.
-  - **Which prism.** Every command uses the worktree's binary by explicit path, `.worktrees/prism-1bb833/bin/prism`. Plain `prism` resolves to the main checkout, which does not know `familiar`. While the store holds `familiar`, the main checkout's `prism` rejects it, and so does anything that calls it: the Noctalia panel, and the wallpaper and palette hooks. Keep the window short, and restore before anything else.
+  - **Which prism.** Every agent command uses the worktree's binary by explicit path, `.worktrees/prism-1bb833/bin/prism`. The panel and host hooks call plain `prism`, which resolves to the main checkout. Before an owner check that needs panel controls, integrate the reviewed code locally so main understands `familiar`; never repoint a shared launcher at the worktree. The first live attempt exposed this schema mismatch and was restored without a visual verdict; the reviewed code is now merged locally and main describe lists all three sources.
   - **Host-state note.** Before the first command, record the change on the task. Notes are append-only, so a second note records the restore:
     `tasks note prism-1bb833 "live check: store glass.tintSource set to familiar in scratch via .worktrees/prism-1bb833/bin/prism; restore with the restore script below"`.
   - **Set and apply.** Run from the main checkout. Restoration runs on any failure, through the `ERR` trap:
