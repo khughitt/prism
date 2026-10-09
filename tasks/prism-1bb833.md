@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: prism-1bb833
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-09T05:31:45Z
+updated: 2026-10-09T05:33:16Z
 started: 2026-10-09T04:42:38Z
 depends: [material-6f45a0, prism-b4d118]
 parent: prism-980a29
@@ -66,3 +66,5 @@ Start: defs/glass.yaml tintSource/tintAccentMix; integrations/niri/render.js; in
 - 2026-10-09T05:31:04Z (prism-1bb833): review: impl round 1 — verdict: accept; findings: none; reviewer: codex/gpt-6-astra
 - 2026-10-09T05:31:35Z (prism-1bb833): All three implementation tasks and whole-branch review accepted. Fresh just test-fast: 563 Node tests plus Lua pass; tasks check/just check clean. Awaiting separate live desktop permission and owner visual judgment; host unchanged.
 - 2026-10-09T05:31:45Z (prism-1bb833): Rulings: carry full-snapshot defaults and native-field wording into spec (revert docs/snapshots if wrong); reserve live appearance for owner judgment (extra visual check if wrong); consume upstream accent-tint contract without shader/signal audit (upstream investigation if wrong); exclude combined sources and Noctalia focus-mix twin (additional scoped work if wrong). No deferred review findings.
+- 2026-10-09T05:33:16Z (prism-1bb833): parked (waiting on user, review): Owner grants live desktop permission or explicitly skips visual acceptance; then controller performs the check with .worktrees/prism-1bb833/bin/prism, records judgment, restores the prior source, closes prism-1bb833 and integrates locally.
+  provenance: {"harness_session":"codex:01a11f11-6a8b-7d53-b950-22ef98c5de0b","harness_session_source":"CODEX_THREAD_ID"}
