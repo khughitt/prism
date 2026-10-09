@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: prism-1bb833
 created: 2026-10-02T23:39:13Z
-updated: 2026-10-09T05:33:16Z
+updated: 2026-10-09T14:01:30Z
 started: 2026-10-09T04:42:38Z
 depends: [material-6f45a0, prism-b4d118]
 parent: prism-980a29
@@ -68,3 +68,8 @@ Start: defs/glass.yaml tintSource/tintAccentMix; integrations/niri/render.js; in
 - 2026-10-09T05:31:45Z (prism-1bb833): Rulings: carry full-snapshot defaults and native-field wording into spec (revert docs/snapshots if wrong); reserve live appearance for owner judgment (extra visual check if wrong); consume upstream accent-tint contract without shader/signal audit (upstream investigation if wrong); exclude combined sources and Noctalia focus-mix twin (additional scoped work if wrong). No deferred review findings.
 - 2026-10-09T05:33:16Z (prism-1bb833): parked (waiting on user, review): Owner grants live desktop permission or explicitly skips visual acceptance; then controller performs the check with .worktrees/prism-1bb833/bin/prism, records judgment, restores the prior source, closes prism-1bb833 and integrates locally.
   provenance: {"harness_session":"codex:01a11f11-6a8b-7d53-b950-22ef98c5de0b","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-09T13:58:17Z (prism-1bb833): resumed
+  provenance: {"harness_session":"codex:01a11f11-6a8b-7d53-b950-22ef98c5de0b","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-09T13:58:17Z (prism-1bb833): Live desktop check authorized by owner; temporarily select familiar via .worktrees/prism-1bb833/bin/prism and reload niri for up to 3 minutes, then restore original source and reload using an EXIT/TERM/INT trap.
+- 2026-10-09T14:01:29Z (prism-1bb833): Live check restored: original profile-layer noctalia restored by removing the temporary scratch key; worktree apply niri succeeded and main describe succeeds. Owner evaluation blocked by panel calling main prism, whose enum omitted familiar; no tint verdict yet.
+- 2026-10-09T14:01:29Z (prism-1bb833): Ruling: integrate the reviewed branch locally before retrying owner acceptance — the panel runs main prism and needs its familiar schema to adjust settings — cost if wrong: revert local integration; no push or launcher repoint.
