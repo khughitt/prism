@@ -13,7 +13,7 @@ export function noctaliaColorsPath() {
 // A missing palette is allowed only when the ring is its sole consumer.
 export function readNoctaliaPalette(file, requiredFields, consumer = 'ring') {
   const remedy = consumer === 'tint'
-    ? "run 'noctalia msg templates-apply', verify primary and surface, then rerun 'prism apply niri'; see the README for direct wallpaper refresh or select manual tint"
+    ? "run 'noctalia msg templates-apply', verify primary and surface, then rerun 'prism apply niri'; see the README for direct wallpaper refresh or select manual or familiar tint"
     : "run 'noctalia msg templates-apply', verify primary, then rerun 'prism apply niri' or select the ring's manual Color source";
   let text;
   try {

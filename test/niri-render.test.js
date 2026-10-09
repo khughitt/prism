@@ -933,6 +933,7 @@ test('palette validation only inspects required fields and names the consumer', 
     assert.doesNotMatch(error.message, /manual tint/);
     return true;
   });
+  assert.throws(() => readNoctaliaPalette(file, ['surface'], 'tint'), /select manual or familiar tint/);
 });
 
 test('sourceColors names exactly the colors a source resolved', () => {
