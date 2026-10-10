@@ -8,7 +8,7 @@ complexity: mid
 process: direct
 owner: prism-84d308
 created: 2026-09-09T02:28:45Z
-updated: 2026-10-10T13:01:26Z
+updated: 2026-10-10T13:15:30Z
 started: 2026-09-16T14:24:55Z
 depends: []
 tags: [quick-add, noctalia, keyboard, cross-project]
@@ -32,3 +32,4 @@ Implement the shared vocabulary (navigation, copy, random, save) in integrations
 - 2026-10-10T12:56:56Z (prism-84d308): 5b-5d adapted to the current panel: focus registers in controlCell (rack mix cells included, unfocused before focused); h/l/arrows and j/k stand down while the name field is open, since captured arrows preempt the focused input (cursor keys in the name field are lost while the panel captures them). 5c digits share the selector's pick path (pickProfile, extracted). Roll stays one set per slider; the one-command reset random is recorded on prism-284a61 because it needs an ops cli.toml row. 5d: tools/keys.toml adopted from ops d4bf4ba via vendored adopt (the plan's cp predates it); conformance test bites when the r row is removed. just gate green.
 - 2026-10-10T13:00:26Z (prism-84d308): review: impl round 1 — verdict: revise; findings: Important 3, Minor 4; reviewer: claude-code
 - 2026-10-10T13:01:26Z (prism-84d308): minor (deferred): review round 1 findings 4-7 (help-mode key gating and hidden error label, roll includes hidden sliders, keys act mid-drag, test gaps) filed as prism-d2ba46. Important 2 (captured arrows take caret movement from the name field) is the user's call: dropping the arrow aliases needs an ops keys.toml change landed first.
+- 2026-10-10T13:15:30Z (prism-84d308): review: impl round 2 — verdict: accept; findings: none; reviewer: claude-code
