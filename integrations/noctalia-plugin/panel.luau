@@ -21,6 +21,8 @@ local state = {
   sampleElapsedMs = 0,
   renderedSliderCorrection = nil,
   expanded = {},
+  -- The key legend replaces the controls while true.
+  help = false,
   -- The keyboard's current slider, by key, and the sliders in the order the
   -- last render drew them. Keyed so a refresh keeps it; rebuilt per render so
   -- a collapsed card simply drops out of the walk.
@@ -961,6 +963,72 @@ local function nudgeFocused(direction)
   writeParam(param, value)
 end
 
+-- The dice: every available slider lands on a random value snapped to its
+-- own step, written through the ordinary FIFO into scratch, so revert undoes
+-- it. Toggles, selects, and colors are left alone; a random bypass is not a
+-- tuning gesture. Values update first so the rows show the roll at once.
+local function rollDice()
+  if state.model == nil then return end
+  for _, param in ipairs(Presentation.visibleParams(state.model)) do
+    if param.ui.control == "slider" and param.effectiveDrag ~= nil then
+      local low, high = param.range[1], param.range[2]
+      local value = Presentation.snapValue(low + math.random() * (high - low), param.range, param.ui.step)
+      updateParam(param, value)
+      enqueue({verb = "set", key = param.key, value = value, sample = false})
+    end
+  end
+  render()
+end
+
+local function toggleHelp()
+  state.help = not state.help
+  render()
+end
+
+local function keyChip(keys)
+  return ui.row({fill = "tertiary/0.12", radius = 5, minWidth = 80, justify = "center", paddingV = 2}, {
+    ui.label({text = keys, fontFamily = "monospace", fontSize = 12, fontWeight = "medium", color = "tertiary"}),
+  })
+end
+
+local function helpGroup(title, rows)
+  local children = {
+    ui.label({text = title, fontSize = 11, fontWeight = "semibold", color = "on_surface_variant"}),
+  }
+  for _, row in ipairs(rows) do
+    children[#children + 1] = ui.row({align = "center", gap = 8}, {
+      keyChip(row[1]),
+      ui.label({text = row[2], fontSize = 12, maxLines = 1}),
+    })
+  end
+  return ui.column({gap = 6}, children)
+end
+
+local function helpView()
+  return ui.column({flexGrow = 1, padding = 18, gap = 10}, {
+    ui.label({text = "Keyboard shortcuts", fontSize = 20, fontWeight = "semibold"}),
+    ui.row({gap = 20, align = "start"}, {
+      helpGroup("Sliders", {
+        {"j / ↓", "Focus the next slider"},
+        {"k / ↑", "Focus the previous slider"},
+        {"l / →", "Nudge the focused slider up"},
+        {"h / ←", "Nudge the focused slider down"},
+        {"r", "Roll every slider"},
+      }),
+      ui.column({gap = 12}, {
+        helpGroup("Profiles", {
+          {"1 – 9", "Load the nth profile"},
+          {"ctrl+s", "Keep the edits in the loaded look, or submit the name field"},
+        }),
+        helpGroup("Panel", {
+          {"? / F1", "Toggle this help"},
+          {"esc", "Close the panel"},
+        }),
+      }),
+    }),
+  })
+end
+
 -- The keyboard save is the bookmark: the edits go to the loaded look. An open
 -- name field is what is being saved, so it is submitted instead.
 local function saveShortcut()
@@ -972,6 +1040,33 @@ local function saveShortcut()
   local params = Presentation.visibleParams(state.model)
   if Presentation.editedCount(params) == 0 then return end
   commitAction(keepInLook(state.model), params)()
+end
+
+-- A pick is optimistic, like a slider edit: Noctalia re-applies selectedIndex
+-- on every render, so the render below must already declare the pick or the
+-- selector snaps back to the old name for the whole round trip. The describe
+-- that follows the command reconciles either way. Index 0 is Default.
+local function pickProfile(index)
+  local section = Presentation.profileSection(state.model)
+  if index == section.selectedIndex then return end
+  local name = section.options[index + 1]
+  if name == nil then
+    state.errorText = "Prism returned an invalid selection index"
+    render()
+    return
+  end
+  state.selectionPending = true
+  state.naming, state.confirm = nil, nil
+  for _, param in ipairs(state.model.params) do param.edited = false end
+  state.model.active.profile = index ~= 0 and name or nil
+  enqueue(index == 0 and {verb = "deactivate"} or {verb = "activate", name = name})
+  render()
+end
+
+-- Digit N is the selector's Nth name: profiles arrive sorted from describe.
+local function loadProfile(n)
+  if state.model == nil or state.selectionPending or state.model.profiles[n] == nil then return end
+  pickProfile(n)
 end
 
 -- One selector loads and clears: index 0 is "no profile", which deactivates.
@@ -990,26 +1085,7 @@ local function profileRow(section)
       selectedIndex = section.selectedIndex,
       controlSize = "sm",
       flexGrow = 1,
-      -- Optimistic, like a slider edit: Noctalia re-applies selectedIndex on
-      -- every render, so the render below must already declare the pick or
-      -- the selector snaps back to the old name for the whole round trip.
-      -- The describe that follows the command reconciles either way.
-      onChange = function(index)
-        index = tonumber(index) or -1
-        if index == section.selectedIndex then return end
-        local name = section.options[index + 1]
-        if name == nil then
-          state.errorText = "Prism returned an invalid selection index"
-          render()
-          return
-        end
-        state.selectionPending = true
-        state.naming, state.confirm = nil, nil
-        for _, param in ipairs(state.model.params) do param.edited = false end
-        state.model.active.profile = index ~= 0 and name or nil
-        enqueue(index == 0 and {verb = "deactivate"} or {verb = "activate", name = name})
-        render()
-      end,
+      onChange = function(index) pickProfile(tonumber(index) or -1) end,
     }),
     ui.button({
       glyph = mode == "save" and "x" or "device-floppy",
@@ -1162,12 +1238,21 @@ render = function()
     }),
   }
   state.focusOrder = {}
+  if state.help then
+    panel.render(helpView())
+    return
+  end
   if state.model == nil then
     children[#children + 1] = ui.label({text = "Loading Prism…", color = "on_surface_variant"})
   else
     local title = Presentation.titleParam(state.model.params)
     children[#children + 1] = ui.row({gap = 10, align = "center"}, {
       ui.label({text = "Prism", fontSize = 18, fontWeight = "bold", flexGrow = 1}),
+      ui.button({
+        glyph = "dice", variant = "ghost", controlSize = "sm",
+        tooltip = "Roll every slider (r)",
+        onClick = rollDice,
+      }),
       ui.toggle({
         checked = title.value == true,
         enabled = title.effectiveDrag ~= nil,
@@ -1212,6 +1297,7 @@ end
 -- session behind a model that reconciles perfectly well. The host's second
 -- tick drives the periodic refresh that follows a wallpaper rotation.
 function onOpen(context)
+  state.help = false
   state.errorText = nil
   state.errorSticky = false
   state.ticks = 0
@@ -1258,19 +1344,25 @@ end
 -- dispatches. onKey reads only this table, and keyTable exposes it to the
 -- conformance test, so a chord cannot be captured without an action here.
 local keyActions = {
+  ["shift+question"] = {action = "help"}, F1 = {action = "help"},
   k = {action = "up"}, Up = {action = "up"},
   j = {action = "down"}, Down = {action = "down"},
   h = {action = "prev"}, Left = {action = "prev"},
   l = {action = "next"}, Right = {action = "next"},
+  r = {action = "random"},
   ["ctrl+s"] = {action = "save"},
 }
+for digit = 1, 9 do keyActions[tostring(digit)] = {action = "select", arg = "profile " .. digit} end
 
 local handlers = {
+  help = toggleHelp,
   up = function() moveFocus(-1) end,
   down = function() moveFocus(1) end,
   prev = function() nudgeFocused(-1) end,
   next = function() nudgeFocused(1) end,
+  random = rollDice,
   save = saveShortcut,
+  select = function(arg) loadProfile(tonumber(arg:match("%d+$"))) end,
 }
 
 function keyTable()

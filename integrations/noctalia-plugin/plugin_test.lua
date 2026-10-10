@@ -2026,3 +2026,86 @@ model.params[5].value = 1 -- at the top of its range
 onKey("l", true)
 equal(#commands, beforeEdge, "a nudge past the range edge writes nothing")
 end)()
+
+;(function()
+-- Random rolls every available slider to a snapped value inside its range,
+-- one set per slider, and shows the result at once. The dice button is the
+-- same action for the pointer.
+local rollTree = renderModel(layeredModel())
+local beforeRoll = #commands
+local before = {}
+for _, param in ipairs(Presentation.visibleParams(model)) do before[param.key] = param.value end
+onKey("r", true)
+-- The FIFO launches one write at a time: the first set is in flight now, the rest
+-- wait. Every slider already shows its rolled value, before any write lands.
+equal(#commands, beforeRoll + 1, "one write in flight, the rest queued")
+for _, param in ipairs(Presentation.visibleParams(model)) do
+  if param.ui.control == "slider" then
+    assert(param.value >= param.range[1] and param.value <= param.range[2], param.key .. " rolled out of range")
+    equal(Presentation.snapValue(param.value, param.range, param.ui.step), param.value, param.key .. " rolled off its step")
+    equal(param.edited, true, param.key .. " shows as an edit")
+  else
+    equal(param.value, before[param.key], param.key .. " is not a slider and must not roll")
+  end
+end
+-- Drain: completing each write launches the next; the loop stops at the describe
+-- refresh that follows the last set.
+local rolled = {}
+local index = beforeRoll + 1
+while index <= #commands do
+  local key, value = commands[index]:match("^'prism' 'set' '([^']+)' '([^']+)'$")
+  if key == nil then break end
+  rolled[key] = tonumber(value)
+  index = index + 1
+  writeCallback({ exitCode = 0, stdout = "" })
+end
+for _, param in ipairs(Presentation.visibleParams(model)) do
+  if param.ui.control == "slider" then
+    equal(rolled[param.key], param.value, param.key .. " wrote the value it shows")
+  else
+    equal(rolled[param.key], nil, param.key .. " is not a slider and must not roll")
+  end
+end
+described(host.describeOk())
+local dice = glyphButton(rollTree, "dice")
+assert(dice, "the title row offers the dice")
+equal(dice.props.tooltip, "Roll every slider (r)")
+
+-- Digits load the nth named profile in the selector's (sorted) order, the way
+-- a pick does: optimistic, one activate. A digit past the list is nothing.
+renderModel(profileModel())
+onKey("2", true)
+equal(commands[#commands], Shell.command({ "prism", "context", "activate", "profile", "dusk" }))
+equal(selectWithOption(rendered, "Default").props.selectedIndex, 2, "the pick shows at once")
+writeCallback({ exitCode = 0, stdout = "" })
+described(host.describeOk())
+local beforeMissing = #commands
+onKey("3", true)
+equal(#commands, beforeMissing, "no third profile, nothing to load")
+onKey("2", true)
+equal(#commands, beforeMissing, "the loaded profile is not re-activated")
+
+-- Help replaces the body until dismissed by the same keys; opening the panel
+-- always starts on the controls.
+renderModel(layeredModel())
+onKey("shift+question", true)
+assert(labelSet(rendered)["Keyboard shortcuts"], "? shows the legend")
+equal(#collect(rendered, "slider"), 0, "the legend replaces the controls")
+onKey("F1", true)
+assert(not labelSet(rendered)["Keyboard shortcuts"], "F1 hides it again")
+onKey("F1", true)
+onClose()
+onOpen({})
+described(host.describeOk())
+assert(not labelSet(rendered)["Keyboard shortcuts"], "reopening starts on the controls")
+
+-- The chord table is complete and every entry has a handler.
+local expectedChords = { "shift+question", "F1", "k", "Up", "j", "Down", "h", "Left", "l", "Right", "r", "ctrl+s",
+  "1", "2", "3", "4", "5", "6", "7", "8", "9" }
+local table_ = keyTable()
+for _, chord in ipairs(expectedChords) do assert(table_[chord], "missing chord " .. chord) end
+local count = 0
+for _ in pairs(table_) do count = count + 1 end
+equal(count, #expectedChords, "no chord beyond the declared set")
+equal(table_["5"], { action = "select", arg = "profile 5" })
+end)()
