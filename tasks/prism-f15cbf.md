@@ -7,7 +7,7 @@ complexity: mid
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-10T17:06:10Z
-updated: 2026-10-10T20:04:19Z
+updated: 2026-10-10T20:39:20Z
 started: 2026-10-10T18:43:57Z
 depends: [prism-b81188]
 parent: prism-dac509
@@ -42,4 +42,14 @@ step: "Task 6: In-host measurement and the 15 ms gate"
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
 - 2026-10-10T19:59:03Z (fix/panel-render-budget): Next step recommendation: validate measurement harness before redesign. Old Task 6 probe uses getfenv(1), which Luau performance docs say deoptimizes the affected environment; clean production .luau has none. Local Noctalia pushCallback dynamically uses lua_getglobal at dispatch, so direct global replacement avoids need for getfenv. New coarse diagnostic prepared/linted at /tmp/prism-budget-diagnostic-3_avin1d/probe-plugin; no host actions. Earlier timing impact unknown; split render/native readback and enqueue/runAsync in next short approved live pilot. Source: https://luau.org/performance/
 - 2026-10-10T20:04:19Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves short live diagnostic; agent runs /tmp/prism-budget-diagnostic-3_avin1d/probe-plugin with one expanded cold press and one drag/release, distinguishes construction/readback and enqueue/native-launch cost without getfenv, restores saved state after explicit completion, then updates spec/plan only if production misses persist
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-10T20:10:51Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-10T20:10:51Z (fix/panel-render-budget): Owner approved short diagnostic (approed). Saved exact runtime/profile bytes and log offset before installation. Keep probe installed until explicit diagnostic completion or stop; expected duration is an estimate, not a cutoff.
+- 2026-10-10T20:15:49Z (fix/panel-render-budget): Diagnostic complete confirmed by owner before restoration. Matched spans saved under /tmp/prism-budget-diagnostic-3_avin1d/diagnostic-results.json and diagnostic.log; original pointer/reload and all profile/scratch restoration verified; no profile switches in diagnostic.
+- 2026-10-10T20:33:17Z (fix/panel-render-budget): attached: diagnostic-results-report.md (2941 bytes): Diagnostic release breakdown without getfenv; cold/key event not captured
+- 2026-10-10T20:33:17Z (fix/panel-render-budget): attached: diagnostic-results.json (82017 bytes): Matched coarse timing records from diagnostic run 1791663060
+- 2026-10-10T20:33:17Z (fix/panel-render-budget): attached: diagnostic.log (96573 bytes): Diagnostic-only log for run 1791663060
+- 2026-10-10T20:33:17Z (fix/panel-render-budget): Diagnostic 1791663060 confirmed complete by owner before restore: one release 14.706 ms, render 14.473 (native 2.200), enqueue 0.174, native launch 0.071; dirty drag n18 median6.2495/max8.507; zero budget errors. No key/cold callback recorded; cause unknown. Original main pointer/reload and exact runtime/profile restoration verified. Follow-up scratch copy has visible Cold rebuild button and scoped cache trace, NUL-safe id logging, lint/syntax checks pass; no production changes or new live run.
+- 2026-10-10T20:39:20Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves the prepared follow-up live diagnostic; agent runs five visible Cold rebuild clicks and five drag/releases with the cache probe, keeps it installed until explicit completion or stop, then collects results and restores saved settings and the original plugin. No host pointer is repointed; nothing is running.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}

@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-10T20:04:20Z
+updated: 2026-10-10T20:39:20Z
 started: 2026-10-10T16:20:49Z
 depends: []
 tags: [noctalia, performance]
@@ -89,4 +89,10 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
 - 2026-10-10T20:04:19Z (fix/panel-render-budget): Measurement qualification: previous Task 6 probe added getfenv(1), documented by Luau to deoptimize the affected environment. Production plugin has no getfenv; local host dynamically looks up global callbacks, so probe can use direct assignment. Prior costs may be inflated; magnitude unknown. Recommend validating optimized environment with a short coarse diagnostic before deciding on production redesign. Prepared copy lint/syntax checks pass; no new host run or production changes. https://luau.org/performance/
 - 2026-10-10T20:04:19Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves prepared short diagnostic; agent resumes prism-f15cbf in .worktrees/panel-budget to validate optimized-environment timing before redesign. Keep Tasks 1-5; cost ceilings and integration remain gated on complete clean acceptance
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-10T20:10:51Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-10T20:10:51Z (fix/panel-render-budget): host pointer: ~/.local/share/noctalia/plugins/prism from /mnt/ssd/Dropbox/prism/integrations/noctalia-plugin to /tmp/prism-budget-diagnostic-3_avin1d/probe-plugin for explicitly approved short coarse diagnostic without getfenv. Restore with ln -sfn /mnt/ssd/Dropbox/prism/integrations/noctalia-plugin ~/.local/share/noctalia/plugins/prism then noctalia msg plugins disable/enable khughitt/prism. Exact runtime and all profiles backed up before installation; no profile switches requested.
+- 2026-10-10T20:15:48Z (fix/panel-render-budget): host pointer restored: ~/.local/share/noctalia/plugins/prism -> main checkout integrations/noctalia-plugin after owner confirmed diagnostic complete; panel closed/plugin reloaded, all saved profile bytes and exact scratch verified under lock, latest wallpaper preserved.
+- 2026-10-10T20:39:20Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves Task 6 follow-up live diagnostic; agent resumes prism-f15cbf in .worktrees/panel-budget, collects repeated cold/release cache evidence with the prepared scratch probe, restores host state, and determines whether the design needs revision before Tasks 7-8. No host pointer is repointed; nothing is running.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
