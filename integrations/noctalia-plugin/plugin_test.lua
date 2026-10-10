@@ -398,6 +398,31 @@ noctalia = {
 package.loaded["./presentation.luau"] = Presentation
 package.loaded["./queue.luau"] = Queue
 package.loaded["./shell.luau"] = Shell
+package.loaded["./retain.luau"] = dofile(here .. "retain.luau")
+
+;(function()
+  -- Retain hands back the stored node while the signature holds, rebuilds when
+  -- it changes, and drops only the ids the structure no longer names.
+  local Retain = package.loaded["./retain.luau"]
+  local memo = Retain.new()
+  local builds = 0
+  local function build() builds = builds + 1; return { built = builds } end
+  local first = Retain.get(memo, "a", "s1", build)
+  equal(Retain.get(memo, "a", "s1", build) == first, true, "an unchanged signature returns the stored node")
+  equal(builds, 1)
+  equal(Retain.get(memo, "a", "s2", build) == first, false, "a changed signature rebuilds")
+  equal(builds, 2)
+  Retain.get(memo, "b", "s1", build)
+  memo.trace = {}
+  Retain.get(memo, "b", "s1", build)
+  Retain.get(memo, "b", "s9", build)
+  equal(memo.trace, { "b" }, "the trace names what was built, not what was reused")
+  Retain.keep(memo, { a = true })
+  equal(memo.entries.b, nil, "an id the structure dropped goes")
+  equal(memo.entries.a ~= nil, true, "an id the structure keeps stays")
+  Retain.clear(memo)
+  equal(next(memo.entries), nil)
+end)()
 dofile(here .. "panel.luau")
 
 onOpen({})
