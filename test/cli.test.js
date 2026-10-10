@@ -508,6 +508,72 @@ test('doctor: a missing generated target is a distinct, hard failure', async (t)
   assert.match(out, /missing/i, 'must not read as an ordinary stale-sink report');
 });
 
+// resolved.json is derived, so an interrupted writer can leave it behind its inputs.
+// Every fixture sink is applied and current first: the bus finding must stand on
+// its own, not ride in on a stale sink.
+for (const { name, bus, finding } of [
+  { name: 'a missing bus', bus: null, finding: /^doctor: resolved\.json: missing — run 'prism apply'$/m },
+  { name: 'a malformed bus', bus: '{"params": {', finding: /^doctor: resolved\.json: unreadable \(.+\) — run 'prism apply'$/m },
+  { name: 'a bus without a params mapping', bus: '{"params": [6]}\n', finding: /^doctor: resolved\.json: no params mapping — run 'prism apply'$/m },
+  { name: 'a bus that is not a mapping', bus: 'null\n', finding: /^doctor: resolved\.json: no params mapping — run 'prism apply'$/m },
+  {
+    name: 'a stale bus',
+    bus: () => {
+      const saved = JSON.parse(fs.readFileSync(resolvedPath(), 'utf8'));
+      saved.params['compositor.gaps'] += 1;   // bound by no fixture sink
+      return `${JSON.stringify(saved)}\n`;
+    },
+    finding: /^doctor: resolved\.json: stale \(bus differs from current values\) — run 'prism apply'$/m,
+  },
+]) {
+  test(`doctor: ${name} is a finding that apply repairs`, async () => {
+    await cli.run(['apply'], { runner: () => {} });
+    assert.equal(await cli.run(['doctor'], { runner: () => {}, print: () => {} }), 0);
+    if (bus === null) fs.rmSync(resolvedPath());
+    else fs.writeFileSync(resolvedPath(), typeof bus === 'function' ? bus() : bus);
+    const before = fs.existsSync(resolvedPath()) ? fs.readFileSync(resolvedPath(), 'utf8') : null;
+
+    let out = '';
+    assert.equal(await cli.run(['doctor'], { runner: () => {}, print: (s) => { out += s; } }), 1);
+    assert.match(out, finding);
+    assert.equal(out.split('\n').filter(Boolean).length, 1, `exactly one finding, got:\n${out}`);
+    assert.equal(fs.existsSync(resolvedPath()) ? fs.readFileSync(resolvedPath(), 'utf8') : null, before,
+      'doctor is read-only');
+
+    assert.equal(await cli.run(['apply'], { runner: () => {} }), 0);
+    assert.equal(await cli.run(['doctor'], { runner: () => {}, print: () => {} }), 0);
+  });
+}
+
+test('doctor --json carries a bus finding in its problems', async () => {
+  await cli.run(['apply'], { runner: () => {} });
+  fs.rmSync(resolvedPath());
+  let out = '';
+  assert.equal(await cli.run(['doctor', '--json'], { runner: () => {}, print: (s) => { out += s; } }), 1);
+  assert.deepEqual(JSON.parse(out), { ok: false, problems: ["resolved.json: missing — run 'prism apply'"] });
+});
+
+test('doctor: an unreadable bus path is an error, not a missing bus', async () => {
+  await cli.run(['apply'], { runner: () => {} });
+  fs.rmSync(resolvedPath());
+  fs.mkdirSync(resolvedPath());
+  let out = '';
+  const { code, stderr } = await runCaptured(['doctor'], { runner: () => {}, print: (s) => { out += s; } });
+  assert.equal(code, 1);
+  assert.match(stderr, /EISDIR/);
+  assert.doesNotMatch(out, /missing/);
+});
+
+test('doctor: a blocked store skips the bus check', async () => {
+  await cli.run(['apply'], { runner: () => {} });
+  fs.rmSync(resolvedPath());
+  fs.writeFileSync(valuesPath(), 'gone.away: 1\n');
+  let out = '';
+  assert.equal(await cli.run(['doctor'], { runner: () => {}, print: (s) => { out += s; } }), 1);
+  assert.match(out, /orphan value gone\.away/);
+  assert.doesNotMatch(out, /resolved\.json/);
+});
+
 test('doctor: an orphan values key is reported by name with its remedy', async () => {
   // written wholesale, not appended — appending to a `{}` values file would
   // produce invalid YAML and fail for the wrong reason

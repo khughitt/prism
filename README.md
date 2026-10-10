@@ -225,8 +225,12 @@ state/active.json to state to undo parameter migration.
 | Migrate pairs | Fresh immutable backup and absence list; looks; runtime; delete old sources | Retry from current files; old sources remain until every destination contains their data. |
 
 These guarantees cover process interruption and atomic file replacement, not
-power-loss durability. A stale resolved bus or interrupted sink application is
-repaired with `prism apply`.
+power-loss durability. The resolved bus (resolved.json in the state directory)
+is a derived snapshot that every writer recomputes from the inputs, so an
+interruption can leave it stale; divergence is detected rather than prevented.
+`prism doctor` reports a missing, malformed or stale bus on its own line, and a
+stale resolved bus or interrupted sink application is repaired with
+`prism apply`.
 
 ## Noctalia palette
 

@@ -25,6 +25,7 @@ import {
   generatedPath,
   integrationsDir,
   lockPath,
+  resolvedPath,
   sinkStatusPath,
 } from './paths.js';
 
@@ -39,6 +40,23 @@ function load() {
 // Every read of the store happens under the store lock: a slot and the file it
 // names must come from the same write.
 const snapshot = (defs) => withLock(lockPath(), async () => loadStore(defs));
+
+// resolved.json is derived: an interrupted writer can leave it behind its inputs,
+// and no sink snapshot shows that. Names what is wrong with the saved bus against
+// the fresh params, or null when it matches. Read errors other than bad JSON escape.
+const MISSING = Symbol('missing');
+const isMapping = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+function busProblem(fresh) {
+  let bus;
+  try { bus = readJson(resolvedPath(), MISSING); }
+  catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
+    return `unreadable (${error.message})`;
+  }
+  if (bus === MISSING) return 'missing';
+  if (!isMapping(bus) || !isMapping(bus.params)) return 'no params mapping';
+  return isDeepStrictEqual(bus.params, fresh) ? null : 'stale (bus differs from current values)';
+}
 
 // A failure that ran: exit 1, the message on stderr — one error object under --json,
 // `prism: <message>` otherwise. Usage errors never reach here; parseInvocation exits 2.
@@ -398,7 +416,10 @@ export async function run(argv, opts = {}) {
           }
           diagnose(scratch, 'scratch', "run 'prism unset <key>'");
           if (contextProblems > 0) return { params: null, blocked: true };
-          return { params: loadStore(defs).params, blocked: false };
+          const fresh = loadStore(defs).params;
+          const bus = busProblem(fresh);
+          if (bus) problems.push(`resolved.json: ${bus} — run 'prism apply'`);
+          return { params: fresh, blocked: false };
         });
 
         if (blocked) return finish();
