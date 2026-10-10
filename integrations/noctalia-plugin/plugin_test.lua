@@ -120,6 +120,28 @@ equal(Presentation.familyColors.post, "#f6ad55")
 equal(Presentation.familyColors.source, "#5b9cf6")
 equal(Presentation.familyColors.geometry, "#c78bfa")
 equal(Presentation.familyColors.light, "#f6e05e")
+;(function()
+  -- A card's light follows its bypass value between describes: rackState
+  -- recomputes it from the param tables the structure holds.
+  rackParams[7].value = true -- r.bypass.one
+  Presentation.rackState(rack)
+  equal(rack.cards[1].bypassed, true)
+  equal(rack.cards[2].silenced, true, "a card whose required device is bypassed is silenced")
+  equal(#rack.cards[2].attenuatedBy, 1)
+  equal(rack.cards[2].attenuatedBy[1].card == rack.cards[1], true)
+  rackParams[7].value = false
+  Presentation.rackState(rack)
+  equal(rack.cards[1].bypassed, false)
+  equal(rack.cards[2].silenced, false)
+  equal(#rack.cards[2].attenuatedBy, 0)
+
+  -- Slider metadata is worked out once per describe entry. A fresh entry with
+  -- other metadata is a fresh derivation, never the earlier one's.
+  equal(Presentation.formatValue(0.5, slider({ 0, 1 }, 0.01, { display = "percent" })), "50%")
+  equal(Presentation.formatValue(0.5, slider({ 0, 1 }, 0.01)), "0.5")
+  equal(Presentation.sliderTo(slider({ 0.1, 10 }, 0.01, { scale = "logarithmic" })), 1)
+  equal(Presentation.sliderTo(slider({ 0.1, 10 }, 0.01)), 10)
+end)()
 do
   local seen = {}
   for family, color in pairs(Presentation.familyColors) do
