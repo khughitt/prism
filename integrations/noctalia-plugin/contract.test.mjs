@@ -156,17 +156,7 @@ local function collect(tree, found)
   return found
 end
 
--- Stands in for the host's json.encode: a stable text of each entry.
-local function canonical(value)
-  if type(value) == "number" then return string.format("%.17g", value) end
-  if type(value) ~= "table" then return type(value) == "string" and string.format("%q", value) or tostring(value) end
-  local keys = {}
-  for key in pairs(value) do keys[#keys + 1] = key end
-  table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
-  local parts = {}
-  for _, key in ipairs(keys) do parts[#parts + 1] = tostring(key) .. "=" .. canonical(value[key]) end
-  return "{" .. table.concat(parts, ",") .. "}"
-end
+local canonical = dofile(pluginDir .. "test_encode.lua")
 
 local function inspect(model)
   local rendered

@@ -15,6 +15,17 @@ local function equal(actual, expected, message)
   for key in pairs(actual) do assert(expected[key] ~= nil, message or "unexpected key") end
 end
 
+;(function()
+  local fixture = loadfile(here .. "test_encode.lua")
+  assert(fixture, "shared digest encoder fixture is missing")
+  local encode = fixture()
+  equal(encode({ z = 0.1, b = { z = false, a = 1 }, a = "quoted" }),
+    '{a="quoted",b={a=1,z=false},z=0.10000000000000001}', "digest keys sort recursively")
+  equal(encode({ a = "quoted", b = { a = 1, z = false }, z = 0.1 }),
+    '{a="quoted",b={a=1,z=false},z=0.10000000000000001}', "digest ignores insertion order")
+  equal(encode(1.0000000000000002), "1.0000000000000002", "digest preserves 17-digit number precision")
+end)()
+
 local function slider(range, step, ui)
   ui = ui or {}
   ui.control = "slider"
@@ -380,18 +391,7 @@ function host.describeOk()
   host.serial = host.serial + 1
   return { exitCode = 0, stdout = '{"serial":' .. host.serial .. '}' }
 end
--- Stands in for the host's json.encode: the panel digests each entry, which
--- only needs a stable text of it, so keys are sorted.
-function host.encode(value)
-  if type(value) == "number" then return string.format("%.17g", value) end
-  if type(value) ~= "table" then return type(value) == "string" and string.format("%q", value) or tostring(value) end
-  local keys = {}
-  for key in pairs(value) do keys[#keys + 1] = key end
-  table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
-  local parts = {}
-  for _, key in ipairs(keys) do parts[#parts + 1] = tostring(key) .. "=" .. host.encode(value[key]) end
-  return "{" .. table.concat(parts, ",") .. "}"
-end
+host.encode = dofile(here .. "test_encode.lua")
 
 -- The host decodes fresh tables on every describe; most tests hand back the one
 -- model they mutate, and the ones that need the host's behaviour set copies.
