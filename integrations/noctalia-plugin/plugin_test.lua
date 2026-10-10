@@ -380,6 +380,28 @@ function host.describeOk()
   host.serial = host.serial + 1
   return { exitCode = 0, stdout = '{"serial":' .. host.serial .. '}' }
 end
+-- Stands in for the host's json.encode: the panel digests each entry, which
+-- only needs a stable text of it, so keys are sorted.
+function host.encode(value)
+  if type(value) == "number" then return string.format("%.17g", value) end
+  if type(value) ~= "table" then return type(value) == "string" and string.format("%q", value) or tostring(value) end
+  local keys = {}
+  for key in pairs(value) do keys[#keys + 1] = key end
+  table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
+  local parts = {}
+  for _, key in ipairs(keys) do parts[#parts + 1] = tostring(key) .. "=" .. host.encode(value[key]) end
+  return "{" .. table.concat(parts, ",") .. "}"
+end
+
+-- The host decodes fresh tables on every describe; most tests hand back the one
+-- model they mutate, and the ones that need the host's behaviour set copies.
+function host.copy(value)
+  if type(value) ~= "table" then return value end
+  local copied = {}
+  for key, held in pairs(value) do copied[key] = host.copy(held) end
+  return copied
+end
+
 panel = {
   render = function(tree) rendered = tree; host.renders = host.renders + 1 end,
   setNeedsFrameTick = function() end,
@@ -393,7 +415,15 @@ noctalia = {
     if cmd:find("describe", 1, true) then described = callback else commandCallback = callback end
     return true
   end,
-  json = { decode = function() host.decodes = host.decodes + 1; return model end },
+  json = {
+    decode = function()
+      host.decodes = host.decodes + 1
+      if not host.copies then return model end
+      host.lastDecoded = host.copy(model)
+      return host.lastDecoded
+    end,
+    encode = function(value) return host.encode(value) end,
+  },
 }
 package.loaded["./presentation.luau"] = Presentation
 package.loaded["./queue.luau"] = Queue
@@ -2205,4 +2235,59 @@ for _, button in ipairs(collect(rendered, "button")) do
 end
 assert(replace, "a taken name asks before replacing")
 equal(rendersOf(replace.props.onClick), 1, "replace renders once")
+end)()
+
+;(function()
+  -- A render reads the structure the accepted describe built; it does not
+  -- rebuild the rack or the sections.
+  renderModel(layeredModel())
+  local realRack, realSections = Presentation.rack, Presentation.sections
+  local rackCalls, sectionCalls = 0, 0
+  Presentation.rack = function(...) rackCalls = rackCalls + 1; return realRack(...) end
+  Presentation.sections = function(...) sectionCalls = sectionCalls + 1; return realSections(...) end
+  onKey("F1", true)
+  onKey("F1", true)
+  Presentation.rack, Presentation.sections = realRack, realSections
+  equal(rackCalls, 0, "a render reuses the accepted rack")
+  equal(sectionCalls, 0, "a render reuses the accepted sections")
+
+  -- Handlers in a tree drawn before a describe act on the model that describe
+  -- brought, never on the tables they were built with.
+  host.copies = true
+  local oldTree = renderModel(twoEdits())
+  local old = host.lastDecoded
+  described(host.describeOk())
+  local new = host.lastDecoded
+  assert(old ~= new, "fixture: the second describe decoded fresh tables")
+  local function param(m, key)
+    for _, candidate in ipairs(m.params) do if candidate.key == key then return candidate end end
+  end
+
+  local iorReset
+  for _, button in ipairs(collect(cellFor(oldTree, "glass.ior"), "button")) do
+    if button.props.glyph == "restore" then iorReset = button end
+  end
+  iorReset.props.onClick()
+  equal(commands[#commands], Shell.command({ "prism", "unset", "glass.ior" }))
+  equal(param(new, "glass.ior").edited, false, "the reset reverts the current model")
+  equal(param(old, "glass.ior").edited, true, "and leaves the drawn-from tables alone")
+
+  byKey(oldTree, "backdrop:light")[1].props.onClick()
+  equal(param(new, "glass.bypass.backdrop").value, true, "the light writes the current bypass")
+  equal(param(old, "glass.bypass.backdrop").value, false)
+
+  collect(oldTree, "toggle")[2].props.onChange(false) -- the Focus header toggle
+  equal(param(new, "glass.focusSplit").value, false, "a section toggle writes the current param")
+  equal(param(old, "glass.focusSplit").value, true)
+
+  -- Glass and Focus each hold one edit; the Focus rack comes after Glass, so
+  -- the last match is its revert.
+  local sectionRevert
+  for _, button in ipairs(collect(oldTree, "button")) do
+    if button.props.tooltip == "Revert section (1)" then sectionRevert = button end
+  end
+  sectionRevert.props.onClick()
+  equal(param(new, "glass.roughness").edited, false, "a section reset reverts the current params")
+  equal(param(old, "glass.roughness").edited, true)
+  host.copies = false
 end)()

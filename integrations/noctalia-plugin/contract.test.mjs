@@ -156,6 +156,18 @@ local function collect(tree, found)
   return found
 end
 
+-- Stands in for the host's json.encode: a stable text of each entry.
+local function canonical(value)
+  if type(value) == "number" then return string.format("%.17g", value) end
+  if type(value) ~= "table" then return type(value) == "string" and string.format("%q", value) or tostring(value) end
+  local keys = {}
+  for key in pairs(value) do keys[#keys + 1] = key end
+  table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
+  local parts = {}
+  for _, key in ipairs(keys) do parts[#parts + 1] = tostring(key) .. "=" .. canonical(value[key]) end
+  return "{" .. table.concat(parts, ",") .. "}"
+end
+
 local function inspect(model)
   local rendered
   local ui = setmetatable({}, {__index = function(_, kind)
@@ -164,7 +176,7 @@ local function inspect(model)
   local panel = {render = function(tree) rendered = tree end, setNeedsFrameTick = function() end, setWantsSecondTicks = function() end}
   local described
   local noctalia = {
-    json = {decode = function() return model end},
+    json = {decode = function() return model end, encode = canonical},
     runAsync = function(command, callback)
       if command:find("describe", 1, true) then described = callback end
       return true

@@ -4,6 +4,8 @@ local Shell = require("./shell.luau")
 
 local state = {
   model = nil,
+  -- What the accepted describe fixes until the next one; see buildStructure.
+  structure = nil,
   selectionPending = false,
   errorText = nil,
   queue = Queue.new(),
@@ -58,6 +60,13 @@ local attached = {}
 local function gateOf(param) return gates[param.key] or "control" end
 -- A read-only color is drawn beside its select, never as a row of its own.
 local function rowHidden(param) return gateOf(param) ~= "control" end
+
+-- Handlers name what they act on by key and look it up when they run: a
+-- retained subtree can outlive the model its closures were built against. A
+-- key the last describe removed has no control left to act on.
+local function current(key)
+  return state.structure.byKey[key]
+end
 
 local function run(argv, callback)
   return noctalia.runAsync(Shell.command(argv), callback, 10000)
@@ -145,6 +154,41 @@ local function profileListError(profiles)
   return nil
 end
 
+-- What one accepted describe fixes until the next: the layout, the lookups
+-- handlers resolve through when they run, every memo id the layout can use,
+-- and the digest of each entry, which is what a retained subtree's signature
+-- says describe reported. Digests are taken before markEdits adds the
+-- panel's own fields.
+local function buildStructure(model, title, rack, sections)
+  local structure = {
+    title = title, rack = rack, sections = sections,
+    byKey = {}, cardById = {}, paramsOf = {}, digest = {}, ids = {},
+  }
+  local ids = structure.ids
+  for _, param in ipairs(model.params) do
+    structure.byKey[param.key] = param
+    structure.digest[param.key] = noctalia.json.encode(param)
+    ids["c:" .. param.key], ids["r:" .. param.key] = true, true
+  end
+  for index, device in ipairs(model.rack.devices) do
+    local card = rack.cards[index]
+    structure.cardById[card.device] = card
+    structure.digest["device:" .. card.device] = noctalia.json.encode(device)
+    ids["h:" .. card.device], ids["d:" .. card.device] = true, true
+    for _, row in ipairs(card.rows) do ids["m:" .. rack.group .. "\0" .. row.row] = true end
+  end
+  structure.paramsOf[rack.group] = Presentation.rackParams(rack)
+  ids["s:" .. rack.group] = true
+  for _, section in ipairs(sections) do
+    structure.paramsOf[section.name] = Presentation.sectionParams(section)
+    ids["s:" .. section.name] = true
+    for _, row in ipairs(section.rows) do
+      if row.param == nil then ids["m:" .. section.name .. "\0" .. row.row] = true end
+    end
+  end
+  return structure
+end
+
 local function validateModel(model)
   if type(model) ~= "table" or type(model.params) ~= "table" or #model.params == 0 then
     return "prism describe returned an invalid parameter array"
@@ -188,13 +232,13 @@ local function validateModel(model)
   end
   local gatesOk, gatesError = pcall(Presentation.gates, model.params)
   if not gatesOk then return tostring(gatesError) end
-  local titleOk, titleError = pcall(Presentation.titleParam, model.params)
-  if not titleOk then return tostring(titleError) end
-  local rackOk, rackError = pcall(Presentation.rack, model)
-  if not rackOk then return tostring(rackError) end
-  local sectionsOk, sectionsError = pcall(Presentation.sections, model.params, model.rack.group)
-  if not sectionsOk then return tostring(sectionsError) end
-  return nil
+  local titleOk, title = pcall(Presentation.titleParam, model.params)
+  if not titleOk then return tostring(title) end
+  local rackOk, rack = pcall(Presentation.rack, model)
+  if not rackOk then return tostring(rack) end
+  local sectionsOk, sections = pcall(Presentation.sections, model.params, model.rack.group)
+  if not sectionsOk then return tostring(sections) end
+  return nil, buildStructure(model, title, rack, sections)
 end
 
 local function finishRefresh()
@@ -230,13 +274,13 @@ local function described(result)
     finishRefresh()
     return
   end
-  local model
+  local model, structure
   if not message then
     local decodeError
     model, decodeError = noctalia.json.decode(result.stdout)
     if model == nil then message = decodeError or "prism describe returned invalid JSON" end
   end
-  if not message then message = validateModel(model) end
+  if not message then message, structure = validateModel(model) end
 
   if message then state.errorText = message end
   if invalidated then
@@ -244,6 +288,7 @@ local function described(result)
   elseif not message then
     markEdits(model)
     state.model = model
+    state.structure = structure
     state.shownStdout = result.stdout
     state.shownEnqueued = state.enqueued
     state.selectionPending = false
@@ -322,21 +367,33 @@ local function updateParam(param, value)
   param.edited = true
 end
 
-local function writeParam(param, value)
+local function writeParam(key, value)
+  local param = current(key)
+  if param == nil then return end
   updateParam(param, value)
-  enqueue({verb = "set", key = param.key, value = value, sample = false})
+  enqueue({verb = "set", key = key, value = value, sample = false})
   render()
 end
 
-local function unsetParam(param)
+local function unsetParam(key)
+  local param = current(key)
+  if param == nil then return end
   param.value = param.fallback
   param.edited = false
-  enqueue({verb = "unset", key = param.key})
+  enqueue({verb = "unset", key = key})
   render()
 end
 
-local function resetAction(mode, group, params)
+-- What a reset covers, as the model now holds it: a section's or the rack's
+-- params by group name, every visible param without one.
+local function resetScope(group)
+  if group == nil then return Presentation.visibleParams(state.model) end
+  return state.structure.paramsOf[group]
+end
+
+local function resetAction(mode, group)
   return function()
+    local params = resetScope(group)
     for _, param in ipairs(params) do
       if mode == "revert" then
         if param.edited then param.value, param.edited = param.fallback, false end
@@ -374,11 +431,9 @@ local function commitAction(item, params)
   end
 end
 
-local function beginDrag(param, sliderValue)
-  -- Synchronous reconciliation can call the previous render's closure.
-  for _, current in ipairs(state.model.params) do
-    if current.key == param.key then param = current; break end
-  end
+local function beginDrag(key, sliderValue)
+  local param = current(key)
+  if param == nil then return end
   sliderValue = tonumber(sliderValue)
   local correction = state.renderedSliderCorrection
   if correction and correction.key == param.key
@@ -420,9 +475,10 @@ local function beginDrag(param, sliderValue)
   state.drag.dirty = true
 end
 
-local function endDrag(param)
+local function endDrag(key)
   local drag = state.drag
-  if not drag or drag.key ~= param.key then return end
+  if not drag or drag.key ~= key then return end
+  local param = current(key)
   -- ponytail: A pointer release after exactly Noctalia's 5% step is indistinguishable until it exposes interaction source.
   local canonical = Presentation.canonicalFromSliderStep(drag.sliderValue, drag.originValue, param)
   local correctedSliderValue
@@ -457,6 +513,7 @@ end
 
 -- Always in the tree so the slider keeps its geometry during a drag.
 local function resetButton(param, available)
+  local key = param.key
   return ui.button({
     glyph = "restore",
     variant = "ghost",
@@ -464,16 +521,17 @@ local function resetButton(param, available)
     opacity = param.edited and 1.0 or inertOpacity,
     tooltip = param.edited and "Revert edit" or "Not edited",
     enabled = available,
-    onClick = function() if param.edited then unsetParam(param) end end,
+    onClick = function() local now = current(key); if now ~= nil and now.edited then unsetParam(key) end end,
   })
 end
 
 local function nativeControl(param, available)
+  local key = param.key
   if param.ui.control == "toggle" then
     return ui.toggle({
       checked = param.value == true,
       enabled = available,
-      onChange = function(value) writeParam(param, value == true or value == "true") end,
+      onChange = function(value) writeParam(key, value == true or value == "true") end,
     })
   end
   if param.ui.control == "select" then
@@ -483,13 +541,15 @@ local function nativeControl(param, available)
       controlSize = "sm",
       enabled = available,
       onChange = function(index)
-        local value = param.values[(tonumber(index) or -1) + 1]
+        local now = current(key)
+        if now == nil then return end
+        local value = now.values[(tonumber(index) or -1) + 1]
         if value == nil then
           state.errorText = "Prism returned an invalid selection index"
           render()
           return
         end
-        writeParam(param, value)
+        writeParam(key, value)
       end,
     })
   end
@@ -503,8 +563,8 @@ local function nativeControl(param, available)
       controlSize = "sm",
       flexGrow = 1,
       enabled = available,
-      onChange = function(value) beginDrag(param, value) end,
-      onDragEnd = function() endDrag(param) end,
+      onChange = function(value) beginDrag(key, value) end,
+      onDragEnd = function() endDrag(key) end,
     })
   end
   return ui.button({
@@ -513,8 +573,10 @@ local function nativeControl(param, available)
     controlSize = "sm",
     enabled = available,
     onClick = function()
-      if not noctalia.openColorPicker(tostring(param.value), function(color)
-        if color ~= nil then writeParam(param, color) end
+      local now = current(key)
+      if now == nil then return end
+      if not noctalia.openColorPicker(tostring(now.value), function(color)
+        if color ~= nil then writeParam(key, color) end
       end) then
         state.errorText = "Failed to open the color picker"
         render()
@@ -686,13 +748,18 @@ local lightWidth = 20
 -- no tooltip and a button no color at the API this plugin declares. The click
 -- is a plain set when available: the bypass row inside the card carries the reset.
 local function lightRow(card)
+  local device = card.device
   local available = card.bypass.effectiveDrag ~= nil
   local color = card.bypassed and "on_surface_variant" or Presentation.familyColors[card.family]
   local name = (card.bypassed or card.silenced) and "circle" or "circle-filled"
   return ui.row({
     key = card.device .. ":light", width = lightWidth, align = "center", justify = "center",
     opacity = available and 1.0 or dimOpacity,
-    onClick = available and function() writeParam(card.bypass, not (card.bypass.value == true)) end or nil,
+    onClick = available and function()
+      local now = state.structure.cardById[device]
+      if now == nil then return end
+      writeParam(now.bypass.key, not (now.bypass.value == true))
+    end or nil,
   }, {
     ui.glyph({name = name, size = 12, color = color}),
   })
@@ -702,8 +769,9 @@ end
 -- mix cells line up under the matrix header: light, chevron, name.
 local function cardHead(card, expanded)
   local mix = card.mix
+  local device = card.device
   local function toggleExpanded()
-    state.expanded[card.device] = not expanded
+    state.expanded[device] = not (state.expanded[device] == true)
     render()
   end
   return ui.row({width = headColumnWidth, gap = 6, align = "center", opacity = 1.0}, {
@@ -775,7 +843,7 @@ local function resetModeButtons(scope, group, params)
     active = scope == "everything" and ("Revert " .. edited .. (edited == 1 and " edit" or " edits"))
       or ("Revert " .. scope .. " (" .. edited .. ")"),
     inert = "No edits in this " .. scope,
-    act = resetAction("revert", group, params),
+    act = resetAction("revert", group),
   })}
   if #Presentation.pairsOf(params) > 0 then
     local differing = Presentation.symmetricCount(params)
@@ -783,7 +851,7 @@ local function resetModeButtons(scope, group, params)
       glyph = "equal", count = differing,
       active = "Mirror focused onto unfocused (" .. differing .. ")",
       inert = "Focused and unfocused already match",
-      act = resetAction("symmetric", group, params),
+      act = resetAction("symmetric", group),
     })
   end
   local away = Presentation.neutralCount(params)
@@ -791,19 +859,20 @@ local function resetModeButtons(scope, group, params)
     glyph = "baseline", count = away,
     active = "Neutralize " .. scope .. " (" .. away .. ")",
     inert = scope == "everything" and "Everything is already neutral" or "Section is already neutral",
-    act = resetAction("neutral", group, params),
+    act = resetAction("neutral", group),
   })
   return buttons
 end
 
 local function sectionHeader(name, toggle, sectionParams, color)
+  local toggleKey = toggle and toggle.key
   local children = {
     ui.label({text = name, fontSize = 15, fontWeight = "bold", flexGrow = 1, color = color}),
     ui.label({text = toggle and (toggle.ui.label or toggle.key) or "", fontSize = 12, color = "on_surface_variant", visible = toggle ~= nil}),
     toggle and ui.toggle({
       checked = toggle.value == true,
       enabled = toggle.effectiveDrag ~= nil,
-      onChange = function(value) writeParam(toggle, value == true or value == "true") end,
+      onChange = function(value) writeParam(toggleKey, value == true or value == "true") end,
     }) or ui.spacer({}),
   }
   for _, button in ipairs(resetModeButtons("section", name, sectionParams)) do children[#children + 1] = button end
@@ -964,7 +1033,7 @@ local function nudgeFocused(direction)
   if param.effectiveDrag == nil then return end
   local value = Presentation.stepCanonicalValue(param.value, direction, param)
   if value == param.value then return end
-  writeParam(param, value)
+  writeParam(param.key, value)
 end
 
 -- The dice: every available slider lands on a random value snapped to its
@@ -1250,7 +1319,8 @@ render = function()
   if state.model == nil then
     children[#children + 1] = ui.label({text = "Loading Prism…", color = "on_surface_variant"})
   else
-    local title = Presentation.titleParam(state.model.params)
+    local structure = state.structure
+    local title = structure.title
     children[#children + 1] = ui.row({gap = 10, align = "center"}, {
       ui.label({text = "Prism", fontSize = 18, fontWeight = "bold", flexGrow = 1}),
       ui.button({
@@ -1261,7 +1331,7 @@ render = function()
       ui.toggle({
         checked = title.value == true,
         enabled = title.effectiveDrag ~= nil,
-        onChange = function(value) writeParam(title, value == true or value == "true") end,
+        onChange = function(value) writeParam(title.key, value == true or value == "true") end,
       }),
     })
     -- The profile selector and wallpaper header stay together above the edits.
@@ -1273,8 +1343,9 @@ render = function()
     children[#children + 1] = editsRow(state.model)
     gates = Presentation.gates(state.model.params)
     attached = Presentation.attachedSwatches(state.model.params, gates)
-    local rack = Presentation.rack(state.model)
-    local sections = Presentation.sections(state.model.params, rack.group)
+    local rack = structure.rack
+    Presentation.rackState(rack)
+    local sections = structure.sections
     local rackPlaced = false
     local sectionIndex = 0
     for _, section in ipairs(sections) do

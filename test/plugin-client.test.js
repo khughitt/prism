@@ -129,8 +129,6 @@ test('slider rows render the formatted local value beside the native control', a
 test('presentation renders every section open with a header toggle, matrix rows, and resets', async () => {
   const source = await readEntry('panel.luau');
 
-  assert.match(source, /Presentation\.titleParam\(state\.model\.params\)/);
-  assert.match(source, /Presentation\.sections\(state\.model\.params, rack\.group\)/);
   assert.doesNotMatch(source, /expandedGroups|groupParams|Quick/);
   assert.match(source, /Presentation\.editedCount\(params\)/);
   assert.match(source, /local function matrixRow\(row, indent\)[\s\S]*controlCell\(row\.unfocused, 1\)[\s\S]*controlCell\(row\.focused, 1\)/);
