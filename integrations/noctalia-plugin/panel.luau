@@ -630,7 +630,8 @@ local function controlCell(param, grow)
   children[#children + 1] = resetButton(param, available)
   return ui.row({
     key = param.key, gap = 6, align = "center", flexGrow = grow, radius = 6,
-    fill = focused and "primary/0.12" or nil,
+    -- Always named: the host keeps a reused row's old fill when one is omitted.
+    fill = focused and "primary/0.12" or "primary/0",
     opacity = 1.0,
   }, children)
 end
@@ -899,9 +900,12 @@ local function commitName(text, naming)
   elseif name == active and Presentation.editedCount(Presentation.visibleParams(state.model)) == 0 then
     -- Nothing to commit: the field just closes.
   else
+    -- The commit renders; a second render here would double the callback's cost.
+    state.naming = nil
     commitAction({verb = "commit", destination = "profile", target = name ~= active and name or nil,
       expected = naming.expected},
       Presentation.visibleParams(state.model))()
+    return
   end
   state.naming = nil
   render()
@@ -1177,11 +1181,12 @@ local function confirmRow()
         if state.selectionPending then return end
         state.confirm = nil
         if confirm.kind == "replace" then
+          -- The commit renders, so this branch must not render again.
           commitAction({verb = "commit", destination = "profile", target = confirm.name,
             expected = confirm.expected}, params)()
-        else
-          enqueue({verb = "delete", name = confirm.name, expected = confirm.expected})
+          return
         end
+        enqueue({verb = "delete", name = confirm.name, expected = confirm.expected})
         render()
       end,
     }),
