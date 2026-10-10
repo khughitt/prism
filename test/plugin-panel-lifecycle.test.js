@@ -141,6 +141,9 @@ local function newHost()
       timedOut = false, exitCode = failure and 1 or 0, stdout = "{}", stderr = failure or "",
       stdoutTruncated = false, stderrTruncated = false,
     })
+    -- An accepted describe renders in the next frame tick, which the host runs
+    -- next; the reconciliation checks below read the tree that tick draws.
+    if host.frameTicks then env.onFrameTick(16) end
   end
   function host.open()
     env.onOpen({})

@@ -14,6 +14,8 @@ local state = {
   describeInvalidated = false,
   refreshAfterDrag = false,
   drag = nil,
+  -- An accepted describe's render, waiting for the next frame tick.
+  renderPending = false,
   -- The one name field, shared by save and rename: {mode, text}, or nil.
   naming = nil,
   -- A destructive action waiting for its answer: {kind, name}, or nil.
@@ -261,6 +263,12 @@ local function markEdits(model)
   end
 end
 
+-- Frame ticks run while a drag needs its throttled render or a describe's
+-- render waits for its own callback.
+local function syncFrameTick()
+  panel.setNeedsFrameTick(state.drag ~= nil or state.renderPending)
+end
+
 local function described(result)
   describeRunning = false
   local invalidated = state.describeInvalidated or state.drag ~= nil
@@ -297,7 +305,10 @@ local function described(result)
     -- the panel looking fine.
     if not state.errorSticky then state.errorText = nil end
   end
-  render()
+  -- The decode and validation above already spent much of this callback's
+  -- budget, so the render waits for the next frame tick and its own budget.
+  state.renderPending = true
+  syncFrameTick()
   finishRefresh()
 end
 
@@ -394,6 +405,8 @@ end
 local function resetAction(mode, group)
   return function()
     local params = resetScope(group)
+    -- The section left with the last describe; its button is still on screen.
+    if params == nil then return end
     for _, param in ipairs(params) do
       if mode == "revert" then
         if param.edited then param.value, param.edited = param.fallback, false end
@@ -413,11 +426,11 @@ end
 
 -- A commit keeps every value and moves the edits into a persisted layer, so
 -- the optimistic change is only that nothing is edited any more.
-local function commitAction(item, params)
+local function commitAction(item)
   item.expected = item.expected or Queue.captureSlots(state.model)
   return function()
     if state.selectionPending then return end
-    for _, param in ipairs(params) do param.edited = false end
+    for _, param in ipairs(Presentation.visibleParams(state.model)) do param.edited = false end
     if item.destination == "profile" and item.target ~= nil then
       state.selectionPending = true
       if not Presentation.profileExists(state.model, item.target) then
@@ -457,7 +470,7 @@ local function beginDrag(key, sliderValue)
     if describeRunning then state.describeInvalidated = true end
     -- Every drag needs the tick, not only live-mode ones: it is what throttles
     -- the render below to one per frame instead of one per pointer-move event.
-    panel.setNeedsFrameTick(true)
+    syncFrameTick()
   else
     state.drag.value = canonical
     state.drag.sliderValue = sliderValue
@@ -489,13 +502,13 @@ local function endDrag(key)
   end
   state.drag = nil
   state.sampleElapsedMs = 0
-  panel.setNeedsFrameTick(false)
   enqueue({verb = "set", key = param.key, value = drag.value, sample = false})
   if correctedSliderValue ~= nil then
     state.renderedSliderCorrection = {key = param.key, expectedPresentationValue = correctedSliderValue}
   end
   render()
   state.renderedSliderCorrection = nil
+  syncFrameTick()
 end
 
 local function selectIndex(param)
@@ -898,13 +911,13 @@ local function editsRow(model)
       glyph = "bookmark", count = edited, enabled = not state.selectionPending,
       active = "Keep " .. edited .. plural .. " in " .. look,
       inert = "Nothing to keep",
-      act = commitAction(keepInLook(model), params),
+      act = commitAction(keepInLook(model)),
     }),
     resetModeButton({
       glyph = "photo-check", count = wallpaper ~= nil and edited or 0, enabled = not state.selectionPending,
       active = "Keep " .. edited .. plural .. " for " .. (model.active.profile or "Default") .. " + this wallpaper",
       inert = wallpaper == nil and "No wallpaper on screen" or "Nothing to keep",
-      act = commitAction({verb = "commit", destination = "wallpaper", target = wallpaper and wallpaper.id}, params),
+      act = commitAction({verb = "commit", destination = "wallpaper", target = wallpaper and wallpaper.id}),
     }),
   }
   for _, button in ipairs(resetModeButtons("everything", nil, params)) do children[#children + 1] = button end
@@ -972,8 +985,7 @@ local function commitName(text, naming)
     -- The commit renders; a second render here would double the callback's cost.
     state.naming = nil
     commitAction({verb = "commit", destination = "profile", target = name ~= active and name or nil,
-      expected = naming.expected},
-      Presentation.visibleParams(state.model))()
+      expected = naming.expected})()
     return
   end
   state.naming = nil
@@ -1029,8 +1041,9 @@ local function nudgeFocused(direction)
   if state.naming ~= nil then return end
   local index = focusIndex()
   if index == nil then return end
-  local param = state.focusOrder[index]
-  if param.effectiveDrag == nil then return end
+  -- The walk holds the last render's tables; the model may already be newer.
+  local param = current(state.focusOrder[index].key)
+  if param == nil or param.effectiveDrag == nil then return end
   local value = Presentation.stepCanonicalValue(param.value, direction, param)
   if value == param.value then return end
   writeParam(param.key, value)
@@ -1112,7 +1125,7 @@ local function saveShortcut()
   end
   local params = Presentation.visibleParams(state.model)
   if Presentation.editedCount(params) == 0 then return end
-  commitAction(keepInLook(state.model), params)()
+  commitAction(keepInLook(state.model))()
 end
 
 -- A pick is optimistic, like a slider edit: Noctalia re-applies selectedIndex
@@ -1252,7 +1265,7 @@ local function confirmRow()
         if confirm.kind == "replace" then
           -- The commit renders, so this branch must not render again.
           commitAction({verb = "commit", destination = "profile", target = confirm.name,
-            expected = confirm.expected}, params)()
+            expected = confirm.expected})()
           return
         end
         enqueue({verb = "delete", name = confirm.name, expected = confirm.expected})
@@ -1303,6 +1316,7 @@ local function wallpaperHeaderRow(header)
 end
 
 render = function()
+  state.renderPending = false
   local children = {
     ui.label({
       text = state.errorText,
@@ -1385,6 +1399,7 @@ end
 function onClose()
   state.drag = nil
   state.sampleElapsedMs = 0
+  state.renderPending = false
   panel.setNeedsFrameTick(false)
   panel.setWantsSecondTicks(false)
 end
@@ -1403,10 +1418,14 @@ function update()
 end
 
 function onFrameTick(deltaMs)
-  if not state.drag then return end
-  if state.drag.dirty then
-    state.drag.dirty = false
+  local dragDirty = state.drag ~= nil and state.drag.dirty
+  if state.renderPending or dragDirty then
+    if dragDirty then state.drag.dirty = false end
     render()
+  end
+  if not state.drag then
+    syncFrameTick()
+    return
   end
   if not state.drag.pendingSample then return end
   state.sampleElapsedMs = state.sampleElapsedMs + deltaMs

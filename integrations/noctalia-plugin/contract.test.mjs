@@ -183,6 +183,7 @@ local function inspect(model)
   assert(described, "the panel never spawned prism describe")
   described({timedOut = false, exitCode = 0, stdout = "{}", stderr = "",
     stdoutTruncated = false, stderrTruncated = false})
+  env.onFrameTick(16)
 
   -- Every card starts collapsed; the contract is that each control kind can
   -- be drawn, so open them all before reading the rows.

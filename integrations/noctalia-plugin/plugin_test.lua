@@ -404,15 +404,25 @@ end
 
 panel = {
   render = function(tree) rendered = tree; host.renders = host.renders + 1 end,
-  setNeedsFrameTick = function() end,
+  setNeedsFrameTick = function(on) host.frameTick = on end,
   setWantsSecondTicks = function() end,
 }
 local commands = {}
 local commandCallback
+-- The panel renders an accepted describe in the next frame tick, not in the
+-- describe's own callback. Most tests only care that the render lands, so the
+-- recorded callback runs that tick too; rawDescribed is the callback alone.
+function host.describeThenTick(callback)
+  rawDescribed = callback
+  return function(result)
+    callback(result)
+    if host.frameTick then onFrameTick(16) end
+  end
+end
 noctalia = {
   runAsync = function(cmd, callback)
     commands[#commands + 1] = cmd
-    if cmd:find("describe", 1, true) then described = callback else commandCallback = callback end
+    if cmd:find("describe", 1, true) then described = host.describeThenTick(callback) else commandCallback = callback end
     return true
   end,
   json = {
@@ -1017,7 +1027,7 @@ end
 local writeCallback
 noctalia.runAsync = function(cmd, callback)
   commands[#commands + 1] = cmd
-  if cmd:find("describe", 1, true) then described = callback else writeCallback = callback end
+  if cmd:find("describe", 1, true) then described = host.describeThenTick(callback) else writeCallback, commandCallback = callback, callback end
   return true
 end
 
@@ -2290,4 +2300,103 @@ end)()
   equal(param(new, "glass.roughness").edited, false, "a section reset reverts the current params")
   equal(param(old, "glass.roughness").edited, true)
   host.copies = false
+end)()
+
+;(function()
+  -- The decode and validation spend much of the describe's callback, so its
+  -- render waits for the next frame tick and that tick's own budget.
+  renderModel(layeredModel())
+  host.renders = 0
+  update(); update()
+  rawDescribed(host.describeOk())
+  equal(host.renders, 0, "a changed describe does not render in its own callback")
+  equal(host.frameTick, true, "it asks for the next frame tick instead")
+  onFrameTick(16)
+  equal(host.renders, 1, "the next frame tick renders it once")
+  equal(host.frameTick, false, "with no drag and nothing pending the tick stops")
+  onFrameTick(16)
+  equal(host.renders, 1, "a tick with nothing pending renders nothing")
+
+  update(); update()
+  rawDescribed({ exitCode = 1, stdout = "", stderr = "boom" })
+  equal(host.renders, 1, "an error describe also waits for the tick")
+  onFrameTick(16)
+  equal(collect(rendered, "label")[1].props.text, "boom")
+
+  -- Closing with a render pending leaves no tick behind; reopening renders once.
+  renderModel(layeredModel())
+  update(); update()
+  rawDescribed(host.describeOk())
+  equal(host.frameTick, true)
+  onClose()
+  equal(host.frameTick, false, "a closed panel keeps no tick for a pending render")
+  host.renders = 0
+  onOpen({})
+  equal(host.renders, 1, "reopening renders the accepted model once")
+
+  -- A describe that lands mid-drag is stale and held back; the release renders
+  -- once and nothing is left ticking.
+  renderModel(layeredModel())
+  local gaps = byKey(rendered, "compositor.gaps:slider")[1]
+  gaps.props.onChange(gaps.props.value + 5)
+  equal(host.frameTick, true, "a drag ticks")
+  rawDescribed(host.describeOk())
+  host.renders = 0
+  gaps.props.onDragEnd()
+  equal(host.renders, 1, "the release renders once")
+  equal(host.frameTick, false, "and nothing is left pending")
+
+  -- A control the last describe removed acts on nothing, even before that
+  -- describe's render replaces it.
+  local staleTree = renderModel(layeredModel())
+  local staleGaps = byKey(staleTree, "compositor.gaps:slider")[1]
+  local without = layeredModel()
+  table.remove(without.params, 2) -- compositor.gaps
+  model = without
+  update(); update()
+  rawDescribed(host.describeOk())
+  local before = #commands
+  staleGaps.props.onChange(staleGaps.props.value + 5)
+  staleGaps.props.onDragEnd()
+  equal(#commands, before, "a removed control writes nothing")
+  equal(host.frameTick, true, "only the describe's own render is waiting")
+
+  -- So does the reset of a section the last describe removed.
+  local sectionTree = renderModel(twoEdits())
+  local glassRevert
+  for _, button in ipairs(collect(sectionTree, "button")) do
+    if button.props.tooltip == "Revert section (1)" then glassRevert = button; break end
+  end
+  local withoutGlass = twoEdits()
+  for index = #withoutGlass.params, 1, -1 do
+    if withoutGlass.params[index].ui.group == "Glass" then table.remove(withoutGlass.params, index) end
+  end
+  model = withoutGlass
+  update(); update()
+  rawDescribed(host.describeOk())
+  local beforeReset = #commands
+  glassRevert.props.onClick()
+  equal(#commands, beforeReset, "a removed section's reset writes nothing")
+
+  -- The keyboard walk holds the last render's tables. A nudge between a describe
+  -- and its render steps from the value that describe brought.
+  renderModel(layeredModel())
+  onKey("j", true); onKey("j", true) -- glass.ior, drawn at 1.5
+  local moved = layeredModel()
+  moved.params[3].value = 1.8
+  model = moved
+  update(); update()
+  rawDescribed(host.describeOk())
+  onKey("l", true)
+  equal(commands[#commands], Shell.command(Queue.argvFor({ verb = "set", key = "glass.ior", value = 1.81 })),
+    "the nudge steps from the accepted 1.8, not the drawn 1.5")
+
+  -- Keep from a tree drawn before a describe clears the edits the model now holds.
+  local keepTree = renderModel(twoEdits())
+  local oldKeep = glyphButton(keepTree, "bookmark")
+  model = twoEdits()
+  update(); update()
+  rawDescribed(host.describeOk())
+  oldKeep.props.onClick()
+  assert(labelSet(rendered)["No edits"], "Keep clears the edits of the model now held")
 end)()
