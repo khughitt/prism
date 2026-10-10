@@ -1,13 +1,15 @@
 ---
 id: prism-dac509
 title: Panel renders overrun the host's 25 ms callback budget and Noctalia silently disables the panel
-status: todo
+status: doing
 priority: 1
 size: m
 complexity: high
 process: planned
+owner: main
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-10T16:18:11Z
+updated: 2026-10-10T16:20:49Z
+started: 2026-10-10T16:20:49Z
 depends: []
 tags: [noctalia, performance]
 agent: claude-code/claude-opus-5-5
@@ -20,3 +22,8 @@ Root cause: the render outgrew the budget. Offline count on the live describe (8
 Recovery until fixed: noctalia msg plugins disable khughitt/prism && noctalia msg plugins enable khughitt/prism; keep rack cards collapsed.
 
 Remedies to weigh (folded from prism-5172ea): render only what changed, or cache per-model Presentation derivations (gates, attachedSwatches, rack, sections are recomputed every render); move described()'s render to the next frame tick so decode/validate and render land in different callbacks; throttle drag renders below frame rate; shrink the tree (fewer wrapper rows/props per cell); ask Noctalia upstream to meter the budget without a clock_gettime per Luau interrupt and to surface a disabled panel to the user. Acceptance: an in-host measurement (os.clock + noctalia.log per callback, as in prism-831604) of render with every card expanded, describe-with-change, and endDrag, each with clear headroom under 25 ms, plus an offline call-count regression test so growth is caught in the suite.
+
+## Notes
+
+- 2026-10-10T16:20:49Z (main): started
+  provenance: {"harness_session":"claude-code:35b76d69-d243-4ef3-a0bc-e3117438b797","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
