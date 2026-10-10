@@ -1,0 +1,1356 @@
+# The shared key vocabulary and the inventory of every application shortcut in the
+# keyboard-driven projects. Owned by ops; vendored byte-identical as tools/keys.toml
+# into tasks-tui, mind6, wali, and prism, each of which has a test that compares its
+# live bindings with its rows here. Rules: docs/specs/2026-09-15-key-vocabulary-design.md,
+# "The table file"; validator: tests/test_keys.py.
+#
+# Sequence spelling: single characters as themselves; chord keys separated by one space
+# ("s p", "g g"); named keys Escape Enter space Backspace Tab F1 F5 Up Down Left Right
+# Home End PgUp PgDn; modifiers ctrl+ alt+ shift+ lowercase and first ("ctrl+s",
+# "shift+Tab", "alt+Up").
+
+version = 1
+
+# Vocabulary: shared actions. A project that has the action binds it to exactly `seq`
+# in every scope where the action exists; `aliases` are optional extra sequences.
+
+[action.help]
+seq = "?"
+aliases = ["F1"]
+meaning = "show the key legend or help overlay"
+
+[action.dismiss]
+seq = "Escape"
+aliases = ["Backspace"]
+meaning = "close the overlay, go back, or close the panel"
+
+[action.open]
+seq = "Enter"
+meaning = "open the focused item"
+
+[action.up]
+seq = "k"
+aliases = ["Up"]
+meaning = "move focus up one item"
+
+[action.down]
+seq = "j"
+aliases = ["Down"]
+meaning = "move focus down one item"
+
+[action.prev]
+seq = "h"
+aliases = ["Left"]
+meaning = "previous in the horizontal or historical dimension: tab, history entry, slider nudge"
+
+[action.next]
+seq = "l"
+aliases = ["Right"]
+meaning = "next in the horizontal or historical dimension: tab, history entry, slider nudge"
+
+[action.top]
+seq = "g g"
+aliases = ["Home"]
+meaning = "first item"
+
+[action.bottom]
+seq = "G"
+aliases = ["End"]
+meaning = "last item"
+
+[action.search]
+seq = "/"
+meaning = "search or filter the current view"
+
+[action.add]
+seq = "a"
+meaning = "add a new item"
+
+[action.edit]
+seq = "e"
+meaning = "edit the focused item"
+
+[action.remove]
+seq = "x"
+meaning = "remove the focused item from the view: drop, hide, remove member"
+
+[action.yank]
+seq = "y"
+meaning = "copy the focused item's identifier or path"
+
+[action.random]
+seq = "r"
+meaning = "pick or apply something at random"
+
+[action.reload]
+seq = "F5"
+meaning = "reload the view from its source"
+
+[action.sort]
+prefix = ["s", "S"]
+direction = ["asc", "desc"]
+argument = "column and direction"
+meaning = "sort by the column named by the second key"
+
+[action.save]
+seq = "ctrl+s"
+meaning = "save the current thing; where the only save is save-as, open that"
+
+[action.select]
+seq = "<digit>"
+argument = "target"
+meaning = "switch to the nth tab, view form, or profile"
+
+[action.primary]
+seq = "space"
+argument = "what the toggle does in this project"
+meaning = "the item's primary toggle"
+
+[action.palette]
+seq = "ctrl+k"
+meaning = "command palette, where one exists"
+
+[action.quit]
+seq = "q"
+aliases = ["ctrl+c"]
+meaning = "leave the application; panels use dismiss"
+
+# Reserved: one project owns the sequence and may bind any action to it; the others
+# leave it unbound.
+
+[reserved.c]
+owner = "tasks-tui"
+prefix = true
+meaning = "launch a coding agent: c l claude, c o codex, c r crush, c O opencode, c c the picker"
+
+[reserved.w]
+owner = "mind6"
+meaning = "toggle the focused thought in the working set"
+
+[reserved.f]
+owner = "wali"
+meaning = "favorite, the same action as primary there"
+
+# Inventory: every application shortcut of every project. One row per scope and
+# sequence; `alias = true` marks a project-local alias of a shared action.
+[[project.tasks-tui.binding]]
+scope = "global"
+seq = "q"
+action = "quit"
+
+[[project.tasks-tui.binding]]
+scope = "global"
+seq = "ctrl+c"
+action = "quit"
+
+[[project.tasks-tui.binding]]
+scope = "global"
+seq = "?"
+action = "help"
+
+[[project.tasks-tui.binding]]
+scope = "global"
+seq = "Escape"
+action = "dismiss"
+
+[[project.tasks-tui.binding]]
+scope = "global"
+seq = "Backspace"
+action = "dismiss"
+
+[[project.tasks-tui.binding]]
+scope = "global"
+seq = "F5"
+action = "reload"
+
+[[project.tasks-tui.binding]]
+scope = "global"
+seq = "a"
+action = "add"
+
+[[project.tasks-tui.binding]]
+scope = "global"
+seq = "e"
+action = "edit"
+
+[[project.tasks-tui.binding]]
+scope = "global"
+seq = "x"
+action = "remove"
+
+[[project.tasks-tui.binding]]
+scope = "global"
+seq = "space"
+action = "primary"
+arg = "start the focused task"
+
+[[project.tasks-tui.binding]]
+scope = "global"
+seq = "p"
+action = "park"
+
+[[project.tasks-tui.binding]]
+scope = "global"
+seq = "d"
+action = "done"
+
+[[project.tasks-tui.binding]]
+scope = "global"
+seq = "W"
+action = "log"
+
+[[project.tasks-tui.binding]]
+scope = "global"
+seq = "c l"
+action = "launch"
+arg = "claude"
+
+[[project.tasks-tui.binding]]
+scope = "global"
+seq = "c o"
+action = "launch"
+arg = "codex"
+
+[[project.tasks-tui.binding]]
+scope = "global"
+seq = "c r"
+action = "launch"
+arg = "crush"
+
+[[project.tasks-tui.binding]]
+scope = "global"
+seq = "c O"
+action = "launch"
+arg = "opencode"
+
+[[project.tasks-tui.binding]]
+scope = "global"
+seq = "c c"
+action = "launch"
+arg = "picker"
+
+[[project.tasks-tui.binding]]
+scope = "projects"
+seq = "k"
+action = "up"
+
+[[project.tasks-tui.binding]]
+scope = "projects"
+seq = "Up"
+action = "up"
+
+[[project.tasks-tui.binding]]
+scope = "projects"
+seq = "j"
+action = "down"
+
+[[project.tasks-tui.binding]]
+scope = "projects"
+seq = "Down"
+action = "down"
+
+[[project.tasks-tui.binding]]
+scope = "projects"
+seq = "/"
+action = "search"
+
+[[project.tasks-tui.binding]]
+scope = "projects"
+seq = "Enter"
+action = "open"
+
+[[project.tasks-tui.binding]]
+scope = "projects"
+seq = "i"
+action = "open"
+alias = true
+
+[[project.tasks-tui.binding]]
+scope = "projects"
+seq = "s p"
+action = "sort"
+arg = "prefix asc"
+
+[[project.tasks-tui.binding]]
+scope = "projects"
+seq = "S p"
+action = "sort"
+arg = "prefix desc"
+
+[[project.tasks-tui.binding]]
+scope = "projects"
+seq = "s a"
+action = "sort"
+arg = "activity asc"
+
+[[project.tasks-tui.binding]]
+scope = "projects"
+seq = "S a"
+action = "sort"
+arg = "activity desc"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "k"
+action = "up"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "Up"
+action = "up"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "j"
+action = "down"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "Down"
+action = "down"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "h"
+action = "prev"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "Left"
+action = "prev"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "l"
+action = "next"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "Right"
+action = "next"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "g g"
+action = "top"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "Home"
+action = "top"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "G"
+action = "bottom"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "End"
+action = "bottom"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "PgUp"
+action = "page"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "ctrl+b"
+action = "page"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "PgDn"
+action = "page"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "ctrl+f"
+action = "page"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "Tab"
+action = "tabs"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "shift+Tab"
+action = "tabs"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "/"
+action = "search"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "Enter"
+action = "open"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "i"
+action = "open"
+alias = true
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "1"
+action = "select"
+arg = "tab 1"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "2"
+action = "select"
+arg = "tab 2"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "3"
+action = "select"
+arg = "tab 3"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "4"
+action = "select"
+arg = "tab 4"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "5"
+action = "select"
+arg = "tab 5"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "y"
+action = "yank"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "s p"
+action = "sort"
+arg = "priority asc"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "S p"
+action = "sort"
+arg = "priority desc"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "s a"
+action = "sort"
+arg = "age asc"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "S a"
+action = "sort"
+arg = "age desc"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "s t"
+action = "sort"
+arg = "title asc"
+
+[[project.tasks-tui.binding]]
+scope = "tasks"
+seq = "S t"
+action = "sort"
+arg = "title desc"
+[[project.mind6.binding]]
+scope = "global"
+seq = "?"
+action = "help"
+
+[[project.mind6.binding]]
+scope = "global"
+seq = "Escape"
+action = "dismiss"
+arg = "close overlays"
+
+[[project.mind6.binding]]
+scope = "global"
+seq = "ctrl+k"
+action = "palette"
+
+[[project.mind6.binding]]
+scope = "global"
+seq = "/"
+action = "search"
+
+[[project.mind6.binding]]
+scope = "global"
+seq = "a"
+action = "add"
+
+[[project.mind6.binding]]
+scope = "global"
+seq = "A"
+action = "add-linked"
+
+[[project.mind6.binding]]
+scope = "global"
+seq = "space"
+action = "primary"
+arg = "toggle the focused thought in the working set"
+
+[[project.mind6.binding]]
+scope = "global"
+seq = "w"
+action = "primary"
+arg = "toggle the focused thought in the working set"
+
+[[project.mind6.binding]]
+scope = "global"
+seq = "`"
+action = "show-working"
+
+[[project.mind6.binding]]
+scope = "global"
+seq = "g h"
+action = "goto"
+arg = "home"
+
+[[project.mind6.binding]]
+scope = "global"
+seq = "g s"
+action = "goto"
+arg = "settings"
+
+[[project.mind6.binding]]
+scope = "global"
+seq = "g w"
+action = "goto"
+arg = "review walk"
+
+[[project.mind6.binding]]
+scope = "global"
+seq = "g x"
+action = "goto"
+arg = "exploration walk"
+
+[[project.mind6.binding]]
+scope = "global"
+seq = "g o"
+action = "goto"
+arg = "old walk"
+
+[[project.mind6.binding]]
+scope = "global"
+seq = "g d"
+action = "goto"
+arg = "garden walk"
+
+[[project.mind6.binding]]
+scope = "global"
+seq = "alt+h"
+action = "prev-day"
+
+[[project.mind6.binding]]
+scope = "global"
+seq = "alt+l"
+action = "next-day"
+
+[[project.mind6.binding]]
+scope = "thought.read"
+seq = "e"
+action = "edit"
+
+[[project.mind6.binding]]
+scope = "thought.read"
+seq = "t r"
+action = "toggle-related"
+
+[[project.mind6.binding]]
+scope = "thought.read"
+seq = "t s"
+action = "toggle-similar"
+
+[[project.mind6.binding]]
+scope = "thought.read"
+seq = "t d"
+action = "toggle-details"
+
+[[project.mind6.binding]]
+scope = "thought.edit"
+seq = "Escape"
+action = "dismiss"
+arg = "save and view"
+
+[[project.mind6.binding]]
+scope = "thought.edit"
+seq = "alt+d"
+action = "insert-timestamp"
+
+[[project.mind6.binding]]
+scope = "search"
+seq = "a"
+action = "add"
+
+[[project.mind6.binding]]
+scope = "search"
+seq = "A"
+action = "add-linked"
+
+[[project.mind6.binding]]
+scope = "search"
+seq = "j"
+action = "down"
+
+[[project.mind6.binding]]
+scope = "search"
+seq = "k"
+action = "up"
+
+[[project.mind6.binding]]
+scope = "search"
+seq = "Enter"
+action = "open"
+
+[[project.mind6.binding]]
+scope = "search"
+seq = "x"
+action = "remove"
+
+[[project.mind6.binding]]
+scope = "search"
+seq = "ctrl+s"
+action = "save"
+
+[[project.mind6.binding]]
+scope = "structure"
+seq = "a"
+action = "add"
+
+[[project.mind6.binding]]
+scope = "structure"
+seq = "A"
+action = "add-linked"
+
+[[project.mind6.binding]]
+scope = "structure"
+seq = "j"
+action = "down"
+
+[[project.mind6.binding]]
+scope = "structure"
+seq = "k"
+action = "up"
+
+[[project.mind6.binding]]
+scope = "structure"
+seq = "Enter"
+action = "open"
+
+[[project.mind6.binding]]
+scope = "structure"
+seq = "x"
+action = "remove"
+
+[[project.mind6.binding]]
+scope = "structure"
+seq = "1"
+action = "select"
+arg = "stack"
+
+[[project.mind6.binding]]
+scope = "structure"
+seq = "2"
+action = "select"
+arg = "graph"
+
+[[project.mind6.binding]]
+scope = "structure"
+seq = "3"
+action = "select"
+arg = "grid"
+
+[[project.mind6.binding]]
+scope = "structure"
+seq = "alt+Up"
+action = "reorder"
+arg = "up"
+
+[[project.mind6.binding]]
+scope = "structure"
+seq = "alt+Down"
+action = "reorder"
+arg = "down"
+
+[[project.mind6.binding]]
+scope = "structure"
+seq = "e"
+action = "edit"
+arg = "rename the structure"
+
+[[project.mind6.binding]]
+scope = "structure"
+seq = "ctrl+s"
+action = "save"
+
+[[project.mind6.binding]]
+scope = "structure"
+seq = "L"
+action = "link"
+
+[[project.mind6.binding]]
+scope = "structure"
+seq = "u"
+action = "unlink"
+
+[[project.mind6.binding]]
+scope = "structure"
+seq = "Escape"
+action = "dismiss"
+arg = "cancel the member gesture"
+
+[[project.mind6.binding]]
+scope = "walk"
+seq = "r"
+action = "random"
+
+[[project.mind6.binding]]
+scope = "walk"
+seq = "h"
+action = "prev"
+arg = "lens"
+
+[[project.mind6.binding]]
+scope = "walk"
+seq = "l"
+action = "next"
+arg = "lens"
+
+[[project.mind6.binding]]
+scope = "walk"
+seq = "-"
+action = "noise-down"
+
+[[project.mind6.binding]]
+scope = "walk"
+seq = "="
+action = "noise-up"
+
+[[project.mind6.binding]]
+scope = "walk"
+seq = "e"
+action = "edit"
+arg = "open the thought's editor"
+
+[[project.mind6.binding]]
+scope = "walk"
+seq = "#"
+action = "tag"
+
+[[project.mind6.binding]]
+scope = "walk"
+seq = "u"
+action = "unhide"
+
+[[project.mind6.binding]]
+scope = "walk"
+seq = "PgDn"
+action = "page"
+arg = "down"
+
+[[project.mind6.binding]]
+scope = "walk"
+seq = "PgUp"
+action = "page"
+arg = "up"
+
+[[project.mind6.binding]]
+scope = "working"
+seq = "j"
+action = "down"
+
+[[project.mind6.binding]]
+scope = "working"
+seq = "k"
+action = "up"
+
+[[project.mind6.binding]]
+scope = "working"
+seq = "Enter"
+action = "open"
+
+[[project.mind6.binding]]
+scope = "working"
+seq = "x"
+action = "remove"
+
+[[project.mind6.binding]]
+scope = "working"
+seq = "ctrl+s"
+action = "save"
+
+[[project.mind6.binding]]
+scope = "working"
+seq = "Escape"
+action = "dismiss"
+arg = "close working set"
+
+[[project.mind6.binding]]
+scope = "home"
+seq = "s f"
+action = "sort"
+arg = "frecent asc"
+
+[[project.mind6.binding]]
+scope = "home"
+seq = "S f"
+action = "sort"
+arg = "frecent desc"
+
+[[project.mind6.binding]]
+scope = "home"
+seq = "s c"
+action = "sort"
+arg = "captured asc"
+
+[[project.mind6.binding]]
+scope = "home"
+seq = "S c"
+action = "sort"
+arg = "captured desc"
+
+[[project.mind6.binding]]
+scope = "home"
+seq = "s a"
+action = "sort"
+arg = "activity asc"
+
+[[project.mind6.binding]]
+scope = "home"
+seq = "S a"
+action = "sort"
+arg = "activity desc"
+
+[[project.mind6.binding]]
+scope = "home"
+seq = "s t"
+action = "sort"
+arg = "title asc"
+
+[[project.mind6.binding]]
+scope = "home"
+seq = "S t"
+action = "sort"
+arg = "title desc"
+
+[[project.mind6.binding]]
+scope = "tui.global"
+seq = "?"
+action = "help"
+
+[[project.mind6.binding]]
+scope = "tui.global"
+seq = "Escape"
+action = "dismiss"
+arg = "back"
+
+[[project.mind6.binding]]
+scope = "tui.global"
+seq = "q"
+action = "quit"
+
+[[project.mind6.binding]]
+scope = "tui.global"
+seq = "ctrl+c"
+action = "quit"
+
+[[project.mind6.binding]]
+scope = "tui.global"
+seq = "a"
+action = "add"
+arg = "open scratch"
+
+[[project.mind6.binding]]
+scope = "tui.global"
+seq = "/"
+action = "search"
+
+[[project.mind6.binding]]
+scope = "tui.global"
+seq = "g h"
+action = "goto"
+arg = "home"
+
+[[project.mind6.binding]]
+scope = "tui.global"
+seq = "y"
+action = "yank"
+
+[[project.mind6.binding]]
+scope = "tui.home"
+seq = "j"
+action = "down"
+
+[[project.mind6.binding]]
+scope = "tui.home"
+seq = "Down"
+action = "down"
+
+[[project.mind6.binding]]
+scope = "tui.home"
+seq = "k"
+action = "up"
+
+[[project.mind6.binding]]
+scope = "tui.home"
+seq = "Up"
+action = "up"
+
+[[project.mind6.binding]]
+scope = "tui.home"
+seq = "g g"
+action = "top"
+
+[[project.mind6.binding]]
+scope = "tui.home"
+seq = "G"
+action = "bottom"
+
+[[project.mind6.binding]]
+scope = "tui.home"
+seq = "Enter"
+action = "open"
+
+[[project.mind6.binding]]
+scope = "tui.home"
+seq = "e"
+action = "edit"
+
+[[project.mind6.binding]]
+scope = "tui.home"
+seq = "F5"
+action = "reload"
+
+[[project.mind6.binding]]
+scope = "tui.home"
+seq = "s f"
+action = "sort"
+arg = "frecent asc"
+
+[[project.mind6.binding]]
+scope = "tui.home"
+seq = "S f"
+action = "sort"
+arg = "frecent desc"
+
+[[project.mind6.binding]]
+scope = "tui.home"
+seq = "s c"
+action = "sort"
+arg = "captured asc"
+
+[[project.mind6.binding]]
+scope = "tui.home"
+seq = "S c"
+action = "sort"
+arg = "captured desc"
+
+[[project.mind6.binding]]
+scope = "tui.home"
+seq = "s a"
+action = "sort"
+arg = "activity asc"
+
+[[project.mind6.binding]]
+scope = "tui.home"
+seq = "S a"
+action = "sort"
+arg = "activity desc"
+
+[[project.mind6.binding]]
+scope = "tui.home"
+seq = "s t"
+action = "sort"
+arg = "title asc"
+
+[[project.mind6.binding]]
+scope = "tui.home"
+seq = "S t"
+action = "sort"
+arg = "title desc"
+
+[[project.mind6.binding]]
+scope = "tui.search"
+seq = "Enter"
+action = "open"
+arg = "run the search"
+
+[[project.mind6.binding]]
+scope = "tui.search"
+seq = "Escape"
+action = "dismiss"
+arg = "leave the search input"
+
+[[project.mind6.binding]]
+scope = "tui.thought.read"
+seq = "e"
+action = "edit"
+
+[[project.mind6.binding]]
+scope = "tui.thought.read"
+seq = "j"
+action = "down"
+
+[[project.mind6.binding]]
+scope = "tui.thought.read"
+seq = "k"
+action = "up"
+
+[[project.mind6.binding]]
+scope = "tui.thought.read"
+seq = "t r"
+action = "toggle-related"
+
+[[project.mind6.binding]]
+scope = "tui.thought.read"
+seq = "t s"
+action = "toggle-similar"
+
+[[project.mind6.binding]]
+scope = "tui.thought.read"
+seq = "t d"
+action = "toggle-details"
+
+[[project.mind6.binding]]
+scope = "tui.thought.read"
+seq = "Enter"
+action = "open"
+
+[[project.mind6.binding]]
+scope = "tui.thought.read"
+seq = "/"
+action = "search"
+arg = "find in body"
+
+[[project.mind6.binding]]
+scope = "tui.thought.read"
+seq = "n"
+action = "find-next"
+
+[[project.mind6.binding]]
+scope = "tui.thought.read"
+seq = "N"
+action = "find-prev"
+
+[[project.mind6.binding]]
+scope = "tui.thought.read"
+seq = "Escape"
+action = "dismiss"
+arg = "clear find"
+
+[[project.mind6.binding]]
+scope = "tui.editor"
+seq = "Escape"
+action = "dismiss"
+arg = "close"
+
+[[project.mind6.binding]]
+scope = "tui.editor"
+seq = "ctrl+s"
+action = "save"
+
+[[project.mind6.binding]]
+scope = "tui.editor"
+seq = "shift+Enter"
+action = "save"
+arg = "save and close"
+alias = true
+
+[[project.mind6.binding]]
+scope = "tui.editor"
+seq = "alt+Enter"
+action = "save"
+arg = "save and close"
+alias = true
+
+[[project.mind6.binding]]
+scope = "tui.offline"
+seq = "F5"
+action = "reload"
+
+[[project.mind6.binding]]
+scope = "tui.global"
+seq = "p"
+action = "toggle-scratch"
+
+[[project.mind6.binding]]
+scope = "tui.global"
+seq = "m"
+action = "attach-context"
+
+[[project.mind6.binding]]
+scope = "tui.global"
+seq = "M"
+action = "detach-context"
+
+[[project.mind6.binding]]
+scope = "tui.scratch"
+seq = "Escape"
+action = "dismiss"
+arg = "to the page"
+
+[[project.mind6.binding]]
+scope = "tui.scratch"
+seq = "ctrl+s"
+action = "save"
+
+[[project.mind6.binding]]
+scope = "tui.scratch"
+seq = "shift+Enter"
+action = "save"
+arg = "save and return to the page"
+alias = true
+
+[[project.mind6.binding]]
+scope = "tui.scratch"
+seq = "alt+Enter"
+action = "save"
+arg = "save and return to the page"
+alias = true
+
+[[project.mind6.binding]]
+scope = "tui.scratch"
+seq = "Tab"
+action = "focus-note"
+arg = "to the note"
+
+[[project.mind6.binding]]
+scope = "tui.scratch-day"
+seq = "alt+h"
+action = "prev-day"
+
+[[project.mind6.binding]]
+scope = "tui.scratch-day"
+seq = "alt+l"
+action = "next-day"
+
+[[project.mind6.binding]]
+scope = "tui.scratch-note"
+seq = "Tab"
+action = "focus-text"
+arg = "to the text"
+
+[[project.mind6.binding]]
+scope = "tui.scratch-note"
+seq = "shift+Tab"
+action = "focus-text"
+arg = "to the text"
+
+[[project.mind6.binding]]
+scope = "tui.scratch-note"
+seq = "Escape"
+action = "dismiss"
+arg = "to the page"
+
+[[project.wali.binding]]
+scope = "panel"
+seq = "h"
+action = "prev"
+
+[[project.wali.binding]]
+scope = "panel"
+seq = "Left"
+action = "prev"
+
+[[project.wali.binding]]
+scope = "panel"
+seq = "l"
+action = "next"
+
+[[project.wali.binding]]
+scope = "panel"
+seq = "Right"
+action = "next"
+
+[[project.wali.binding]]
+scope = "panel"
+seq = "k"
+action = "up"
+
+[[project.wali.binding]]
+scope = "panel"
+seq = "Up"
+action = "up"
+
+[[project.wali.binding]]
+scope = "panel"
+seq = "j"
+action = "down"
+
+[[project.wali.binding]]
+scope = "panel"
+seq = "Down"
+action = "down"
+
+[[project.wali.binding]]
+scope = "panel"
+seq = "r"
+action = "random"
+
+[[project.wali.binding]]
+scope = "panel"
+seq = "space"
+action = "primary"
+arg = "favorite the photo"
+
+[[project.wali.binding]]
+scope = "panel"
+seq = "f"
+action = "primary"
+arg = "favorite the photo"
+
+[[project.wali.binding]]
+scope = "panel"
+seq = "e"
+action = "edit"
+
+[[project.wali.binding]]
+scope = "panel"
+seq = "y"
+action = "yank"
+
+[[project.wali.binding]]
+scope = "panel"
+seq = "x"
+action = "remove"
+
+[[project.wali.binding]]
+scope = "panel"
+seq = "shift+x"
+action = "hidden-list"
+
+[[project.wali.binding]]
+scope = "panel"
+seq = "?"
+action = "help"
+
+[[project.wali.binding]]
+scope = "panel"
+seq = "F1"
+action = "help"
+[[project.prism.binding]]
+scope = "panel"
+seq = "?"
+action = "help"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "F1"
+action = "help"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "k"
+action = "up"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "Up"
+action = "up"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "j"
+action = "down"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "Down"
+action = "down"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "h"
+action = "prev"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "Left"
+action = "prev"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "l"
+action = "next"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "Right"
+action = "next"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "r"
+action = "random"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "ctrl+s"
+action = "save"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "1"
+action = "select"
+arg = "profile 1"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "2"
+action = "select"
+arg = "profile 2"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "3"
+action = "select"
+arg = "profile 3"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "4"
+action = "select"
+arg = "profile 4"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "5"
+action = "select"
+arg = "profile 5"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "6"
+action = "select"
+arg = "profile 6"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "7"
+action = "select"
+arg = "profile 7"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "8"
+action = "select"
+arg = "profile 8"
+
+[[project.prism.binding]]
+scope = "panel"
+seq = "9"
+action = "select"
+arg = "profile 9"
