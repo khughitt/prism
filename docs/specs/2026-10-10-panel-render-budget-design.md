@@ -106,10 +106,7 @@ but it is not in Prism's hands. It is filed separately, prepared and not posted
 
 A small memo module (`integrations/noctalia-plugin/retain.luau`) holds a map
 `id → {signature, node}`. `retain(id, signature, build)` returns the stored node when
-the signature is unchanged. Otherwise it calls `build()` and stores the result. Every
-render also marks the ids it used, and ids a render did not use are dropped afterwards.
-A card that leaves the rack, or a row that leaves the panel, therefore does not keep its
-node.
+the signature is unchanged. Otherwise it calls `build()` and stores the result.
 
 The retained units are these:
 
@@ -119,19 +116,50 @@ The retained units are these:
   nodes.
 - **Card** (`deviceCard`) and **section header** (`sectionHeader`, including its reset
   buttons).
-- **Top rows**: title, profile, wallpaper header, edits row.
 
-The scroll root, separators and the children lists that assemble those units are
-rebuilt on every render. They cost a few dozen nodes.
+The top rows (title, profile, naming or confirm, wallpaper header, edits row), the
+scroll root, separators, and the children lists that assemble the units are rebuilt on
+every render. They read panel state that a signature would have to mirror field by
+field, and they cost about 40 nodes.
 
-**A signature is a string built from the exact inputs the builder reads.** For a
-control cell, that is the parameter's key, value, edited flag, `effectiveDrag`, gate,
-attached color (key and effective value), effective color, and whether the cell holds
-keyboard focus. A row combines its cells' signatures with its label, indent, hint
-inputs (`fromWallpaper`, `effectiveDrag`) and hidden state. A card adds `expanded`,
-`bypassed`, `silenced` and `attenuatedBy`. A section header adds the edited, symmetric
-and neutral counts. Each builder and its signature function live side by side, so a new
-input is added to both in one place.
+**A signature has two parts: what describe said, and what the panel changed since.**
+
+- *What describe said* is a digest per parameter and per rack device. When a describe
+  is accepted, it is the entry as decoded, serialized with `noctalia.json.encode`,
+  before `markEdits` adds the panel's own fields. The digest covers every field
+  describe sends, not a chosen list. Range, step, display, scale, exponent, unit, select
+  values, label, description, `ui.when`, `effective` with its `from`, a device's label,
+  family and interactions: a change to any of them changes the digest. If the encoder's
+  key order ever differed between two equal entries, the cost is a needless rebuild,
+  never a stale node.
+- *What the panel changed since* is the short list of fields the panel writes or derives
+  between describes. For a parameter that is `value` and `edited`, which drags, writes,
+  resets, commits and profile picks set optimistically, plus its derived gate and
+  whether it holds keyboard focus. For a cell with an attached color, it is that
+  color's digest and value. For a card it is `expanded`, `bypassed`, `silenced`, and
+  the ids and digests of the devices in `attenuatedBy`, whose labels the card prints.
+  For a section header it is the edited, symmetric and neutral counts, the section's
+  color index, and its header toggle's digest and value.
+
+A builder reads a parameter or device only through those two parts. It may read any
+describe field, because the digest covers them all, and only the listed panel-side
+fields. A builder that needs a new panel-side field adds it to the signature in the
+same change. The equivalence test below catches a builder that does not.
+
+**Signatures are composed bottom-up, and every render computes all of them.** A cell's
+signature comes first. A row's signature is its own inputs (label, indent, hidden
+state, hint inputs) plus its cells' signatures. A card's signature is its own inputs
+plus its rows' signatures. So a change anywhere below a unit changes that unit's
+signature, and an unchanged unit is returned whole, its descendants included. The
+signature pass is string work over every unit, about 1–1.5k calls per render,
+building no nodes.
+
+**Eviction follows the model's structure, not each render.** A parent cache hit skips
+its children's `retain` calls, so "unused this render" would wrongly evict descendants
+still on screen. Entries are therefore dropped only when a describe is accepted. Any
+id that the new structure no longer contains goes: a parameter key, a device id, a
+section name or a row label. Within one model the set of ids is fixed. Detail rows of
+a collapsed card stay cached, which bounds the memo by the model's size.
 
 Signatures compare content, not table identity. A describe therefore reuses every
 subtree whose inputs it did not change, even though the decode produced fresh parameter
@@ -160,7 +188,8 @@ reads them:
   today `render` builds them a second time.
 - the **slider metadata** per parameter: bounds, step, precision, display and scale.
   These depend only on `range` and `ui`.
-- the **lookup indexes** of part 2, and the slider walk order for keyboard focus.
+- the **lookup indexes** of part 2, the slider walk order for keyboard focus, and the
+  **digests** of part 1.
 
 Values change between describes (drags, toggles, resets), so the facts that depend on
 values are recomputed on every render. Those are gates, attached swatches,
@@ -186,13 +215,14 @@ units, and keeping them synchronous preserves the slider-correction handshake in
 ### 5. A full rebuild, if it is still too dear
 
 Retention does nothing for a render in which every signature changes. Part 3 is
-expected to bring a full expanded rebuild from 8.5k calls to about 6.5k, near
-the 5.6k that measured 10–14 ms in-host on 2026-09-30. The plan's first
-measurement decides whether more is needed. If a full expanded rebuild measures over
-15 ms in-host, the rebuild is spread over frame ticks. `render` runs as a coroutine that
-yields after every few retained units, and `onFrameTick` resumes it. The previous tree
-stays on screen, and its handlers stay live by part 2, until `panel.render` hands over
-the finished one. Below 15 ms, this part is not built.
+expected to bring a full expanded rebuild from 8.5k calls to about 6.5k, plus the
+signature pass. That is near the 5.6k calls that measured 10–14 ms in-host on
+2026-09-30. The plan measures it in-host before anything else in this spec is accepted.
+If a full expanded rebuild measures over 15 ms, the work returns to design with that
+figure, and this spec is revised before more code lands. The candidates are fewer
+wrapper nodes per cell, or a rebuild spread over frame ticks. The second needs rules
+for edits and describes that arrive between ticks, and for `endDrag`'s synchronous
+correction, so it is not designed here on speculation.
 
 ### 6. What does not change
 
@@ -210,9 +240,18 @@ API change is assumed.
   - a gate opening and closing;
   - expanding and collapsing a card, focus moving, help toggled;
   - a describe changing one value, and a describe replacing the model with different
-    structure.
+    structure;
+  - describes that change only metadata with every value unchanged: a slider's range,
+    step, display, scale and unit; a select's values; a label and a description; an
+    effective color's `from`; a device's label, family and interactions.
 
-  This catches a signature that misses an input.
+  This catches a signature that misses an input. Test hosts get a deterministic
+  `json.encode`.
+- **Retention reach.** Two unchanged renders run no builder on the second. A drag on
+  one cell then runs exactly the builders on its path: that cell, its row, its card
+  when it is in the rack, and its section header only if a count changed. A third
+  render after the drag hits for every sibling row and cell of that card, which proves
+  a parent hit did not evict its descendants.
 - **Stale handlers.** After a describe replaces the model, the test invokes handlers
   from reused subtrees: a reset button, a toggle, a card light, a section reset. It
   asserts each acts on the current model's tables and enqueues the expected command.

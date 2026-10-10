@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-10T16:28:09Z
+updated: 2026-10-10T16:36:05Z
 started: 2026-10-10T16:20:49Z
 depends: []
 tags: [noctalia, performance]
@@ -31,3 +31,10 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
 - 2026-10-10T16:20:55Z (fix/panel-render-budget): resumed
   provenance: {"harness_session":"claude-code:35b76d69-d243-4ef3-a0bc-e3117438b797","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
 - 2026-10-10T16:28:08Z (fix/panel-render-budget): Host facts (Noctalia main, 2026-10-10): budget covers whole pcall incl. json.decode and panel.render readback; ui.* are pure Luau ctors; no partial-update API; frame tick/state.watch give a fresh budget; host does post a one-time 'Plugin disabled' notification. Offline (live describe 71 KB): render 7.1k calls/458 nodes collapsed, 8.5k/741 expanded; changed describe 12k. Spec: retained subtrees keyed by content signatures, handlers resolve by key, per-model structure cache, describe render deferred to next frame tick; coroutine-spread rebuild only if full rebuild >15 ms in-host.
+- 2026-10-10T16:28:12Z (fix/panel-render-budget): parked (waiting on user, review): Owner reviews docs/specs/2026-10-10-panel-render-budget-design.md in .worktrees/panel-budget; on approval the agent runs writing-plans
+  provenance: {"harness_session":"claude-code:35b76d69-d243-4ef3-a0bc-e3117438b797","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T16:32:19Z (fix/panel-render-budget): review: spec round 1 — verdict: revise; findings: P1 2, P2 1; reviewer: codex
+- 2026-10-10T16:32:19Z (fix/panel-render-budget): Spec review: signatures omit rendered metadata (range/ui/select values/description/effective.from); optional coroutine rebuild lacks invalidation and synchronous endDrag correction rules; nested retention must keep descendant memo entries alive on a parent cache hit. Review report in the current Codex turn; spec unchanged.
+- 2026-10-10T16:35:06Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"claude-code:35b76d69-d243-4ef3-a0bc-e3117438b797","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T16:36:05Z (fix/panel-render-budget): Spec revised for round 1: signatures = per-entry describe digest (json.encode of each param/device as decoded) + listed panel-side fields; bottom-up composition, eviction only at model acceptance against the new structure's ids; top rows no longer retained; coroutine fallback removed (a >15 ms full rebuild returns to design); metadata-only and retention-reach tests added.
