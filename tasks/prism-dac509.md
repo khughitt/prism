@@ -8,12 +8,13 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-10T16:36:05Z
+updated: 2026-10-10T17:06:03Z
 started: 2026-10-10T16:20:49Z
 depends: []
 tags: [noctalia, performance]
 agent: claude-code/claude-opus-5-5
 spec: docs/specs/2026-10-10-panel-render-budget-design.md
+plan: docs/plans/2026-10-10-panel-render-budget.md
 ---
 
 Observed 2026-10-10 12:10-12:12 (~/.cache/noctalia/noctalia.log): while dragging sliders inside expanded rack cards (Edge profile, refraction), five callbacks exceeded the host's per-callback CPU budget within 70 s: three slider onDragEnd (panel.luau endDrag's single render), one onFrameTick, two async command callbacks (described: decode + validate + render). Noctalia then logged 'plugin panel khughitt/prism:panel disabled after repeated timeouts' and stopped calling the panel for the session; sliders move but nothing applies and no error shows. Budget rules (Noctalia src/scripting/script_runtime.cpp): 25 ms worker-thread CPU per call, 3 consecutive or 5 per 60 s timeouts disable the runtime until reload. ui.render reads the whole tree back into the host inside the callback (plugin_bindings.cpp luau_ui_render), so tree size counts as well as Lua work.
@@ -38,3 +39,9 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
 - 2026-10-10T16:35:06Z (fix/panel-render-budget): resumed
   provenance: {"harness_session":"claude-code:35b76d69-d243-4ef3-a0bc-e3117438b797","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
 - 2026-10-10T16:36:05Z (fix/panel-render-budget): Spec revised for round 1: signatures = per-entry describe digest (json.encode of each param/device as decoded) + listed panel-side fields; bottom-up composition, eviction only at model acceptance against the new structure's ids; top rows no longer retained; coroutine fallback removed (a >15 ms full rebuild returns to design); metadata-only and retention-reach tests added.
+- 2026-10-10T16:36:05Z (fix/panel-render-budget): parked (waiting on user, review): Owner re-reviews docs/specs/2026-10-10-panel-render-budget-design.md (round 2) in .worktrees/panel-budget; on approval the agent runs writing-plans
+  provenance: {"harness_session":"claude-code:35b76d69-d243-4ef3-a0bc-e3117438b797","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T16:48:59Z (fix/panel-render-budget): review: spec round 2 — verdict: accept; findings: none; reviewer: codex
+- 2026-10-10T16:48:59Z (fix/panel-render-budget): Reviewed revision 965caf6 against all three findings: full describe-entry digests plus panel-side inputs and metadata equivalence cases cover signature completeness; coroutine fallback removed behind an explicit measured redesign gate; structure-based eviction and retention-reach tests preserve descendants. No further blocking findings. In-host callback costs, including digest generation, remain implementation acceptance checks.
+- 2026-10-10T16:51:31Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"claude-code:35b76d69-d243-4ef3-a0bc-e3117438b797","harness_session_source":"CLAUDE_CODE_SESSION_ID"}

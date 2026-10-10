@@ -1,7 +1,7 @@
 # Panel render within the host's callback budget
 
 **Date:** 2026-10-10
-**Status:** draft, awaiting owner review
+**Status:** approved by owner 2026-10-10 (review round 2: accept); plan: [docs/plans/2026-10-10-panel-render-budget.md](../plans/2026-10-10-panel-render-budget.md)
 **Task:** `prism-dac509` (absorbs the dropped `prism-5172ea`)
 **Builds on:** `prism-dfbd7f` (one drag render per frame tick) and `prism-831604`
 (`refresh` never renders; an unchanged describe is skipped), both recorded in
