@@ -2109,3 +2109,53 @@ for _ in pairs(table_) do count = count + 1 end
 equal(count, #expectedChords, "no chord beyond the declared set")
 equal(table_["5"], { action = "select", arg = "profile 5" })
 end)()
+
+;(function()
+-- The host reuses a keyed row and changes its fill only when the new tree
+-- names one, so a row the focus left must say transparent, not omit the fill.
+renderModel(layeredModel())
+onKey("j", true)
+onKey("j", true)
+for _, key in ipairs({ "compositor.gaps", "glass.inactive.roughness", "glass.roughness" }) do
+  equal(cellFor(rendered, key).props.fill, "primary/0", key .. " clears the highlight explicitly")
+end
+equal(cellFor(rendered, "glass.ior").props.fill, "primary/0.12")
+
+-- One render per gesture: a full render costs 10-14 ms in the host against a
+-- 25 ms callback budget, so a second render in the same callback can trip it.
+local function rendersOf(action)
+  host.renders = 0
+  action()
+  return host.renders
+end
+local editsModel = twoEdits()
+renderModel(editsModel)
+equal(rendersOf(function() onKey("ctrl+s", true) end), 1, "ctrl+s keep renders once")
+writeCallback({ exitCode = 0, stdout = "" })
+described(host.describeOk())
+
+local saveTree = renderModel(profileModel())
+glyphButton(saveTree, "device-floppy").props.onClick()
+collect(rendered, "input")[1].props.onChange("noon")
+equal(rendersOf(function() onKey("ctrl+s", true) end), 1, "ctrl+s save-as renders once")
+writeCallback({ exitCode = 0, stdout = "" })
+described(host.describeOk())
+
+local renameTree = renderModel(profileModel({ active = { profile = "dusk", wallpaper = { id = "f8eb0556", path = "/pics/a.jpg" } } }))
+glyphButton(renameTree, "pencil").props.onClick()
+collect(rendered, "input")[1].props.onChange("dusk2")
+equal(rendersOf(function() onKey("ctrl+s", true) end), 1, "ctrl+s rename renders once")
+writeCallback({ exitCode = 0, stdout = "" })
+described(host.describeOk())
+
+local replaceTree = renderModel(profileModel())
+glyphButton(replaceTree, "device-floppy").props.onClick()
+collect(rendered, "input")[1].props.onChange("dusk")
+onKey("ctrl+s", true) -- a taken name becomes the replace question
+local replace
+for _, button in ipairs(collect(rendered, "button")) do
+  if button.props.text == "Replace" then replace = button end
+end
+assert(replace, "a taken name asks before replacing")
+equal(rendersOf(replace.props.onClick), 1, "replace renders once")
+end)()
