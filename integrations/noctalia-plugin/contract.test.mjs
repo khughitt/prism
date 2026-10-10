@@ -403,3 +403,75 @@ test('each tint source shows its own controls: pickers under manual, mix under n
     }
   }
 });
+
+// The vocabulary contract: every chord the panel captures is a row of the
+// ops-owned table, and every prism row is a captured chord. The live side is
+// keyTable(), which onKey dispatches from, so a chord cannot be handled without
+// being counted. Only `?` has a host spelling of its own.
+const hostSpellings = { '?': 'shift+question' };
+const canonicalSeq = Object.fromEntries(Object.entries(hostSpellings).map(([seq, host]) => [host, seq]));
+
+function tomlToJson(path) {
+  const parsed = spawnSync('python3', [
+    '-c',
+    'import json, sys, tomllib; print(json.dumps(tomllib.load(open(sys.argv[1], "rb"))))',
+    path,
+  ], { encoding: 'utf8' });
+  assert.equal(parsed.status, 0, parsed.stderr);
+  return JSON.parse(parsed.stdout);
+}
+
+const keyDump = String.raw`
+local pluginDir = arg[1]
+local ui = setmetatable({}, {__index = function(_, kind)
+  return function(props, children) return {kind = kind, props = props or {}, children = children or {}} end
+end})
+local env = {
+  ui = ui,
+  panel = {render = function() end, setNeedsFrameTick = function() end},
+  noctalia = {json = {decode = function() return {} end}, runAsync = function() return true end},
+}
+setmetatable(env, {__index = _G})
+env.require = function(name)
+  return assert(loadfile(pluginDir .. name:gsub("^%./", ""), "t", env))()
+end
+assert(loadfile(pluginDir .. "panel.luau", "t", env))()
+local parts = {}
+for chord, entry in pairs(env.keyTable()) do
+  parts[#parts + 1] = string.format('{"chord":%q,"action":%q,"arg":%s}',
+    chord, entry.action, entry.arg and string.format("%q", entry.arg) or "null")
+end
+io.write("[" .. table.concat(parts, ",") .. "]")
+`;
+
+const rowKey = (row) =>
+  `${row.scope}\t${row.seq}\t${row.action}\t${row.arg ?? ''}\t${row.alias ? 'alias' : ''}`;
+
+test('the panel captures exactly the prism rows of tools/keys.toml', () => {
+  const keys = tomlToJson(fileURLToPath(new URL('../../tools/keys.toml', pluginDir)));
+  const rows = keys.project.prism.binding;
+  const manifest = tomlToJson(fileURLToPath(new URL('plugin.toml', pluginDir)));
+
+  const dumped = spawnSync('lua', ['-', fileURLToPath(pluginDir)], { input: keyDump, encoding: 'utf8' });
+  assert.equal(dumped.status, 0, dumped.stderr || dumped.stdout);
+  const live = JSON.parse(dumped.stdout).map((entry) => ({
+    scope: 'panel',
+    seq: canonicalSeq[entry.chord] ?? entry.chord,
+    action: entry.action,
+    arg: entry.arg ?? undefined,
+    alias: false,
+  }));
+
+  const inventory = new Set(rows.map(rowKey));
+  const captured = new Set(live.map(rowKey));
+  assert.deepEqual({
+    missingFromPanel: [...inventory].filter((row) => !captured.has(row)),
+    missingFromKeysToml: [...captured].filter((row) => !inventory.has(row)),
+  }, { missingFromPanel: [], missingFromKeysToml: [] });
+
+  assert.deepEqual(
+    [...manifest.panel[0].capture_keys].sort(),
+    rows.map((row) => hostSpellings[row.seq] ?? row.seq).sort(),
+    'capture_keys must be the inventory rows in host spelling',
+  );
+});
