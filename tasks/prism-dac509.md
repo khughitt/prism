@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-10T17:35:28Z
+updated: 2026-10-10T17:40:26Z
 started: 2026-10-10T16:20:49Z
 depends: []
 tags: [noctalia, performance]
@@ -59,3 +59,10 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
 - 2026-10-10T17:35:03Z (fix/panel-render-budget): resumed
   provenance: {"harness_session":"claude-code:35b76d69-d243-4ef3-a0bc-e3117438b797","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
 - 2026-10-10T17:35:28Z (fix/panel-render-budget): Plan revised for review round 2: Tasks 3-4 commit test/plugin-panel-lifecycle.test.js; probe logs a run marker and the collection reads every line after a recorded log offset into a per-run file; acceptance refused with fewer than five samples in any required class; an over-target sample under a passing median is recorded as unknown cause unless host-load evidence shows contention.
+- 2026-10-10T17:35:28Z (fix/panel-render-budget): parked (waiting on user, review): Owner re-reviews docs/plans/2026-10-10-panel-render-budget.md (round 3) and picks an execution method; then the agent executes Task 1 (prism-5d4e76)
+  provenance: {"harness_session":"claude-code:35b76d69-d243-4ef3-a0bc-e3117438b797","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T17:37:53Z (fix/panel-render-budget): review: plan round 3 — verdict: revise; findings: P1 1; reviewer: codex
+- 2026-10-10T17:37:53Z (fix/panel-render-budget): Reviewed 254ee27: prior three findings addressed on the normal path. Remaining retry defect: a fresh START excludes the load-only prism-probe-run marker, so RUN becomes empty; collection overwrites the dataset; sample-count retries occur after Step 4 restored the main plugin, so Step 3 produces no probe lines. Check completeness while the probe is installed, retain original START/RUN for missing-step retries, and restart reload plus all cases after rotation. Plan unchanged; tests remain execution checks.
+- 2026-10-10T17:39:55Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"claude-code:35b76d69-d243-4ef3-a0bc-e3117438b797","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T17:40:26Z (fix/panel-render-budget): Plan revised for review round 3: completeness is checked in a new Step 4 while the probe is installed; retries keep the original START and RUN and rebuild the whole run's file; log rotation records a new offset, reloads the probe for a fresh marker, and repeats every case; the pointer is restored (Step 5) only after a complete run or the user stopping; the gate (Step 6) takes only a complete run.

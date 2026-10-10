@@ -1677,7 +1677,10 @@ Ask the user to do the following, in order:
    profiles exist, say so in the record: the cold `x` rebuild then stands as the
    full-rebuild figure.
 
-Then collect:
+- [ ] **Step 4: Collect and check completeness, with the probe still installed**
+
+Collect from the `START` that Step 2 recorded. Every collection of this run, retries
+included, uses that same `START` and the `RUN` found here:
 
 ```bash
 RUN=$(tail -n +"$((START + 1))" "$LOG" | grep -o "prism-probe-run [0-9]*" | tail -1 | cut -d' ' -f2)
@@ -1688,10 +1691,11 @@ wc -l "$PROBE"
 tail -n +"$((START + 1))" "$LOG" | grep -c "exceeded its CPU budget"   # must be 0
 ```
 
-The file holds every probe line of this run, and only those: a drag ticks about 60
+If `RUN` is empty, the probe never loaded. Check `readlink` on the plugin symlink,
+reload as in Step 2, and start Step 3 again. Nothing collected so far counts.
+
+The file holds every probe line of this run, and only those. A drag ticks about 60
 times a second, so a fixed-length `tail` would drop the cold rebuilds that came first.
-If the log rotated during the run (`wc -l < "$LOG"` now smaller than `START`), the
-offset is void. Repeat Step 3 with a fresh `START`.
 
 Read `$PROBE` and sort its lines into these classes:
 - `coldRender`: the `x` presses;
@@ -1700,9 +1704,27 @@ Read `$PROBE` and sort its lines into these classes:
 - `describe` and `describeRender` (over 0.5 ms) from the releases' re-reads;
 - the same two from the profile switches, as `switch`.
 
-The order of the log lines follows the user's steps.
+The order of the log lines follows the user's steps. Count the usable samples per
+class. The required classes are `coldRender`, `dragTick`, `dragEnd`, `describe`,
+`describeRender`, and `switch` when at least two profiles exist.
 
-- [ ] **Step 4: Restore the pointer**
+- **Fewer than five in any required class.** The probe is still installed, so ask the
+  user to repeat only the Step 3 actions that feed the short classes. Then run the
+  block above again, unchanged. The same `START` and `RUN` rebuild `$PROBE` from the
+  whole run, so earlier samples are kept and the new ones join them. Repeat until
+  every class has five samples. If the user stops first, go on to Step 5 and then park
+  with `--reason quiet --waiting-on user`, naming the short classes. Do not gate an
+  incomplete run.
+- **The log rotated** (`wc -l < "$LOG"` is now below `START`). The offset no longer
+  points into this run, and the earlier lines may be gone. Start the run over:
+  1. Record a new offset: `START=$(wc -l < "$LOG")`.
+  2. Reload the probe so it writes a fresh marker after that offset:
+     `noctalia msg plugins disable khughitt/prism && noctalia msg plugins enable khughitt/prism`.
+  3. Repeat all of Step 3, then this step.
+
+- [ ] **Step 5: Restore the pointer**
+
+Do this once the run is complete, or once the user stops.
 
 ```bash
 MAIN=$(git rev-parse --path-format=absolute --git-common-dir | sed 's#/\.git$##')
@@ -1712,17 +1734,13 @@ readlink ~/.local/share/noctalia/plugins/prism
 tasks note prism-dac509 "host pointer restored: ~/.local/share/noctalia/plugins/prism -> main checkout, plugin reloaded"
 ```
 
-- [ ] **Step 5: Record and gate**
+- [ ] **Step 6: Record and gate**
 
-Record one note with the median, the maximum and the sample count per class:
-`tasks note prism-dac509 "in-host (os.clock elapsed, an upper bound on thread CPU; every card expanded): coldRender med/max/n …; switch describe …, render …; dragTick …; dragEnd …; describe …; describeRender …; new budget errors: <n>"`.
+Gate only a run that Step 4 found complete. Record one note with the median, the
+maximum and the sample count per class:
+`tasks note prism-dac509 "in-host (os.clock elapsed, an upper bound on thread CPU; every card expanded; run <RUN>): coldRender med/max/n …; switch describe …, render …; dragTick …; dragEnd …; describe …; describeRender …; new budget errors: <n>"`.
 
 Then apply the gate:
-- **Fewer than five usable samples in any required class.** Acceptance is refused, not
-  passed. The classes are `coldRender`, `dragTick`, `dragEnd`, `describe`,
-  `describeRender`, and `switch` when at least two profiles exist. Repeat the missing
-  steps of Step 3, collecting with a fresh `START`, or park with
-  `--reason quiet --waiting-on user` naming the missing classes.
 - **New budget errors in the log.** Stop: the host's own meter has refused a callback.
   Note which one and park as below.
 - **Median `coldRender` or `switch` render over 15 ms.** Stop. Park with
