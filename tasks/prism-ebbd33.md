@@ -1,13 +1,15 @@
 ---
 id: prism-ebbd33
 title: Have doctor diagnose a stale or missing resolved.json directly
-status: todo
+status: doing
 priority: 2
 size: s
 complexity: low
 process: direct
+owner: main
 created: 2026-09-05T22:56:03Z
-updated: 2026-09-29T22:48:50Z
+updated: 2026-10-10T12:20:25Z
+started: 2026-10-10T12:20:25Z
 depends: []
 parent: prism-5a7c8a
 tags: [store, cli]
@@ -31,3 +33,5 @@ A store mutation writes two or three files under one store lock — the context 
 ## Notes
 
 - 2026-09-29T22:48:50Z (main): scope: scoped; isolated reproduction confirms doctor misses stale bus; promoted P2/s/low/direct with locked comparison, recovery cases and documentation acceptance; brief: docs/notes/2026-09-29-store-maintenance-brief.md
+- 2026-10-10T12:20:25Z (main): started
+  provenance: {"harness_session":"claude-code:278111ef-4125-4213-8e3c-7758b3cad216","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
