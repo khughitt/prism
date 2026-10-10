@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-10T17:22:16Z
+updated: 2026-10-10T17:35:28Z
 started: 2026-10-10T16:20:49Z
 depends: []
 tags: [noctalia, performance]
@@ -52,3 +52,10 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
 - 2026-10-10T17:19:45Z (fix/panel-render-budget): resumed
   provenance: {"harness_session":"claude-code:35b76d69-d243-4ef3-a0bc-e3117438b797","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
 - 2026-10-10T17:22:16Z (fix/panel-render-budget): Plan revised for review round 1: nudge resolves the focused key through current(); resetAction returns when its section is gone; commitAction clears the current model's edits; lifecycle harness gets the encoder (Task 3) and a tick in host.complete (Task 4); in-host gate moved to Task 6 before ceilings (Task 7), measures a cold fresh-decode rebuild and a real profile switch; os.clock defined as elapsed upper bound, gate on medians of >=5 samples plus zero host budget errors (spec clarified); all runs through just test-fast.
+- 2026-10-10T17:22:17Z (fix/panel-render-budget): parked (waiting on user, review): Owner re-reviews docs/plans/2026-10-10-panel-render-budget.md (round 2) and picks an execution method; then the agent executes Task 1 (prism-5d4e76)
+  provenance: {"harness_session":"claude-code:35b76d69-d243-4ef3-a0bc-e3117438b797","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T17:30:08Z (fix/panel-render-budget): review: plan round 2 — verdict: revise; findings: P1 2, P2 1; reviewer: codex
+- 2026-10-10T17:30:08Z (fix/panel-render-budget): Reviewed aee152d: current-key nudge, removed-scope no-op, current-model Keep, lifecycle host updates, cold fresh-decode probe, reordered acceptance gate, elapsed-time labels and test front door address prior findings. Remaining: Tasks 3/4 git add omit test/plugin-panel-lifecycle.test.js; Task 6 tail -200 can discard all five cold samples after hundreds of drag tick lines; an elapsed maximum above target cannot be attributed to scheduling noise from a passing median and zero 25 ms budget errors. Tests intentionally remain for execution; plan unchanged.
+- 2026-10-10T17:35:03Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"claude-code:35b76d69-d243-4ef3-a0bc-e3117438b797","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T17:35:28Z (fix/panel-render-budget): Plan revised for review round 2: Tasks 3-4 commit test/plugin-panel-lifecycle.test.js; probe logs a run marker and the collection reads every line after a recorded log offset into a per-run file; acceptance refused with fewer than five samples in any required class; an over-target sample under a passing median is recorded as unknown cause unless host-load evidence shows contention.

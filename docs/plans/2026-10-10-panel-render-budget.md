@@ -775,7 +775,7 @@ Expected: PASS, including the new block and the `contract.test.mjs` cases.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add integrations/noctalia-plugin/panel.luau integrations/noctalia-plugin/plugin_test.lua integrations/noctalia-plugin/contract.test.mjs
+git add integrations/noctalia-plugin/panel.luau integrations/noctalia-plugin/plugin_test.lua integrations/noctalia-plugin/contract.test.mjs test/plugin-panel-lifecycle.test.js
 git commit -m "refactor(noctalia): build the panel structure once per describe and resolve handlers by key"
 ```
 
@@ -1064,7 +1064,7 @@ after that call. Do not change any assertion's meaning.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add integrations/noctalia-plugin/panel.luau integrations/noctalia-plugin/plugin_test.lua integrations/noctalia-plugin/contract.test.mjs
+git add integrations/noctalia-plugin/panel.luau integrations/noctalia-plugin/plugin_test.lua integrations/noctalia-plugin/contract.test.mjs test/plugin-panel-lifecycle.test.js
 git commit -m "perf(noctalia): render a changed describe in the next frame tick"
 ```
 
@@ -1606,11 +1606,14 @@ In `$SCRATCH/panel.luau`, append at the very end:
 
 ```lua
 -- Probe only. Each line is elapsed time (os.clock is monotonic in Luau), an
--- upper bound on the thread CPU the host meters.
+-- upper bound on the thread CPU the host meters. The run marker tells this
+-- load's lines from any earlier probe's.
+local probeRun = string.format("%d", os.time())
+noctalia.log("prism-probe-run " .. probeRun)
 local function timed(name, fn, ...)
   local started = os.clock()
   local a, b = fn(...)
-  noctalia.log(string.format("prism-probe %s %.2f ms", name, (os.clock() - started) * 1000))
+  noctalia.log(string.format("prism-probe %s %s %.2f ms", probeRun, name, (os.clock() - started) * 1000))
   return a, b
 end
 
@@ -1651,7 +1654,8 @@ Check it offline: `noctalia plugins lint "$SCRATCH"`.
 ```bash
 tasks note prism-dac509 "host pointer: ~/.local/share/noctalia/plugins/prism repointed from <main>/integrations/noctalia-plugin to the scratchpad probe copy; restore with ln -sfn <main>/integrations/noctalia-plugin ~/.local/share/noctalia/plugins/prism then noctalia msg plugins disable/enable khughitt/prism"
 readlink ~/.local/share/noctalia/plugins/prism   # confirm the current target before changing it
-grep -c "exceeded its CPU budget" ~/.cache/noctalia/noctalia.log   # the count before
+LOG=~/.cache/noctalia/noctalia.log
+START=$(wc -l < "$LOG")   # this run reads only the lines after this offset
 ln -sfn "$SCRATCH" ~/.local/share/noctalia/plugins/prism
 noctalia msg plugins disable khughitt/prism && noctalia msg plugins enable khughitt/prism
 ```
@@ -1676,11 +1680,20 @@ Ask the user to do the following, in order:
 Then collect:
 
 ```bash
-grep "prism-probe" ~/.cache/noctalia/noctalia.log | tail -200
-grep -c "exceeded its CPU budget" ~/.cache/noctalia/noctalia.log   # must equal the count before
+RUN=$(tail -n +"$((START + 1))" "$LOG" | grep -o "prism-probe-run [0-9]*" | tail -1 | cut -d' ' -f2)
+test -n "$RUN" || echo "no probe run marker after the offset: the probe copy did not load"
+PROBE=<session scratchpad>/probe-$RUN.log
+tail -n +"$((START + 1))" "$LOG" | grep "prism-probe $RUN " > "$PROBE"
+wc -l "$PROBE"
+tail -n +"$((START + 1))" "$LOG" | grep -c "exceeded its CPU budget"   # must be 0
 ```
 
-Sort the lines into these classes:
+The file holds every probe line of this run, and only those: a drag ticks about 60
+times a second, so a fixed-length `tail` would drop the cold rebuilds that came first.
+If the log rotated during the run (`wc -l < "$LOG"` now smaller than `START`), the
+offset is void. Repeat Step 3 with a fresh `START`.
+
+Read `$PROBE` and sort its lines into these classes:
 - `coldRender`: the `x` presses;
 - `dragTick`;
 - `dragEnd`;
@@ -1705,14 +1718,22 @@ Record one note with the median, the maximum and the sample count per class:
 `tasks note prism-dac509 "in-host (os.clock elapsed, an upper bound on thread CPU; every card expanded): coldRender med/max/n …; switch describe …, render …; dragTick …; dragEnd …; describe …; describeRender …; new budget errors: <n>"`.
 
 Then apply the gate:
+- **Fewer than five usable samples in any required class.** Acceptance is refused, not
+  passed. The classes are `coldRender`, `dragTick`, `dragEnd`, `describe`,
+  `describeRender`, and `switch` when at least two profiles exist. Repeat the missing
+  steps of Step 3, collecting with a fresh `START`, or park with
+  `--reason quiet --waiting-on user` naming the missing classes.
 - **New budget errors in the log.** Stop: the host's own meter has refused a callback.
   Note which one and park as below.
 - **Median `coldRender` or `switch` render over 15 ms.** Stop. Park with
   `tasks park prism-dac509 "Full rebuild measured <median> ms (median, elapsed) in-host, over the spec's 15 ms gate: revise the spec's part 5 with this figure before more code lands" --waiting-on user --reason decision`.
 - **Median of any other class over 12 ms.** Treat it the same way, naming the class.
-- **Every median within target and no new budget errors.** Continue to Task 7. A
-  maximum over target with its median within is recorded as scheduling noise, not
-  failed.
+- **Every median within target and no new budget errors.** Continue to Task 7.
+  A sample over target with its class's median within target passes the gate, but its
+  cause is recorded as **unknown**: a 20 ms sample can be real CPU work that the median
+  hides. Call it scheduling noise only on separate evidence, such as `host-load` output
+  taken during the run showing contention. Name each such sample in the note, so a
+  later regression has a baseline to compare with.
 
 ---
 
