@@ -1964,3 +1964,65 @@ described(host.describeOk())
 
 equal(keyTable()["ctrl+s"], { action = "save" }, "the key table names the chord's action")
 end)()
+
+;(function()
+-- Focus: j/k walk the sliders in draw order (Glass singles first, then the
+-- rack's mix cells, unfocused left of focused), h/l step the focused one by
+-- its own ui.step through the ordinary write path, and the edge is a no-op.
+local function focusedCell(tree)
+  for _, row in ipairs(collect(tree, "row")) do
+    if row.props.fill == "primary/0.12" then return row.props.key end
+  end
+  return nil
+end
+
+renderModel(layeredModel())
+equal(focusedCell(rendered), nil, "nothing is focused until a key asks")
+onKey("j", true)
+equal(focusedCell(rendered), "compositor.gaps", "j from nowhere focuses the first slider")
+onKey("j", true)
+equal(focusedCell(rendered), "glass.ior")
+onKey("Down", true)
+equal(focusedCell(rendered), "glass.inactive.roughness", "the unfocused mix cell is drawn first")
+onKey("j", true)
+equal(focusedCell(rendered), "glass.roughness")
+onKey("j", true)
+equal(focusedCell(rendered), "glass.roughness", "j at the last slider stays put")
+onKey("k", true)
+onKey("k", true)
+onKey("Up", true)
+equal(focusedCell(rendered), "compositor.gaps")
+onKey("k", true)
+equal(focusedCell(rendered), "compositor.gaps", "k at the first slider stays put")
+
+onKey("j", true) -- glass.ior, value 1.5, step 0.01
+onKey("l", true)
+equal(commands[#commands], Shell.command({ "prism", "set", "glass.ior", "1.51" }), "l steps up by ui.step")
+writeCallback({ exitCode = 0, stdout = "" })
+onKey("Left", true)
+equal(commands[#commands], Shell.command({ "prism", "set", "glass.ior", "1.5" }), "Left steps back down")
+writeCallback({ exitCode = 0, stdout = "" })
+equal(cellFor(rendered, "glass.ior").children[1].children[1].props.text, "1.5", "the row shows the nudged value")
+described(host.describeOk())
+
+-- Arrows reach the panel before a focused field, so while the name field is
+-- open the walk and the nudge stand down rather than act behind it.
+local namingTree = renderModel(profileModel())
+onKey("j", true)
+glyphButton(namingTree, "device-floppy").props.onClick()
+local beforeNaming = #commands
+onKey("Right", true)
+onKey("Down", true)
+equal(#commands, beforeNaming, "no nudge while the name field is open")
+equal(focusedCell(rendered), "compositor.gaps", "no walk while the name field is open")
+
+renderModel(layeredModel())
+local beforeEdge = #commands
+onKey("h", true)
+equal(#commands, beforeEdge, "h with nothing focused writes nothing")
+onKey("k", true) -- k from nowhere focuses the last slider
+equal(focusedCell(rendered), "glass.roughness")
+model.params[5].value = 1 -- at the top of its range
+onKey("l", true)
+equal(#commands, beforeEdge, "a nudge past the range edge writes nothing")
+end)()

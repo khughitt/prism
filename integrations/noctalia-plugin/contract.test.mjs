@@ -32,7 +32,7 @@ test('v5 manifest declares the Prism widget and panel only', async () => {
     placement: 'attached',
     position: 'auto',
     keyboard_focus: 'exclusive',
-    capture_keys: ['ctrl+s'],
+    capture_keys: ['k', 'Up', 'j', 'Down', 'h', 'Left', 'l', 'Right', 'ctrl+s'],
   }]);
   assert.equal(manifest.setting, undefined);
 

@@ -21,6 +21,11 @@ local state = {
   sampleElapsedMs = 0,
   renderedSliderCorrection = nil,
   expanded = {},
+  -- The keyboard's current slider, by key, and the sliders in the order the
+  -- last render drew them. Keyed so a refresh keeps it; rebuilt per render so
+  -- a collapsed card simply drops out of the walk.
+  focus = nil,
+  focusOrder = {},
   -- Writes enqueued so far, and the describe output and write count the model
   -- on screen came from: an identical answer with no write since changes nothing.
   enqueued = 0,
@@ -596,6 +601,11 @@ local function controlCell(param, grow)
   local color = attached[param.key]
   local available = param.effectiveDrag ~= nil
   local formattedValue = param.ui.control == "slider" and Presentation.formatValue(param.value, param) or nil
+  local focused = false
+  if param.ui.control == "slider" then
+    state.focusOrder[#state.focusOrder + 1] = param
+    focused = state.focus == param.key
+  end
   local children = {
     -- The native label ignores width. Its container reserves the value column,
     -- even when empty, so value length and control kind never shift the track.
@@ -617,7 +627,8 @@ local function controlCell(param, grow)
   if param.ui.control ~= "slider" then children[#children + 1] = ui.spacer({flexGrow = 1}) end
   children[#children + 1] = resetButton(param, available)
   return ui.row({
-    key = param.key, gap = 6, align = "center", flexGrow = grow,
+    key = param.key, gap = 6, align = "center", flexGrow = grow, radius = 6,
+    fill = focused and "primary/0.12" or nil,
     opacity = 1.0,
   }, children)
 end
@@ -914,6 +925,42 @@ local function ask(kind, name, expected)
   render()
 end
 
+local function focusIndex()
+  for index, param in ipairs(state.focusOrder) do
+    if param.key == state.focus then return index end
+  end
+  return nil
+end
+
+-- From nowhere, j starts at the top and k at the bottom; at an edge the walk
+-- stays put rather than wrapping, so a held key settles instead of cycling.
+-- Arrows reach the panel before a focused field, so an open name field stops
+-- the walk and the nudge.
+local function moveFocus(delta)
+  local order = state.focusOrder
+  if state.naming ~= nil or #order == 0 then return end
+  local index = focusIndex()
+  if index == nil then
+    index = delta > 0 and 1 or #order
+  else
+    index = math.max(1, math.min(#order, index + delta))
+  end
+  state.focus = order[index].key
+  render()
+end
+
+-- One ui.step in canonical units through the same write a released drag makes.
+local function nudgeFocused(direction)
+  if state.naming ~= nil then return end
+  local index = focusIndex()
+  if index == nil then return end
+  local param = state.focusOrder[index]
+  if param.effectiveDrag == nil then return end
+  local value = Presentation.stepCanonicalValue(param.value, direction, param)
+  if value == param.value then return end
+  writeParam(param, value)
+end
+
 -- The keyboard save is the bookmark: the edits go to the loaded look. An open
 -- name field is what is being saved, so it is submitted instead.
 local function saveShortcut()
@@ -1114,6 +1161,7 @@ render = function()
       maxLines = 3,
     }),
   }
+  state.focusOrder = {}
   if state.model == nil then
     children[#children + 1] = ui.label({text = "Loading Prism…", color = "on_surface_variant"})
   else
@@ -1210,10 +1258,18 @@ end
 -- dispatches. onKey reads only this table, and keyTable exposes it to the
 -- conformance test, so a chord cannot be captured without an action here.
 local keyActions = {
+  k = {action = "up"}, Up = {action = "up"},
+  j = {action = "down"}, Down = {action = "down"},
+  h = {action = "prev"}, Left = {action = "prev"},
+  l = {action = "next"}, Right = {action = "next"},
   ["ctrl+s"] = {action = "save"},
 }
 
 local handlers = {
+  up = function() moveFocus(-1) end,
+  down = function() moveFocus(1) end,
+  prev = function() nudgeFocused(-1) end,
+  next = function() nudgeFocused(1) end,
   save = saveShortcut,
 }
 
