@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, existsSync, utimesSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { withLock } from '../src/lock.js';
@@ -62,22 +62,18 @@ test('gives up rather than hanging forever on a live holder', async () => {
   const lockPath = join(dir(), 'agents.lock');
   writeFileSync(lockPath, liveToken());
   await assert.rejects(
-    withLock(lockPath, async () => {}, { retries: 2, delayMs: 1, staleMs: 1_000_000 }),
+    withLock(lockPath, async () => {}, { retries: 2, delayMs: 1 }),
     /could not acquire lock/
   );
 });
 
-function fakeClock(startMs) {
-  let elapsed = 0;
-  return { now: () => startMs + elapsed, sleep: async (ms) => { elapsed += ms; } };
-}
+const sleep = async () => {};
 
 test('an EMPTY lock file is reclaimed AT ONCE — no valid holder can leave one behind', async () => {
   const lockPath = join(dir(), 'agents.lock');
   writeFileSync(lockPath, '');
   let ran = false;
-  const { now, sleep } = fakeClock(Date.now());
-  await withLock(lockPath, async () => { ran = true; }, { retries: 3, delayMs: 1, isAlive, now, sleep });
+  await withLock(lockPath, async () => { ran = true; }, { retries: 3, delayMs: 1, isAlive, sleep });
   assert.equal(ran, true);
 });
 
@@ -85,8 +81,7 @@ test('a token whose pid has been REUSED by a live process is reclaimed at once',
   const lockPath = join(dir(), 'agents.lock');
   writeFileSync(lockPath, `${process.pid}:${startTimeOf(process.pid) + 1}:recycled`);
   let ran = false;
-  const { now, sleep } = fakeClock(Date.now());
-  await withLock(lockPath, async () => { ran = true; }, { retries: 3, delayMs: 1, now, sleep });
+  await withLock(lockPath, async () => { ran = true; }, { retries: 3, delayMs: 1, sleep });
   assert.equal(ran, true);
 });
 
@@ -94,8 +89,7 @@ test('garbage in the lock file is debris, not a holder', async () => {
   const lockPath = join(dir(), 'agents.lock');
   writeFileSync(lockPath, 'not-a-token-at-all\n');
   let ran = false;
-  const { now, sleep } = fakeClock(Date.now());
-  await withLock(lockPath, async () => { ran = true; }, { retries: 3, delayMs: 1, isAlive, now, sleep });
+  await withLock(lockPath, async () => { ran = true; }, { retries: 3, delayMs: 1, isAlive, sleep });
   assert.equal(ran, true);
 });
 
@@ -106,23 +100,64 @@ test('a lock is NEVER visible without its token — the window an empty lock cam
   assert.match(seen, /^\d+:\d+:[0-9a-f-]{36}$/, `lock content inside the critical section: ${JSON.stringify(seen)}`);
 });
 
-test('a caller with DEFAULT options outlasts a guard left by a crashed reclaimer', async () => {
+test('a guard left by a crashed reclaimer is cleared AT ONCE', async () => {
   const lockPath = join(dir(), 'agents.lock');
   writeFileSync(lockPath, '999999:stale-token');
-  writeFileSync(`${lockPath}.reclaim`, '');
-  const { now, sleep } = fakeClock(Date.now());
+  writeFileSync(`${lockPath}.reclaim`, '999999:crashed-reclaimer');
   let ran = false;
-  await withLock(lockPath, async () => { ran = true; }, { isAlive, now, sleep });
-  assert.equal(ran, true, 'default options must be able to reclaim past a stale guard');
+  await withLock(lockPath, async () => { ran = true; }, { retries: 3, delayMs: 1, isAlive, sleep });
+  assert.equal(ran, true);
 });
 
-test('OLD budget (100 x 20ms = 2000ms) cannot outlast the same guard — pins the bug', async () => {
+const age = (path) => { const hourAgo = new Date(Date.now() - 3_600_000); utimesSync(path, hourAgo, hourAgo); };
+
+test('a LIVE holder is never preempted, however old its lock looks — a frozen clock jump lost an update', async () => {
+  const lockPath = join(dir(), 'agents.lock');
+  let release;
+  const held = withLock(lockPath, () => new Promise((resolve) => { release = resolve; }), { delayMs: 1 });
+  while (!release) await new Promise((r) => setTimeout(r, 1));
+  age(lockPath);
+  let ran = false;
+  await assert.rejects(
+    withLock(lockPath, async () => { ran = true; }, { retries: 3, delayMs: 1 }),
+    /could not acquire lock: .*held by pid \d+/
+  );
+  release();
+  await held;
+  assert.equal(ran, false, 'a contender ran inside a live holder');
+});
+
+test('a LIVE reclaimer\'s guard is never broken, however old it looks', async () => {
   const lockPath = join(dir(), 'agents.lock');
   writeFileSync(lockPath, '999999:stale-token');
-  writeFileSync(`${lockPath}.reclaim`, '');
-  const { now, sleep } = fakeClock(Date.now());
+  writeFileSync(`${lockPath}.reclaim`, liveToken());
+  age(`${lockPath}.reclaim`);
   await assert.rejects(
-    withLock(lockPath, async () => {}, { retries: 100, delayMs: 20, isAlive, now, sleep }),
+    withLock(lockPath, async () => {}, { retries: 3, delayMs: 1, isAlive }),
     /could not acquire lock/
   );
+  assert.equal(readFileSync(`${lockPath}.reclaim`, 'utf8'), liveToken());
+});
+
+test('reclaim never removes a lock planted after it judged the old one dead', async () => {
+  const lockPath = join(dir(), 'agents.lock');
+  writeFileSync(lockPath, '999999:stale-token');
+  // The verdict on the dead holder is the last moment before removal: another process
+  // reclaims the dead lock and plants a live one in exactly that window.
+  let swapped = false;
+  const racingIsAlive = (pid) => {
+    if (pid === 999999 && !swapped) {
+      swapped = true;
+      unlinkSync(lockPath);
+      writeFileSync(lockPath, liveToken());
+    }
+    return pid !== 999999;
+  };
+  let ran = false;
+  await assert.rejects(
+    withLock(lockPath, async () => { ran = true; }, { retries: 3, delayMs: 1, isAlive: racingIsAlive }),
+    /could not acquire lock/
+  );
+  assert.equal(ran, false, 'the replacement lock was removed and its holder overlapped');
+  assert.equal(readFileSync(lockPath, 'utf8'), liveToken());
 });

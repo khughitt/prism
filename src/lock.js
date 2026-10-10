@@ -1,4 +1,4 @@
-import { open, unlink, readFile, writeFile, link, stat, mkdir } from 'node:fs/promises';
+import { unlink, readFile, writeFile, link, rename, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { isAlive as defaultIsAlive, startTimeOf } from './proc.js';
@@ -14,18 +14,30 @@ function parseToken(text) {
   return { pid, starttime: Number.isInteger(starttime) ? starttime : null };
 }
 
-function isStaleText(text, mtimeMs, staleMs, now, isAlive) {
+// Only proven death frees a holder. Age never does: a clock that jumps while every
+// process is frozen (an IO stall, a suspend) makes a live holder look old, and
+// preempting it lets two processes hold the lock at once.
+function isStaleText(text, isAlive) {
   const holder = parseToken(text);
   if (holder === null) return true;
-  if (!isAlive(holder.pid, { starttime: holder.starttime })) return true;
-  return now() - mtimeMs > staleMs;
+  return !isAlive(holder.pid, { starttime: holder.starttime });
 }
 
-async function acquire(lockPath, token) {
-  const temp = `${lockPath}.tmp.${process.pid}.${randomUUID()}`;
+async function readHolder(path) {
+  try {
+    return await readFile(path, 'utf8');
+  } catch (error) {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
+// The file appears complete or not at all, so its holder is never unknown.
+async function plant(path, token) {
+  const temp = `${path}.tmp.${process.pid}.${randomUUID()}`;
   await writeFile(temp, token);
   try {
-    await link(temp, lockPath);
+    await link(temp, path);
     return true;
   } catch (error) {
     if (error.code !== 'EEXIST') throw error;
@@ -35,50 +47,52 @@ async function acquire(lockPath, token) {
   }
 }
 
-const GUARD_STALE_MS = 5_000;
-const DEFAULT_RETRIES = 600;
-const DEFAULT_DELAY_MS = 20;
-
-if (DEFAULT_RETRIES * DEFAULT_DELAY_MS <= GUARD_STALE_MS) {
-  throw new Error(
-    `lock.js: default acquisition budget (${DEFAULT_RETRIES * DEFAULT_DELAY_MS}ms) ` +
-    `must exceed GUARD_STALE_MS (${GUARD_STALE_MS}ms), or a default-options caller ` +
-    'can never outlast a crashed guard-holder'
-  );
+// Removes `path` only while it still holds the dead holder judged here. Removal by
+// path alone would delete a replacement planted between the verdict and the unlink,
+// so the file is moved aside, checked, and put back if it was not the dead one.
+// Returns whether `path` is now free.
+async function clearIfDead(path, isAlive) {
+  const text = await readHolder(path);
+  if (text === null) return true;
+  if (!isStaleText(text, isAlive)) return false;
+  const tomb = `${path}.dead.${process.pid}.${randomUUID()}`;
+  try {
+    await rename(path, tomb);
+  } catch (error) {
+    if (error.code === 'ENOENT') return true;
+    throw error;
+  }
+  try {
+    if (await readFile(tomb, 'utf8') === text) return true;
+    try {
+      await link(tomb, path);
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+      throw new Error(`lock ${path}: moved aside a live holder and could not restore it`);
+    }
+    return false;
+  } finally {
+    await unlink(tomb);
+  }
 }
 
-async function reclaim(lockPath, staleMs, now, isAlive) {
+async function reclaim(lockPath, isAlive) {
   const guard = `${lockPath}.reclaim`;
-  let handle;
-  try {
-    handle = await open(guard, 'wx');
-  } catch (error) {
-    if (error.code !== 'EEXIST') throw error;
-    const info = await stat(guard).catch(() => null);
-    if (info && now() - info.mtimeMs > GUARD_STALE_MS) await unlink(guard).catch(() => {});
+  if (!(await plant(guard, mintToken()))) {
+    await clearIfDead(guard, isAlive);
     return false;
   }
-
   try {
-    const info = await stat(lockPath).catch(() => null);
-    if (info === null) return true;
-    const text = await readFile(lockPath, 'utf8').catch(() => null);
-    if (text === null) return true;
-    if (!isStaleText(text, info.mtimeMs, staleMs, now, isAlive)) return false;
-    await unlink(lockPath).catch(() => {});
-    return true;
+    return await clearIfDead(lockPath, isAlive);
   } finally {
-    await handle.close();
-    await unlink(guard).catch(() => {});
+    await unlink(guard);
   }
 }
 
 export async function withLock(lockPath, fn, opts = {}) {
   const {
-    retries = DEFAULT_RETRIES,
-    delayMs = DEFAULT_DELAY_MS,
-    staleMs = 10_000,
-    now = () => Date.now(),
+    retries = 600,
+    delayMs = 20,
     isAlive = defaultIsAlive,
     sleep = defaultSleep,
   } = opts;
@@ -87,13 +101,17 @@ export async function withLock(lockPath, fn, opts = {}) {
   const token = mintToken();
   let acquired = false;
   for (let attempt = 0; attempt <= retries && !acquired; attempt++) {
-    acquired = await acquire(lockPath, token);
+    acquired = await plant(lockPath, token);
     if (acquired) break;
-    const free = await reclaim(lockPath, staleMs, now, isAlive);
+    const free = await reclaim(lockPath, isAlive);
     if (!free) await sleep(delayMs);
   }
 
-  if (!acquired) throw new Error(`could not acquire lock: ${lockPath}`);
+  if (!acquired) {
+    const holder = parseToken(await readHolder(lockPath) ?? '');
+    const by = holder === null ? '' : ` (held by pid ${holder.pid})`;
+    throw new Error(`could not acquire lock: ${lockPath}${by}`);
+  }
   try {
     return await fn();
   } finally {

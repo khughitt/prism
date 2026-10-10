@@ -1,16 +1,18 @@
 ---
 id: prism-66db5d
 title: Investigate intermittent lost updates under the real process lock
-status: todo
+status: done
 priority: 1
 size: s
 complexity: mid
 process: direct
 created: 2026-10-02T10:55:41Z
-updated: 2026-10-10T11:43:35Z
+updated: 2026-10-10T11:55:30Z
+completed: 2026-10-10T11:55:30Z
 depends: []
 tags: [testing]
 source: test/lock-multiprocess.test.js
+model: claude-opus-5-5
 agent: codex
 ---
 
@@ -19,3 +21,7 @@ Closing verification observed the existing test real child processes serializing
 ## Notes
 
 - 2026-10-10T11:43:35Z (main): Same defect family as prism-f0e28e (lost update = two holders); investigated and fixed there.
+- 2026-10-10T11:55:30Z (prism-f0e28e): done
+  provenance: {"harness_session":"claude-code:41589cad-7208-4e6b-b96a-c7169806d7d6","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T11:55:30Z (prism-f0e28e): Same lost update as prism-f0e28e (age-based preemption of a live holder); fixed there, the existing assertion unchanged.
+  provenance: {"harness_session":"claude-code:41589cad-7208-4e6b-b96a-c7169806d7d6","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
