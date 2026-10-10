@@ -6,8 +6,8 @@ priority: 1
 complexity: low
 process: direct
 created: 2026-10-10T17:06:03Z
-updated: 2026-10-10T17:06:11Z
-depends: [prism-f15cbf]
+updated: 2026-10-10T17:22:16Z
+depends: [prism-eba711]
 parent: prism-dac509
 tags: []
 agent: claude-code/claude-opus-5-5

@@ -26,24 +26,29 @@ review round 2: accept).
 - In-host targets, with every rack card expanded: drag frame-tick render, `onDragEnd`,
   changed describe, and the deferred render that follows each ≤ 12 ms. A full rebuild
   (first describe after load, profile switch) < 15 ms.
-- If a full expanded rebuild measures over 15 ms in-host, stop: the work returns to
-  design and the spec is revised before more code lands.
+- In-host figures are `os.clock()` elapsed time, an upper bound on the thread CPU the
+  host meters. The targets apply to the median of at least five samples per callback
+  class, and the session must add no "exceeded its CPU budget" lines to the log.
+- If a full expanded rebuild's median is over 15 ms in-host, stop: the work returns to
+  design and the spec is revised before more code lands. That gate (Task 6) runs before
+  the offline ceilings are recorded (Task 7).
 - Every retained render is deeply equal, ignoring function identity, to the tree a
   render from an empty memo produces.
 - Offline cost ceilings sit at about 1.25× the measured Lua call count. A ceiling is
   raised only in the test, with the in-host figure beside it.
 - Tree shape, keys, props, the queue, the refresh cadence, the unchanged-describe
   shortcut and the one-render-per-frame drag throttle stay as they are.
-- Tests run through `just test-fast`. Never call `lua` or `node --test` directly to
-  record a run. For a quicker look while iterating, run
-  `lua integrations/noctalia-plugin/plugin_test.lua` from the worktree root, then always
-  finish with `just test-fast`.
+- Tests run only through `just test-fast`, which is how a run is recorded. Never call
+  `lua`, `npm test` or `node --test` directly. `plugin_test.lua`'s failures appear in
+  its output.
 - Commits use conventional commit messages and carry no AI attribution.
 
 ## Review Focus
 
-1. A click on a control whose key the last describe removed, landing between that
-   describe and its deferred render, does nothing and raises nothing (test in Task 4).
+1. A gesture on a tree drawn before an accepted describe, landing before that
+   describe's deferred render, acts on the new model or on nothing. This covers a
+   removed control, a removed section's reset, a keyboard nudge and Keep, and none of
+   them raises (tests in Task 4).
 2. Closing the panel while a describe's render is pending leaves no frame tick running,
    and reopening renders once (test in Task 4).
 3. A describe that lands mid-drag, then the release: the release renders once and the
@@ -124,7 +129,7 @@ end)()
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `lua integrations/noctalia-plugin/plugin_test.lua`
+Run: `just test-fast`
 Expected: FAIL with `attempt to call a nil value (field 'rackState')`.
 
 - [ ] **Step 3: Implement**
@@ -301,7 +306,7 @@ end)()
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `lua integrations/noctalia-plugin/plugin_test.lua`
+Run: `just test-fast`
 Expected: FAIL with `cannot open .../retain.luau`.
 
 - [ ] **Step 3: Write the module**
@@ -362,6 +367,7 @@ git commit -m "feat(noctalia): add a signature-keyed memo for panel subtrees"
 - Modify: `integrations/noctalia-plugin/panel.luau` (state, `validateModel`, `described`, every handler, `render`)
 - Modify: `integrations/noctalia-plugin/plugin_test.lua` (fakes near line 355-378; new block at the end of the file)
 - Modify: `integrations/noctalia-plugin/contract.test.mjs` (harness `noctalia` fake)
+- Modify: `test/plugin-panel-lifecycle.test.js` (its `noctalia` fake)
 
 **Interfaces:**
 - Consumes: `Presentation.rackState(rack)` (Task 1).
@@ -456,6 +462,11 @@ end
 In the same file, change the harness fake's `json = {decode = function() return model end},` to
 `json = {decode = function() return model end, encode = canonical},`.
 
+`test/plugin-panel-lifecycle.test.js` loads the panel against its own fake host. Add the
+same `canonical` function at the top of its Lua script, above `local function newHost()`.
+Then change its fake's `json = {decode = function() return model end},` to
+`json = {decode = function() return model end, encode = canonical},`.
+
 - [ ] **Step 2: Write the failing tests**
 
 Append to the end of `plugin_test.lua`:
@@ -523,7 +534,7 @@ the tables instead.
 
 - [ ] **Step 3: Run tests to verify they fail**
 
-Run: `lua integrations/noctalia-plugin/plugin_test.lua`
+Run: `just test-fast`
 Expected: FAIL. Either `a render reuses the accepted rack` fails (rack calls > 0), or
 the reset leaves the new model edited.
 
@@ -776,9 +787,10 @@ git commit -m "refactor(noctalia): build the panel structure once per describe a
 - Modify: `integrations/noctalia-plugin/panel.luau` (`state`, `described`, `beginDrag`, `endDrag`, `render`, `onClose`, `onFrameTick`)
 - Modify: `integrations/noctalia-plugin/plugin_test.lua` (panel fake, both `runAsync` fakes at about lines 369 and 941, new block at the end)
 - Modify: `integrations/noctalia-plugin/contract.test.mjs` (harness: tick after describe)
+- Modify: `test/plugin-panel-lifecycle.test.js` (`host.complete`: tick after a callback)
 
 **Interfaces:**
-- Consumes: Task 3's structure.
+- Consumes: Task 3's structure, `current(key)`, `resetScope(group)`.
 - Produces:
   - `state.renderPending` (boolean) and a local `syncFrameTick()`.
   - In the tests:
@@ -811,6 +823,28 @@ In both `runAsync` fakes (about lines 371 and 943), change `described = callback
 
 In `contract.test.mjs`'s harness, directly after the
 `described({timedOut = false, …})` call in `inspect`, add `env.onFrameTick(16)`.
+
+In `test/plugin-panel-lifecycle.test.js`, end `host.complete` with the frame tick that
+the real host runs right after an accepted describe:
+
+```lua
+  function host.complete(index, failure)
+    local call = assert(host.calls[index], "missing host call " .. index)
+    call.callback({
+      timedOut = false, exitCode = failure and 1 or 0, stdout = "{}", stderr = failure or "",
+      stdoutTruncated = false, stderrTruncated = false,
+    })
+    -- An accepted describe renders in the next frame tick, which the host runs
+    -- next; the reconciliation checks below read the tree that tick draws.
+    if host.frameTicks then env.onFrameTick(16) end
+  end
+```
+
+This keeps both native callback schedules intact. With `deferReconcileCallbacks`
+false, the tick's render reconciles synchronously, as `complete` did before. With it
+true, the callbacks still wait for `flushReconcile`. Do not change any assertion in
+that file. If one fails, the deferral has changed reconciliation behaviour, and that
+is a defect to fix in `panel.luau`.
 
 - [ ] **Step 2: Write the failing tests**
 
@@ -875,12 +909,51 @@ Append to `plugin_test.lua`:
   staleGaps.props.onDragEnd()
   equal(#commands, before, "a removed control writes nothing")
   equal(host.frameTick, true, "only the describe's own render is waiting")
+
+  -- So does the reset of a section the last describe removed.
+  local sectionTree = renderModel(twoEdits())
+  local glassRevert
+  for _, button in ipairs(collect(sectionTree, "button")) do
+    if button.props.tooltip == "Revert section (1)" then glassRevert = button; break end
+  end
+  local withoutGlass = twoEdits()
+  for index = #withoutGlass.params, 1, -1 do
+    if withoutGlass.params[index].ui.group == "Glass" then table.remove(withoutGlass.params, index) end
+  end
+  model = withoutGlass
+  update(); update()
+  rawDescribed(host.describeOk())
+  local beforeReset = #commands
+  glassRevert.props.onClick()
+  equal(#commands, beforeReset, "a removed section's reset writes nothing")
+
+  -- The keyboard walk holds the last render's tables. A nudge between a describe
+  -- and its render steps from the value that describe brought.
+  renderModel(layeredModel())
+  onKey("j", true); onKey("j", true) -- glass.ior, drawn at 1.5
+  local moved = layeredModel()
+  moved.params[3].value = 1.8
+  model = moved
+  update(); update()
+  rawDescribed(host.describeOk())
+  onKey("l", true)
+  equal(commands[#commands], Shell.command(Queue.argvFor({ verb = "set", key = "glass.ior", value = 1.81 })),
+    "the nudge steps from the accepted 1.8, not the drawn 1.5")
+
+  -- Keep from a tree drawn before a describe clears the edits the model now holds.
+  local keepTree = renderModel(twoEdits())
+  local oldKeep = glyphButton(keepTree, "bookmark")
+  model = twoEdits()
+  update(); update()
+  rawDescribed(host.describeOk())
+  oldKeep.props.onClick()
+  assert(labelSet(rendered)["No edits"], "Keep clears the edits of the model now held")
 end)()
 ```
 
 - [ ] **Step 3: Run tests to verify they fail**
 
-Run: `lua integrations/noctalia-plugin/plugin_test.lua`
+Run: `just test-fast`
 Expected: FAIL at `a changed describe does not render in its own callback` (renders 1).
 
 - [ ] **Step 4: Implement**
@@ -938,6 +1011,48 @@ function onFrameTick(deltaMs)
   state.drag.pendingSample = nil
 end
 ```
+
+9. Make `nudgeFocused` step from the current model. Until the deferred render runs,
+   `state.focusOrder` holds the previous render's tables:
+
+```lua
+local function nudgeFocused(direction)
+  if state.naming ~= nil then return end
+  local index = focusIndex()
+  if index == nil then return end
+  -- The walk holds the last render's tables; the model may already be newer.
+  local param = current(state.focusOrder[index].key)
+  if param == nil or param.effectiveDrag == nil then return end
+  local value = Presentation.stepCanonicalValue(param.value, direction, param)
+  if value == param.value then return end
+  writeParam(param.key, value)
+end
+```
+
+10. In `resetAction`'s returned function, directly after
+    `local params = resetScope(group)`, add:
+
+```lua
+    -- The section left with the last describe; its button is still on screen.
+    if params == nil then return end
+```
+
+11. Make `commitAction` clear the edits of the model it acts on. Drop its `params`
+    argument:
+
+```lua
+local function commitAction(item)
+  item.expected = item.expected or Queue.captureSlots(state.model)
+  return function()
+    if state.selectionPending then return end
+    for _, param in ipairs(Presentation.visibleParams(state.model)) do param.edited = false end
+```
+
+    Leave the rest of its body unchanged. Then remove the second argument from each of
+    its callers: the two in `editsRow`, and one each in `commitName`, `confirmRow` and
+    `saveShortcut`. Each of those passed the visible params of the model at the time.
+    `item.expected` stays captured at build time on purpose: it is the guard that
+    refuses a stale commit.
 
 - [ ] **Step 5: Run tests to verify they pass**
 
@@ -1167,7 +1282,7 @@ end)()
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `lua integrations/noctalia-plugin/plugin_test.lua`
+Run: `just test-fast`
 Expected: FAIL with `attempt to call a nil value (global 'retainedMemo')`.
 
 - [ ] **Step 3: Implement**
@@ -1455,7 +1570,153 @@ git commit -m "perf(noctalia): retain unchanged panel subtrees between renders"
 
 ---
 
-### Task 6: Cost ceilings on real describe output
+### Task 6: In-host measurement and the 15 ms gate
+
+This runs after Task 5 and before Task 7. The ceilings Task 7 records only mean
+something once this gate has passed.
+
+This step uses the live desktop. It reloads the Prism plugin twice and opens the panel,
+and it needs the user's hands, because there is no pointer automation on this host.
+**Ask the user first**, naming what will happen, that it takes about fifteen minutes,
+and that it switches their profile away and back. Do not proceed on an earlier yes. If
+the user declines, park:
+`tasks park prism-dac509 "Run Task 6 of docs/plans/2026-10-10-panel-render-budget.md (in-host probe)" --reason quiet --waiting-on user --minutes 15`.
+
+**What the probe measures.** In Luau, `os.clock()` is elapsed monotonic time, not the
+thread CPU time (`CLOCK_THREAD_CPUTIME_ID`) the host meters. A probe figure is
+therefore an upper bound: descheduling inflates it, and nothing deflates it. The gate
+reads the **median** of at least five samples per callback class, and records the
+maximum beside it. The host's own meter is authoritative, so the session must also add
+**no** "exceeded its CPU budget" lines to the log.
+
+**Files:**
+- No repository files. The probe is a scratch copy under the session scratchpad
+  (`$SCRATCH` below).
+
+- [ ] **Step 1: Make the probe copy**
+
+```bash
+SCRATCH=<session scratchpad>/probe-plugin
+rm -rf "$SCRATCH" && cp -r .worktrees/panel-budget/integrations/noctalia-plugin "$SCRATCH"
+```
+
+In `$SCRATCH/plugin.toml`, add `"x"` to the end of `capture_keys`.
+
+In `$SCRATCH/panel.luau`, append at the very end:
+
+```lua
+-- Probe only. Each line is elapsed time (os.clock is monotonic in Luau), an
+-- upper bound on the thread CPU the host meters.
+local function timed(name, fn, ...)
+  local started = os.clock()
+  local a, b = fn(...)
+  noctalia.log(string.format("prism-probe %s %.2f ms", name, (os.clock() - started) * 1000))
+  return a, b
+end
+
+local coldPending = false
+local plainDescribed, plainEndDrag, plainTick = described, endDrag, onFrameTick
+described = function(result) return timed("describe", plainDescribed, result) end
+endDrag = function(key) return timed("dragEnd", plainEndDrag, key) end
+-- A tick that renders nothing logs near zero; the analysis keeps ticks over 0.5 ms.
+getfenv(1).onFrameTick = function(deltaMs)
+  local label = coldPending and "coldRender" or (state.drag ~= nil and "dragTick" or "describeRender")
+  coldPending = false
+  return timed(label, plainTick, deltaMs)
+end
+
+-- x: the describe on screen again, through a fresh decode and an empty memo.
+-- Every entry table is new, so slider metadata is cold too, and the next tick is a
+-- cold full rebuild of whatever is expanded. Nothing reaches the store.
+keyActions.x = {action = "probeCold"}
+handlers.probeCold = function()
+  local stdout = state.shownStdout
+  state.shownStdout = nil
+  Retain.clear(memo)
+  coldPending = true
+  described({timedOut = false, exitCode = 0, stdout = stdout, stderr = "",
+    stdoutTruncated = false, stderrTruncated = false})
+end
+```
+
+`described` and `endDrag` are `local function`s, which are ordinary locals, so
+assigning to them at the end of the chunk swaps them for every caller and closure that
+names them. `onFrameTick` is a global, which Luau caches on import, so it is replaced
+through `getfenv(1)`.
+
+Check it offline: `noctalia plugins lint "$SCRATCH"`.
+
+- [ ] **Step 2: Point the shell at the probe, recording the pointer**
+
+```bash
+tasks note prism-dac509 "host pointer: ~/.local/share/noctalia/plugins/prism repointed from <main>/integrations/noctalia-plugin to the scratchpad probe copy; restore with ln -sfn <main>/integrations/noctalia-plugin ~/.local/share/noctalia/plugins/prism then noctalia msg plugins disable/enable khughitt/prism"
+readlink ~/.local/share/noctalia/plugins/prism   # confirm the current target before changing it
+grep -c "exceeded its CPU budget" ~/.cache/noctalia/noctalia.log   # the count before
+ln -sfn "$SCRATCH" ~/.local/share/noctalia/plugins/prism
+noctalia msg plugins disable khughitt/prism && noctalia msg plugins enable khughitt/prism
+```
+
+- [ ] **Step 3: Have the user exercise the panel**
+
+Ask the user to do the following, in order:
+1. Open the Prism panel and expand every rack card.
+2. Press `x` five times, about a second apart. Each press is a cold full rebuild with
+   every card expanded.
+3. Drag five sliders inside expanded cards for a couple of seconds each, releasing
+   each one. Each release writes, and once the write lands the panel re-reads describe,
+   which is the changed-describe case.
+4. Revert those edits with the edits row's revert button, so the profile switch below
+   has no scratch to carry.
+5. If at least two profiles exist, switch to another profile in the selector and back
+   again, three times. Each switch is a describe in which most values change, with
+   fresh entries. The figures for this go under `switch` below. If fewer than two
+   profiles exist, say so in the record: the cold `x` rebuild then stands as the
+   full-rebuild figure.
+
+Then collect:
+
+```bash
+grep "prism-probe" ~/.cache/noctalia/noctalia.log | tail -200
+grep -c "exceeded its CPU budget" ~/.cache/noctalia/noctalia.log   # must equal the count before
+```
+
+Sort the lines into these classes:
+- `coldRender`: the `x` presses;
+- `dragTick`;
+- `dragEnd`;
+- `describe` and `describeRender` (over 0.5 ms) from the releases' re-reads;
+- the same two from the profile switches, as `switch`.
+
+The order of the log lines follows the user's steps.
+
+- [ ] **Step 4: Restore the pointer**
+
+```bash
+MAIN=$(git rev-parse --path-format=absolute --git-common-dir | sed 's#/\.git$##')
+ln -sfn "$MAIN/integrations/noctalia-plugin" ~/.local/share/noctalia/plugins/prism
+noctalia msg plugins disable khughitt/prism && noctalia msg plugins enable khughitt/prism
+readlink ~/.local/share/noctalia/plugins/prism
+tasks note prism-dac509 "host pointer restored: ~/.local/share/noctalia/plugins/prism -> main checkout, plugin reloaded"
+```
+
+- [ ] **Step 5: Record and gate**
+
+Record one note with the median, the maximum and the sample count per class:
+`tasks note prism-dac509 "in-host (os.clock elapsed, an upper bound on thread CPU; every card expanded): coldRender med/max/n …; switch describe …, render …; dragTick …; dragEnd …; describe …; describeRender …; new budget errors: <n>"`.
+
+Then apply the gate:
+- **New budget errors in the log.** Stop: the host's own meter has refused a callback.
+  Note which one and park as below.
+- **Median `coldRender` or `switch` render over 15 ms.** Stop. Park with
+  `tasks park prism-dac509 "Full rebuild measured <median> ms (median, elapsed) in-host, over the spec's 15 ms gate: revise the spec's part 5 with this figure before more code lands" --waiting-on user --reason decision`.
+- **Median of any other class over 12 ms.** Treat it the same way, naming the class.
+- **Every median within target and no new budget errors.** Continue to Task 7. A
+  maximum over target with its median within is recorded as scheduling noise, not
+  failed.
+
+---
+
+### Task 7: Cost ceilings on real describe output
 
 **Files:**
 - Modify: `integrations/noctalia-plugin/contract.test.mjs` (new harness and test at the end)
@@ -1650,102 +1911,6 @@ git commit -m "test(noctalia): pin panel render cost on real describe output"
 
 ---
 
-### Task 7: In-host measurement and the 15 ms gate
-
-This step uses the live desktop. It reloads the Prism plugin twice and opens the panel,
-and it needs the user's hands, because there is no pointer automation on this host.
-**Ask the user first**, naming what will happen and that it takes about ten minutes.
-Do not proceed on an earlier yes. If the user declines, park:
-`tasks park prism-dac509 "Run Task 7 of docs/plans/2026-10-10-panel-render-budget.md (in-host probe)" --reason quiet --waiting-on user --minutes 15`.
-
-**Files:**
-- No repository files. The probe is a scratch copy under the session scratchpad
-  (`$SCRATCH` below).
-
-- [ ] **Step 1: Make the probe copy**
-
-```bash
-SCRATCH=<session scratchpad>/probe-plugin
-rm -rf "$SCRATCH" && cp -r .worktrees/panel-budget/integrations/noctalia-plugin "$SCRATCH"
-```
-
-In `$SCRATCH/plugin.toml`, add `"x"` to the end of `capture_keys`.
-
-In `$SCRATCH/panel.luau`, append at the very end:
-
-```lua
--- Probe only: each wrapped callback logs its thread-adjacent CPU time.
-local function probe(name, fn)
-  return function(...)
-    local started = os.clock()
-    local a, b = fn(...)
-    noctalia.log(string.format("prism-probe %s %.2f ms", name, (os.clock() - started) * 1000))
-    return a, b
-  end
-end
-described = probe("describe", described)
-endDrag = probe("dragEnd", endDrag)
-getfenv(1).onFrameTick = probe("frameTick", onFrameTick)
-keyActions.x = {action = "probeFull"}
-handlers.probeFull = probe("fullRebuild", function() Retain.clear(memo); render() end)
-```
-
-`described` and `endDrag` are `local function`s, which are ordinary locals, so
-assigning to them at the end of the chunk swaps them for every caller and closure that
-names them. `onFrameTick` is a global, which Luau caches on import, so it is replaced
-through `getfenv(1)`.
-
-Check it offline: `noctalia plugins lint "$SCRATCH"`.
-
-- [ ] **Step 2: Point the shell at the probe, recording the pointer**
-
-```bash
-tasks note prism-dac509 "host pointer: ~/.local/share/noctalia/plugins/prism repointed from <main>/integrations/noctalia-plugin to the scratchpad probe copy; restore with ln -sfn <main>/integrations/noctalia-plugin ~/.local/share/noctalia/plugins/prism then noctalia msg plugins disable/enable khughitt/prism"
-readlink ~/.local/share/noctalia/plugins/prism   # confirm the current target before changing it
-ln -sfn "$SCRATCH" ~/.local/share/noctalia/plugins/prism
-noctalia msg plugins disable khughitt/prism && noctalia msg plugins enable khughitt/prism
-```
-
-- [ ] **Step 3: Have the user exercise the panel**
-
-Ask the user to do the following:
-1. Open the Prism panel and expand every rack card.
-2. Press `x` three times (full rebuild).
-3. Drag three sliders inside expanded cards for a couple of seconds each, releasing
-   each one. Each release writes, and after the write the panel re-reads describe,
-   which is the changed-describe case.
-4. Revert those edits with the edits row's revert button.
-
-Then collect:
-
-```bash
-grep "prism-probe" ~/.cache/noctalia/noctalia.log | tail -80
-grep -c "exceeded its CPU budget" ~/.cache/noctalia/noctalia.log   # compare with the count before Step 2
-```
-
-- [ ] **Step 4: Restore the pointer**
-
-```bash
-MAIN=$(git rev-parse --path-format=absolute --git-common-dir | sed 's#/\.git$##')
-ln -sfn "$MAIN/integrations/noctalia-plugin" ~/.local/share/noctalia/plugins/prism
-noctalia msg plugins disable khughitt/prism && noctalia msg plugins enable khughitt/prism
-readlink ~/.local/share/noctalia/plugins/prism
-tasks note prism-dac509 "host pointer restored: ~/.local/share/noctalia/plugins/prism -> main checkout, plugin reloaded"
-```
-
-- [ ] **Step 5: Record and gate**
-
-Record one note giving the maximum and the typical figure per probe name:
-`tasks note prism-dac509 "in-host (os.clock, every card expanded): fullRebuild max/typ …; frameTick (drag) …; dragEnd …; describe …; frameTick (describe render) …; new budget errors: <n>"`.
-
-Then apply the gate:
-- **Full rebuild over 15 ms.** Stop. Note it, then park with
-  `tasks park prism-dac509 "Full rebuild measured <n> ms in-host, over the spec's 15 ms gate: revise the spec's part 5 with this figure before more code lands" --waiting-on user --reason decision`.
-- **Any other callback over 12 ms.** Treat it the same way, naming the callback.
-- **Both within target.** Continue to Task 8.
-
----
-
 ### Task 8: Documentation, follow-ups, and closing
 
 **Files:**
@@ -1800,7 +1965,7 @@ Record what the upstream search found in a note on the first task.
 ```bash
 just check
 just test-fast
-tasks done prism-dac509 "Retained subtrees and a deferred describe render: in-host <figures from Task 7>; cost ceilings pinned in contract.test.mjs"
+tasks done prism-dac509 "Retained subtrees and a deferred describe render: in-host <figures from Task 6>; cost ceilings pinned in contract.test.mjs"
 tasks check
 git add docs/notes/noctalia-plugin-contract.md docs/specs/2026-10-10-panel-render-budget-design.md tasks/
 git commit -m "docs(noctalia): record the retained render and close prism-dac509"

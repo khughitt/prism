@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-10T17:06:03Z
+updated: 2026-10-10T17:22:16Z
 started: 2026-10-10T16:20:49Z
 depends: []
 tags: [noctalia, performance]
@@ -45,3 +45,10 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
 - 2026-10-10T16:48:59Z (fix/panel-render-budget): Reviewed revision 965caf6 against all three findings: full describe-entry digests plus panel-side inputs and metadata equivalence cases cover signature completeness; coroutine fallback removed behind an explicit measured redesign gate; structure-based eviction and retention-reach tests preserve descendants. No further blocking findings. In-host callback costs, including digest generation, remain implementation acceptance checks.
 - 2026-10-10T16:51:31Z (fix/panel-render-budget): resumed
   provenance: {"harness_session":"claude-code:35b76d69-d243-4ef3-a0bc-e3117438b797","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T17:06:25Z (fix/panel-render-budget): parked (waiting on user, review): Owner reviews docs/plans/2026-10-10-panel-render-budget.md and picks an execution method; then the agent executes Task 1 (prism-5d4e76)
+  provenance: {"harness_session":"claude-code:35b76d69-d243-4ef3-a0bc-e3117438b797","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T17:13:22Z (fix/panel-render-budget): review: plan round 1 — verdict: revise; findings: P1 3, P2 3; reviewer: codex
+- 2026-10-10T17:13:22Z (fix/panel-render-budget): Plan review: nudgeFocused computes from old focusOrder tables between model acceptance and deferred render; removed-section resetScope returns nil to ipairs; slider lifecycle harness lacks json.encode and describe tick updates. Acceptance must cover fresh-entry cold/profile renders before ceiling work; Luau os.clock is CLOCK_MONOTONIC elapsed time, not thread CPU; direct lua test commands violate the just test front door. Plan unchanged; full findings in current Codex turn.
+- 2026-10-10T17:19:45Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"claude-code:35b76d69-d243-4ef3-a0bc-e3117438b797","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T17:22:16Z (fix/panel-render-budget): Plan revised for review round 1: nudge resolves the focused key through current(); resetAction returns when its section is gone; commitAction clears the current model's edits; lifecycle harness gets the encoder (Task 3) and a tick in host.complete (Task 4); in-host gate moved to Task 6 before ceilings (Task 7), measures a cold fresh-decode rebuild and a real profile switch; os.clock defined as elapsed upper bound, gate on medians of >=5 samples plus zero host budget errors (spec clarified); all runs through just test-fast.

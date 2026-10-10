@@ -22,7 +22,9 @@ Success:
   most 12 ms of thread CPU (under half the 25 ms budget): a drag's frame-tick render, a
   slider's `onDragEnd`, a describe that reports a changed model, and the render that
   follows it. A render that rebuilds nearly everything (the first describe after a
-  plugin load, or a profile switch that changes most values) stays under 15 ms.
+  plugin load, or a profile switch that changes most values) stays under 15 ms. Each
+  figure is the median of at least five in-host samples of elapsed time (see In-host
+  acceptance), and the session adds no budget errors to the host's log.
 - The suite fails when render cost grows past a recorded ceiling, measured on real
   `prism describe` output.
 - The panel looks and behaves exactly as before. Every rendered tree is identical to the
@@ -218,7 +220,7 @@ Retention does nothing for a render in which every signature changes. Part 3 is
 expected to bring a full expanded rebuild from 8.5k calls to about 6.5k, plus the
 signature pass. That is near the 5.6k calls that measured 10–14 ms in-host on
 2026-09-30. The plan measures it in-host before anything else in this spec is accepted.
-If a full expanded rebuild measures over 15 ms, the work returns to design with that
+If a full expanded rebuild's median measures over 15 ms, the work returns to design with that
 figure, and this spec is revised before more code lands. The candidates are fewer
 wrapper nodes per cell, or a rebuild spread over frame ticks. The second needs rules
 for edits and describes that arrive between ticks, and for `endDrag`'s synchronous
@@ -271,7 +273,12 @@ API change is assumed.
   `~/.local/share/noctalia/plugins/prism` symlink pointed at the copy, and every card
   expanded. It measures a cold render, drag ticks, `onDragEnd`, a changed describe and
   its deferred render, and the render after a profile switch, and records the figures
-  on the task. This step uses the live desktop, so it is asked for when it is reached.
+  on the task. In Luau, `os.clock` is elapsed monotonic time, not the thread CPU time
+  the host meters, so each figure is an upper bound. The targets apply to the median of
+  at least five samples per callback, with the maximum recorded beside it. The host's
+  own meter is the authority: the session must add no "exceeded its CPU budget" lines.
+  The cold render runs on freshly decoded entries with an empty memo, so it includes
+  the per-entry metadata work. This gate runs before the offline ceilings are recorded. This step uses the live desktop, so it is asked for when it is reached.
   The symlink repoint is noted on the task and restored before the task is parked or
   closed.
 
