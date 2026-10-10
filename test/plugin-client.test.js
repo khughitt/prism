@@ -131,7 +131,7 @@ test('presentation renders every section open with a header toggle, matrix rows,
 
   assert.doesNotMatch(source, /expandedGroups|groupParams|Quick/);
   assert.match(source, /Presentation\.editedCount\(params\)/);
-  assert.match(source, /local function matrixRow\(row, indent\)[\s\S]*controlCell\(row\.unfocused, 1\)[\s\S]*controlCell\(row\.focused, 1\)/);
+  assert.match(source, /local function matrixRow\(row, indent\)[\s\S]*retainedCell\(row\.unfocused, 1\)[\s\S]*retainedCell\(row\.focused, 1\)/);
   assert.match(source, /text = "Unfocused"[\s\S]*text = "Focused"/);
   assert.match(source, /local function resetAction[\s\S]*enqueue\(\{verb = "reset", mode = mode, group = group\}\)/);
   assert.match(source, /tooltip = param\.edited and "Revert edit"/);

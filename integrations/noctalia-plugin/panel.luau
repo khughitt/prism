@@ -1,6 +1,7 @@
 local Presentation = require("./presentation.luau")
 local Queue = require("./queue.luau")
 local Shell = require("./shell.luau")
+local Retain = require("./retain.luau")
 
 local state = {
   open = false,
@@ -60,6 +61,21 @@ local launch
 local gates = {}
 local attached = {}
 
+-- Subtrees from earlier renders, each under the signature of what shaped it
+-- (docs/specs/2026-10-10-panel-render-budget-design.md). A full tree costs
+-- more of the host's budget than one callback can spare, so a render rebuilds
+-- only the units whose inputs changed.
+local memo = Retain.new()
+-- This render's signatures by memo id: a row, card, or header reuses its
+-- cells' signatures instead of recomputing them.
+local signatures = {}
+
+-- Exposed to the tests, like keyTable: they clear it to compare a retained
+-- render with a fresh one, and trace it to see what a render rebuilt.
+function retainedMemo()
+  return memo
+end
+
 local function gateOf(param) return gates[param.key] or "control" end
 -- A read-only color is drawn beside its select, never as a row of its own.
 local function rowHidden(param) return gateOf(param) ~= "control" end
@@ -69,6 +85,56 @@ local function rowHidden(param) return gateOf(param) ~= "control" end
 -- key the last describe removed has no control left to act on.
 local function current(key)
   return state.structure.byKey[key]
+end
+
+-- Numbers print with every digit, so two values that differ never share a
+-- signature.
+local function sig(value)
+  if type(value) == "number" then return string.format("%.17g", value) end
+  return tostring(value)
+end
+
+-- A cell is what describe said of its param (the digest) and what the panel
+-- changed since: the optimistic value and edit, the gate, keyboard focus, and
+-- the read-only color drawn beside a gating select. A builder reads nothing
+-- else; a new panel-side input goes here in the same change.
+local function cellSignature(param)
+  local id = "c:" .. param.key
+  local found = signatures[id]
+  if found ~= nil then return found end
+  local color = attached[param.key]
+  found = table.concat({
+    state.structure.digest[param.key], sig(param.value), sig(param.edited), gateOf(param),
+    sig(state.focus == param.key),
+    color ~= nil and state.structure.digest[color.key] or "", color ~= nil and sig(color.value) or "",
+  }, "\1")
+  signatures[id] = found
+  return found
+end
+
+-- The keyboard walks the sliders in the order the render lays them out. A
+-- reused cell runs no builder, so the walk is collected by the render's own
+-- traversal, never inside a builder.
+local function noteFocus(param)
+  if param.ui.control == "slider" and gateOf(param) ~= "effective" then
+    state.focusOrder[#state.focusOrder + 1] = param
+  end
+end
+
+local function noteCardFocus(card)
+  noteFocus(card.mix.unfocused)
+  noteFocus(card.mix.focused)
+  if state.expanded[card.device] ~= true then return end
+  noteFocus(card.bypass)
+  for _, row in ipairs(card.rows) do
+    if not rowHidden(row.focused) then
+      noteFocus(row.unfocused)
+      noteFocus(row.focused)
+    end
+  end
+  for _, param in ipairs(card.shared) do
+    if not rowHidden(param) then noteFocus(param) end
+  end
 end
 
 local function run(argv, callback)
@@ -299,6 +365,7 @@ local function described(result)
     markEdits(model)
     state.model = model
     state.structure = structure
+    Retain.keep(memo, structure.ids)
     state.shownStdout = result.stdout
     state.shownEnqueued = state.enqueued
     state.selectionPending = false
@@ -680,11 +747,7 @@ local function controlCell(param, grow)
   local color = attached[param.key]
   local available = param.effectiveDrag ~= nil
   local formattedValue = param.ui.control == "slider" and Presentation.formatValue(param.value, param) or nil
-  local focused = false
-  if param.ui.control == "slider" then
-    state.focusOrder[#state.focusOrder + 1] = param
-    focused = state.focus == param.key
-  end
+  local focused = param.ui.control == "slider" and state.focus == param.key
   local children = {
     -- The native label ignores width. Its container reserves the value column,
     -- even when empty, so value length and control kind never shift the track.
@@ -713,6 +776,11 @@ local function controlCell(param, grow)
   }, children)
 end
 
+local function retainedCell(param, grow)
+  return Retain.get(memo, "c:" .. param.key, cellSignature(param) .. "\1" .. grow,
+    function() return controlCell(param, grow) end)
+end
+
 local function paramRow(key, cells, hint)
   local children = {ui.row({gap = 8, align = "center"}, cells)}
   if hint then children[#children + 1] = ui.row({gap = 8, align = "center", justify = "end"}, {hint}) end
@@ -729,7 +797,7 @@ end
 local function singleRow(param, indent)
   return paramRow(param.key .. ":row", {
     headCell(param.ui.label or param.key, param, indent),
-    controlCell(param, 1),
+    retainedCell(param, 1),
   }, rowHint({param}))
 end
 
@@ -737,10 +805,23 @@ end
 local function matrixRow(row, indent)
   return paramRow(row.row .. ":row", {
     headCell(row.row, row.focused, indent),
-    controlCell(row.unfocused, 1),
+    retainedCell(row.unfocused, 1),
     ui.separator({orientation = "vertical", spacing = 4}),
-    controlCell(row.focused, 1),
+    retainedCell(row.focused, 1),
   }, rowHint({row.focused, row.unfocused}))
+end
+
+local function retainedSingleRow(param, indent)
+  return Retain.get(memo, "r:" .. param.key, sig(indent or 0) .. "\2" .. cellSignature(param),
+    function() return singleRow(param, indent) end)
+end
+
+-- A matrix row's label is its focused half's ui.row, which that half's digest
+-- covers.
+local function retainedMatrixRow(row, indent)
+  return Retain.get(memo, "m:" .. row.focused.ui.group .. "\0" .. row.row,
+    sig(indent or 0) .. "\2" .. cellSignature(row.unfocused) .. "\2" .. cellSignature(row.focused),
+    function() return matrixRow(row, indent) end)
 end
 
 -- Mirrors matrixRow's children exactly - fixed head, grow, separator, grow - so
@@ -802,17 +883,48 @@ local function cardHead(card, expanded)
   })
 end
 
+local function deviceDigest(card)
+  return state.structure.digest["device:" .. card.device]
+end
+
+local function cardHeadSignature(card, expanded)
+  return table.concat({
+    deviceDigest(card), sig(expanded), sig(card.bypassed), sig(card.silenced),
+    cellSignature(card.bypass), cellSignature(card.mix.unfocused), cellSignature(card.mix.focused),
+  }, "\2")
+end
+
+-- The light, chevron and name, and the mix cells beside them.
+local function retainedCardHead(card, expanded)
+  return Retain.get(memo, "h:" .. card.device, cardHeadSignature(card, expanded), function()
+    return ui.row({gap = 8, align = "center"}, {
+      cardHead(card, expanded),
+      retainedCell(card.mix.unfocused, 1),
+      ui.separator({orientation = "vertical", spacing = 4}),
+      retainedCell(card.mix.focused, 1),
+    })
+  end)
+end
+
+-- A card prints the labels of the devices that flatten it, so their digests
+-- belong to its signature; the "|" part keeps that list apart from the rows.
+local function cardSignature(card, expanded)
+  local parts = { cardHeadSignature(card, expanded) }
+  for _, entry in ipairs(card.attenuatedBy) do parts[#parts + 1] = deviceDigest(entry.card) end
+  parts[#parts + 1] = "|"
+  if expanded then
+    for _, row in ipairs(card.rows) do
+      parts[#parts + 1] = cellSignature(row.unfocused) .. "\2" .. cellSignature(row.focused)
+    end
+    for _, param in ipairs(card.shared) do parts[#parts + 1] = cellSignature(param) end
+  end
+  return table.concat(parts, "\3")
+end
+
 local function deviceCard(card)
   local expanded = state.expanded[card.device] == true
   local mix = card.mix
-  local children = {
-    ui.row({gap = 8, align = "center"}, {
-      cardHead(card, expanded),
-      controlCell(mix.unfocused, 1),
-      ui.separator({orientation = "vertical", spacing = 4}),
-      controlCell(mix.focused, 1),
-    }),
-  }
+  local children = { retainedCardHead(card, expanded) }
   local hint = rowHint({card.bypass, mix.focused, mix.unfocused})
   if hint then children[#children + 1] = ui.row({gap = 8, align = "center", justify = "end"}, {hint}) end
   for _, entry in ipairs(card.attenuatedBy) do
@@ -824,12 +936,12 @@ local function deviceCard(card)
     })
   end
   if expanded then
-    children[#children + 1] = singleRow(card.bypass, detailIndent)
+    children[#children + 1] = retainedSingleRow(card.bypass, detailIndent)
     for _, row in ipairs(card.rows) do
-      if not rowHidden(row.focused) then children[#children + 1] = matrixRow(row, detailIndent) end
+      if not rowHidden(row.focused) then children[#children + 1] = retainedMatrixRow(row, detailIndent) end
     end
     for _, param in ipairs(card.shared) do
-      if not rowHidden(param) then children[#children + 1] = singleRow(param, detailIndent) end
+      if not rowHidden(param) then children[#children + 1] = retainedSingleRow(param, detailIndent) end
     end
   end
   return ui.column({
@@ -837,6 +949,12 @@ local function deviceCard(card)
     fill = Presentation.familyColors[card.family] .. "1f",
     opacity = card.bypassed and dimOpacity or 1.0,
   }, children)
+end
+
+local function retainedCard(card)
+  local expanded = state.expanded[card.device] == true
+  return Retain.get(memo, "d:" .. card.device, cardSignature(card, expanded),
+    function() return deviceCard(card) end)
 end
 
 local function resetModeButton(spec)
@@ -894,6 +1012,23 @@ local function sectionHeader(name, toggle, sectionParams, color)
   return ui.row({gap = 8, align = "center"}, children)
 end
 
+-- A header draws its name, color, toggle, and the three counts its reset
+-- buttons report; whether the mirror button shows is whether pairs exist.
+local function sectionHeaderSignature(name, toggle, params, color)
+  local pairsShown = #Presentation.pairsOf(params) > 0
+  return table.concat({
+    name, color,
+    toggle ~= nil and state.structure.digest[toggle.key] or "", toggle ~= nil and sig(toggle.value) or "",
+    Presentation.editedCount(params), pairsShown and Presentation.symmetricCount(params) or -1,
+    Presentation.neutralCount(params),
+  }, "\1")
+end
+
+local function retainedSectionHeader(name, toggle, params, color)
+  return Retain.get(memo, "s:" .. name, sectionHeaderSignature(name, toggle, params, color),
+    function() return sectionHeader(name, toggle, params, color) end)
+end
+
 -- Keep-in-look goes to the loaded profile, else to Default.
 local function keepInLook(model)
   return {verb = "commit", destination = model.active.profile ~= nil and "profile" or "base"}
@@ -927,9 +1062,9 @@ local function editsRow(model)
 end
 
 local function appendSection(children, section, color)
-  local sectionParams = Presentation.sectionParams(section)
+  local sectionParams = state.structure.paramsOf[section.name]
   children[#children + 1] = ui.separator({spacing = 6, color = color})
-  children[#children + 1] = sectionHeader(section.name, section.toggle, sectionParams, color)
+  children[#children + 1] = retainedSectionHeader(section.name, section.toggle, sectionParams, color)
   local hasMatrix = false
   for _, row in ipairs(section.rows) do
     if row.param == nil then hasMatrix = true end
@@ -943,16 +1078,26 @@ local function appendSection(children, section, color)
         subgroup = first.ui.subgroup
         children[#children + 1] = subgroupHeading(section.name, subgroup)
       end
-      children[#children + 1] = row.param and singleRow(row.param) or matrixRow(row)
+      if row.param then
+        noteFocus(row.param)
+        children[#children + 1] = retainedSingleRow(row.param)
+      else
+        noteFocus(row.unfocused)
+        noteFocus(row.focused)
+        children[#children + 1] = retainedMatrixRow(row)
+      end
     end
   end
 end
 
 local function appendRack(children, rack, color)
   children[#children + 1] = ui.separator({spacing = 6, color = color})
-  children[#children + 1] = sectionHeader(rack.group, rack.header, Presentation.rackParams(rack), color)
+  children[#children + 1] = retainedSectionHeader(rack.group, rack.header, state.structure.paramsOf[rack.group], color)
   children[#children + 1] = matrixHeader(rack.group, cardPadding)
-  for _, card in ipairs(rack.cards) do children[#children + 1] = deviceCard(card) end
+  for _, card in ipairs(rack.cards) do
+    noteCardFocus(card)
+    children[#children + 1] = retainedCard(card)
+  end
 end
 
 local function showNameError(text)
@@ -1319,6 +1464,7 @@ end
 
 render = function()
   state.renderPending = false
+  signatures = {}
   local children = {
     ui.label({
       text = state.errorText,
