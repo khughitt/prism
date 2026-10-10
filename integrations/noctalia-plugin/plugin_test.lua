@@ -2400,3 +2400,37 @@ end)()
   oldKeep.props.onClick()
   assert(labelSet(rendered)["No edits"], "Keep clears the edits of the model now held")
 end)()
+
+;(function()
+  -- An outstanding describe may finish after close. Keep the accepted model
+  -- for reopen without reviving the closed panel's frame ticks.
+  model = layeredModel()
+  model.params[3].value = 1.8
+  dofile(here .. "panel.luau")
+  onOpen({})
+  onClose()
+  host.renders = 0
+  rawDescribed(host.describeOk())
+  equal(host.frameTick, false, "a late successful describe keeps closed panel ticks stopped")
+  equal(host.renders, 0, "a late successful describe does not draw the closed panel")
+  onOpen({})
+  equal(host.renders, 1, "reopen draws the model accepted after close once")
+  equal(byKey(rendered, "glass.ior:slider")[1].props.value, 1.8,
+    "reopen uses the model accepted after close")
+  equal(host.frameTick, false, "reopen consumes the late describe's pending render")
+
+  renderModel(layeredModel())
+  update(); update()
+  onClose()
+  host.renders = 0
+  rawDescribed({ exitCode = 1, stdout = "", stderr = "late failure" })
+  equal(host.frameTick, false, "a late failed describe keeps closed panel ticks stopped")
+  equal(host.renders, 0, "a late failed describe does not draw the closed panel")
+  onOpen({})
+  equal(host.renders, 1, "reopen after a late failure draws the held model once")
+  equal(byKey(rendered, "glass.ior:slider")[1].props.value, 1.5,
+    "reopen after a late failure keeps the accepted model")
+  equal(collect(rendered, "label")[1].props.text, nil,
+    "reopen clears the late error as a fresh gesture")
+  equal(host.frameTick, false, "reopen after a late failure leaves no pending tick")
+end)()

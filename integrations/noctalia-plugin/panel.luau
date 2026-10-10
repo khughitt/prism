@@ -3,6 +3,7 @@ local Queue = require("./queue.luau")
 local Shell = require("./shell.luau")
 
 local state = {
+  open = false,
   model = nil,
   -- What the accepted describe fixes until the next one; see buildStructure.
   structure = nil,
@@ -266,6 +267,7 @@ end
 -- Frame ticks run while a drag needs its throttled render or a describe's
 -- render waits for its own callback.
 local function syncFrameTick()
+  if not state.open then return end
   panel.setNeedsFrameTick(state.drag ~= nil or state.renderPending)
 end
 
@@ -1387,6 +1389,7 @@ end
 -- session behind a model that reconciles perfectly well. The host's second
 -- tick drives the periodic refresh that follows a wallpaper rotation.
 function onOpen(context)
+  state.open = true
   state.help = false
   state.errorText = nil
   state.errorSticky = false
@@ -1397,6 +1400,7 @@ function onOpen(context)
 end
 
 function onClose()
+  state.open = false
   state.drag = nil
   state.sampleElapsedMs = 0
   state.renderPending = false
