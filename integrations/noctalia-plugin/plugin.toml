@@ -19,3 +19,5 @@ width = 756
 height = 798
 placement = "attached"
 position = "auto"
+keyboard_focus = "exclusive"
+capture_keys = ["ctrl+s"]

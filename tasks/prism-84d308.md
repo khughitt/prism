@@ -6,9 +6,9 @@ priority: 2
 size: l
 complexity: mid
 process: direct
-owner: main
+owner: prism-84d308
 created: 2026-09-09T02:28:45Z
-updated: 2026-09-16T14:24:55Z
+updated: 2026-10-10T12:50:20Z
 started: 2026-09-16T14:24:55Z
 depends: []
 tags: [quick-add, noctalia, keyboard, cross-project]
@@ -26,3 +26,6 @@ Implement the shared vocabulary (navigation, copy, random, save) in integrations
 ## Notes
 
 - 2026-09-16T09:36:27Z (main): Rescoped 2026-09-16 to the ops plan docs/plans/2026-09-16-key-vocabulary.md Task 5 (spec docs/specs/2026-09-15-key-vocabulary-design.md in ops). First step is the live ctrl+s check; blocked until ops keys.toml (Task 1) is on ops main.
+- 2026-10-10T12:50:19Z (prism-84d308): resumed
+  provenance: {"harness_session":"claude-code:278111ef-4125-4213-8e3c-7758b3cad216","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T12:50:19Z (prism-84d308): Resumed 2026-10-10 on .worktrees/prism-84d308, fast-forwarded to main (272 commits). ops keys.toml now carries the 21 prism rows, so the Task 1 block is gone. Plan drift: profiles are now looks with commit/keep, so 5a ctrl+s maps to the bookmark (keep edits in the loaded look, profile or Default; submits an open save-as or rename field) instead of the plan's save-under-name/open-save-as. Noctalia source (src/shell/panel/panel_manager.cpp, key_chord.cpp) confirms digits, F1, arrows, ctrl+s and shift+question parse; a focused text input keeps plain printable keys, but captured Left/Right/Up/Down preempt it.
