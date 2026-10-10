@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-10T18:44:37Z
+updated: 2026-10-10T18:48:34Z
 started: 2026-10-10T16:20:49Z
 depends: []
 tags: [noctalia, performance]
@@ -75,3 +75,5 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
 - 2026-10-10T18:07:20Z (fix/panel-render-budget): Executing approved plan with subagent-driven development in .worktrees/panel-budget; baseline just test-fast: 574 Node tests plus plugin Lua checks pass after README npm install; no just setup recipe. Task 6 desktop approval remains at point of use.
 - 2026-10-10T18:31:45Z (fix/panel-render-budget): Tasks 1-3 implemented and reviewed (Task 3 encoder duplication fixed and re-reviewed). Task 4 committed with deferred describe scheduling and freshness regressions; task review running. Host acceptance/ceilings/docs remain gated downstream.
 - 2026-10-10T18:44:37Z (fix/panel-render-budget): Tasks 1-5 implemented and task-reviewed through 75dd7e6; just test-fast: 574 Node + plugin Lua pass; just check: clean. Shared encoder duplication and late-describe-after-close tick race corrected and re-reviewed. Task 6 scratch probe preparation started; no live host pointer changed.
+- 2026-10-10T18:48:34Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves Task 6 live pilot; agent resumes prism-f15cbf in .worktrees/panel-budget, runs/restores the prepared probe and analyzes the pilot, then completes in-host acceptance before Tasks 7-8 and final branch review
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
