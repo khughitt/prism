@@ -1,15 +1,16 @@
 ---
 id: prism-ebbd33
 title: Have doctor diagnose a stale or missing resolved.json directly
-status: doing
+status: done
 priority: 2
 size: s
 complexity: low
 process: direct
-owner: main
+owner: doctor-bus
 created: 2026-09-05T22:56:03Z
-updated: 2026-10-10T12:20:25Z
+updated: 2026-10-10T12:23:20Z
 started: 2026-10-10T12:20:25Z
+completed: 2026-10-10T12:23:20Z
 depends: []
 parent: prism-5a7c8a
 tags: [store, cli]
@@ -34,4 +35,10 @@ A store mutation writes two or three files under one store lock — the context 
 
 - 2026-09-29T22:48:50Z (main): scope: scoped; isolated reproduction confirms doctor misses stale bus; promoted P2/s/low/direct with locked comparison, recovery cases and documentation acceptance; brief: docs/notes/2026-09-29-store-maintenance-brief.md
 - 2026-10-10T12:20:25Z (main): started
+  provenance: {"harness_session":"claude-code:278111ef-4125-4213-8e3c-7758b3cad216","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T12:20:31Z (doctor-bus): resumed
+  provenance: {"harness_session":"claude-code:278111ef-4125-4213-8e3c-7758b3cad216","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T12:23:20Z (doctor-bus): done
+  provenance: {"harness_session":"claude-code:278111ef-4125-4213-8e3c-7758b3cad216","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T12:23:20Z (doctor-bus): doctor reports a missing, malformed, shapeless or stale resolved.json as its own finding (remedy: prism apply), checked under the store lock against a fresh resolve; other read errors escape; README states the bus is derived and divergence is detected
   provenance: {"harness_session":"claude-code:278111ef-4125-4213-8e3c-7758b3cad216","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
