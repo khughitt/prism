@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-10T17:40:26Z
+updated: 2026-10-10T18:44:37Z
 started: 2026-10-10T16:20:49Z
 depends: []
 tags: [noctalia, performance]
@@ -66,3 +66,12 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
 - 2026-10-10T17:39:55Z (fix/panel-render-budget): resumed
   provenance: {"harness_session":"claude-code:35b76d69-d243-4ef3-a0bc-e3117438b797","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
 - 2026-10-10T17:40:26Z (fix/panel-render-budget): Plan revised for review round 3: completeness is checked in a new Step 4 while the probe is installed; retries keep the original START and RUN and rebuild the whole run's file; log rotation records a new offset, reloads the probe for a fresh marker, and repeats every case; the pointer is restored (Step 5) only after a complete run or the user stopping; the gate (Step 6) takes only a complete run.
+- 2026-10-10T17:40:27Z (fix/panel-render-budget): parked (waiting on user, review): Owner re-reviews docs/plans/2026-10-10-panel-render-budget.md (round 4) and picks an execution method; then the agent executes Task 1 (prism-5d4e76)
+  provenance: {"harness_session":"claude-code:35b76d69-d243-4ef3-a0bc-e3117438b797","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T17:42:09Z (fix/panel-render-budget): review: plan round 4 — verdict: accept; findings: none; reviewer: codex
+- 2026-10-10T17:42:09Z (fix/panel-render-budget): Reviewed 5d0047d: completeness is checked while the probe remains installed; missing-case retries recollect the full original run with the same START/RUN; rotation recovery reloads after a new offset and repeats all cases; stopping restores the plugin and parks without gating; only complete runs reach record-and-gate. Prior retry finding resolved; no further blocking findings. Plan unchanged; tests and live timing remain execution checks.
+- 2026-10-10T18:06:08Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-10T18:07:20Z (fix/panel-render-budget): Executing approved plan with subagent-driven development in .worktrees/panel-budget; baseline just test-fast: 574 Node tests plus plugin Lua checks pass after README npm install; no just setup recipe. Task 6 desktop approval remains at point of use.
+- 2026-10-10T18:31:45Z (fix/panel-render-budget): Tasks 1-3 implemented and reviewed (Task 3 encoder duplication fixed and re-reviewed). Task 4 committed with deferred describe scheduling and freshness regressions; task review running. Host acceptance/ceilings/docs remain gated downstream.
+- 2026-10-10T18:44:37Z (fix/panel-render-budget): Tasks 1-5 implemented and task-reviewed through 75dd7e6; just test-fast: 574 Node + plugin Lua pass; just check: clean. Shared encoder duplication and late-describe-after-close tick race corrected and re-reviewed. Task 6 scratch probe preparation started; no live host pointer changed.
