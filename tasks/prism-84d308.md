@@ -1,15 +1,16 @@
 ---
 id: prism-84d308
 title: "Prism panel keys from the shared vocabulary: ctrl+s, j/k focus, h/l nudge, r random, 1-9 profiles, ? help"
-status: doing
+status: done
 priority: 2
 size: l
 complexity: mid
 process: direct
 owner: prism-84d308
 created: 2026-09-09T02:28:45Z
-updated: 2026-10-10T13:15:30Z
+updated: 2026-10-10T16:03:59Z
 started: 2026-09-16T14:24:55Z
+completed: 2026-10-10T16:03:57Z
 depends: []
 tags: [quick-add, noctalia, keyboard, cross-project]
 source: "mindful:thought:1784d44106a5411bb28a90796f46acf4"
@@ -33,3 +34,16 @@ Implement the shared vocabulary (navigation, copy, random, save) in integrations
 - 2026-10-10T13:00:26Z (prism-84d308): review: impl round 1 — verdict: revise; findings: Important 3, Minor 4; reviewer: claude-code
 - 2026-10-10T13:01:26Z (prism-84d308): minor (deferred): review round 1 findings 4-7 (help-mode key gating and hidden error label, roll includes hidden sliders, keys act mid-drag, test gaps) filed as prism-d2ba46. Important 2 (captured arrows take caret movement from the name field) is the user's call: dropping the arrow aliases needs an ops keys.toml change landed first.
 - 2026-10-10T13:15:30Z (prism-84d308): review: impl round 2 — verdict: accept; findings: none; reviewer: claude-code
+- 2026-10-10T13:15:40Z (prism-84d308): parked (waiting on user, review): Live desktop check, then close: with the user's go-ahead reload the plugin (noctalia msg plugins disable/enable khughitt/prism; ~/.local/share/noctalia/plugins/prism already resolves to main's integrations/noctalia-plugin), the user presses ctrl+s, j/k/h/l, r, 1-9, ?/F1 and Escape per the checklist, then tasks done in main and remove .worktrees/prism-84d308 (tt-report first).
+  provenance: {"harness_session":"claude-code:278111ef-4125-4213-8e3c-7758b3cad216","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T13:23:32Z (prism-84d308): resumed
+  provenance: {"harness_session":"claude-code:278111ef-4125-4213-8e3c-7758b3cad216","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T13:53:54Z (prism-84d308): parked (waiting on user, review): Plugin reloaded from main at 09:23 (2026-10-10); no prism errors or CPU-budget timeouts logged through 09:53. Next: the user runs the key checklist (j/k highlight, h/l nudge, digit load, ctrl+s keep and save-as typing, ?/F1 legend, Escape, r roll) and reports; then tasks done in main, tt-report, unlock and remove .worktrees/prism-84d308.
+  provenance: {"harness_session":"claude-code:278111ef-4125-4213-8e3c-7758b3cad216","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T16:03:57Z (prism-84d308): resumed
+  provenance: {"harness_session":"claude-code:278111ef-4125-4213-8e3c-7758b3cad216","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T16:03:57Z (prism-84d308): Live check 2026-10-10 passed (user): j/k highlight, h/l nudge, digit load, ctrl+s keep and save-as typing, ?/F1 legend, Escape, r roll; no prism errors or budget timeouts in noctalia.log.
+- 2026-10-10T16:03:57Z (prism-84d308): done
+  provenance: {"harness_session":"claude-code:278111ef-4125-4213-8e3c-7758b3cad216","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-10T16:03:57Z (prism-84d308): Panel captures the shared key vocabulary (ctrl+s keep/submit, j/k focus, h/l nudge, r roll + dice, 1-9 profiles, ?/F1 legend) with a conformance test against vendored tools/keys.toml; live-checked on the desktop
+  provenance: {"harness_session":"claude-code:278111ef-4125-4213-8e3c-7758b3cad216","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
