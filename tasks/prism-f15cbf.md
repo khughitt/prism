@@ -7,7 +7,7 @@ complexity: mid
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-10T17:06:10Z
-updated: 2026-10-10T19:40:55Z
+updated: 2026-10-10T20:04:19Z
 started: 2026-10-10T18:43:57Z
 depends: [prism-b81188]
 parent: prism-dac509
@@ -39,4 +39,7 @@ step: "Task 6: In-host measurement and the 15 ms gate"
 - 2026-10-10T19:37:21Z (fix/panel-render-budget): attached: full-1791659395-results.json (9265 bytes): Raw timing samples and phase-separated statistics for measured probe run 1791659395
 - 2026-10-10T19:37:21Z (fix/panel-render-budget): attached: full-1791659395.log (104766 bytes): Probe-only log for measured run 1791659395
 - 2026-10-10T19:40:55Z (fix/panel-render-budget): parked (waiting on user, decision): Owner reviews attached measurement report; agent revises spec part 5 with cold 21.39 ms n5 and release 19.26 ms n7 and addresses missing switch measurements before any new implementation or ceiling tests
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-10T19:59:03Z (fix/panel-render-budget): Next step recommendation: validate measurement harness before redesign. Old Task 6 probe uses getfenv(1), which Luau performance docs say deoptimizes the affected environment; clean production .luau has none. Local Noctalia pushCallback dynamically uses lua_getglobal at dispatch, so direct global replacement avoids need for getfenv. New coarse diagnostic prepared/linted at /tmp/prism-budget-diagnostic-3_avin1d/probe-plugin; no host actions. Earlier timing impact unknown; split render/native readback and enqueue/runAsync in next short approved live pilot. Source: https://luau.org/performance/
+- 2026-10-10T20:04:19Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves short live diagnostic; agent runs /tmp/prism-budget-diagnostic-3_avin1d/probe-plugin with one expanded cold press and one drag/release, distinguishes construction/readback and enqueue/native-launch cost without getfenv, restores saved state after explicit completion, then updates spec/plan only if production misses persist
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}

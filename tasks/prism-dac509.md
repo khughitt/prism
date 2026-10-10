@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-10T19:40:56Z
+updated: 2026-10-10T20:04:20Z
 started: 2026-10-10T16:20:49Z
 depends: []
 tags: [noctalia, performance]
@@ -86,4 +86,7 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
 - 2026-10-10T19:27:14Z (fix/panel-render-budget): in-host partial (os.clock elapsed, upper bound on thread CPU; every card expanded; run 1791659395): coldRender med/max/n 21.39/23.65/5 ms; dragTick 8.33/12.10/333 ms; dragEnd 19.26/20.77/7 ms; changed describe after first release 10.00/11.52/14 ms; deferred describe render 8.54/10.45/13 ms; switch describe/render n0. New budget errors: 0. Cold/release requirements missed; dataset incomplete so whole acceptance not applied. All over-target samples have unknown cause. No code/cost ceilings follow this gate.
 - 2026-10-10T19:40:55Z (fix/panel-render-budget): Task 6 returns to design: measured cold median 21.39 ms (n5) exceeds <15; release median 19.26 ms (n7) exceeds <=12. Full dataset incomplete because controller restored probe before owner completed profile phase; no switch samples. Zero errors during new-code probe, two budget errors on original plugin during late phase; reloaded and restored all saved state. Evidence attached to prism-f15cbf. Tasks 7-8 and final branch review remain gated.
 - 2026-10-10T19:40:55Z (fix/panel-render-budget): parked (waiting on user, decision): Owner reviews measured performance misses in prism-f15cbf attachment; agent revises docs/specs/2026-10-10-panel-render-budget-design.md part 5 before more code lands. Resume in .worktrees/panel-budget; Tasks 1-5 remain complete; Tasks 7-8 and final review remain gated
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-10T20:04:19Z (fix/panel-render-budget): Measurement qualification: previous Task 6 probe added getfenv(1), documented by Luau to deoptimize the affected environment. Production plugin has no getfenv; local host dynamically looks up global callbacks, so probe can use direct assignment. Prior costs may be inflated; magnitude unknown. Recommend validating optimized environment with a short coarse diagnostic before deciding on production redesign. Prepared copy lint/syntax checks pass; no new host run or production changes. https://luau.org/performance/
+- 2026-10-10T20:04:19Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves prepared short diagnostic; agent resumes prism-f15cbf in .worktrees/panel-budget to validate optimized-environment timing before redesign. Keep Tasks 1-5; cost ceilings and integration remain gated on complete clean acceptance
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
