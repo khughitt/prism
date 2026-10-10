@@ -1909,3 +1909,58 @@ end)()
   onOpen({})
   equal(host.renders, 1, "opening renders at once, before describe answers")
 end)()
+
+;(function()
+-- Keys: the panel captures declared chords and dispatches them through one
+-- table, so the manifest, onKey, and the conformance test cannot drift apart.
+-- ctrl+s is the bookmark: it keeps the edits in the loaded look, profile or
+-- Default, and with the name field open it submits the field instead.
+local editsModel = twoEdits()
+renderModel(editsModel)
+local beforeSave = #commands
+onKey("ctrl+s", false)
+equal(#commands, beforeSave, "a release does nothing")
+onKey("ctrl+s", true)
+equal(commands[#commands], Shell.command({ "prism", "commit", "profile",
+  "--expect-look", "profile:dusk", "--expect-wallpaper", "id:f8eb0556" }), "ctrl+s keeps the edits in the loaded profile")
+equal(editsModel.params[3].edited, false, "the edits clear at once, as the bookmark clears them")
+writeCallback({ exitCode = 0, stdout = "" })
+described(host.describeOk())
+
+local defaultEdits = profileModel({ active = {} })
+defaultEdits.params[3].layer, defaultEdits.params[3].held = "scratch", { "scratch" }
+renderModel(defaultEdits)
+onKey("ctrl+s", true)
+equal(commands[#commands], Shell.command({ "prism", "commit", "base",
+  "--expect-look", "default", "--expect-wallpaper", "none" }), "with no profile loaded, Default is the look kept")
+writeCallback({ exitCode = 0, stdout = "" })
+described(host.describeOk())
+
+renderModel(profileModel({ active = {} }))
+local beforeClean = #commands
+onKey("ctrl+s", true)
+equal(#commands, beforeClean, "nothing edited, nothing to keep")
+
+-- An open name field is what the user is saving: ctrl+s submits it, the way
+-- Enter does, whichever mode opened it.
+local saveTree = renderModel(profileModel())
+glyphButton(saveTree, "device-floppy").props.onClick()
+collect(rendered, "input")[1].props.onChange("noon")
+onKey("ctrl+s", true)
+equal(commands[#commands], Shell.command({ "prism", "commit", "profile", "noon",
+  "--expect-look", "default", "--expect-wallpaper", "id:f8eb0556" }), "ctrl+s submits the save-as field")
+equal(#collect(rendered, "input"), 0, "and closes it")
+writeCallback({ exitCode = 0, stdout = "" })
+described(host.describeOk())
+
+local renameTree = renderModel(profileModel({ active = { profile = "dusk", wallpaper = { id = "f8eb0556", path = "/pics/a.jpg" } } }))
+glyphButton(renameTree, "pencil").props.onClick()
+collect(rendered, "input")[1].props.onChange("dusk2")
+onKey("ctrl+s", true)
+equal(commands[#commands], Shell.command({ "prism", "context", "rename", "profile", "dusk", "dusk2",
+  "--expect-look", "profile:dusk", "--expect-wallpaper", "id:f8eb0556" }), "ctrl+s submits the rename field")
+writeCallback({ exitCode = 0, stdout = "" })
+described(host.describeOk())
+
+equal(keyTable()["ctrl+s"], { action = "save" }, "the key table names the chord's action")
+end)()

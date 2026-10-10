@@ -796,8 +796,13 @@ local function sectionHeader(name, toggle, sectionParams, color)
   return ui.row({gap = 8, align = "center"}, children)
 end
 
+-- Keep-in-look goes to the loaded profile, else to Default.
+local function keepInLook(model)
+  return {verb = "commit", destination = model.active.profile ~= nil and "profile" or "base"}
+end
+
 -- The edits row: what scratch holds, where to keep it, and the three resets
--- over everything. Keep-in-look goes to the loaded profile, else to Default.
+-- over everything.
 local function editsRow(model)
   local params = Presentation.visibleParams(model)
   local edited = Presentation.editedCount(params)
@@ -810,7 +815,7 @@ local function editsRow(model)
       glyph = "bookmark", count = edited, enabled = not state.selectionPending,
       active = "Keep " .. edited .. plural .. " in " .. look,
       inert = "Nothing to keep",
-      act = commitAction({verb = "commit", destination = model.active.profile ~= nil and "profile" or "base"}, params),
+      act = commitAction(keepInLook(model), params),
     }),
     resetModeButton({
       glyph = "photo-check", count = wallpaper ~= nil and edited or 0, enabled = not state.selectionPending,
@@ -907,6 +912,19 @@ local function ask(kind, name, expected)
   state.naming = nil
   state.confirm = {kind = kind, name = name, expected = expected}
   render()
+end
+
+-- The keyboard save is the bookmark: the edits go to the loaded look. An open
+-- name field is what is being saved, so it is submitted instead.
+local function saveShortcut()
+  if state.model == nil or state.selectionPending then return end
+  if state.naming ~= nil then
+    commitName(state.naming.text, state.naming)
+    return
+  end
+  local params = Presentation.visibleParams(state.model)
+  if Presentation.editedCount(params) == 0 then return end
+  commitAction(keepInLook(state.model), params)()
 end
 
 -- One selector loads and clears: index 0 is "no profile", which deactivates.
@@ -1186,4 +1204,26 @@ function onFrameTick(deltaMs)
   state.sampleElapsedMs = 0
   enqueue(state.drag.pendingSample)
   state.drag.pendingSample = nil
+end
+
+-- Every captured chord, spelled as the manifest spells it, and the action it
+-- dispatches. onKey reads only this table, and keyTable exposes it to the
+-- conformance test, so a chord cannot be captured without an action here.
+local keyActions = {
+  ["ctrl+s"] = {action = "save"},
+}
+
+local handlers = {
+  save = saveShortcut,
+}
+
+function keyTable()
+  return keyActions
+end
+
+function onKey(chord, pressed)
+  if not pressed then return end
+  local entry = keyActions[chord]
+  if entry == nil then return end
+  handlers[entry.action](entry.arg)
 end
