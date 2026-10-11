@@ -8,7 +8,7 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-11T18:13:25Z
-updated: 2026-10-11T21:20:11Z
+updated: 2026-10-11T21:22:09Z
 started: 2026-10-11T20:38:11Z
 depends: [prism-177cca]
 parent: prism-f15cbf
@@ -34,3 +34,8 @@ Controller gets fresh live permissions, pilot-derived duration, B-C/C-B swaps wi
 - 2026-10-11T21:20:10Z (fix/panel-render-budget): Preparation frozen from clean-reviewed Task2 a89fd28 (instrumentation 9e92f80e44beea68ef3318eba78ada68b2f67140997a202425addc5b6c501e29): four fresh B1/C1/C2/B2 copies, one cold each, launch/control only block1; exact hashes, fixed-pilot/readiness/pending-ready calibration, integrity/lint and fake n=1 inconclusive parser passed. Portable preparation attachment excludes raw owner/runtime/model bytes. No live host/store action, latency verdict or acceptance; root obtains fresh approximately-ten-minute pilot permission and fresh locked setup before running. tasks check and just check exited 0, no warnings.
 - 2026-10-11T21:20:10Z (fix/panel-render-budget): parked (waiting on agent, approval): Root inspects frozen .worktrees/panel-budget Task3 report/attachment, obtains fresh desktop/setup permission for approximately-ten-minute B1/C1/C2/B2 pilot, retakes locked snapshot/eligibility, then executes measured phases and exact restoration
   provenance: {"harness_session":"codex:01a12caf-4f06-7693-8eb9-7c23ac9a536e","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T21:22:07Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T21:22:07Z (fix/panel-render-budget): Controller inspected frozen preparation6213a86 and amended reviewed probe a89fd28: four fresh pilot identities/hash sets, state/log guards and temp calibration, cleared-model slider eligibility, exact swap/readiness/drain commands. No live measurement/acceptance; fresh approved snapshot and pilot next. Original plugin pointer intact and host-load nothing running.
+- 2026-10-11T21:22:07Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves approximately ten-minute desktop/setup pilot; root retakes locked snapshots, runs four verified B1→C1→C2→B2 activations from frozen preparation with explicit phase confirmations, drains and restores exact saved state, then resumes implementer for measured analysis and full-session duration
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}

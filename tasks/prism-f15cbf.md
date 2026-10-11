@@ -7,7 +7,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T17:06:10Z
-updated: 2026-10-11T20:36:53Z
+updated: 2026-10-11T21:22:07Z
 started: 2026-10-10T18:43:57Z
 depends: [prism-b81188]
 parent: prism-dac509
@@ -130,3 +130,6 @@ step: "Task 6: In-host measurement and the 15 ms gate"
 - 2026-10-11T18:35:56Z (fix/panel-render-budget): Read-only profile eligibility preflight: pure locked resolution found current aquamarine to Aurora changes 50/83 canonical values, with 56 majority-changing existing pairs. No activation/store write/host use. Saved real 83-parameter/12-card model and profile-pair report in continuation workspace; reverify with fresh snapshots at live readiness.
 - 2026-10-11T18:40:43Z (fix/panel-render-budget): Continuation Task1 e7384b0 independently reviewed: spec compliant and quality approved, no findings. Frozen baseline source hashes verified against git; only panel.luau changed among six production modules. In-host timing remains unaccepted. Next Task2 builds and validates scratch probes; no live desktop use.
 - 2026-10-11T20:36:53Z (fix/panel-render-budget): Continuation Tasks1–2 reviewed: exact-equality tokens e7384b0; matched probe/verdict fixes c1c7d74 accepted in scoped review round2. Live timing/observer CPU and per-block acceptance remain Task3. Pilot preparation next; no fresh host approval or pointer change.
+- 2026-10-11T21:16:12Z (fix/panel-render-budget): Task2 final probe a89fd28 reviewed clean in round5 after three corrective rounds: completed callback/chronology evidence, explicit ready/drain, pending-render-before-click precedence all addressed. Task3 pilot copies being frozen; no live approval or host mutation. Token candidate remains performance-unaccepted.
+- 2026-10-11T21:22:07Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves prepared desktop pilot; root runs prism-4ba651 in .worktrees/panel-budget with fresh snapshots and exact restoration, analyzes protocol/pace before requesting the measured-duration full comparison
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
