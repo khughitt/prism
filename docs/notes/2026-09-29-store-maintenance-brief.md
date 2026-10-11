@@ -79,8 +79,7 @@ separate.
 - `prism-6c4469`: briefed; preserve its original capture and correct the obsolete
   partial-write claim. `prism-d47f43` designs safe orphan cleanup
   (P2/s/high/planned), with reviewed spec/plan and bounded implementation follow-up.
-  Completion updates this brief and adds a finding note to `prism-6c4469` in the
-  same commit so a later scope pass can reconsider it.
+  Completion updates this brief and adds a finding note to `prism-6c4469` before the result's branch merges so a later scope pass can reconsider it.
 - `prism-859bb7`: propose dropping the blanket relocation request, supported by
   `adeeebd` / `prism-01554f` and the current documented layout. It remains an idea
   pending disposition; this pass neither drops it nor claims host cleanup passed.

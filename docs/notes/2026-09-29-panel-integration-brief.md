@@ -34,5 +34,5 @@ Preserve reset tooltips, unavailable and no-op states, focus alignment, and curr
 
 - `prism-4e5039` owns the three previously unparented members and links this handoff.
 - `prism-e89aad`: scoped to todo, P2, small, low complexity, direct. Add integer contractVersion 1, require exact agreement before shape validation, and test unversioned/malformed/mismatched output and valid-version shape errors through the existing harness.
-- `prism-ed35d4`: briefed, remains an idea. Reuse `prism-569378` (P3, medium, mid complexity, direct investigation); its completion records capability findings in both briefs and adds a finding note to this idea as well as its existing waiting ideas in the same commit.
+- `prism-ed35d4`: briefed, remains an idea. Reuse `prism-569378` (P3, medium, mid complexity, direct investigation); its completion records capability findings in both briefs and adds a finding note to this idea as well as its existing waiting ideas before the result's branch merges.
 - `prism-686374`: shelved until supported native rotary controls and a concrete useful landscape layout are established. Preserve its original capture and notes; no shell contribution or new design task is filed now.

@@ -7,7 +7,7 @@ size: m
 complexity: high
 process: planned
 created: 2026-09-29T22:42:24Z
-updated: 2026-09-29T22:42:24Z
+updated: 2026-10-11T15:44:19Z
 depends: []
 parent: prism-179840
 tags: [profiles, ui]
@@ -23,4 +23,4 @@ Bound: Produce a reviewed design for the smallest useful local capture and rando
 
 Done: A reviewed spec and implementation plan with acceptance cases for a roll, a completed drag, a rating after queued writes, wallpaper rotation during an action, and an apply failure. Captured data must distinguish user intent from carried values and requested parameters from successfully applied appearance. Begin with explicit snapshots plus bounded rolls as the recommended first increment; decide whether gesture capture is needed immediately. Cost estimates and interaction models remain with their existing material tasks.
 
-Ideas it wakes: On completion, run tasks note on prism-284a61, prism-3e59b5, and prism-cafffa with the decisions and resulting implementation boundaries, in the same commit as this result; update the brief.
+Ideas it wakes: On completion, run tasks note on prism-284a61, prism-3e59b5, and prism-cafffa with the decisions and resulting implementation boundaries, before the result's branch merges; update the brief.

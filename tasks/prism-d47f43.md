@@ -7,7 +7,7 @@ size: s
 complexity: high
 process: planned
 created: 2026-09-29T22:48:48Z
-updated: 2026-09-29T22:48:48Z
+updated: 2026-10-11T15:44:19Z
 depends: []
 parent: prism-5a7c8a
 tags: [store, cli]
@@ -23,4 +23,4 @@ Bound: Produce a reviewed design and implementation plan for orphan cleanup only
 
 Expected result: Attach the reviewed spec and plan, acceptance cases for two orphans, inactive pairs, replacement keys, malformed inputs, no-op reruns and partial I/O failure, and a bounded implementation decomposition. Update the brief with settled decisions.
 
-Ideas it wakes: On completion, run tasks note on prism-6c4469 with the approved cleanup contract and remaining implementation work, in the same commit as this result.
+Ideas it wakes: On completion, run tasks note on prism-6c4469 with the approved cleanup contract and remaining implementation work, before the result's branch merges.

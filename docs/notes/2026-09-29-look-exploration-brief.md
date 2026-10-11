@@ -78,7 +78,7 @@ idea's claim that it is unregistered is superseded by the current project catalo
   complexity, planned). Produce reviewed design and implementation artifacts with
   acceptance cases for rolls, drags, ratings after queued writes, rotation races, and
   apply failures. Completion must add finding notes to `prism-284a61`, `prism-3e59b5`,
-  and `prism-cafffa` in the same commit and update this brief. They remain briefed ideas.
+  and `prism-cafffa` before the result's branch merges and update this brief. They remain briefed ideas.
 - `prism-b315f9`: shelved until `material-0c7eed` or a documented, validated interaction
   supplies a concrete hint and its applicability. Then unshelve and scope that consumer.
 - `prism-d54be4`: shelved until `material-31074f` supplies a reusable estimate with

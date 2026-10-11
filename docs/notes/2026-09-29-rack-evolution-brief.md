@@ -33,7 +33,7 @@ The [accepted rack design](../specs/2026-09-08-device-chain-rack-design.md) keep
 
 ## Proposed decomposition
 
-- `prism-569378`: determine feasible static styling for cards, lights, and banners (priority 3, medium size, mid complexity, direct investigation). Compare at most two static treatments on representative cards, record capability limits and a recommendation, and prepare owner visual review where feasible. On completion, add finding notes to `prism-0f73e0`, `prism-10729e`, and `prism-a6edfd` in the same commit. These three remain briefed ideas.
+- `prism-569378`: determine feasible static styling for cards, lights, and banners (priority 3, medium size, mid complexity, direct investigation). Compare at most two static treatments on representative cards, record capability limits and a recommendation, and prepare owner visual review where feasible. On completion, add finding notes to `prism-0f73e0`, `prism-10729e`, and `prism-a6edfd` before the result's branch merges. These three remain briefed ideas.
 - `prism-542904`: shelved until a supported renderer order contract can be persisted and emitted by Prism.
 - `prism-d2b31a`: shelved until the inheritance decision or a concrete modulation requirement supplies the missing design context.
 
