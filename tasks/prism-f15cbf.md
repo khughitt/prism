@@ -7,7 +7,7 @@ complexity: mid
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-10T17:06:10Z
-updated: 2026-10-11T15:26:43Z
+updated: 2026-10-11T15:39:03Z
 started: 2026-10-10T18:43:57Z
 depends: [prism-b81188]
 parent: prism-dac509
@@ -84,3 +84,5 @@ step: "Task 6: In-host measurement and the 15 ms gate"
 - 2026-10-11T15:26:40Z (fix/panel-render-budget): attached: warm-comparison.log (60259 bytes): Frozen warm comparison log with host paths redacted, timing records unchanged
 - 2026-10-11T15:26:40Z (fix/panel-render-budget): attached: analyze-warm.py (9191 bytes): Scratch parser with representative asserts for exact span sets, paired interference and within-sample gaps
 - 2026-10-11T15:26:40Z (fix/panel-render-budget): Warm run1791731787 analyzed: raw n5 each button median8.522/max9.052 ms and frame8.124/max8.712; strict n4 excludes pair82-to84 interrupted by describe83 at0.010ms. Strict medians8.588/7.8765; paired frame-minus-button differences vary both ways, median-0.028ms. Zero budget errors, no consistent ordinary-button penalty. Live input equality not hashed; not full acceptance. Worker prepares no-write readonly-launch comparison because slow release/completion paths launch commands before render; cause remains hypothesis, cold rebuild unresolved.
+- 2026-10-11T15:39:03Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves prepared /tmp/prism-budget-launch-comparison-jx3_7ztr/probe-plugin; agent snapshots fresh state, opens Prism for five Launch comparison clicks (readonly explicit worktree describe), compares before-launch and following-frame spans, then restores original plugin/settings after explicit completion or stop. No probe installed, original main pointer restored, nothing running.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
