@@ -96,6 +96,7 @@ local function diagnosticStart()
     assert(diagnosticReady(),'Diagnostics require a settled panel')
     for _,card in ipairs(state.structure.rack.cards) do assert(state.expanded[card.device]==true,'Expand every card first') end
     diagnosticHidden=true
+    diagnosticReadyRequested=true
     diagnosticSequence={coldRemaining=diagnosticIdentity.coldPairs,phase='setup',launchIndex=1,stdout=state.shownStdout,model=state.model,enqueued=state.enqueued}
     panel.setNeedsFrameTick(true)
   end)
@@ -104,6 +105,14 @@ onFrameTick=function(deltaMs)
   local ordinaryTickDue=state.drag~=nil or state.renderPending
   local sequenceDue=diagnosticSequence~=nil and diagnosticPair==nil
   local pairRenderDue=diagnosticPair~=nil and not diagnosticPair.frameDone
+  local coldRenderDue=diagnosticSequence~=nil and diagnosticSequence.phase=='render' and diagnosticSequence.coldRemaining>0
+  if diagnosticReadyRequested and not (ordinaryTickDue or pairRenderDue or coldRenderDue) then
+    diagnosticReadyRequested=false
+    if #diagnosticBuffer>0 then diagnosticFlush() end
+    diagnosticSnapshot('ready')
+    syncFrameTick()
+    return
+  end
   if #diagnosticBuffer>0 and not (ordinaryTickDue or sequenceDue or pairRenderDue) then diagnosticFlush(); syncFrameTick(); return end
   if diagnosticPair and not diagnosticPair.frameDone then
     return diagnosticCallback('pairFrame',function()
@@ -167,4 +176,4 @@ onFrameTick=function(deltaMs)
   return diagnosticCallback(class or 'idle',diagnosticPlainTick,deltaMs)
 end
 
-diagnosticEvent('activation',0,{scope='activation',initialModelEmpty=state.model==nil,initialStructureEmpty=state.structure==nil,initialMemoEmpty=next(memo.entries)==nil,initialEnqueued=state.enqueued,initialDragEmpty=state.drag==nil,initialQueueEmpty=state.queue.inFlight==nil and #state.queue.pending==0})
+diagnosticEvent('activation',0,{scope='activation',initialModelEmpty=state.model==nil,initialStructureEmpty=state.structure==nil,initialMemoEmpty=next(memo.entries)==nil,initialEnqueued=state.enqueued,initialDragEmpty=state.drag==nil,initialRenderPending=state.renderPending,initialPairEmpty=diagnosticPair==nil,initialQueueEmpty=state.queue.inFlight==nil and #state.queue.pending==0})

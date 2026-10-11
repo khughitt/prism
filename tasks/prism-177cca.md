@@ -8,9 +8,9 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-11T18:13:25Z
-updated: 2026-10-11T20:36:53Z
+updated: 2026-10-11T21:03:06Z
 started: 2026-10-11T18:42:57Z
-completed: 2026-10-11T20:31:14Z
+completed: 2026-10-11T21:02:48Z
 depends: [prism-7d38d8]
 parent: prism-f15cbf
 tags: []
@@ -96,3 +96,30 @@ Build frozen baseline/candidate scratch copies with matching minimal instrumenta
 - 2026-10-11T20:31:14Z (fix/panel-render-budget): Fixed Important I1/I2: incomplete callback spans and contradictory completion timelines cannot become primary launch evidence; focused fixtures/saved logs and required gates pass; no live acceptance.
   provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
 - 2026-10-11T20:36:53Z (fix/panel-render-budget): review: impl round 2 — verdict: accept; findings: none; reviewer: codex/gpt-6.1-sol
+- 2026-10-11T20:39:38Z (fix/panel-render-budget): review: impl round 3 — verdict: revise; findings: Important 1; reviewer: codex
+- 2026-10-11T20:39:38Z (fix/panel-render-budget): Task3 preflight found missing observable live gates: initial pending render/pair and readiness/drain queue/describe/drag/refresh/render/pair/sequence/buffer/expanded-id state. Internal diagnosticStart assertions and sequenceDone cannot independently verify each required activation/swap. Scoped scratch-only fix and fresh re-review before host permission.
+- 2026-10-11T20:42:19Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T21:02:47Z (fix/panel-render-budget): detached: probe.lua: Round2 live gate: observer-only ready/drain snapshots and exact settled flags.
+- 2026-10-11T21:02:47Z (fix/panel-render-budget): attached: probe.lua (6911 bytes): Observer-only ready/drain state, expanded ids/profile, bounded finite buffer and explicit overhead.
+- 2026-10-11T21:02:47Z (fix/panel-render-budget): detached: tail.lua: Round2 startup render/pair flags and authorized pre-target observer boundary.
+- 2026-10-11T21:02:47Z (fix/panel-render-budget): attached: tail.lua (10541 bytes): Startup render/pair freshness and requested readiness observer; normal and next-frame precedence unchanged.
+- 2026-10-11T21:02:47Z (fix/panel-render-budget): detached: self-check.lua: Round2 focused readiness/drain/busy/precedence/contiguous-record assertions.
+- 2026-10-11T21:02:47Z (fix/panel-render-budget): attached: self-check.lua (33820 bytes): Readiness RED/GREEN, exact drain flags, active/queued refusals, ids/profile, finite chunks and original cadence/periodic tests.
+- 2026-10-11T21:02:47Z (fix/panel-render-budget): detached: analyze.py: Require missing startup render/pair freshness fields.
+- 2026-10-11T21:02:47Z (fix/panel-render-budget): attached: analyze.py (14663 bytes): Parser startup render/pair freshness; metadata snapshots excluded from target classes; I1/I2 preserved.
+- 2026-10-11T21:02:47Z (fix/panel-render-budget): detached: analysis_check.py: Align synthetic activation fixture with required startup flags.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): attached: analysis_check.py (14220 bytes): Updated fresh activation fixture; numeric/parser/I1/I2/saved-log boundaries retained.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): detached: manifest.json: Updated identical snapshot instrumentation hash; portable CLI display.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): attached: manifest.json (2116 bytes): Round2 frozen-source/common-instrumentation identity; exact runtime CLI preserved in archive.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): detached: README.md: Document explicit ready/drain schema and observer administrative boundary.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): attached: README.md (9174 bytes): Ready/drain fields, eligibility, observer scope/cost, exact profile absence and focused command.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): detached: task-2-report.md: Append full round2 readiness gap fix and covering results.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): attached: task-2-report.md (28781 bytes): Round2 report with ruling, RED/GREEN, native precedence, exact schema, regenerated identities and no running checks.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): detached: task2-readiness.tar.gz: Preserve amended reviewed-schema copies and all readiness/drain evidence.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): attached: task2-readiness.tar.gz (506594 bytes): Round2 complete ready/drain archive; exact runtime copies/identity/diffs, focused calibration and gate logs.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): Fix round2 readiness observability RED→GREEN: initial render/pair flags, dedicated pre-target ready metadata and fresh final idle-drain state with queue/describe/drag/render/refresh/pair/sequence/buffer/expanded ids/profile. Busy states ineligible; no self-buffer/drop; native/cold/100ms/periodic and parser/numeric/I1/I2 checks pass, identity/diff/integrity/lint0/0/gates pass; no suite/live action or running checks.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): done
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): Added explicit fresh startup, ready and eligible settled-drain evidence outside target timing; busy states refused; regenerated matched copies and focused calibration/identity/lint/gates pass; no live acceptance.
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}

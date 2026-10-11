@@ -85,6 +85,7 @@ def normalize(events,identities):
         if event['class']=='activation':
             if nonce in activated: raise ValueError('runtime identity reused')
             if not event['complete']: raise ValueError('incomplete runtime activation')
+            if event.get('initialRenderPending') is not False or event.get('initialPairEmpty') is not True: raise ValueError('runtime render/pair state not reset')
             for key in ('initialModelEmpty','initialStructureEmpty','initialMemoEmpty','initialDragEmpty','initialQueueEmpty'):
                 if event.get(key) is not True: raise ValueError('runtime was not reset: '+key)
             if type(event.get('initialEnqueued')) is not int or event.get('initialEnqueued')!=0: raise ValueError('runtime enqueued not reset')

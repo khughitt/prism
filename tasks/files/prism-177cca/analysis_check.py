@@ -41,7 +41,7 @@ identity={'variant':'baseline','sourceCommit':'frozen','sourceHash':'hash','acti
 def event(record,class_='pairImmediate',scope='render',pair='p1',callback=2,control=False,**extra):
     return identity|{'schema':1,'recordId':record,'clockOrigin':'new-clock','callbackId':callback,'class':class_,'scope':scope,'elapsedMs':4.0,'rendered':True,'accepted':False,'pairId':pair,'pending':False,'interference':False,'timestamp':float(record),'complete':True,'control':control,'diagnosticsHidden':True}|extra
 def activation():
-    return event(1,'activation','activation',False,0,initialModelEmpty=True,initialStructureEmpty=True,initialMemoEmpty=True,initialEnqueued=0,initialDragEmpty=True,initialQueueEmpty=True)
+    return event(1,'activation','activation',False,0,initialModelEmpty=True,initialStructureEmpty=True,initialMemoEmpty=True,initialEnqueued=0,initialDragEmpty=True,initialQueueEmpty=True,initialRenderPending=False,initialPairEmpty=True)
 def pair_events(n,start,state='pending',control=False):
     name=('control' if control else 'launch')+str(n)
     base=n*10+(100 if control else 0)

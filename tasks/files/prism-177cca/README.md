@@ -115,3 +115,28 @@ remaining finite trials. Invalid trials stay excluded; no automatic extra retrie
 invented, and fewer than five valid pairs still make the launch result inconclusive.
 To run the regular-tick end-to-end fixture, use the one-cold/five-launch copies and
 pass `periodic` as the last self-check argument. It saves clean and interference logs.
+
+Readiness/drain schema (fix round2): activation now requires
+`initialRenderPending=false` and `initialPairEmpty=true`. The existing click requests
+one dedicated observer frame before the first cold setup. It flushes at most sixteen
+older records (including startup), then emits `class=ready,scope=metadata,observer=true`.
+`readyEligible=true` requires settled original state, all current rack ids expanded,
+no pair and an unfailed setup-phase sequence. This administrative frame performs no
+render/decode/command work; ordinary pending renders, every active drag and due pair/
+cold-render work retain precedence. Cold setup→next actual-frame render stays exact.
+
+On the last chunk of each otherwise-idle flush, direct `class=drain,scope=metadata`
+records expose `eligibleDrain`, `queueIdle`, `queuePendingCount`, `queueInFlight`,
+`describeRunning`, `dragEmpty`, `renderPending`, `refreshPending`, `refreshAfterDrag`,
+`describeInvalidated`, `selectionPending`, `help`, `errorText`, `errorSticky`, `open`,
+`modelReady`, `pairEmpty`, `pairPending`, `pairFrameDone`,
+`comparisonCallbacksComplete`, `sequenceComplete`, `sequencePhase`, `bufferEmpty`,
+`bufferCount`, `expandedIds`, `rackIds`, `allRackExpanded` and `currentProfile`.
+Ids are sorted arrays; currentProfile=false explicitly means no loaded profile.
+Only eligibleDrain=true represents a fully settled swap boundary with zero buffer.
+Partial chunks expose remainingRecords/bufferEmpty on observerFlush; fully flushed
+but busy state emits eligibleDrain=false. Snapshot collection/serialization/logging
+is outside target timing, with observerSnapshot overhead recorded separately. Direct
+snapshots never enqueue themselves, so no observer loop or dropped final drain occurs.
+Run the focused fake checks with `readiness` as the last self-check argument on the
+five-cold/no-launch copies. Fake metadata JSON now supports the observed arrays.

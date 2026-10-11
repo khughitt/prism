@@ -21,16 +21,17 @@ local success={exitCode=0,timedOut=false,stdout='same fixture',stderr='',stdoutT
 local function jsonRecord(value)
   if type(value)=='string' then return '"'..value:gsub('\\','\\\\'):gsub('"','\\"'):gsub('\n','\\n'):gsub('\r','\\r'):gsub('\t','\\t')..'"' end
   if type(value)~='table' then return tostring(value) end
+  if #value>0 then local parts={};for _,held in ipairs(value) do parts[#parts+1]=jsonRecord(held) end;return '['..table.concat(parts,',')..']' end
   local keys={};for key in pairs(value) do keys[#keys+1]=key end;table.sort(keys)
   local parts={};for _,key in ipairs(keys) do parts[#parts+1]=jsonRecord(key)..':'..jsonRecord(value[key]) end
   return '{'..table.concat(parts,',')..'}'
 end
 local function host(dir,probe)
-  local h={renders=0,decodes=0,launches={},timeline={},logs={},failLaunch=false,model=copy(model)}
+  local h={renders=0,decodes=0,launches={},timeline={},logs={},emitted={},failLaunch=false,model=copy(model)}
   local ui=setmetatable({}, {__index=function(_,kind) return function(props,children) return {kind=kind,props=props or {},children=children or {}} end end})
   local env
   env={ui=ui,panel={render=function(tree) h.tree=tree; h.renders=h.renders+1; h.timeline[#h.timeline+1]='render' end,setNeedsFrameTick=function(v) h.frame=v end,setWantsSecondTicks=function() end},
-    noctalia={json={encode=function(v) return type(v)=='table' and v.schema==1 and jsonRecord(v) or canonical(v) end,decode=function() h.decodes=h.decodes+1; return copy(h.model) end},log=function(s) if probe then assert(up(env.onFrameTick,'diagnosticDepth')==0,'log inside timed target callback') end;h.logs[#h.logs+1]=s end,
+    noctalia={json={encode=function(v) if type(v)=='table' and v.schema==1 then h.emitted[#h.emitted+1]=copy(v);return jsonRecord(v) end;return canonical(v) end,decode=function() h.decodes=h.decodes+1; return copy(h.model) end},log=function(s) if probe then assert(up(env.onFrameTick,'diagnosticDepth')==0,'log inside timed target callback') end;h.logs[#h.logs+1]=s end,
       runAsync=function(command,callback,timeout)
         assert(timeout==10000); assert(command:sub(1,#cli+2)=="'"..cli.."'" or not probe)
         h.launches[#h.launches+1]={command=command,callback=callback}
@@ -55,10 +56,18 @@ local function host(dir,probe)
 end
 local function tree(h) return canonical(copy(h.tree,true)) end
 local function button(h,text) for _,n in ipairs(nodes(h.tree)) do if n.props.text==text then return n end end end
+local function startDiagnostics(h)
+  local renders,decodes=h.renders,h.decodes
+  assert(button(h,'Sample diagnostics')).props.onClick()
+  h.env.onFrameTick(16)
+  assert(h.renders==renders and h.decodes==decodes,'readiness observer changed target work')
+  assert(h.emitted[#h.emitted-1].class=='ready','missing dedicated readiness boundary')
+end
 local function checkCold(variant)
   local h=host(base..'/'..variant..'/plugin',true); local plain=host(base..'/'..variant..'/source',false)
   local b=assert(button(h,'Sample diagnostics'),'missing transient diagnostic start control')
   local r,d=h.renders,h.decodes; b.props.onClick(); assert(h.renders==r,'removal callback rendered')
+  h.env.onFrameTick(16);assert(h.emitted[#h.emitted-1].class=='ready' and h.renders==r and h.decodes==d)
   for i=1,5 do
     local old,structure=h.state.model,h.state.structure; local before=h.renders
     h.tick(); assert(h.renders==before,'cold setup rendered'); assert(h.decodes==d+i,'shown stdout shortcut skipped decode')
@@ -75,10 +84,88 @@ local function checkCold(variant)
   local old=h.state.model; h.env.onClose(); h.env.onOpen({}); assert(h.state.model==old,'close/open incorrectly treated as reset')
   return h
 end
+if arg[5]=='readiness' then
+  for _,variant in ipairs({'baseline','candidate'}) do
+    local h=host(base..'/'..variant..'/plugin',true)
+    local activation
+    for _,e in ipairs(up(h.env.onFrameTick,'diagnosticBuffer')) do if e.class=='activation' then activation=e end end
+    assert(activation and activation.initialRenderPending==false and activation.initialPairEmpty==true,'missing fresh runtime render/pair startup flags')
+    local before=h.renders;assert(button(h,'Sample diagnostics')).props.onClick()
+    h.env.onFrameTick(16)
+    local ready=h.emitted[#h.emitted-1]
+    assert(ready and ready.class=='ready' and ready.scope=='metadata','explicit readiness observer absent before cold setup')
+    assert(h.renders==before and h.decodes==1,'readiness observer performed target setup/render')
+    assert(ready.queueIdle and not ready.describeRunning and ready.dragEmpty and not ready.renderPending and not ready.refreshPending and not ready.refreshAfterDrag and not ready.describeInvalidated and ready.pairEmpty and ready.allRackExpanded)
+    assert(ready.currentProfile==(h.state.model.active.profile or false) and #ready.expandedIds==12 and #ready.rackIds==12)
+    h.env.onFrameTick(16);assert(h.decodes==2 and h.renders==before,'cold setup not after readiness boundary')
+    h.env.onFrameTick(16);assert(h.renders==before+1,'cold render not in following actual frame')
+    for _=2,5 do h.env.onFrameTick(16);h.env.onFrameTick(16) end
+    h.env.onFrameTick(16)
+    while #up(h.env.onFrameTick,'diagnosticBuffer')>0 do h.env.onFrameTick(16) end
+    local drain=h.emitted[#h.emitted-1]
+    assert(drain.class=='drain' and drain.eligibleDrain and drain.bufferEmpty and drain.bufferCount==0,'missing exact eligible final drain')
+    assert(drain.queueIdle and not drain.describeRunning and drain.dragEmpty and not drain.renderPending and not drain.refreshPending and not drain.refreshAfterDrag and not drain.describeInvalidated)
+    assert(drain.pairEmpty and drain.comparisonCallbacksComplete and drain.sequenceComplete and drain.allRackExpanded and canonical(drain.expandedIds)==canonical(drain.rackIds))
+    assert(drain.currentProfile==(h.state.model.active.profile or false))
+    for _,field in ipairs({'renderPending','refreshPending','refreshAfterDrag','describeInvalidated','help'}) do
+      local held=h.state[field];h.state[field]=true
+      local snapshot=assert(up(h.env.onFrameTick,'diagnosticSnapshot'));snapshot('drain')
+      assert(not h.emitted[#h.emitted-1].eligibleDrain,'busy flag admitted drain: '..field)
+      h.state[field]=held
+    end
+    h.state.queue.pending={{verb='set'}};up(h.env.onFrameTick,'diagnosticSnapshot')('drain')
+    assert(not h.emitted[#h.emitted-1].eligibleDrain and not h.emitted[#h.emitted-1].queueIdle);h.state.queue.pending={}
+    local card=h.state.structure.rack.cards[1].device;h.state.expanded[card]=false;up(h.env.onFrameTick,'diagnosticSnapshot')('drain')
+    assert(not h.emitted[#h.emitted-1].eligibleDrain and #h.emitted[#h.emitted-1].expandedIds==11);h.state.expanded[card]=true
+    h.env.update();h.env.update()
+    while #up(h.env.onFrameTick,'diagnosticBuffer')>0 do h.env.onFrameTick(16) end
+    assert(not h.emitted[#h.emitted-1].eligibleDrain and h.emitted[#h.emitted-1].describeRunning,'pending normal describe admitted eligible drain')
+    h.launches[#h.launches].callback(success)
+    while #up(h.env.onFrameTick,'diagnosticBuffer')>0 do h.env.onFrameTick(16) end
+    local begin=assert(up(h.env.onFrameTick,'beginLaunchPair'));up(h.env.onFrameTick,'diagnosticCallback')('pairImmediate',begin,'drain-pending',false)
+    h.env.onFrameTick(16)
+    while #up(h.env.onFrameTick,'diagnosticBuffer')>0 do h.env.onFrameTick(16) end
+    local busy=h.emitted[#h.emitted-1]
+    assert(not busy.eligibleDrain and not busy.pairEmpty and not busy.comparisonCallbacksComplete and busy.pairPending and busy.pairFrameDone,'unfinished comparison admitted eligible drain')
+    h.launches[#h.launches].callback(success)
+    while #up(h.env.onFrameTick,'diagnosticBuffer')>0 do h.env.onFrameTick(16) end
+    assert(h.emitted[#h.emitted-1].eligibleDrain,'completed comparison did not produce fresh eligible drain')
+    local heldProfile=h.state.model.active.profile;h.state.model.active.profile='exact snapshot profile';up(h.env.onFrameTick,'diagnosticSnapshot')('drain')
+    assert(h.emitted[#h.emitted-1].currentProfile=='exact snapshot profile');h.state.model.active.profile=heldProfile
+    local input=assert(up(h.env.onFrameTick,'diagnosticInput'));for _=1,40 do input('onClick',function() end)() end
+    local count=#h.emitted;h.env.onFrameTick(16);assert(#up(h.env.onFrameTick,'diagnosticBuffer')==24 and h.emitted[#h.emitted].class=='observerFlush','partial chunk admitted drain')
+    while #up(h.env.onFrameTick,'diagnosticBuffer')>0 do h.env.onFrameTick(16) end
+    assert(h.emitted[#h.emitted-1].eligibleDrain and not h.frame,'chunked observer self-buffered or failed to drain')
+    local ids={};for _,e in ipairs(h.emitted) do assert(not ids[e.recordId],'dropped/repeated observer record');ids[e.recordId]=true end
+    local maximum=0;for id in pairs(ids) do if id>maximum then maximum=id end end
+    for id=1,maximum do assert(ids[id],'dropped record during chunked drain: '..id) end
+    assert(next(up(h.env.onFrameTick,'diagnosticBuffer'))==nil)
+    local file=assert(io.open(base..'/'..variant..'/readiness-fake.log','w'));file:write(table.concat(h.logs,'\n')..'\n');file:close()
+  end
+  for _,variant in ipairs({'baseline','candidate'}) do
+    local function readyCount(h) local count=0;for _,e in ipairs(h.emitted) do if e.class=='ready' then count=count+1 end end;return count end
+    local h=host(base..'/'..variant..'/plugin',true)
+    for _,param in ipairs(h.model.params) do if param.key=='glass.inactive.roughness' then param.effectiveDrag='live' end end
+    local live=copy(success);live.stdout='ready live cadence';h.launches[1].callback(live);h.tick()
+    assert(button(h,'Sample diagnostics')).props.onClick()
+    local slider;for _,n in ipairs(nodes(h.tree)) do if n.kind=='slider' and n.props.key=='glass.inactive.roughness:slider' then slider=n end end
+    slider.props.onChange(slider.props.value+0.1);local renders=h.renders;h.env.onFrameTick(16)
+    assert(h.renders==renders+1 and readyCount(h)==0 and h.state.drag and not h.state.drag.dirty,'readiness observer stole dirty drag frame')
+    local enqueued=h.state.enqueued;h.env.onFrameTick(84)
+    assert(h.state.enqueued==enqueued+1 and h.renders==renders+1 and readyCount(h)==0,'readiness observer stole nondirty 100ms sample')
+    h=host(base..'/'..variant..'/plugin',true);assert(button(h,'Sample diagnostics')).props.onClick()
+    local changed=copy(success);changed.stdout='ready changed deferred';h.launches[1].callback(changed);renders=h.renders;h.env.onFrameTick(16)
+    assert(h.renders==renders+1 and not h.state.renderPending and readyCount(h)==0,'readiness observer stole ordinary deferred frame')
+    h.env.onFrameTick(16);assert(not h.emitted[#h.emitted-1].readyEligible,'aborted sequence admitted fresh readiness')
+  end
+  print('PASS readiness precedence: ordinary deferred and dirty/nondirty 100ms frames precede requested observer; aborted start cannot claim readiness')
+  print('PASS readiness: startup flags, pre-target ready snapshot, exact settled/expanded/profile final drain, busy refusals, finite chunks and unique retained records')
+  os.exit(0)
+end
 if arg[5]=='periodic' then
   for _,variant in ipairs({'baseline','candidate'}) do
     local h=host(base..'/'..variant..'/plugin',true)
-    assert(button(h,'Sample diagnostics')).props.onClick();h.env.onFrameTick(16);h.env.onFrameTick(16)
+    startDiagnostics(h);h.env.onFrameTick(16);h.env.onFrameTick(16)
     local observed={}
     local function collect() for _,e in ipairs(up(h.env.onFrameTick,'diagnosticBuffer')) do observed[e.recordId]=copy(e) end end
     local function sequence() return up(h.env.onFrameTick,'diagnosticSequence') end
@@ -119,7 +206,7 @@ if arg[5]=='periodic' then
   for _,variant in ipairs({'baseline','candidate'}) do
     for _,case in ipairs({'changed','error','timeout'}) do
       local h=host(base..'/'..variant..'/plugin',true)
-      assert(button(h,'Sample diagnostics')).props.onClick();h.env.onFrameTick(16);h.env.onFrameTick(16)
+      startDiagnostics(h);h.env.onFrameTick(16);h.env.onFrameTick(16)
       h.env.update();h.env.update();h.env.onFrameTick(16)
       assert(up(h.env.onFrameTick,'diagnosticSequence'),'busy refresh ended sequence before result')
       local response=copy(success)
@@ -134,7 +221,7 @@ if arg[5]=='periodic' then
       local reason=false;for _,e in ipairs(up(h.env.onFrameTick,'diagnosticBuffer')) do if e.class=='sequenceFailureReason' then reason=true end end;assert(reason)
     end
     local h=host(base..'/'..variant..'/plugin',true)
-    assert(button(h,'Sample diagnostics')).props.onClick();h.env.onFrameTick(16);h.env.onFrameTick(16);h.env.onFrameTick(16)
+    startDiagnostics(h);h.env.onFrameTick(16);h.env.onFrameTick(16);h.env.onFrameTick(16)
     local pair=assert(up(h.env.onFrameTick,'diagnosticPair'));local control=pair.control
     local completion=not control and h.launches[#h.launches].callback or nil
     h.env.update();assert(not pair.interference,'odd update invalidated active pair')
@@ -168,7 +255,7 @@ if arg[5]=='sequence' then
   for _,variant in ipairs({'baseline','candidate'}) do
     local h=host(base..'/'..variant..'/plugin',true); local plain=host(base..'/'..variant..'/source',false)
     local inputQueue=canonical(h.state.queue); local enqueued=h.state.enqueued
-    assert(button(h,'Sample diagnostics')).props.onClick(); h.tick(); h.tick()
+    startDiagnostics(h); h.tick(); h.tick()
     assert(tree(h)==tree(plain)); local done,seenDone={},{}
     for index=1,10 do
       local before=#h.launches; h.timeline={}; h.comparing=true; h.tick()
@@ -207,7 +294,7 @@ end
 local function pairState(h) return up(h.env.onFrameTick,'diagnosticPair') end
 local function buffer(h) return assert(up(h.env.onFrameTick,'diagnosticBuffer')) end
 local function finishSequence(h)
-  assert(button(h,'Sample diagnostics')).props.onClick()
+  startDiagnostics(h)
   for _=1,10 do h.tick() end
   h.tick(); -- finite sequenceDone
   while #buffer(h)>0 do h.env.onFrameTick(16) end
@@ -334,7 +421,7 @@ for _,variant in ipairs({'baseline','candidate'}) do
   local changed=copy(success);changed.stdout='native deferred fixture';h.launches[1].callback(changed);r=h.renders
   h.env.onFrameTick(16);assert(h.renders==r+1 and not h.state.renderPending,'flush delayed ordinary deferred render')
   h=host(base..'/'..variant..'/plugin',true);r=h.renders;local d=h.decodes
-  assert(button(h,'Sample diagnostics')).props.onClick();h.env.onFrameTick(16)
+  startDiagnostics(h);h.env.onFrameTick(16)
   assert(h.renders==r and h.decodes==d+1,'next requested callback did not perform cold setup')
   h.env.onFrameTick(16);assert(h.renders==r+1 and h.decodes==d+1,'cold render did not use next actual frame')
   h=host(base..'/'..variant..'/plugin',true);finishSequence(h);pair(h,'collision',false)

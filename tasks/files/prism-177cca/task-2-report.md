@@ -303,3 +303,80 @@ Corrective evidence commit subject: fix(panel): reject incomplete and misordered
 launch evidence. Its final hash is appended to the workspace report after commit
 and supplied in the worker final response. Fresh scoped re-review is controller-owned.
 Live host timings/acceptance remain unproved.
+
+Review fix round1 final commit: c1c7d7400bfc12e647761e75153e680c5482a042 (`fix(panel): reject incomplete and misordered launch evidence`).
+
+## Fix round2/5: explicit live-gate readiness and settled drain observability
+
+BASE:b4f458f. Task3 preflight found missing startup/render/pair flags and no explicit
+ready/final-drain state; the controller recorded impl review round3 revise before
+dispatch. This is scratch instrumentation/schema only. No production, API, IPC,
+button/tree, host install or desktop action changed.
+
+The controller authorized one dedicated administrative observer callback before cold
+setup. The click only sets its request flag. Ordinary deferred render, every active
+drag (including nondirty100ms sampling) and due pair/cold render have priority.
+The observer first uses the existing bounded flush so startup precedes readiness,
+then emits a fixed ready metadata record before any measured cold/pair sample.
+Cold setup→following actual-frame render remains unchanged. Startup now includes
+initialRenderPending=false/initialPairEmpty=true, also required by normalization.
+
+After an otherwise-idle flush drains its last chunk, a fresh direct drain snapshot
+reports exact queue/describe/drag/render/refresh/selection/help/error state, pair and
+comparison completion, sequence completion, zero buffer, sorted expanded/rack ids
+and current profile (false means absent). eligibleDrain is false for busy, partially
+expanded or otherwise unsettled state; buffer-empty alone cannot establish eligibility.
+Partial chunks have remainingRecords/bufferEmpty on observerFlush. Snapshot collection,
+JSON and logging run outside timed targets, and observerSnapshot records that overhead.
+Direct emission appends/pops its own record without leaving anything buffered, so
+there is no infinite self-buffering. All snapshot scopes are metadata/observer, excluded
+from target classes. Frozen source modules and original endDrag/enqueue remain exact.
+
+RED command on prior copies:
+
+```sh
+lua /tmp/prism-budget-matched-task2/self-check.lua /tmp/prism-budget-matched-task2/copies /tmp/prism-budget-matched-task2/model.lua integrations/noctalia-plugin/test_encode.lua "$PWD/bin/prism" readiness
+```
+
+review-round2-red.log fails `missing fresh runtime render/pair startup flags`.
+The same command after rebuilding passes in review-round2-green.log: both startup
+flags, ready before target work, exact final eligible drain, queue/normal describe/
+comparison-callback/refresh/render/help busy refusals, all expanded ids/current profile,
+partial chunks, unique contiguous record ids and finite drain. Requested readiness
+yields to dirty frames, nondirty16+84ms sampling and ordinary deferred work; an aborted
+start cannot claim readyEligible.
+
+Exact covering commands (from .worktrees/panel-budget):
+
+```sh
+python3 /tmp/prism-budget-matched-task2/build.py --baseline 9bf4e8e --candidate e7384b0 --cli "$PWD/bin/prism" --output /tmp/prism-budget-matched-task2/copies --nonce task2-calibration-01
+python3 /tmp/prism-budget-matched-task2/build.py --baseline 9bf4e8e --candidate e7384b0 --cli "$PWD/bin/prism" --output /tmp/prism-budget-matched-task2/sequence-copies --nonce task2-sequence-01 --cold-pairs 1 --launch-pairs 5
+lua /tmp/prism-budget-matched-task2/self-check.lua /tmp/prism-budget-matched-task2/copies /tmp/prism-budget-matched-task2/model.lua integrations/noctalia-plugin/test_encode.lua "$PWD/bin/prism" readiness
+lua /tmp/prism-budget-matched-task2/self-check.lua /tmp/prism-budget-matched-task2/copies /tmp/prism-budget-matched-task2/model.lua integrations/noctalia-plugin/test_encode.lua "$PWD/bin/prism"
+lua /tmp/prism-budget-matched-task2/self-check.lua /tmp/prism-budget-matched-task2/sequence-copies /tmp/prism-budget-matched-task2/model.lua integrations/noctalia-plugin/test_encode.lua "$PWD/bin/prism" periodic
+python3 /tmp/prism-budget-matched-task2/analysis_check.py /tmp/prism-budget-matched-task2/sequence-copies
+python3 /tmp/prism-budget-matched-task2/analyze.py --log /tmp/prism-budget-matched-task2/copies/baseline/readiness-fake.log --log /tmp/prism-budget-matched-task2/copies/candidate/readiness-fake.log --identity /tmp/prism-budget-matched-task2/copies/baseline/identity.json --identity /tmp/prism-budget-matched-task2/copies/candidate/identity.json --budget-errors 0 --output /tmp/prism-budget-matched-task2/review-round2-readiness-verdict.json
+python3 /tmp/prism-budget-matched-task2/integrity-check.py --copies /tmp/prism-budget-matched-task2/copies --baseline-identity .superpowers/sdd/2026-10-11-panel-budget-tokens-and-launch/baseline-identity.json --candidate-identity .superpowers/sdd/2026-10-11-panel-budget-tokens-and-launch/task-1-candidate-identity.json --model .superpowers/sdd/2026-10-11-panel-budget-tokens-and-launch/readonly-describe.json
+noctalia plugins lint /tmp/prism-budget-matched-task2/copies/baseline/plugin
+noctalia plugins lint /tmp/prism-budget-matched-task2/copies/candidate/plugin
+just check
+tasks check
+```
+
+Results: readiness, existing cold142-unit/timeline/collision/deferred/dirty/nondirty
+cadence, periodic clean/foreign/error/timeout and parser/numeric/I1/I2 saved-log fixtures
+all PASS. Both lint runs0 errors/0 warnings. Six frozen blobs, byte-identical non-entry
+modules, unique anchors and reverse/identical transforms pass. just check exits0;
+no task-check warnings. No repository suite rerun: scratch-only change, no affected
+production behavior. Covering logs are review-round2-green.log, -existing.log,
+-periodic.log, -analysis.log, -integrity.log, -lint-baseline.log, -lint-candidate.log
+and -check.log. The regenerated source/identity/diff copies are preserved in archive.
+
+Current identical instrumentation SHA256: 85968157946f938c569ea9c23f4b0749b50e01866a112fd98dbcc1538c31966a.
+Changed attachments are probe.lua, tail.lua, self-check.lua, analyze.py,
+analysis_check.py, portable manifest, README, report and archive. Child only; controller
+notes/Task3/parent records are untouched. All checks finished, no process remains.
+Corrective commit subject: fix(panel): emit ready and settled drain evidence; final
+hash is appended after commit in this workspace report and worker final. Root owns
+fresh scoped re-review and Task3 four-copy generation; desktop permission and live
+host acceptance remain missing.
