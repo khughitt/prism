@@ -1,0 +1,44 @@
+{
+  "copies": [
+    {
+      "variant": "baseline",
+      "sourceCommit": "9bf4e8e920c005f8a4d1666b32b4e1a516856ac2",
+      "sourceHash": "c265bff9c59004d1c6d4c77e091a21e1273e02f71aea6c11ecb0e47c6de3be79",
+      "activationNonce": "task2-calibration-01-baseline",
+      "block": "pilot",
+      "cli": ".worktrees/panel-budget/bin/prism",
+      "coldPairs": 5,
+      "launchPairs": 0,
+      "sourceSha256": {
+        "panel.luau": "c265bff9c59004d1c6d4c77e091a21e1273e02f71aea6c11ecb0e47c6de3be79",
+        "presentation.luau": "7e7a9451350c26c332ea53342a066c2b6473557c347802b9b0c020ba00dddc2e",
+        "retain.luau": "9e5841acd546f1833a363c1c74d57f45d2e93c94ff464daae734ed1d2ea796f1",
+        "queue.luau": "0c9caa16bf66283cdb9a256bbef7cbac09fb3c0a9ccb3ea4b1e4003dbb33956b",
+        "shell.luau": "5edb5a68a07eba0571ab1de3311e8dc4b5acf69b7b21b9b8f1da4afd141d7ca7",
+        "widget.luau": "1039fc99667a339348616510c5a614c12e48d12aa77759d0842b3ae18c4a708c"
+      },
+      "inputWrappers": 26
+    },
+    {
+      "variant": "candidate",
+      "sourceCommit": "e7384b0d7ab3e8e935cdf0776043839441132af5",
+      "sourceHash": "1cf22bf94f7881711450871f1d419b35d17dfa34141baf734c98a5cd58580ee7",
+      "activationNonce": "task2-calibration-01-candidate",
+      "block": "pilot",
+      "cli": ".worktrees/panel-budget/bin/prism",
+      "coldPairs": 5,
+      "launchPairs": 0,
+      "sourceSha256": {
+        "panel.luau": "1cf22bf94f7881711450871f1d419b35d17dfa34141baf734c98a5cd58580ee7",
+        "presentation.luau": "7e7a9451350c26c332ea53342a066c2b6473557c347802b9b0c020ba00dddc2e",
+        "retain.luau": "9e5841acd546f1833a363c1c74d57f45d2e93c94ff464daae734ed1d2ea796f1",
+        "queue.luau": "0c9caa16bf66283cdb9a256bbef7cbac09fb3c0a9ccb3ea4b1e4003dbb33956b",
+        "shell.luau": "5edb5a68a07eba0571ab1de3311e8dc4b5acf69b7b21b9b8f1da4afd141d7ca7",
+        "widget.luau": "1039fc99667a339348616510c5a614c12e48d12aa77759d0842b3ae18c4a708c"
+      },
+      "inputWrappers": 26
+    }
+  ],
+  "identicalInstrumentation": true,
+  "instrumentationSha256": "7c841aabb619124a81f44a8025df72fec8f96f48bc3009bda2898419ec9d9d23"
+}
