@@ -7,7 +7,7 @@ complexity: mid
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-10T17:06:10Z
-updated: 2026-10-10T20:39:20Z
+updated: 2026-10-11T14:57:20Z
 started: 2026-10-10T18:43:57Z
 depends: [prism-b81188]
 parent: prism-dac509
@@ -53,3 +53,14 @@ step: "Task 6: In-host measurement and the 15 ms gate"
 - 2026-10-10T20:33:17Z (fix/panel-render-budget): Diagnostic 1791663060 confirmed complete by owner before restore: one release 14.706 ms, render 14.473 (native 2.200), enqueue 0.174, native launch 0.071; dirty drag n18 median6.2495/max8.507; zero budget errors. No key/cold callback recorded; cause unknown. Original main pointer/reload and exact runtime/profile restoration verified. Follow-up scratch copy has visible Cold rebuild button and scoped cache trace, NUL-safe id logging, lint/syntax checks pass; no production changes or new live run.
 - 2026-10-10T20:39:20Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves the prepared follow-up live diagnostic; agent runs five visible Cold rebuild clicks and five drag/releases with the cache probe, keeps it installed until explicit completion or stop, then collects results and restores saved settings and the original plugin. No host pointer is repointed; nothing is running.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T14:44:14Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T14:44:45Z (fix/panel-render-budget): Fresh follow-up desktop approval received. Runtime, all 23 profile raw files, describe and log offset saved under /tmp/prism-budget-cache-diagnostic-gdlbu7zz before host changes. Existing scratch edits stay in place; no profile switches. Keep probe installed until explicit human completion or stop.
+- 2026-10-11T14:47:59Z (fix/panel-render-budget): Follow-up complete confirmed by owner before collection/restoration. Frozen run 1791729887 log saved; five coldRender callbacks and six dragEnd callbacks, no error lines at collection. Original main plugin pointer restored/reloaded. Fresh exact runtime verification: original aquamarine profile and scratch unchanged, all 23 profile files byte-equal backups; latest wallpaper preserved. Analysis worker running; no desktop probe installed.
+- 2026-10-11T14:52:36Z (fix/panel-render-budget): attached: follow-up-diagnostic-report.md (8972 bytes): Five expanded cold rebuilds and six releases; cache reach, elapsed timings, restoration and source-path comparison
+- 2026-10-11T14:52:37Z (fix/panel-render-budget): attached: follow-up-diagnostic-results.json (364648 bytes): All positive-callback render/native/cache pairs and diagnostic distributions for run 1791729887
+- 2026-10-11T14:52:37Z (fix/panel-render-budget): attached: follow-up-diagnostic.log (342843 bytes): Frozen diagnostic log for run 1791729887, before restoring original plugin
+- 2026-10-11T14:52:37Z (fix/panel-render-budget): attached: analyze-diagnostic.py (10606 bytes): Scratch diagnostic parser with self-check for ordered native/render/cache pairing and callback exclusions
+- 2026-10-11T14:52:37Z (fix/panel-render-budget): Frozen run 1791729887: cold median/max/n20.597/21.149/5 ms, release19.7795/21.816/6, dirty drag7.8985/11.613/238; zero budget errors. Cold rebuilt142 each, releases rebuilt0. Release render median19.523/native2.999 ms; enqueue0.198/native launch0.0875. Targets exceeded diagnostically; observer/scheduling/GC contributions unknown, no formal acceptance. Dedicated worker now measures offline call distribution on saved real describe, no production changes or live run. Spec/plan execution-status evidence updated; ceilings remain blocked.
+- 2026-10-11T14:57:19Z (fix/panel-render-budget): detached: follow-up-diagnostic.log: Replace host path text with portable markers for the machine-layout commit gate; original frozen capture retained in scratch, all diagnostic records unchanged
+- 2026-10-11T14:57:19Z (fix/panel-render-budget): attached: follow-up-diagnostic.log (342448 bytes): Frozen run1791729887 log with host paths redacted; timing/cache records unchanged, original capture retained in scratch

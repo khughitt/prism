@@ -1,7 +1,7 @@
 # Panel render within the host's callback budget
 
 **Date:** 2026-10-10
-**Status:** approved by owner 2026-10-10 (review round 2: accept); plan: [docs/plans/2026-10-10-panel-render-budget.md](../plans/2026-10-10-panel-render-budget.md)
+**Status:** approved by owner 2026-10-10 (review round 2: accept); Tasks 1–5 implemented on the task branch; Task 6 acceptance remains blocked after diagnostic measurements on 2026-10-11. Plan: [docs/plans/2026-10-10-panel-render-budget.md](../plans/2026-10-10-panel-render-budget.md)
 **Task:** `prism-dac509` (absorbs the dropped `prism-5172ea`)
 **Builds on:** `prism-dfbd7f` (one drag render per frame tick) and `prism-831604`
 (`refresh` never renders; an unchanged describe is skipped), both recorded in
@@ -215,6 +215,24 @@ units, and keeping them synchronous preserves the slider-correction handshake in
 `endDrag` and the existing tests' expectations.
 
 ### 5. A full rebuild, if it is still too dear
+
+The 2026-10-11 diagnostic run `1791729887`, with every card expanded, measured
+cold callback median/max **20.597/21.149 ms (n=5)** and release callback
+median/max **19.7795/21.816 ms (n=6)**. Dirty drag ticks measured
+**7.8985/11.613 ms (n=238)**; no budget errors were logged. Every cold render
+rebuilt 142 retained units; every release rebuilt zero. Release render/native
+medians were 19.523/2.999 ms, and enqueue/native launch medians were
+0.198/0.0875 ms. Nested spans must not be summed.
+
+This scratch diagnostic avoids the earlier probe's `getfenv`, but adds a visible
+button, cache tracing and timing wrappers. Its elapsed residual includes ordinary
+render traversal, instrumentation, allocation/GC and scheduling; it does not
+establish their individual contributions or clean-production acceptance. The
+results and raw log are attached to `prism-f15cbf`. They do establish repeated
+above-target diagnostic samples even when retained builders all hit. Investigate
+the remaining render work and measurement overhead before choosing the part-5
+revision. No production redesign is approved by this evidence note, and Tasks 7–8
+remain gated.
 
 Retention does nothing for a render in which every signature changes. Part 3 is
 expected to bring a full expanded rebuild from 8.5k calls to about 6.5k, plus the

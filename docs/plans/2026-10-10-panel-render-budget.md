@@ -19,6 +19,13 @@ Lua 5.4 (`plugin_test.lua`) and node:test (`contract.test.mjs`), run through
 **Spec:** `docs/specs/2026-10-10-panel-render-budget-design.md` (approved 2026-10-10,
 review round 2: accept).
 
+**Execution status (2026-10-11):** Tasks 1–5 are implemented on the task branch.
+Task 6 remains unaccepted: diagnostic run `1791729887` measured cold median
+20.597 ms (n=5) and release median 19.7795 ms (n=6), with zero budget errors.
+The tracing probe is diagnostic evidence, with observer overhead still unknown.
+See spec part 5 and the attachments on `prism-f15cbf`; investigate remaining
+render cost before proposing a reviewed design revision. Tasks 7–8 are gated.
+
 ## Global Constraints
 
 - Host budget: 25 ms of thread CPU per callback. 3 consecutive overruns, or 5 within
@@ -1622,7 +1629,7 @@ local plainDescribed, plainEndDrag, plainTick = described, endDrag, onFrameTick
 described = function(result) return timed("describe", plainDescribed, result) end
 endDrag = function(key) return timed("dragEnd", plainEndDrag, key) end
 -- A tick that renders nothing logs near zero; the analysis keeps ticks over 0.5 ms.
-getfenv(1).onFrameTick = function(deltaMs)
+onFrameTick = function(deltaMs)
   local label = coldPending and "coldRender" or (state.drag ~= nil and "dragTick" or "describeRender")
   coldPending = false
   return timed(label, plainTick, deltaMs)
@@ -1644,8 +1651,11 @@ end
 
 `described` and `endDrag` are `local function`s, which are ordinary locals, so
 assigning to them at the end of the chunk swaps them for every caller and closure that
-names them. `onFrameTick` is a global, which Luau caches on import, so it is replaced
-through `getfenv(1)`.
+names them. Noctalia looks up global callbacks with `lua_getglobal` when dispatching,
+so direct assignment replaces `onFrameTick`. Do not use `getfenv` or `setfenv` in the
+probe: even reading an environment through `getfenv` disables Luau optimizations
+for that environment ([Luau performance documentation](https://luau.org/performance/)).
+This corrects the original probe; earlier timings using it have unknown inflation.
 
 Check it offline: `noctalia plugins lint "$SCRATCH"`.
 
