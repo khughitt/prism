@@ -19,7 +19,8 @@ Part 5 approved by owner on 2026-10-11, spec review round 4; reviewed content
 commit `9c4a276`. The owner's two plan notes require pilot-derived duration and
 reload/identity checks at every implementation swap.
 
-**Status:** proposed continuation, owner plan review required. Preserved execution
+**Status:** approved by owner 2026-10-11, plan review round 1. Three owner-authorized
+brief corrections below require no further review round. Preserved execution
 method: subagent-driven. This plan adds children of `prism-f15cbf` (original Task 6);
 it does not reopen completed Tasks 1–5 or bypass original Tasks 7–8.
 
@@ -229,7 +230,9 @@ described(host.describeOk())
 ```
 
 Replace the old precision case that changes the describe with this accepted-value
-case inside the existing retained/fresh-equivalence block:
+case inside the existing retained/fresh-equivalence block, after its "expanded rack"
+step while that card is expanded. The state helper resolves the current `onOpen`
+on every call, so `renderModel` reloads cannot leave it holding an old state:
 
 ```lua
 local structure = acceptedStructure()
@@ -302,8 +305,10 @@ one event schema, a saved fake-host self-check, parser/verdict and phase timesta
   its first element with the builder's CLI path so queue data cannot be mutated.
 
 - [ ] **Step 2: Install scratch-only cold and paired-launch actions.** Cold action
-  snapshots `state.shownStdout`, clears the memo, decodes/validates that snapshot in
-  a setup callback, accepts it normally, and renders only in the next frame. Repeat
+  snapshots `state.shownStdout`, clears the memo **and clears `state.shownStdout`**
+  before passing the saved output to `described` in a setup callback. This bypasses
+  the unchanged-output shortcut so it decodes, validates and accepts fresh entries.
+  It renders only in the next frame. Repeat
   five pairs for full measurement, one for pilot. Require fresh decoded table identity;
   no metadata prewarming, no extra UI nodes and no writes. Finish before starting
   another class. Stop the sequence with a diagnostic failure if input changes.
@@ -381,7 +386,11 @@ assert(state.enqueued == enqueuedBefore)
   a focus, expansion or optimistic-value change; and attempted overlap. Assert only
   valid, same-input pairs survive and pending/done states are separate. Cold checks
   require five separate setup/render callbacks, five fresh model tables, no setup
-  render, and exactly production-equivalent expanded trees. Verify original `endDrag`
+  render, and exactly production-equivalent expanded trees. Assert that replaying the
+  exact previously shown output still increments decode/accept counts, replaces the
+  model and structure with fresh tables, and rebuilds retained units from the empty
+  memo; a mere timestamp or done marker is insufficient. In the saved 12-card fixture
+  the test-only trace must record all 142 cold units. Verify original `endDrag`
   function body and queue ordering are unchanged by the transform.
 
   Fake activation test feeds an old nonce, wrong variant/hash, then a new valid nonce.
@@ -413,7 +422,7 @@ def decide(blocks, budget_errors, correct=True):
         len(block.get(v, {}).get(k, [])) < 5
         for block in blocks for v in ("baseline", "candidate") for k in CLASSES
     ):
-        return {"comparison": "inconclusive", "accepted": False}
+        return {"comparison": "inconclusive", "accepted": False, "return_to_design": True}
     gain = all(
         median(b["baseline"]["coldRender"]) - median(b["candidate"]["coldRender"])
         > spread_limit(b["baseline"]["coldRender"])
@@ -440,7 +449,7 @@ def decide(blocks, budget_errors, correct=True):
   `[18,19,20,21,22]` has threshold 1; `[16,18,20,22,24]` has threshold 2;
   gain equality at 2 reverts; gain in only one block reverts. A non-cold median
   rise exactly at threshold passes no-regression, above threshold reverts. Missing
-  any class/block is inconclusive; any budget error or correctness failure cannot
+  any class/block is inconclusive **and `return_to_design=True`**; any budget error or correctness failure cannot
   keep. Median cold/profile exactly 15 fails; the other classes exactly 12 pass;
   one good block cannot hide another failing block. A maximum outlier without a
   changed median does not decide keep. Keep with cold 18 is still unaccepted.
@@ -545,6 +554,17 @@ def estimate_minutes(pilot):
   2. Close panel and disable `khughitt/prism`; changing a symlink or close/open alone
      does not prove a new Luau runtime. Record what/from/to/restore in the task note
      at each pointer mutation. Preserve the original link throughout the session.
+     The controller uses the established CLI commands, only after fresh host approval:
+
+     ```bash
+     noctalia msg plugins panel-close khughitt/prism
+     noctalia msg plugins disable khughitt/prism
+     # Controller performs and records the approved scratch-pointer swap here.
+     noctalia msg plugins enable khughitt/prism
+     # Wait for enable/export readiness before opening; marker verification follows.
+     noctalia msg plugins panel-open khughitt/prism
+     ```
+
   3. Build/install the selected scratch copy with a fresh activation nonce and
      expected variant/commit/source hash in its startup marker. Change only the
      already approved plugin link, enable the plugin, await enable completion, then
@@ -615,7 +635,9 @@ def estimate_minutes(pilot):
   Complete gain/no-regression failure requires reverting the isolated token commit
   with a fix subagent, `just test-fast`, `just check` and a scoped independent review;
   record the revert commit. Incomplete evidence is inconclusive, with candidate
-  explicitly unaccepted and parent still open. Useful retained candidate plus a
+  explicitly unaccepted and parent still open **with `return_to_design=True`**;
+  the controller prepares the next evidence-grounded design revision before any
+  further production code or another owner review gate. Useful retained candidate plus a
   failed absolute target returns to design before further production code. Controller
   drafts the next evidence-grounded revision before an owner review gate, rather
   than parking agent-owned design work as if it awaited the user.
@@ -631,6 +653,6 @@ def estimate_minutes(pilot):
 All approved Part 5 requirements map to Tasks 1–3; the owner notes map to Task 3
 Steps 3–4. Review Focus cases map to explicit test/fixture steps. No acceptance
 ceilings, host implementation change or speculative scheduling fix is included.
-After owner plan approval, controller resumes in the existing worktree, creates
+Owner plan approval is recorded; controller resumes in the existing worktree, creates
 SDD task briefs from this plan, and dispatches Task 1 with its baseline frozen.
 User execution choice remains subagent-driven; do not ask them to choose it again.

@@ -7,7 +7,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T17:06:10Z
-updated: 2026-10-11T18:18:53Z
+updated: 2026-10-11T18:27:45Z
 started: 2026-10-10T18:43:57Z
 depends: [prism-b81188]
 parent: prism-dac509
@@ -122,3 +122,7 @@ step: "Task 6: In-host measurement and the 15 ms gate"
 - 2026-10-11T18:17:48Z (fix/panel-render-budget): Continuation plan drafted at docs/plans/2026-10-11-panel-budget-tokens-and-launch.md with children prism-7d38d8, prism-177cca, prism-4ba651. Owner notes covered: four fresh disable-enable runtime activations with variant/commit/hash/nonce and clean-state checks, pilot-derived full duration including 20 releases/restores and 24 profile switches. Numerical examples and timing fixture verified; plan self-review complete. No production or host actions.
 - 2026-10-11T18:18:53Z (fix/panel-render-budget): parked (waiting on user, review): Owner reviews .worktrees/panel-budget/docs/plans/2026-10-11-panel-budget-tokens-and-launch.md; after approval controller freezes baseline and dispatches prism-7d38d8 using preserved subagent-driven execution. Later desktop pilot/full run require fresh permission and measured duration
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T18:27:43Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T18:27:43Z (fix/panel-render-budget): review: plan round 1 — verdict: accept; findings: requested 3, advisory 2; reviewer: human
+- 2026-10-11T18:27:43Z (fix/panel-render-budget): Owner approved c1571d6 and explicitly authorized folding three fixes into briefs without another review: force fresh cold acceptance by clearing shownStdout; inconclusive verdict returns to design; explicit Noctalia disable/enable commands. Precision case placed after expansion; state-upvalue helper resolves the current onOpen after reload. No live desktop authorization.

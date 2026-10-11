@@ -27,7 +27,8 @@ profile acceptance is missing. Spec part 5 proposes compact metadata tokens for
 cold construction, a same-session immediate-post-launch/frame comparison and a
 numeric two-block keep/revert rule; owner approved it in spec review round 4.
 The [Task 6 continuation plan](2026-10-11-panel-budget-tokens-and-launch.md) now
-awaits owner review. Its execution remains subagent-driven.
+is owner-approved, including the three authorized brief corrections. Its execution
+remains subagent-driven.
 Tasks 7–8 remain gated; do not redispatch completed Tasks 1–5.
 
 ## Global Constraints
