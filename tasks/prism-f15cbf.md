@@ -7,12 +7,13 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T17:06:10Z
-updated: 2026-10-11T17:54:24Z
+updated: 2026-10-11T18:18:53Z
 started: 2026-10-10T18:43:57Z
 depends: [prism-b81188]
 parent: prism-dac509
 tags: []
 agent: claude-code/claude-opus-5-5
+spec: docs/specs/2026-10-10-panel-render-budget-design.md
 plan: docs/plans/2026-10-10-panel-render-budget.md
 step: "Task 6: In-host measurement and the 15 ms gate"
 ---
@@ -114,4 +115,10 @@ step: "Task 6: In-host measurement and the 15 ms gate"
 - 2026-10-11T17:49:35Z (fix/panel-render-budget): Owner requests cold-only token framing, same-session immediate-post-launch/frame comparison, numeric two-run keep/revert threshold, and simpler integer counter handling. These are spec changes; no production code or live-host actions approved by this review.
 - 2026-10-11T17:53:39Z (fix/panel-render-budget): Revised live protocol proposes two matched baseline/candidate blocks plus same-session post-launch/frame comparison, with interference/completion-state checks, numeric cold keep/no-regression thresholds and original absolute gates. This written revision is not live-desktop approval; no probe installed or host setting changed.
 - 2026-10-11T17:54:24Z (fix/panel-render-budget): parked (waiting on user, review): Owner re-reviews proposed part5 in .worktrees/panel-budget/docs/specs/2026-10-10-panel-render-budget-design.md after review-round-3 changes; controller then prepares the revised implementation plan for review and resumes subagent-driven execution after its approval
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T17:59:27Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T17:59:27Z (fix/panel-render-budget): Owner approved spec revision 9c4a276. Plan must derive the total live-session estimate from the pilot and explicitly reload/verify each baseline-candidate scratch-plugin swap to prevent retained state leakage. Existing subagent-driven execution choice persists; no live-desktop approval given.
+- 2026-10-11T18:17:48Z (fix/panel-render-budget): Continuation plan drafted at docs/plans/2026-10-11-panel-budget-tokens-and-launch.md with children prism-7d38d8, prism-177cca, prism-4ba651. Owner notes covered: four fresh disable-enable runtime activations with variant/commit/hash/nonce and clean-state checks, pilot-derived full duration including 20 releases/restores and 24 profile switches. Numerical examples and timing fixture verified; plan self-review complete. No production or host actions.
+- 2026-10-11T18:18:53Z (fix/panel-render-budget): parked (waiting on user, review): Owner reviews .worktrees/panel-budget/docs/plans/2026-10-11-panel-budget-tokens-and-launch.md; after approval controller freezes baseline and dispatches prism-7d38d8 using preserved subagent-driven execution. Later desktop pilot/full run require fresh permission and measured duration
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}

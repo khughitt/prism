@@ -1,7 +1,7 @@
 # Panel render within the host's callback budget
 
 **Date:** 2026-10-10
-**Status:** original design approved by owner 2026-10-10 (review round 2: accept); Tasks 1–5 implemented. Part 5 revised 2026-10-11: **proposed, owner review required**. Task 6 acceptance and Tasks 7–8 remain gated. Plan: [docs/plans/2026-10-10-panel-render-budget.md](../plans/2026-10-10-panel-render-budget.md)
+**Status:** original design approved by owner 2026-10-10 (review round 2: accept); Tasks 1–5 implemented. Part 5 revised and approved by owner 2026-10-11 (review round 4: accept). Task 6 acceptance and Tasks 7–8 remain gated. Plan: [docs/plans/2026-10-10-panel-render-budget.md](../plans/2026-10-10-panel-render-budget.md)
 **Task:** `prism-dac509` (absorbs the dropped `prism-5172ea`)
 **Builds on:** `prism-dfbd7f` (one drag render per frame tick) and `prism-831604`
 (`refresh` never renders; an unchanged describe is skipped), both recorded in
@@ -221,8 +221,8 @@ units, and keeping them synchronous preserves the slider-correction handshake in
 
 ### 5. Proposed revision: compact metadata tokens
 
-**Review state:** proposed 2026-10-11; review-round-3 changes incorporated, owner
-re-review required before revising the implementation plan. Parts 1–4 and the original
+**Review state:** approved by owner 2026-10-11, review round 4. The continuation
+implementation plan requires owner review before execution. Parts 1–4 and the original
 acceptance targets remain binding. This section replaces the previous speculative
 full-rebuild candidates. It selects one small experiment, with a measured keep or
 revert decision; it does not claim that the experiment will meet the targets.

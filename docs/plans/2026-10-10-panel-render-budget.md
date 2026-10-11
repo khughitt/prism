@@ -25,8 +25,9 @@ measured trees, recorded cold median 19.869 ms (n=5) and release median 20.661 m
 (n=5), with zero budget errors. Timing/heap observer overhead remains unquantified;
 profile acceptance is missing. Spec part 5 proposes compact metadata tokens for
 cold construction, a same-session immediate-post-launch/frame comparison and a
-numeric two-block keep/revert rule; owner re-review is pending. This original plan
-does not authorize that revision: revise and review the implementation plan only after written-spec approval.
+numeric two-block keep/revert rule; owner approved it in spec review round 4.
+The [Task 6 continuation plan](2026-10-11-panel-budget-tokens-and-launch.md) now
+awaits owner review. Its execution remains subagent-driven.
 Tasks 7–8 remain gated; do not redispatch completed Tasks 1–5.
 
 ## Global Constraints
@@ -39,7 +40,7 @@ Tasks 7–8 remain gated; do not redispatch completed Tasks 1–5.
 - In-host figures are `os.clock()` elapsed time, an upper bound on the thread CPU the
   host meters. The targets apply to the median of at least five samples per callback
   class, and the session must add no "exceeded its CPU budget" lines to the log.
-- If a full expanded rebuild's median is over 15 ms in-host, stop: the work returns to
+- If a full expanded rebuild's median is at or above 15 ms in-host, stop: the work returns to
   design and the spec is revised before more code lands. That gate (Task 6) runs before
   the offline ceilings are recorded (Task 7).
 - Every retained render is deeply equal, ignoring function identity, to the tree a
@@ -1581,6 +1582,11 @@ git commit -m "perf(noctalia): retain unchanged panel subtrees between renders"
 ---
 
 ### Task 6: In-host measurement and the 15 ms gate
+
+**Continuation:** use [2026-10-11-panel-budget-tokens-and-launch.md](2026-10-11-panel-budget-tokens-and-launch.md)
+after its owner review. The original probe procedure below is retained as historical
+implementation guidance; the reviewed continuation supersedes the remaining Task 6
+measurement steps and the fixed fifteen-minute estimate. Tasks 7–8 stay gated.
 
 This runs after Task 5 and before Task 7. The ceilings Task 7 records only mean
 something once this gate has passed.

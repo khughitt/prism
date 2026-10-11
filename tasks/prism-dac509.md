@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-11T17:54:24Z
+updated: 2026-10-11T18:18:53Z
 started: 2026-10-10T16:20:49Z
 depends: []
 tags: [noctalia, performance]
@@ -125,4 +125,10 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
 - 2026-10-11T17:49:35Z (fix/panel-render-budget): review: spec round 3 — verdict: revise; findings: Important 3, Minor 1; reviewer: human
 - 2026-10-11T17:53:39Z (fix/panel-render-budget): Spec review round3 requests incorporated: tokens target cold construction; immediate-post-launch/frame pairs plus no-launch controls in the same proposed live session; keep requires cold median gain >max(1ms, baseline MAD) in both matched blocks; integer %d counter with one monotonicity assert, no injectable overflow seam. Release/completion remain separate unresolved evidence; synchronous correction and original targets binding.
 - 2026-10-11T17:54:24Z (fix/panel-render-budget): parked (waiting on user, review): Owner re-reviews proposed part5 in .worktrees/panel-budget/docs/specs/2026-10-10-panel-render-budget-design.md; after approval controller writes the revised implementation plan for review. No desktop session or production changes started; Tasks7–8 remain gated
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T17:59:27Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T17:59:27Z (fix/panel-render-budget): review: spec round 4 — verdict: accept; findings: none; reviewer: human
+- 2026-10-11T18:17:48Z (fix/panel-render-budget): Spec Part5 review round4 accepted by owner; status updated. Task6 continuation plan now ready for owner review, preserving subagent-driven execution. Original Tasks1–5 remain completed; Tasks7–8 depend on original Task6 acceptance, not merely completion of the continuation measurement child.
+- 2026-10-11T18:18:53Z (fix/panel-render-budget): parked (waiting on user, review): Owner reviews the Task6 continuation plan .worktrees/panel-budget/docs/plans/2026-10-11-panel-budget-tokens-and-launch.md; controller then executes its reviewed children in the existing worktree. Tasks7–8 and full-branch completion remain gated
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
