@@ -270,7 +270,8 @@ production changes, live launch, shared pointer mutation or forced GC.
 **Interfaces:** consume frozen `baselineCommit`, reviewed `candidateCommit`, approved
 spec, existing test encoder and saved-model fixture. Produce isolated plugin copies,
 unique `(variant, sourceCommit, sourceHash, activationNonce, block, phase)` identities,
-one event schema, a saved fake-host self-check, parser/verdict and phase timestamps.
+one event schema, a saved fake-host self-check, `analyze.py` with `decide` and
+`estimate_minutes(pilot)`, and phase timestamps. Task 3 reuses that single estimator.
 
 - [ ] **Step 1: Build two copies from exact commits with identical instrumentation.**
   Builder inputs are `--baseline`, `--candidate`, `--cli` (explicit worktree bin),
@@ -458,7 +459,9 @@ def decide(blocks, budget_errors, correct=True):
   subtraction using actual sample ids, separate controls, and incomplete/inconsistent
   identities rejected. Five pairs split between two states have no primary aggregate.
   Fake rotated logs reconstructed from a saved offset plus next segment must reproduce
-  exact events, including first sample and final drain. Add pilot-time fixture below.
+  exact events, including first sample and final drain. Use Task 3 Step 3
+  as the exact pilot-time schema/function/fixture; the controller supplies that
+  focused cross-task excerpt as `pilot-timing-contract.md` for the Task 2 worker.
 
 - [ ] **Step 5: Review and preserve readiness artifacts.** Attach the builder,
   calibration/parser scripts, identity/transform manifest and portable readiness
@@ -474,7 +477,8 @@ task notes through CLI; spec/plan evidence status after results. Only a required
 candidate revert may change production, with a fix subagent and green suite.
 
 **Interfaces:** consume reviewed Task 2 readiness artifacts and approved source
-commits. The controller owns desktop permission, owner prompts, swaps/restoration
+commits and Task 2's `estimate_minutes(pilot)` function. The controller owns desktop
+permission, owner prompts, swaps/restoration
 and live capture; the Task 3 implementer owns frozen analysis/artifacts, with no
 independent host mutation. Produce pilot pace/estimate, four independently verified activations,
 two block comparisons, paired launch/control reports, restoration evidence and an
@@ -519,6 +523,9 @@ this measurement child does not automatically close original Task 6.
   restores, 24 real profile switches (three P→Q→P cycles per activation), 20 cold
   renders, ten launch pairs and ten no-launch controls, four activation checks and
   exact setup/restoration. Diagnostic pair timers include command-completion waits.
+
+Task 2 implements this function once in its scratch analysis module; Task 3 calls
+that implementation with the recorded pilot JSON, rather than copying the formula.
 
 ```python
 from math import ceil

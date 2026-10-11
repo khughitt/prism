@@ -7,7 +7,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T17:06:10Z
-updated: 2026-10-11T18:40:43Z
+updated: 2026-10-11T20:36:53Z
 started: 2026-10-10T18:43:57Z
 depends: [prism-b81188]
 parent: prism-dac509
@@ -129,3 +129,4 @@ step: "Task 6: In-host measurement and the 15 ms gate"
 - 2026-10-11T18:31:34Z (fix/panel-render-budget): Task1 dispatched fresh codex/gpt-6.1-sol implementer for prism-7d38d8, baseline 9bf4e8e with all six Luau hashes frozen. Baseline 574 Node + Lua checks passed; production candidate remains unaccepted until reviewed measurements. Next controller action is task-scoped review, then Task2 preparation; no desktop use.
 - 2026-10-11T18:35:56Z (fix/panel-render-budget): Read-only profile eligibility preflight: pure locked resolution found current aquamarine to Aurora changes 50/83 canonical values, with 56 majority-changing existing pairs. No activation/store write/host use. Saved real 83-parameter/12-card model and profile-pair report in continuation workspace; reverify with fresh snapshots at live readiness.
 - 2026-10-11T18:40:43Z (fix/panel-render-budget): Continuation Task1 e7384b0 independently reviewed: spec compliant and quality approved, no findings. Frozen baseline source hashes verified against git; only panel.luau changed among six production modules. In-host timing remains unaccepted. Next Task2 builds and validates scratch probes; no live desktop use.
+- 2026-10-11T20:36:53Z (fix/panel-render-budget): Continuation Tasks1–2 reviewed: exact-equality tokens e7384b0; matched probe/verdict fixes c1c7d74 accepted in scoped review round2. Live timing/observer CPU and per-block acceptance remain Task3. Pilot preparation next; no fresh host approval or pointer change.
