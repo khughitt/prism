@@ -1,0 +1,997 @@
+{
+  "run": "1791733401",
+  "candidate_comparisons": 5,
+  "valid_comparisons": 5,
+  "warmWhileCommand_count": 5,
+  "warmAfterCommand_count": 0,
+  "budget_error_lines": 0,
+  "error_level_lines": 0,
+  "pairs": [
+    {
+      "comparison": 1,
+      "frame_label": "warmWhileCommand",
+      "before": {
+        "callback": 64,
+        "metrics_ms": {
+          "top": 1.311,
+          "presentation": 0.39,
+          "assembly": 3.515,
+          "native": 2.274,
+          "total": 7.519,
+          "render_span": 7.527,
+          "residual": 5.245,
+          "render_gap": 0.028999999999999915,
+          "span_gap": 0.008000000000000007
+        },
+        "first_line": 321,
+        "last_line": 326
+      },
+      "frame": {
+        "callback": 65,
+        "metrics_ms": {
+          "top": 1.911,
+          "presentation": 0.373,
+          "assembly": 3.067,
+          "native": 2.294,
+          "total": 7.669,
+          "render_span": 7.689,
+          "residual": 5.375,
+          "render_gap": 0.02400000000000002,
+          "span_gap": 0.020000000000000462
+        },
+        "first_line": 332,
+        "last_line": 337
+      },
+      "metadata": {
+        "warmBeforeLaunch": {
+          "callback": 64,
+          "line": 327,
+          "timestamp": "2026-10-11 11:44:19.241",
+          "inFlight": false,
+          "sameModel": true,
+          "sameEnqueued": true
+        },
+        "launchButton": {
+          "callback": 64,
+          "line": 331,
+          "timestamp": "2026-10-11 11:44:19.241",
+          "inFlight": true,
+          "sameModel": true,
+          "sameEnqueued": true
+        },
+        "warmWhileCommand": {
+          "callback": 65,
+          "line": 338,
+          "timestamp": "2026-10-11 11:44:19.254",
+          "inFlight": true,
+          "sameModel": true,
+          "sameEnqueued": true
+        },
+        "comparisonCompletion": {
+          "callback": 66,
+          "line": 340,
+          "timestamp": "2026-10-11 11:44:19.511",
+          "inFlight": false,
+          "sameModel": true,
+          "sameEnqueued": true
+        }
+      },
+      "valid": true,
+      "invariants_valid": true,
+      "flags_valid": true,
+      "interference_before_frame": [],
+      "other_work_after_frame_before_completion": [],
+      "launch_metrics_ms": {
+        "run_native": 0.084,
+        "run_total": 0.189,
+        "run_residual": 0.105,
+        "launch_outer": 7.753,
+        "launch_outer_minus_render": 0.23399999999999999,
+        "completion_callback": 0.009
+      },
+      "frame_minus_before_ms": {
+        "top": 0.6000000000000001,
+        "presentation": -0.017000000000000015,
+        "assembly": -0.44799999999999995,
+        "native": 0.020000000000000018,
+        "total": 0.14999999999999947,
+        "render_span": 0.16199999999999992,
+        "residual": 0.1299999999999999,
+        "render_gap": -0.004999999999999893,
+        "span_gap": 0.012000000000000455
+      },
+      "logged_spacing_ms": {
+        "launch_to_frame": 13.0,
+        "launch_to_completion": 270.0,
+        "frame_to_completion": 257.0
+      }
+    },
+    {
+      "comparison": 2,
+      "frame_label": "warmWhileCommand",
+      "before": {
+        "callback": 68,
+        "metrics_ms": {
+          "top": 1.779,
+          "presentation": 0.333,
+          "assembly": 3.161,
+          "native": 2.512,
+          "total": 7.823,
+          "render_span": 7.842,
+          "residual": 5.311,
+          "render_gap": 0.03799999999999981,
+          "span_gap": 0.01899999999999924
+        },
+        "first_line": 342,
+        "last_line": 347
+      },
+      "frame": {
+        "callback": 69,
+        "metrics_ms": {
+          "top": 1.456,
+          "presentation": 0.34,
+          "assembly": 3.109,
+          "native": 1.853,
+          "total": 6.788,
+          "render_span": 6.813,
+          "residual": 4.9350000000000005,
+          "render_gap": 0.030000000000000693,
+          "span_gap": 0.024999999999999467
+        },
+        "first_line": 353,
+        "last_line": 358
+      },
+      "metadata": {
+        "warmBeforeLaunch": {
+          "callback": 68,
+          "line": 348,
+          "timestamp": "2026-10-11 11:44:20.625",
+          "inFlight": false,
+          "sameModel": true,
+          "sameEnqueued": true
+        },
+        "launchButton": {
+          "callback": 68,
+          "line": 352,
+          "timestamp": "2026-10-11 11:44:20.625",
+          "inFlight": true,
+          "sameModel": true,
+          "sameEnqueued": true
+        },
+        "warmWhileCommand": {
+          "callback": 69,
+          "line": 359,
+          "timestamp": "2026-10-11 11:44:20.639",
+          "inFlight": true,
+          "sameModel": true,
+          "sameEnqueued": true
+        },
+        "comparisonCompletion": {
+          "callback": 71,
+          "line": 364,
+          "timestamp": "2026-10-11 11:44:20.881",
+          "inFlight": false,
+          "sameModel": true,
+          "sameEnqueued": true
+        }
+      },
+      "valid": true,
+      "invariants_valid": true,
+      "flags_valid": true,
+      "interference_before_frame": [],
+      "other_work_after_frame_before_completion": [
+        {
+          "callback": 70,
+          "span": "runAsyncNative",
+          "ms": 0.217,
+          "line": 360,
+          "timestamp": "2026-10-11 11:44:20.799"
+        },
+        {
+          "callback": 70,
+          "span": "runTotal",
+          "ms": 0.293,
+          "line": 361,
+          "timestamp": "2026-10-11 11:44:20.799"
+        },
+        {
+          "callback": 70,
+          "span": "update",
+          "ms": 0.33,
+          "line": 362,
+          "timestamp": "2026-10-11 11:44:20.799"
+        }
+      ],
+      "launch_metrics_ms": {
+        "run_native": 0.129,
+        "run_total": 0.284,
+        "run_residual": 0.15499999999999997,
+        "launch_outer": 8.183,
+        "launch_outer_minus_render": 0.35999999999999943,
+        "completion_callback": 0.005
+      },
+      "frame_minus_before_ms": {
+        "top": -0.32299999999999995,
+        "presentation": 0.007000000000000006,
+        "assembly": -0.052000000000000046,
+        "native": -0.659,
+        "total": -1.0350000000000001,
+        "render_span": -1.029,
+        "residual": -0.37599999999999945,
+        "render_gap": -0.007999999999999119,
+        "span_gap": 0.006000000000000227
+      },
+      "logged_spacing_ms": {
+        "launch_to_frame": 14.0,
+        "launch_to_completion": 256.0,
+        "frame_to_completion": 242.0
+      }
+    },
+    {
+      "comparison": 3,
+      "frame_label": "warmWhileCommand",
+      "before": {
+        "callback": 74,
+        "metrics_ms": {
+          "top": 1.366,
+          "presentation": 0.306,
+          "assembly": 3.021,
+          "native": 1.57,
+          "total": 6.279,
+          "render_span": 6.285,
+          "residual": 4.709,
+          "render_gap": 0.01599999999999957,
+          "span_gap": 0.006000000000000227
+        },
+        "first_line": 367,
+        "last_line": 372
+      },
+      "frame": {
+        "callback": 75,
+        "metrics_ms": {
+          "top": 1.288,
+          "presentation": 0.275,
+          "assembly": 2.057,
+          "native": 1.941,
+          "total": 5.585,
+          "render_span": 5.602,
+          "residual": 3.644,
+          "render_gap": 0.02400000000000002,
+          "span_gap": 0.017000000000000348
+        },
+        "first_line": 378,
+        "last_line": 383
+      },
+      "metadata": {
+        "warmBeforeLaunch": {
+          "callback": 74,
+          "line": 373,
+          "timestamp": "2026-10-11 11:44:21.985",
+          "inFlight": false,
+          "sameModel": true,
+          "sameEnqueued": true
+        },
+        "launchButton": {
+          "callback": 74,
+          "line": 377,
+          "timestamp": "2026-10-11 11:44:21.985",
+          "inFlight": true,
+          "sameModel": true,
+          "sameEnqueued": true
+        },
+        "warmWhileCommand": {
+          "callback": 75,
+          "line": 384,
+          "timestamp": "2026-10-11 11:44:21.999",
+          "inFlight": true,
+          "sameModel": true,
+          "sameEnqueued": true
+        },
+        "comparisonCompletion": {
+          "callback": 76,
+          "line": 386,
+          "timestamp": "2026-10-11 11:44:22.306",
+          "inFlight": false,
+          "sameModel": true,
+          "sameEnqueued": true
+        }
+      },
+      "valid": true,
+      "invariants_valid": true,
+      "flags_valid": true,
+      "interference_before_frame": [],
+      "other_work_after_frame_before_completion": [],
+      "launch_metrics_ms": {
+        "run_native": 0.172,
+        "run_total": 0.241,
+        "run_residual": 0.069,
+        "launch_outer": 6.548,
+        "launch_outer_minus_render": 0.26900000000000013,
+        "completion_callback": 0.005
+      },
+      "frame_minus_before_ms": {
+        "top": -0.07800000000000007,
+        "presentation": -0.030999999999999972,
+        "assembly": -0.964,
+        "native": 0.371,
+        "total": -0.694,
+        "render_span": -0.6829999999999998,
+        "residual": -1.0649999999999995,
+        "render_gap": 0.008000000000000451,
+        "span_gap": 0.01100000000000012
+      },
+      "logged_spacing_ms": {
+        "launch_to_frame": 14.0,
+        "launch_to_completion": 321.0,
+        "frame_to_completion": 307.0
+      }
+    },
+    {
+      "comparison": 4,
+      "frame_label": "warmWhileCommand",
+      "before": {
+        "callback": 79,
+        "metrics_ms": {
+          "top": 2.41,
+          "presentation": 0.547,
+          "assembly": 4.379,
+          "native": 2.133,
+          "total": 9.494,
+          "render_span": 9.503,
+          "residual": 7.361,
+          "render_gap": 0.025000000000000355,
+          "span_gap": 0.009000000000000341
+        },
+        "first_line": 392,
+        "last_line": 397
+      },
+      "frame": {
+        "callback": 80,
+        "metrics_ms": {
+          "top": 1.397,
+          "presentation": 0.324,
+          "assembly": 2.073,
+          "native": 1.701,
+          "total": 5.515,
+          "render_span": 5.532,
+          "residual": 3.8139999999999996,
+          "render_gap": 0.020000000000000018,
+          "span_gap": 0.017000000000000348
+        },
+        "first_line": 403,
+        "last_line": 408
+      },
+      "metadata": {
+        "warmBeforeLaunch": {
+          "callback": 79,
+          "line": 398,
+          "timestamp": "2026-10-11 11:44:23.472",
+          "inFlight": false,
+          "sameModel": true,
+          "sameEnqueued": true
+        },
+        "launchButton": {
+          "callback": 79,
+          "line": 402,
+          "timestamp": "2026-10-11 11:44:23.472",
+          "inFlight": true,
+          "sameModel": true,
+          "sameEnqueued": true
+        },
+        "warmWhileCommand": {
+          "callback": 80,
+          "line": 409,
+          "timestamp": "2026-10-11 11:44:23.484",
+          "inFlight": true,
+          "sameModel": true,
+          "sameEnqueued": true
+        },
+        "comparisonCompletion": {
+          "callback": 81,
+          "line": 411,
+          "timestamp": "2026-10-11 11:44:23.666",
+          "inFlight": false,
+          "sameModel": true,
+          "sameEnqueued": true
+        }
+      },
+      "valid": true,
+      "invariants_valid": true,
+      "flags_valid": true,
+      "interference_before_frame": [],
+      "other_work_after_frame_before_completion": [],
+      "launch_metrics_ms": {
+        "run_native": 0.118,
+        "run_total": 0.206,
+        "run_residual": 0.088,
+        "launch_outer": 9.736,
+        "launch_outer_minus_render": 0.24200000000000088,
+        "completion_callback": 0.006
+      },
+      "frame_minus_before_ms": {
+        "top": -1.0130000000000001,
+        "presentation": -0.22300000000000003,
+        "assembly": -2.3059999999999996,
+        "native": -0.43199999999999994,
+        "total": -3.979,
+        "render_span": -3.971,
+        "residual": -3.547,
+        "render_gap": -0.0050000000000003375,
+        "span_gap": 0.008000000000000007
+      },
+      "logged_spacing_ms": {
+        "launch_to_frame": 12.0,
+        "launch_to_completion": 194.0,
+        "frame_to_completion": 182.0
+      }
+    },
+    {
+      "comparison": 5,
+      "frame_label": "warmWhileCommand",
+      "before": {
+        "callback": 84,
+        "metrics_ms": {
+          "top": 2.03,
+          "presentation": 0.434,
+          "assembly": 3.888,
+          "native": 3.431,
+          "total": 9.824,
+          "render_span": 9.845,
+          "residual": 6.393,
+          "render_gap": 0.04099999999999948,
+          "span_gap": 0.021000000000000796
+        },
+        "first_line": 417,
+        "last_line": 422
+      },
+      "frame": {
+        "callback": 85,
+        "metrics_ms": {
+          "top": 1.658,
+          "presentation": 0.36,
+          "assembly": 3.34,
+          "native": 2.098,
+          "total": 7.502,
+          "render_span": 7.524,
+          "residual": 5.404,
+          "render_gap": 0.04600000000000026,
+          "span_gap": 0.02200000000000024
+        },
+        "first_line": 428,
+        "last_line": 433
+      },
+      "metadata": {
+        "warmBeforeLaunch": {
+          "callback": 84,
+          "line": 423,
+          "timestamp": "2026-10-11 11:44:24.872",
+          "inFlight": false,
+          "sameModel": true,
+          "sameEnqueued": true
+        },
+        "launchButton": {
+          "callback": 84,
+          "line": 427,
+          "timestamp": "2026-10-11 11:44:24.872",
+          "inFlight": true,
+          "sameModel": true,
+          "sameEnqueued": true
+        },
+        "warmWhileCommand": {
+          "callback": 85,
+          "line": 434,
+          "timestamp": "2026-10-11 11:44:24.886",
+          "inFlight": true,
+          "sameModel": true,
+          "sameEnqueued": true
+        },
+        "comparisonCompletion": {
+          "callback": 87,
+          "line": 437,
+          "timestamp": "2026-10-11 11:44:25.083",
+          "inFlight": false,
+          "sameModel": true,
+          "sameEnqueued": true
+        }
+      },
+      "valid": true,
+      "invariants_valid": true,
+      "flags_valid": true,
+      "interference_before_frame": [],
+      "other_work_after_frame_before_completion": [
+        {
+          "callback": 86,
+          "span": "describe",
+          "ms": 0.01,
+          "line": 435,
+          "timestamp": "2026-10-11 11:44:25.043"
+        }
+      ],
+      "launch_metrics_ms": {
+        "run_native": 0.129,
+        "run_total": 0.304,
+        "run_residual": 0.175,
+        "launch_outer": 10.221,
+        "launch_outer_minus_render": 0.39700000000000024,
+        "completion_callback": 0.005
+      },
+      "frame_minus_before_ms": {
+        "top": -0.3719999999999999,
+        "presentation": -0.07400000000000001,
+        "assembly": -0.548,
+        "native": -1.3330000000000002,
+        "total": -2.322,
+        "render_span": -2.3210000000000006,
+        "residual": -0.9889999999999999,
+        "render_gap": 0.005000000000000782,
+        "span_gap": 0.0009999999999994458
+      },
+      "logged_spacing_ms": {
+        "launch_to_frame": 14.0,
+        "launch_to_completion": 211.0,
+        "frame_to_completion": 197.0
+      }
+    }
+  ],
+  "summaries": {
+    "before": {
+      "top": {
+        "n": 5,
+        "median_ms": 1.779,
+        "max_ms": 2.41,
+        "values_ms": [
+          1.311,
+          1.779,
+          1.366,
+          2.41,
+          2.03
+        ]
+      },
+      "presentation": {
+        "n": 5,
+        "median_ms": 0.39,
+        "max_ms": 0.547,
+        "values_ms": [
+          0.39,
+          0.333,
+          0.306,
+          0.547,
+          0.434
+        ]
+      },
+      "assembly": {
+        "n": 5,
+        "median_ms": 3.515,
+        "max_ms": 4.379,
+        "values_ms": [
+          3.515,
+          3.161,
+          3.021,
+          4.379,
+          3.888
+        ]
+      },
+      "native": {
+        "n": 5,
+        "median_ms": 2.274,
+        "max_ms": 3.431,
+        "values_ms": [
+          2.274,
+          2.512,
+          1.57,
+          2.133,
+          3.431
+        ]
+      },
+      "total": {
+        "n": 5,
+        "median_ms": 7.823,
+        "max_ms": 9.824,
+        "values_ms": [
+          7.519,
+          7.823,
+          6.279,
+          9.494,
+          9.824
+        ]
+      },
+      "render_span": {
+        "n": 5,
+        "median_ms": 7.842,
+        "max_ms": 9.845,
+        "values_ms": [
+          7.527,
+          7.842,
+          6.285,
+          9.503,
+          9.845
+        ]
+      },
+      "residual": {
+        "n": 5,
+        "median_ms": 5.311,
+        "max_ms": 7.361,
+        "values_ms": [
+          5.245,
+          5.311,
+          4.709,
+          7.361,
+          6.393
+        ]
+      },
+      "render_gap": {
+        "n": 5,
+        "median_ms": 0.028999999999999915,
+        "max_ms": 0.04099999999999948,
+        "values_ms": [
+          0.028999999999999915,
+          0.03799999999999981,
+          0.01599999999999957,
+          0.025000000000000355,
+          0.04099999999999948
+        ]
+      },
+      "span_gap": {
+        "n": 5,
+        "median_ms": 0.009000000000000341,
+        "max_ms": 0.021000000000000796,
+        "values_ms": [
+          0.008000000000000007,
+          0.01899999999999924,
+          0.006000000000000227,
+          0.009000000000000341,
+          0.021000000000000796
+        ]
+      }
+    },
+    "frame": {
+      "top": {
+        "n": 5,
+        "median_ms": 1.456,
+        "max_ms": 1.911,
+        "values_ms": [
+          1.911,
+          1.456,
+          1.288,
+          1.397,
+          1.658
+        ]
+      },
+      "presentation": {
+        "n": 5,
+        "median_ms": 0.34,
+        "max_ms": 0.373,
+        "values_ms": [
+          0.373,
+          0.34,
+          0.275,
+          0.324,
+          0.36
+        ]
+      },
+      "assembly": {
+        "n": 5,
+        "median_ms": 3.067,
+        "max_ms": 3.34,
+        "values_ms": [
+          3.067,
+          3.109,
+          2.057,
+          2.073,
+          3.34
+        ]
+      },
+      "native": {
+        "n": 5,
+        "median_ms": 1.941,
+        "max_ms": 2.294,
+        "values_ms": [
+          2.294,
+          1.853,
+          1.941,
+          1.701,
+          2.098
+        ]
+      },
+      "total": {
+        "n": 5,
+        "median_ms": 6.788,
+        "max_ms": 7.669,
+        "values_ms": [
+          7.669,
+          6.788,
+          5.585,
+          5.515,
+          7.502
+        ]
+      },
+      "render_span": {
+        "n": 5,
+        "median_ms": 6.813,
+        "max_ms": 7.689,
+        "values_ms": [
+          7.689,
+          6.813,
+          5.602,
+          5.532,
+          7.524
+        ]
+      },
+      "residual": {
+        "n": 5,
+        "median_ms": 4.9350000000000005,
+        "max_ms": 5.404,
+        "values_ms": [
+          5.375,
+          4.9350000000000005,
+          3.644,
+          3.8139999999999996,
+          5.404
+        ]
+      },
+      "render_gap": {
+        "n": 5,
+        "median_ms": 0.02400000000000002,
+        "max_ms": 0.04600000000000026,
+        "values_ms": [
+          0.02400000000000002,
+          0.030000000000000693,
+          0.02400000000000002,
+          0.020000000000000018,
+          0.04600000000000026
+        ]
+      },
+      "span_gap": {
+        "n": 5,
+        "median_ms": 0.020000000000000462,
+        "max_ms": 0.024999999999999467,
+        "values_ms": [
+          0.020000000000000462,
+          0.024999999999999467,
+          0.017000000000000348,
+          0.017000000000000348,
+          0.02200000000000024
+        ]
+      }
+    },
+    "launch": {
+      "run_native": {
+        "n": 5,
+        "median_ms": 0.129,
+        "max_ms": 0.172,
+        "values_ms": [
+          0.084,
+          0.129,
+          0.172,
+          0.118,
+          0.129
+        ]
+      },
+      "run_total": {
+        "n": 5,
+        "median_ms": 0.241,
+        "max_ms": 0.304,
+        "values_ms": [
+          0.189,
+          0.284,
+          0.241,
+          0.206,
+          0.304
+        ]
+      },
+      "run_residual": {
+        "n": 5,
+        "median_ms": 0.105,
+        "max_ms": 0.175,
+        "values_ms": [
+          0.105,
+          0.15499999999999997,
+          0.069,
+          0.088,
+          0.175
+        ]
+      },
+      "launch_outer": {
+        "n": 5,
+        "median_ms": 8.183,
+        "max_ms": 10.221,
+        "values_ms": [
+          7.753,
+          8.183,
+          6.548,
+          9.736,
+          10.221
+        ]
+      },
+      "launch_outer_minus_render": {
+        "n": 5,
+        "median_ms": 0.26900000000000013,
+        "max_ms": 0.39700000000000024,
+        "values_ms": [
+          0.23399999999999999,
+          0.35999999999999943,
+          0.26900000000000013,
+          0.24200000000000088,
+          0.39700000000000024
+        ]
+      },
+      "completion_callback": {
+        "n": 5,
+        "median_ms": 0.005,
+        "max_ms": 0.009,
+        "values_ms": [
+          0.009,
+          0.005,
+          0.005,
+          0.006,
+          0.005
+        ]
+      }
+    },
+    "paired_frame_minus_before": {
+      "top": {
+        "n": 5,
+        "median_ms": -0.32299999999999995,
+        "max_ms": 0.6000000000000001,
+        "values_ms": [
+          0.6000000000000001,
+          -0.32299999999999995,
+          -0.07800000000000007,
+          -1.0130000000000001,
+          -0.3719999999999999
+        ]
+      },
+      "presentation": {
+        "n": 5,
+        "median_ms": -0.030999999999999972,
+        "max_ms": 0.007000000000000006,
+        "values_ms": [
+          -0.017000000000000015,
+          0.007000000000000006,
+          -0.030999999999999972,
+          -0.22300000000000003,
+          -0.07400000000000001
+        ]
+      },
+      "assembly": {
+        "n": 5,
+        "median_ms": -0.548,
+        "max_ms": -0.052000000000000046,
+        "values_ms": [
+          -0.44799999999999995,
+          -0.052000000000000046,
+          -0.964,
+          -2.3059999999999996,
+          -0.548
+        ]
+      },
+      "native": {
+        "n": 5,
+        "median_ms": -0.43199999999999994,
+        "max_ms": 0.371,
+        "values_ms": [
+          0.020000000000000018,
+          -0.659,
+          0.371,
+          -0.43199999999999994,
+          -1.3330000000000002
+        ]
+      },
+      "total": {
+        "n": 5,
+        "median_ms": -1.0350000000000001,
+        "max_ms": 0.14999999999999947,
+        "values_ms": [
+          0.14999999999999947,
+          -1.0350000000000001,
+          -0.694,
+          -3.979,
+          -2.322
+        ]
+      },
+      "render_span": {
+        "n": 5,
+        "median_ms": -1.029,
+        "max_ms": 0.16199999999999992,
+        "values_ms": [
+          0.16199999999999992,
+          -1.029,
+          -0.6829999999999998,
+          -3.971,
+          -2.3210000000000006
+        ]
+      },
+      "residual": {
+        "n": 5,
+        "median_ms": -0.9889999999999999,
+        "max_ms": 0.1299999999999999,
+        "values_ms": [
+          0.1299999999999999,
+          -0.37599999999999945,
+          -1.0649999999999995,
+          -3.547,
+          -0.9889999999999999
+        ]
+      },
+      "render_gap": {
+        "n": 5,
+        "median_ms": -0.004999999999999893,
+        "max_ms": 0.008000000000000451,
+        "values_ms": [
+          -0.004999999999999893,
+          -0.007999999999999119,
+          0.008000000000000451,
+          -0.0050000000000003375,
+          0.005000000000000782
+        ]
+      },
+      "span_gap": {
+        "n": 5,
+        "median_ms": 0.008000000000000007,
+        "max_ms": 0.012000000000000455,
+        "values_ms": [
+          0.012000000000000455,
+          0.006000000000000227,
+          0.01100000000000012,
+          0.008000000000000007,
+          0.0009999999999994458
+        ]
+      }
+    },
+    "logged_spacing": {
+      "launch_to_frame": {
+        "n": 5,
+        "median_ms": 14.0,
+        "max_ms": 14.0,
+        "values_ms": [
+          13.0,
+          14.0,
+          14.0,
+          12.0,
+          14.0
+        ]
+      },
+      "launch_to_completion": {
+        "n": 5,
+        "median_ms": 256.0,
+        "max_ms": 321.0,
+        "values_ms": [
+          270.0,
+          256.0,
+          321.0,
+          194.0,
+          211.0
+        ]
+      },
+      "frame_to_completion": {
+        "n": 5,
+        "median_ms": 242.0,
+        "max_ms": 307.0,
+        "values_ms": [
+          257.0,
+          242.0,
+          307.0,
+          182.0,
+          197.0
+        ]
+      }
+    }
+  },
+  "acceptance_applied": false,
+  "metric": "Luau os.clock elapsed ms, upper bound on thread CPU; diagnostic only",
+  "limits": [
+    "Callback pending is not OS process life.",
+    "Logged timestamp spacing is not process duration or CPU.",
+    "sameModel checks table identity, not deep values; sameEnqueued checks cumulative production enqueues.",
+    "Native/render residual and gaps use matching samples; observer overhead, GC/scheduling/native causes not separated."
+  ],
+  "collection_seconds": 95.46339321136475,
+  "verification": "Representative parser assertions pass; independent raw counts/ten phase sets/metadata, primary statistics and all within-sample residual/gap summaries checked.",
+  "controller_restoration": {
+    "original_main_pointer_restored_and_reloaded": true,
+    "original_profile_and_exact_scratch_verified": true,
+    "all_profile_bytes_verified": 23,
+    "all_canonical_values_verified": true,
+    "processes_remaining": false
+  }
+}

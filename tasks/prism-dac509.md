@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-11T15:39:03Z
+updated: 2026-10-11T15:45:50Z
 started: 2026-10-10T16:20:49Z
 depends: []
 tags: [noctalia, performance]
@@ -109,3 +109,7 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
 - 2026-10-11T15:18:17Z (fix/panel-render-budget): Approved warm comparison finished with explicit owner confirmation; restored original plugin pointer/reload and verified all saved profile/scratch/canonical settings unchanged. Five paired button/frame samples saved; worker analysis running, no desktop probe or background host process.
 - 2026-10-11T15:39:03Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves Task6 readonly-launch comparison; agent resumes prism-f15cbf in .worktrees/panel-budget, runs prepared five-click diagnostic and restores host state, then uses evidence to propose any reviewed design revision. Warm no-write paths are about8ms; release/cold causes unresolved and Tasks7-8 stay gated. Original main pointer restored; no host processes left.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T15:42:54Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T15:43:20Z (fix/panel-render-budget): Owner said Lets continue in response to ready readonly-launch comparison. Fresh host approval taken for that prepared run. Pointer ~/.local/share/noctalia/plugins/prism from /mnt/ssd/Dropbox/prism/integrations/noctalia-plugin to /tmp/prism-budget-launch-comparison-jx3_7ztr/probe-plugin; restore with ln -sfn /mnt/ssd/Dropbox/prism/integrations/noctalia-plugin ~/.local/share/noctalia/plugins/prism then disable/enable plugin after closing test panel. Fresh runtime/profile bytes/describe/log offset saved before installation. Restore pointer before park/done; keep installed until explicit completion/stop.
+- 2026-10-11T15:45:50Z (fix/panel-render-budget): Approved readonly-launch comparison completed with explicit owner confirmation. Original main pointer restored/reloaded and all saved profile/scratch/canonical settings unchanged. Five successful read-only commands and five pending-command frame samples saved; analysis worker running, host-load nothing left running.

@@ -251,6 +251,15 @@ launch, prove live input equality, or resolve the cold rebuild. Investigate the
 command-adjacent render path before changing production scheduling; its cause
 remains a hypothesis. Detailed paired spans are attached to `prism-f15cbf`.
 
+Read-only launch comparison `1791733401` also did not reproduce the slowdown:
+five valid comparisons measured render median/max 7.823/9.824 ms before launch
+and 6.788/7.669 ms in the following frame while completion was pending. Model
+references and enqueue counters stayed unchanged; no errors were logged. This
+does not test rendering immediately after launch in the same callback, actual
+write/apply work, or pointer-release reconciliation. It gives no basis for a
+production queue change. Record phase timings on actual cold/release paths next;
+the report and raw records are attached to `prism-f15cbf`.
+
 Retention does nothing for a render in which every signature changes. Part 3 is
 expected to bring a full expanded rebuild from 8.5k calls to about 6.5k, plus the
 signature pass. That is near the 5.6k calls that measured 10–14 ms in-host on

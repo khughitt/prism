@@ -7,7 +7,7 @@ complexity: mid
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-10T17:06:10Z
-updated: 2026-10-11T15:39:03Z
+updated: 2026-10-11T16:01:35Z
 started: 2026-10-10T18:43:57Z
 depends: [prism-b81188]
 parent: prism-dac509
@@ -86,3 +86,12 @@ step: "Task 6: In-host measurement and the 15 ms gate"
 - 2026-10-11T15:26:40Z (fix/panel-render-budget): Warm run1791731787 analyzed: raw n5 each button median8.522/max9.052 ms and frame8.124/max8.712; strict n4 excludes pair82-to84 interrupted by describe83 at0.010ms. Strict medians8.588/7.8765; paired frame-minus-button differences vary both ways, median-0.028ms. Zero budget errors, no consistent ordinary-button penalty. Live input equality not hashed; not full acceptance. Worker prepares no-write readonly-launch comparison because slow release/completion paths launch commands before render; cause remains hypothesis, cold rebuild unresolved.
 - 2026-10-11T15:39:03Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves prepared /tmp/prism-budget-launch-comparison-jx3_7ztr/probe-plugin; agent snapshots fresh state, opens Prism for five Launch comparison clicks (readonly explicit worktree describe), compares before-launch and following-frame spans, then restores original plugin/settings after explicit completion or stop. No probe installed, original main pointer restored, nothing running.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T15:42:55Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T15:43:20Z (fix/panel-render-budget): Prepared readonly-launch run freshly approved by Lets continue. Exact runtime and profile snapshots saved under /tmp/prism-budget-launch-comparison-jx3_7ztr; no scratch clearing or profile changes. Five clicks launch only explicit worktree describe --json and measure unchanged rendering before/around command; keep installed until explicit completion or stop.
+- 2026-10-11T15:45:50Z (fix/panel-render-budget): Readonly-launch comparison complete confirmed before collection/restoration. Frozen run1791733401: five launchButton, five warmWhileCommand, five successful comparisonCompletion, zero warmAfterCommand and zero error lines. Original main plugin pointer restored/reloaded; original aquamarine profile/exact scratch/all23 profile documents/allcanonical values unchanged, latest wallpaper preserved. Worker analyzes frozen before-launch/frame spans and metadata; no live probe installed or host process left.
+- 2026-10-11T16:01:31Z (fix/panel-render-budget): attached: launch-results-report.md (6500 bytes): Five valid read-only launch comparisons; pending-command frame renders did not reproduce release slowdown
+- 2026-10-11T16:01:31Z (fix/panel-render-budget): attached: launch-results.json (25317 bytes): Before/pending-frame paired spans, model/enqueue invariants and completion flags for run1791733401
+- 2026-10-11T16:01:32Z (fix/panel-render-budget): attached: launch-comparison.log (60375 bytes): Frozen launch comparison log with portable host paths; diagnostic timing/state records unchanged
+- 2026-10-11T16:01:32Z (fix/panel-render-budget): attached: analyze-launch.py (11474 bytes): Standalone diagnostic parser with asserted comparison pairing, metadata, interference and timing arithmetic
+- 2026-10-11T16:01:32Z (fix/panel-render-budget): Readonly-launch hypothesis check1791733401 DONE: five valid model-reference/enqueue-invariant comparisons, no paired-frame interference or errors. RenderTotal median/max7.823/9.824ms before launch,6.788/7.669ms while completion pending; native launch0.129/0.172ms. Does not reproduce actual release slowdown or rule out write/apply/immediate/event/GC effects. No production queue change justified. Worker now prepares automatic5-case cold sequence plus actual-release coarse phase/heap readings, with production tree after button click and no trace; no live run or fix.
