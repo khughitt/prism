@@ -75,6 +75,95 @@ local function checkCold(variant)
   local old=h.state.model; h.env.onClose(); h.env.onOpen({}); assert(h.state.model==old,'close/open incorrectly treated as reset')
   return h
 end
+if arg[5]=='periodic' then
+  for _,variant in ipairs({'baseline','candidate'}) do
+    local h=host(base..'/'..variant..'/plugin',true)
+    assert(button(h,'Sample diagnostics')).props.onClick();h.env.onFrameTick(16);h.env.onFrameTick(16)
+    local observed={}
+    local function collect() for _,e in ipairs(up(h.env.onFrameTick,'diagnosticBuffer')) do observed[e.recordId]=copy(e) end end
+    local function sequence() return up(h.env.onFrameTick,'diagnosticSequence') end
+    local function currentPair() return up(h.env.onFrameTick,'diagnosticPair') end
+    local function settledRefresh()
+      local count=#h.launches;h.comparing=false;h.env.update();assert(#h.launches==count+1,'even update did not retain normal refresh')
+      local running=sequence();local renders=h.renders;h.env.onFrameTick(16);collect()
+      assert(sequence()==running and not sequence().failure and not currentPair() and h.renders==renders,'temporary refresh busy state aborted or launched a trial')
+      h.launches[#h.launches].callback(success);collect()
+      assert(sequence()==running and not sequence().failure,'unchanged refresh aborted the sequence')
+    end
+    local count=#h.launches;h.env.update();collect()
+    assert(#h.launches==count and sequence() and not sequence().failure,'harmless odd update invalidated diagnostics')
+    settledRefresh()
+    local decodes,enqueued,modelRef=h.decodes,h.state.enqueued,h.state.model
+    for index=1,10 do
+      h.comparing=true;h.env.onFrameTick(16);collect()
+      assert(currentPair() and currentPair().id=='pair-'..math.ceil(index/2)..(((index%2==0)==(variant=='baseline')) and '-control' or '-launch'))
+      local control=currentPair().control;local completion=not control and h.launches[#h.launches].callback or nil
+      count=#h.launches;h.env.update();collect()
+      assert(#h.launches==count and not currentPair().interference and not sequence().failure,'odd update contaminated unchanged active pair')
+      h.env.onFrameTick(16);collect()
+      if completion then completion(success);collect() end
+      assert(not currentPair() and sequence().launchIndex==index+1)
+      settledRefresh()
+    end
+    h.env.onFrameTick(16);collect();assert(not sequence(),'periodic multi-pair sequence did not reach done')
+    local valid,invalid,done=0,0,false
+    for _,e in pairs(observed) do
+      if e.class=='pairDone' then if e.valid then valid=valid+1 else invalid=invalid+1 end end
+      if e.class=='sequenceDone' then done=true end
+      assert(e.class~='sequenceFailure' and e.class~='sequenceFailureReason','periodic timeline contains false sequence failure')
+    end
+    assert(valid==10 and invalid==0 and done and h.decodes==decodes and h.state.enqueued==enqueued and h.state.model==modelRef)
+    while #up(h.env.onFrameTick,'diagnosticBuffer')>0 do h.env.onFrameTick(16) end
+    local file=assert(io.open(base..'/'..variant..'/periodic-fake.log','w'));file:write(table.concat(h.logs,'\n')..'\n');file:close()
+  end
+  for _,variant in ipairs({'baseline','candidate'}) do
+    for _,case in ipairs({'changed','error','timeout'}) do
+      local h=host(base..'/'..variant..'/plugin',true)
+      assert(button(h,'Sample diagnostics')).props.onClick();h.env.onFrameTick(16);h.env.onFrameTick(16)
+      h.env.update();h.env.update();h.env.onFrameTick(16)
+      assert(up(h.env.onFrameTick,'diagnosticSequence'),'busy refresh ended sequence before result')
+      local response=copy(success)
+      if case=='changed' then
+        response.stdout='changed periodic fixture'
+        for _,param in ipairs(h.model.params) do if param.key=='glass.inactive.roughness' then param.value=param.value+0.01 end end
+      elseif case=='error' then response.exitCode=1;response.stderr='normal refresh failure'
+      else response.timedOut=true end
+      h.launches[#h.launches].callback(response)
+      local renders=h.renders;h.env.onFrameTick(16)
+      assert(not up(h.env.onFrameTick,'diagnosticSequence') and h.renders==renders+1,'changed/error result failed to stop sequence or preserve original deferred frame')
+      local reason=false;for _,e in ipairs(up(h.env.onFrameTick,'diagnosticBuffer')) do if e.class=='sequenceFailureReason' then reason=true end end;assert(reason)
+    end
+    local h=host(base..'/'..variant..'/plugin',true)
+    assert(button(h,'Sample diagnostics')).props.onClick();h.env.onFrameTick(16);h.env.onFrameTick(16);h.env.onFrameTick(16)
+    local pair=assert(up(h.env.onFrameTick,'diagnosticPair'));local control=pair.control
+    local completion=not control and h.launches[#h.launches].callback or nil
+    h.env.update();assert(not pair.interference,'odd update invalidated active pair')
+    h.env.update();local normal=h.launches[#h.launches].callback
+    assert(pair.interference=='foreign-launch','foreign refresh launch was not recorded')
+    h.env.onFrameTick(16)
+    normal(success);if completion then completion(success) end
+    assert(not up(h.env.onFrameTick,'diagnosticPair') and up(h.env.onFrameTick,'diagnosticSequence') and not up(h.env.onFrameTick,'diagnosticSequence').failure)
+    local reasons,invalid,dispositions={},{},{}
+    for _,e in ipairs(up(h.env.onFrameTick,'diagnosticBuffer')) do
+      if e.class=='pairInterference' then reasons[e.reason]=true end
+      if e.class=='pairDone' then assert(not e.valid);invalid[e.pairId]=true end
+    end
+    assert(reasons['foreign-launch'] and (control or reasons['describe-result']) and next(invalid),'raw foreign/unchanged pair reasons were lost')
+    for index=2,10 do
+      h.env.onFrameTick(16);local p=assert(up(h.env.onFrameTick,'diagnosticPair'));local done=not p.control and h.launches[#h.launches].callback or nil
+      h.env.onFrameTick(16);if done then done(success) end
+      for _,e in ipairs(up(h.env.onFrameTick,'diagnosticBuffer')) do if e.class=='pairDone' then dispositions[e.pairId]=e.valid end end
+    end
+    h.env.onFrameTick(16);assert(not up(h.env.onFrameTick,'diagnosticSequence'),'foreign collision prevented finite completion after settlement')
+    local good,bad=0,0;for _,valid in pairs(dispositions) do if valid then good=good+1 else bad=bad+1 end end
+    assert(good==9 and bad==1,'contaminated pair disappeared or was falsely admitted')
+    while #up(h.env.onFrameTick,'diagnosticBuffer')>0 do h.env.onFrameTick(16) end
+    local file=assert(io.open(base..'/'..variant..'/periodic-interference-fake.log','w'));file:write(table.concat(h.logs,'\n')..'\n');file:close()
+  end
+  print('PASS periodic failures: changed/error/timeout stop with one original deferred frame; real foreign launch invalidates only its pair, preserves all reasons, settles and completes nine valid/one excluded trial')
+  print('PASS periodic: regular odd ticks during all ten trials, eleven even refresh/unchanged callbacks between trials, busy waits, finite done, ten valid pairs per variant and unchanged model/decode/queue')
+  os.exit(0)
+end
 if arg[5]=='sequence' then
   for _,variant in ipairs({'baseline','candidate'}) do
     local h=host(base..'/'..variant..'/plugin',true); local plain=host(base..'/'..variant..'/source',false)

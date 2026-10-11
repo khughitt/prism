@@ -1,6 +1,6 @@
 # Task 2 implementer report
 
-Status: DONE_WITH_CONCERNS; scratch readiness prepared for independent controller-owned review.
+Status: DONE; scratch readiness prepared for independent controller-owned review.
 Child: prism-177cca. Base: 38ee45b (bookkeeping); candidate: e7384b0;
 baseline: 9bf4e8e. Evidence commit subject:
 `test(panel): validate matched budget probe protocol`.
@@ -155,7 +155,7 @@ no live acceptance/latency measurements or host install; budget-error count and 
 pilot phase durations must come from the controller's approved live session. No checks
 or spawned processes remain running.
 
-## Concern for independent review
+## Original disclosed concern (resolved by corrective pass below)
 
 The current second-tick wrapper conservatively marks every update callback as
 interference, including odd ticks which do not launch a refresh. This cannot admit
@@ -172,3 +172,76 @@ through tasks detach/attach. Exact frozen runtime identity/CLI strings, probe ar
 source copies and original manifests remain unchanged in scratch and the archive.
 No hook was bypassed and no host pointer changed. Feedback ops-4e97bf records the
 missing portable-representation instruction; its maintainer owns triage.
+
+Evidence commit: 7a067af12a3c19ff17ba422f3f45ff31bf6a1d45 (`test(panel): validate matched budget probe protocol`).
+
+## Corrective pass: periodic ticks and unchanged refresh settlement
+
+Controller ruling: an odd no-refresh update must not invalidate a pair or abort the
+whole finite sequence; normal refreshes/unchanged callbacks between trials must settle
+without postponing production work. The first report understated the original effect
+as reduced yield: it actually marked sequence.failure and aborted the whole sequence.
+That behavior is now fixed before independent review.
+
+Claim/lifecycle commands: tasks start prism-177cca initially refused done→doing; then
+tasks edit prism-177cca --status todo, tasks start prism-177cca and
+~/.agents/bin/trial-arm prism-177cca succeeded (not enrolled). Only the child is reopened
+and changed; controller plan and parent records remain untouched.
+
+Changes: diagnosticInterfere now distinguishes pair-only interference from actual input
+changes that stop the sequence. It preserves each active-pair reason as raw metadata.
+update invokes the original body without unconditional interference; an actual foreign
+run launch invalidates only its active pair. described records pair interference even
+for unchanged results, while only accepted/rejected/error-changing results stop the
+sequence. Temporary normal describe/queue busy state is sequenceWait, bounded by the
+original completion/timeout path. All original update, refresh, deferred/frame and
+100ms drag/sample work continues. No new scheduler/process/file/timer API is used.
+The fixed finite trial count remains unchanged; contaminated records survive and are
+excluded rather than replaced or silently admitted.
+
+RED command (before correction):
+
+```sh
+lua /tmp/prism-budget-matched-task2/self-check.lua /tmp/prism-budget-matched-task2/sequence-copies /tmp/prism-budget-matched-task2/model.lua integrations/noctalia-plugin/test_encode.lua "$PWD/bin/prism" periodic
+```
+
+red-periodic-sequence.log fails: `harmless odd update invalidated diagnostics`.
+GREEN uses the same command after rebuilding with the already documented builder
+command. green-periodic-sequence.log passes: regular odd updates during all ten trials;
+eleven even refresh/unchanged settlements between trials; each variant reaches finite
+done with ten valid pairs and unchanged model/decode/enqueued/queue. Separate cases
+prove changed/error/timeout responses stop the sequence and still perform exactly one
+original deferred frame. An actual foreign refresh launch during a pair records raw
+foreign-launch/describe reasons, excludes that trial, waits for unchanged settlement,
+and reaches done with nine valid and one excluded trial for each variant.
+
+Parser commands for those saved timelines (both exit0):
+
+```sh
+python3 /tmp/prism-budget-matched-task2/analyze.py --log /tmp/prism-budget-matched-task2/sequence-copies/baseline/periodic-fake.log --log /tmp/prism-budget-matched-task2/sequence-copies/candidate/periodic-fake.log --identity /tmp/prism-budget-matched-task2/sequence-copies/baseline/identity.json --identity /tmp/prism-budget-matched-task2/sequence-copies/candidate/identity.json --budget-errors 0 --output /tmp/prism-budget-matched-task2/periodic-verdict.json
+python3 /tmp/prism-budget-matched-task2/analyze.py --log /tmp/prism-budget-matched-task2/sequence-copies/baseline/periodic-interference-fake.log --log /tmp/prism-budget-matched-task2/sequence-copies/candidate/periodic-interference-fake.log --identity /tmp/prism-budget-matched-task2/sequence-copies/baseline/identity.json --identity /tmp/prism-budget-matched-task2/sequence-copies/candidate/identity.json --budget-errors 0 --output /tmp/prism-budget-matched-task2/periodic-interference-verdict.json
+```
+
+Assertions confirm20 valid/0 excluded clean pairs and five pending launches/five done
+controls per variant. The contaminated timeline preserves18 valid/2 excluded raw
+pair groups, with no falsely admitted contaminated trial. These remain fake timelines,
+not a host acceptance verdict.
+
+Existing raw queued-frame, nondirty active drag+pendingSample at16+84ms, dirty frames,
+ordinary deferred frame, cold next actual frame, pair next actual frame/collision,
+close-tick and sixteen-record idle flush assertions remain unchanged and pass on both
+corrected copies. This retained the separate original cadence RED/GREEN evidence.
+The periodic correction did not change endDrag/enqueue or any uninstrumented module.
+
+Validation commands are the existing cold self-check, integrity-check.py with frozen
+identities/readonly fixture, noctalia plugins lint on both changed copies, luac -p on
+both entries, just test-fast and just check, with the exact arguments listed above.
+fix-existing-calibration.log, fix-integrity.log, fix-lint-baseline.log and
+fix-lint-candidate.log all pass; lint0 errors/0 warnings; syntax exit0;
+fix-repository-tests.log574/574 plus Lua assertions; fix-repository-check.log exit0.
+No unrelated scope or new production behavior was introduced.
+
+Current identical instrumentation SHA256: 12c724d9127044b7d9ce17b91ab06cd82b90d388b26d4fccd532f268b1825a62.
+Original tick concern is resolved; remaining boundary is unchanged: no live host
+installation or timing acceptance. Independent full review is controller-owned.
+All checks finished; no process remains running.

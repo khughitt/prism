@@ -18,9 +18,12 @@ local function diagnosticEvent(class, elapsed, extra)
   if extra then for k,v in pairs(extra) do event[k]=v end end
   diagnosticBuffer[#diagnosticBuffer+1]=event
 end
-local function diagnosticInterfere(reason)
-  if diagnosticPair then diagnosticPair.interference=reason end
-  if diagnosticSequence and not diagnosticInternal then diagnosticSequence.failure=reason end
+local function diagnosticInterfere(reason, inputChanged)
+  if diagnosticPair then
+    diagnosticPair.interference=reason
+    diagnosticEvent('pairInterference',0,{scope='metadata',reason=reason})
+  end
+  if diagnosticSequence and not diagnosticInternal and inputChanged~=false then diagnosticSequence.failure=reason end
 end
 local function diagnosticCallback(class, fn, ...)
   if diagnosticDepth>0 then return fn(...) end

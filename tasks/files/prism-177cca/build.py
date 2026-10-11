@@ -45,7 +45,8 @@ def transform(source,identity):
         assert source.count(old)==1,(old[:80],source.count(old))
         source=source.replace(old,new,1); edits.append({'before':old,'after':new})
     replace('local function gateOf(param)',(HERE/'probe.lua').read_text().replace('IDENTITY',lua(identity))+'\nlocal function gateOf(param)')
-    replace('  return noctalia.runAsync(Shell.command(argv), callback, 10000)', '''  local copied={}; for i,value in ipairs(argv) do copied[i]=value end
+    replace('  return noctalia.runAsync(Shell.command(argv), callback, 10000)', '''  if diagnosticPair~=nil and not diagnosticInternal then diagnosticInterfere('foreign-launch',false) end
+  local copied={}; for i,value in ipairs(argv) do copied[i]=value end
   copied[1]=diagnosticIdentity.cli
   local command=Shell.command(copied)
   local started=os.clock()

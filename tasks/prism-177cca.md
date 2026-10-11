@@ -8,9 +8,9 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-11T18:13:25Z
-updated: 2026-10-11T19:36:41Z
+updated: 2026-10-11T20:05:21Z
 started: 2026-10-11T18:42:57Z
-completed: 2026-10-11T19:33:13Z
+completed: 2026-10-11T20:05:05Z
 depends: [prism-7d38d8]
 parent: prism-f15cbf
 tags: []
@@ -54,3 +54,27 @@ Build frozen baseline/candidate scratch copies with matching minimal instrumenta
 - 2026-10-11T19:36:37Z (fix/panel-render-budget): detached: task2-readiness.tar.gz: Preserve final report and separate portable manifest alongside unchanged exact runtime provenance.
 - 2026-10-11T19:36:37Z (fix/panel-render-budget): attached: task2-readiness.tar.gz (325833 bytes): Final readiness archive with unchanged exact runtime source/identity/argv and separate portable display manifest; calibration, gate logs and report.
 - 2026-10-11T19:36:37Z (fix/panel-render-budget): Evidence commit gate required worktree-relative CLI display in standalone manifest; exact runtime identity/probe argv retained unchanged in archive. No hook bypass; feedback ops-4e97bf filed for portable-representation guidance, maintainer triages.
+- 2026-10-11T19:42:41Z (fix/panel-render-budget): Controller inspected disclosed tick concern: unconditional secondTick interference sets whole finite-sequence failure, so regular no-refresh ticks can abort collection rather than merely exclude a pair. Resume original implementer before review: preserve update cadence, distinguish harmless/unchanged work, settle normal refresh between trials, test full timed sequence with periodic callbacks. Real pair/input interference still invalidates.
+- 2026-10-11T19:44:39Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T20:05:04Z (fix/panel-render-budget): detached: build.py: Periodic correction: foreign launch marks pair-only interference.
+- 2026-10-11T20:05:04Z (fix/panel-render-budget): attached: build.py (9309 bytes): Corrected identical builder; preserves normal work and records real foreign-launch interference.
+- 2026-10-11T20:05:04Z (fix/panel-render-budget): detached: probe.lua: Periodic correction: distinguish pair interference from sequence input changes.
+- 2026-10-11T20:05:04Z (fix/panel-render-budget): attached: probe.lua (3591 bytes): Corrected private probe prefix; raw pair reasons, actual-input sequence failure and bounded idle flush.
+- 2026-10-11T20:05:04Z (fix/panel-render-budget): detached: tail.lua: Periodic correction: harmless updates and unchanged busy refresh settle instead of aborting.
+- 2026-10-11T20:05:04Z (fix/panel-render-budget): attached: tail.lua (10052 bytes): Corrected sequence waits through original normal refresh/completion/timeout; actual changes stop; native cadence preserved.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): detached: self-check.lua: Add approved regular-update/unchanged-refresh end-to-end correction fixture.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): attached: self-check.lua (25962 bytes): Periodic RED/GREEN and clean/contaminated finite timelines; original cold/raw-frame/100ms sampling assertions retained.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): detached: manifest.json: Refresh identical instrumentation hash after periodic correction; keep CLI display portable.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): attached: manifest.json (2116 bytes): Corrected frozen-source/common-instrumentation manifest, with portable CLI display; exact runtime provenance remains in archive.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): detached: README.md: Document periodic settlement and focused correction command.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): attached: README.md (7277 bytes): Portable corrected readiness commands and normal update/refresh settlement behavior.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): detached: task-2-report.md: Append full periodic correction RED/GREEN, parser integration and unchanged native-cadence evidence.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): attached: task-2-report.md (18126 bytes): Full report with resolved periodic-sequence abort, exact commands/results, new hash and no running checks.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): detached: task2-readiness.tar.gz: Preserve corrected sources, periodic logs/verdicts and final report.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): attached: task2-readiness.tar.gz (409267 bytes): Corrected complete readiness archive: normal periodic settlement, raw contaminated-pair exclusions, exact source/identity/diffs and all evidence.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): Periodic correction RED→GREEN: odd updates no longer invalidate/abort;11 normal even refresh/unchanged settlements between10 trials reach done per variant; foreign refresh during pair preserved as9 valid/1 excluded; changed/error/timeout stop with original deferred frame. Existing cold142-unit/raw-frame/100ms checks, lint0/0,574 tests and just check pass. No processes/checks active.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): done
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): Corrected normal periodic update/unchanged refresh settlement without postponing frame/sample work; preserved raw contaminated-pair exclusions and validated full fake timelines, lint and repository gates; no live acceptance.
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}

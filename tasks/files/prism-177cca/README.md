@@ -72,8 +72,7 @@ release/correction paths remain unchanged.
 Each launch calls the existing private helper, which constructs a copied argv and
 explicit worktree command before timing only `noctalia.runAsync`. Immediate render
 follows `run` in that same frame callback; another frame callback renders once before
-ordinary tick work. Completion records flags without decoding stdout. A dirty input,
-refresh/describe result (including unchanged/error), expansion/focus/value change,
+ordinary tick work. Completion records flags without decoding stdout. A dirty input, foreign launch or describe result during an active pair, expansion/focus/value change,
 failed launch/completion, malformed completion, or overlap invalidates the pair.
 
 Target timing ends before its record is buffered. Identity expansion, JSON encoding and
@@ -106,3 +105,13 @@ waits and carry a clock origin. Subtract timestamps only within that origin. The
 controller supplies administration and user-action timestamps and distinguishes
 hands-on time from desktop occupancy. `pilot-fixture.json` yields 9 minutes solely as
 a boundary self-check; it is not a prediction for the live session.
+
+Periodic correction: harmless odd updates do not interfere. Original even updates and
+refreshes still run normally. The finite sequence waits for temporary busy state through
+the original command completion/10s timeout, resumes after unchanged results between
+trials, and stops on accepted changed inputs or errors. A foreign launch/describe during
+a pair invalidates that pair with raw reasons, but unchanged settlement permits the
+remaining finite trials. Invalid trials stay excluded; no automatic extra retries are
+invented, and fewer than five valid pairs still make the launch result inconclusive.
+To run the regular-tick end-to-end fixture, use the one-cold/five-launch copies and
+pass `periodic` as the last self-check argument. It saves clean and interference logs.

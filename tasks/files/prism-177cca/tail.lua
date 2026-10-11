@@ -10,9 +10,13 @@ render=function(...)
 end
 local diagnosticPlainDescribed=described
 described=function(result)
-  if not diagnosticCold then diagnosticInterfere('describe') end
+  if not diagnosticCold then diagnosticInterfere('describe-result',false) end
   return diagnosticCallback(diagnosticCold and 'coldSetup' or 'describeResult',function()
+    local previousError=state.errorText
     diagnosticPlainDescribed(result)
+    if not diagnosticCold and (diagnosticAccepted or diagnosticOutcome=='rejected' or state.errorText~=previousError) then
+      diagnosticInterfere('describe-'..diagnosticOutcome)
+    end
     if diagnosticAccepted and not diagnosticCold then diagnosticClass='changedDescribe' end
   end)
 end
@@ -26,7 +30,6 @@ onOpen=function(...) diagnosticInterfere('open'); return diagnosticCallback('ope
 onClose=function(...) diagnosticInterfere('close'); return diagnosticCallback('close',diagnosticPlainClose,...) end
 onKey=function(...) diagnosticInterfere('key'); return diagnosticCallback('input',diagnosticPlainKey,...) end
 update=function(...)
-  diagnosticInterfere('secondTick')
   return diagnosticCallback('secondTick',diagnosticPlainUpdate,...)
 end
 local function diagnosticReady()
@@ -120,8 +123,16 @@ onFrameTick=function(deltaMs)
   if diagnosticPair and not ordinaryTickDue then syncFrameTick(); return end
   if diagnosticSequence and diagnosticPair==nil then
     local sequence=diagnosticSequence
-    if sequence.failure or not diagnosticReady() or sequence.model~=state.model or sequence.enqueued~=state.enqueued or sequence.stdout~=state.shownStdout then
+    if sequence.failure or sequence.model~=state.model or sequence.enqueued~=state.enqueued or sequence.stdout~=state.shownStdout or state.errorText~=nil or not state.open or state.help then
       return diagnosticCallback('sequenceFailure',function() diagnosticEvent('sequenceFailureReason',0,{scope='metadata',reason=sequence.failure or 'input-change'}); diagnosticSequence=nil; if ordinaryTickDue then diagnosticPlainTick(deltaMs) end; syncFrameTick() end)
+    end
+    if not diagnosticReady() then
+      return diagnosticCallback('sequenceWait',function()
+        diagnosticEvent('sequenceWaitReason',0,{scope='metadata',describePending=describeRunning,
+          queueBusy=state.queue.inFlight~=nil or #state.queue.pending>0})
+        if ordinaryTickDue then diagnosticPlainTick(deltaMs) end
+        syncFrameTick()
+      end)
     end
     if sequence.coldRemaining>0 then
       if sequence.phase=='setup' then
