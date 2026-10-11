@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-11T15:45:50Z
+updated: 2026-10-11T17:43:21Z
 started: 2026-10-10T16:20:49Z
 depends: []
 tags: [noctalia, performance]
@@ -113,3 +113,10 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
 - 2026-10-11T15:43:20Z (fix/panel-render-budget): Owner said Lets continue in response to ready readonly-launch comparison. Fresh host approval taken for that prepared run. Pointer ~/.local/share/noctalia/plugins/prism from /mnt/ssd/Dropbox/prism/integrations/noctalia-plugin to /tmp/prism-budget-launch-comparison-jx3_7ztr/probe-plugin; restore with ln -sfn /mnt/ssd/Dropbox/prism/integrations/noctalia-plugin ~/.local/share/noctalia/plugins/prism then disable/enable plugin after closing test panel. Fresh runtime/profile bytes/describe/log offset saved before installation. Restore pointer before park/done; keep installed until explicit completion/stop.
 - 2026-10-11T15:45:50Z (fix/panel-render-budget): Approved readonly-launch comparison completed with explicit owner confirmation. Original main pointer restored/reloaded and all saved profile/scratch/canonical settings unchanged. Five successful read-only commands and five pending-command frame samples saved; analysis worker running, host-load nothing left running.
+- 2026-10-11T16:23:49Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T16:24:18Z (fix/panel-render-budget): Fresh explicit approval Run cold/release probe received. Host pointer ~/.local/share/noctalia/plugins/prism from /mnt/ssd/Dropbox/prism/integrations/noctalia-plugin to /tmp/prism-budget-cold-release-i1qwedih/probe-plugin; restore with ln -sfn /mnt/ssd/Dropbox/prism/integrations/noctalia-plugin ~/.local/share/noctalia/plugins/prism then disable/enable plugin after closing test panel and confirming writes/describe drain. Fresh runtime/profile bytes/describe/log offset saved before installation. Keep probe until explicit completion/stop; restore pointer before park/done.
+- 2026-10-11T16:27:57Z (fix/panel-render-budget): Approved cold/release run completed with explicit owner confirmation and verified write/describe drain. Five automatic cold cases and five actual releases captured; log rotation recovered before restoration. Original main pointer/reload and all saved runtime/profile/canonical settings unchanged; no host processes left. Frozen phase/heap analysis running, Task6 not accepted.
+- 2026-10-11T17:42:29Z (fix/panel-render-budget): Return-to-design gate: latest cold median 19.869 ms (n5), release 20.661 ms (n5), zero diagnostic budget errors. Complete proposed part5 revision is in docs/specs/2026-10-10-panel-render-budget-design.md; owner written-spec review precedes revised plan. Original behavior and strict targets retained; Tasks7–8 remain gated.
+- 2026-10-11T17:43:21Z (fix/panel-render-budget): parked (waiting on user, review): Owner reviews proposed part5 in .worktrees/panel-budget/docs/specs/2026-10-10-panel-render-budget-design.md; controller then prepares the revised implementation plan for review. Task6 acceptance and Tasks7–8 remain gated; original host pointer restored
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}

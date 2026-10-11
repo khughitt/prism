@@ -3,11 +3,11 @@ id: prism-f15cbf
 title: In-host measurement and the 15 ms gate
 status: doing
 priority: 1
-complexity: mid
-process: direct
+complexity: high
+process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T17:06:10Z
-updated: 2026-10-11T16:01:35Z
+updated: 2026-10-11T17:43:21Z
 started: 2026-10-10T18:43:57Z
 depends: [prism-b81188]
 parent: prism-dac509
@@ -95,3 +95,17 @@ step: "Task 6: In-host measurement and the 15 ms gate"
 - 2026-10-11T16:01:32Z (fix/panel-render-budget): attached: launch-comparison.log (60375 bytes): Frozen launch comparison log with portable host paths; diagnostic timing/state records unchanged
 - 2026-10-11T16:01:32Z (fix/panel-render-budget): attached: analyze-launch.py (11474 bytes): Standalone diagnostic parser with asserted comparison pairing, metadata, interference and timing arithmetic
 - 2026-10-11T16:01:32Z (fix/panel-render-budget): Readonly-launch hypothesis check1791733401 DONE: five valid model-reference/enqueue-invariant comparisons, no paired-frame interference or errors. RenderTotal median/max7.823/9.824ms before launch,6.788/7.669ms while completion pending; native launch0.129/0.172ms. Does not reproduce actual release slowdown or rule out write/apply/immediate/event/GC effects. No production queue change justified. Worker now prepares automatic5-case cold sequence plus actual-release coarse phase/heap readings, with production tree after button click and no trace; no live run or fix.
+- 2026-10-11T16:23:49Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T16:24:19Z (fix/panel-render-budget): Cold/release phase probe approved. Fresh exact runtime/profile/describe snapshots saved under /tmp/prism-budget-cold-release-i1qwedih. One click starts five separate cold setup/render pairs and removes added button; owner then performs five actual drags and individual restores, leaving existing edits/profile alone. No scratch clearing. Verify queue/describe drain before restoring after explicit completion or stop.
+- 2026-10-11T16:27:57Z (fix/panel-render-budget): Cold/release complete confirmed before restore. Run1791735860 captured5 cold setups/5 cold renders/5 releases/10 write completions, one cold-done marker,0 errors. Log rotated once; recovered .1 suffix from saved start_byte plus current file, one run marker and chronological segment boundaries saved. Latest drain queueIdle=true describeRunning=false before pointer restoration. Original main plugin restored/reloaded; exact aquamarine/scratch/all23 profile bytes/allcanonical values unchanged, latest wallpaper preserved, no restore write needed. Worker analyzes frozen phases/heap; host-load nothing running.
+- 2026-10-11T17:27:29Z (fix/panel-render-budget): Return-to-design gate reached: production-equivalent cold median19.869ms n5 exceeds strict15ms, release20.661ms n5 exceeds12ms; all measured budget errors0. Probe/CLI hypotheses incomplete, actual long interval varies; no root CPU/GC cause claimed. Process upgraded to planned/high for focused spec-part5 revision before any production changes, with written spec and plan review gates retained. Fresh architecture investigation will propose smallest behavior-preserving refinement; no more live run is requested now.
+- 2026-10-11T17:27:29Z (fix/panel-render-budget): Upstream preflight for possible command-adjacent allocator/fork mechanism: canonical upstream is noctalia-dev/noctalia (old noctalia-shell alias redirects); searched open/closed issues+PRs for posix_spawn, malloc and fork+process; fork has no issues and no PRs. No matching render-latency fix found. Upstream main and feat/freebsd process sources still use fork, latest5 release notes have no spawn/allocator mention and no changelog file in main tree. Related but different reports: https://github.com/noctalia-dev/noctalia/issues/4613 (pipe EOF deadlock, fixed on main) and https://github.com/noctalia-dev/noctalia/pull/3908 (PAM child lock hang). Local runAsync starts detached worker then runSyncProcess forks; parent allocator blocking remains a hypothesis, not a confirmed vendor defect; no workaround/pin or upstream post chosen.
+- 2026-10-11T17:39:17Z (fix/panel-render-budget): attached: cold-release-1791735860-report.md (6693 bytes): Five production-equivalent cold renders and five actual releases; phase, heap and restoration evidence; acceptance incomplete
+- 2026-10-11T17:39:17Z (fix/panel-render-budget): attached: cold-release-1791735860-results.json (274566 bytes): All callback samples, paired phases, heap arithmetic and final drain; elapsed diagnostics only
+- 2026-10-11T17:39:17Z (fix/panel-render-budget): attached: analyze-cold-release.py (10763 bytes): Frozen-log analysis with parser assertions; no host access
+- 2026-10-11T17:39:17Z (fix/panel-render-budget): attached: cold-release-1791735860.log (332946 bytes): Chronological frozen log recovered across one rotation; host paths redacted, measurement records unchanged
+- 2026-10-11T17:42:28Z (fix/panel-render-budget): Frozen cold/release report, samples, parser and portable log attached. Parser assertions pass; redaction preserves every measurement record and parsed field. JSON additionally carries verified controller rotation/restoration metadata. Original plugin pointer is restored and host-load reports nothing running.
+- 2026-10-11T17:42:29Z (fix/panel-render-budget): Part 5 design revision drafted and self-reviewed: exact-raw-equality-backed compact tokens, existing signature composition and Retain/queue APIs; one measured experiment with keep/revert gate. Read-only architecture advice from codex/gpt-6-astra, not an implementation review verdict. Owner must review the written spec before revised implementation planning; no production changes or new host action.
+- 2026-10-11T17:43:21Z (fix/panel-render-budget): parked (waiting on user, review): Owner reviews proposed part5 in .worktrees/panel-budget/docs/specs/2026-10-10-panel-render-budget-design.md; after approval, controller revises the implementation plan for review, then resumes subagent-driven execution in the existing worktree
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}

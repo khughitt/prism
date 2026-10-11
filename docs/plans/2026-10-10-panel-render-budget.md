@@ -20,11 +20,13 @@ Lua 5.4 (`plugin_test.lua`) and node:test (`contract.test.mjs`), run through
 review round 2: accept).
 
 **Execution status (2026-10-11):** Tasks 1–5 are implemented on the task branch.
-Task 6 remains unaccepted: diagnostic run `1791729887` measured cold median
-20.597 ms (n=5) and release median 19.7795 ms (n=6), with zero budget errors.
-The tracing probe is diagnostic evidence, with observer overhead still unknown.
-See spec part 5 and the attachments on `prism-f15cbf`; investigate remaining
-render cost before proposing a reviewed design revision. Tasks 7–8 are gated.
+Task 6 remains unaccepted: diagnostic run `1791735860`, on production-equivalent
+measured trees, recorded cold median 19.869 ms (n=5) and release median 20.661 ms
+(n=5), with zero budget errors. Timing/heap observer overhead remains unquantified;
+profile acceptance is missing. Spec part 5 now proposes exact-equality-backed compact
+metadata tokens and awaits owner review. This original plan does not authorize that
+revision: revise and review the implementation plan only after written-spec approval.
+Tasks 7–8 remain gated; do not redispatch completed Tasks 1–5.
 
 ## Global Constraints
 

@@ -1,7 +1,7 @@
 # Panel render within the host's callback budget
 
 **Date:** 2026-10-10
-**Status:** approved by owner 2026-10-10 (review round 2: accept); Tasks 1–5 implemented on the task branch; Task 6 acceptance remains blocked after diagnostic measurements on 2026-10-11. Plan: [docs/plans/2026-10-10-panel-render-budget.md](../plans/2026-10-10-panel-render-budget.md)
+**Status:** original design approved by owner 2026-10-10 (review round 2: accept); Tasks 1–5 implemented. Part 5 revised 2026-10-11: **proposed, owner review required**. Task 6 acceptance and Tasks 7–8 remain gated. Plan: [docs/plans/2026-10-10-panel-render-budget.md](../plans/2026-10-10-panel-render-budget.md)
 **Task:** `prism-dac509` (absorbs the dropped `prism-5172ea`)
 **Builds on:** `prism-dfbd7f` (one drag render per frame tick) and `prism-831604`
 (`refresh` never renders; an unchanged describe is skipped), both recorded in
@@ -148,6 +148,10 @@ describe field, because the digest covers them all, and only the listed panel-si
 fields. A builder that needs a new panel-side field adds it to the signature in the
 same change. The equivalence test below catches a builder that does not.
 
+Part 5 proposes replacing raw digest payloads in signatures with compact labels backed
+by exact equality; the coverage and dynamic inputs above remain binding. That revision
+is not implemented or approved yet.
+
 **Signatures are composed bottom-up, and every render computes all of them.** A cell's
 signature comes first. A row's signature is its own inputs (label, indent, hidden
 state, hint inputs) plus its cells' signatures. A card's signature is its own inputs
@@ -189,7 +193,8 @@ reads them:
   links, interactions. `validateModel` already builds these to validate them, and
   today `render` builds them a second time.
 - the **slider metadata** per parameter: bounds, step, precision, display and scale.
-  These depend only on `range` and `ui`.
+  These depend only on `range` and `ui`; the existing weak-key cache computes them
+  lazily on first use of each accepted parameter table.
 - the **lookup indexes** of part 2, the slider walk order for keyboard focus, and the
   **digests** of part 1.
 
@@ -214,61 +219,164 @@ and `finishWrite`. With retained subtrees each of these costs a handful of rebui
 units, and keeping them synchronous preserves the slider-correction handshake in
 `endDrag` and the existing tests' expectations.
 
-### 5. A full rebuild, if it is still too dear
+### 5. Proposed revision: compact metadata tokens
 
-The 2026-10-11 diagnostic run `1791729887`, with every card expanded, measured
-cold callback median/max **20.597/21.149 ms (n=5)** and release callback
-median/max **19.7795/21.816 ms (n=6)**. Dirty drag ticks measured
-**7.8985/11.613 ms (n=238)**; no budget errors were logged. Every cold render
-rebuilt 142 retained units; every release rebuilt zero. Release render/native
-medians were 19.523/2.999 ms, and enqueue/native launch medians were
-0.198/0.0875 ms. Nested spans must not be summed.
+**Review state:** proposed 2026-10-11; owner review of this written revision is
+required before revising the implementation plan. Parts 1–4 and the original
+acceptance targets remain binding. This section replaces the previous speculative
+full-rebuild candidates. It selects one small experiment, with a measured keep or
+revert decision; it does not claim that the experiment will meet the targets.
 
-This scratch diagnostic avoids the earlier probe's `getfenv`, but adds a visible
-button, cache tracing and timing wrappers. Its elapsed residual includes ordinary
-render traversal, instrumentation, allocation/GC and scheduling; it does not
-establish their individual contributions or clean-production acceptance. The
-results and raw log are attached to `prism-f15cbf`. They do establish repeated
-above-target diagnostic samples even when retained builders all hit. Investigate
-the remaining render work and measurement overhead before choosing the part-5
-revision. No production redesign is approved by this evidence note, and Tasks 7–8
-remain gated.
+#### Evidence prompting the revision
 
-The saved-model Lua 5.4 experiment validated all 83 parameters and 12 expanded
-cards. It counted 3,514 calls for a warm render and 3,572 for a release, with
-zero retained misses in both. Shared signature construction, presentation counts
-and traversal remain, but call volume does not explain the live elapsed gap.
-These offline counts exclude real native work and are not acceptance ceilings;
-the report and reproducible harness are attached to `prism-f15cbf`.
+The latest diagnostic, run `1791735860`, measured production-equivalent trees
+with all 12 cards expanded. Cold setup/decode ran in separate callbacks from
+five cold renders; the diagnostic button disappeared before measurement. Five
+actual slider releases and ten write completions were also captured. There were
+zero budget/error-level log lines. The original plugin was restored; the active
+profile, exact scratch, all 23 profile documents and canonical values were verified
+unchanged, with no restoration write needed.
 
-The no-write warm comparison `1791731787` measured ordinary button/frame
-callback medians of 8.522/8.124 ms (five raw pairs), with zero budget errors.
-Four pairs had no recorded intervening work; their paired frame-minus-button
-differences varied both ways (median −0.028 ms). One pair was excluded from strict
-aggregates because a describe callback intervened. There was no consistent
-ordinary-button penalty in this exercise. It does not cover release/command
-launch, prove live input equality, or resolve the cold rebuild. Investigate the
-command-adjacent render path before changing production scheduling; its cause
-remains a hypothesis. Detailed paired spans are attached to `prism-f15cbf`.
+| Callback | Samples | Median / maximum elapsed ms |
+| --- | ---: | ---: |
+| Cold render | 5 | 19.869 / 22.271 |
+| Dirty drag tick | 182 | 7.969 / 11.060 |
+| Release | 5 | 20.661 / 24.007 |
+| Write completion | 10 | 20.6045 / 23.514 |
+| Changed describe | 11 | 8.657 / 10.389 |
+| Deferred render | 11 | 8.532 / 9.567 |
 
-Read-only launch comparison `1791733401` also did not reproduce the slowdown:
-five valid comparisons measured render median/max 7.823/9.824 ms before launch
-and 6.788/7.669 ms in the following frame while completion was pending. Model
-references and enqueue counters stayed unchanged; no errors were logged. This
-does not test rendering immediately after launch in the same callback, actual
-write/apply work, or pointer-release reconciliation. It gives no basis for a
-production queue change. Record phase timings on actual cold/release paths next;
-the report and raw records are attached to `prism-f15cbf`.
+The last two classes are ordinary post-cold responses selected by callback type
+and duration; they are not assigned one-to-one to a particular write. Profile
+switching remains unmeasured. Luau os.clock measures elapsed time, an upper bound
+on thread CPU. Timing/heap instrumentation still adds observer overhead, so this
+is diagnostic evidence rather than clean-production acceptance.
 
-Retention does nothing for a render in which every signature changes. Part 3 is
-expected to bring a full expanded rebuild from 8.5k calls to about 6.5k, plus the
-signature pass. That is near the 5.6k calls that measured 10–14 ms in-host on
-2026-09-30. The plan measures it in-host before anything else in this spec is accepted.
-If a full expanded rebuild's median measures over 15 ms, the work returns to design with that
-figure, and this spec is revised before more code lands. The candidates are fewer
-wrapper nodes per cell, or a rebuild spread over frame ticks. The second needs rules
-for edits and describes that arrive between ticks, and for `endDrag`'s synchronous
-correction, so it is not designed here on speculation.
+Cold assembly median was 15.479 ms, versus 1.491 ms in native tree readback.
+The long release interval moved between the top, presentation and assembly phases.
+All releases had positive net heap deltas of 295–298 KB; cold deltas included both
+increases and decreases. Net heap change does not measure allocation throughput
+or GC duration, and these figures do not identify a CPU, GC, allocator or
+scheduling cause.
+
+A saved-model Lua 5.4 profile counted 9,742 cold calls and 3,514 warm calls;
+warm and release renders had zero retained misses and similar call volume.
+Signatures currently copy full JSON digests through cells, rows, card heads,
+cards and headers on every render. That source-visible work is the first target.
+The warm button/frame comparison found no consistent button penalty. A read-only
+launch comparison rendered before launch and in a later frame, leaving immediate
+same-callback post-launch rendering and actual write/apply effects unresolved.
+
+The frozen report, all samples, portable log and reproducible parser are attached
+to `prism-f15cbf`:
+[latest report](../../tasks/files/prism-f15cbf/cold-release-1791735860-report.md),
+[offline call profile](../../tasks/files/prism-f15cbf/offline-call-profile-report.md).
+Earlier diagnostics remain task evidence; they do not establish acceptance.
+
+#### Decision and alternatives
+
+**Selected: compact tokens backed by exact raw-digest equality.** Keep the current
+string signatures and Retain interface. Replace only their metadata digest payloads
+with short tokens allocated when accepted content changes. This removes repeated
+large-string copying without adding another equality engine.
+
+Immutable signature snapshots could remove more concatenation, but require new
+vector comparisons, allocation and lifetime rules. They are deferred until the
+smaller payload change has been measured. Command/render reordering and staged
+construction are also deferred: their effects are unproved, and they introduce
+new ordering, failure and interleaving behavior. The queue and synchronous release
+correction retain their existing order.
+
+#### Exact token algorithm and lifecycle
+
+Keep `structure.digest` as the full raw-string map encoded before `markEdits`.
+Add `structure.contentToken`, plus a private monotonically increasing token
+counter that lives as long as the panel runtime. For an accepted candidate:
+
+1. Validate and encode the model exactly as today. Rejected or drag-invalidated
+   describes leave the live token map and retained entries untouched.
+2. For each candidate digest key, compare its full raw bytes with the same key in
+   the previous accepted structure. Reuse its token exactly when the bytes match,
+   regardless of decoded table identity.
+3. Otherwise allocate a distinct compact token string from the next integer,
+   formatted exactly with `%.17g`. Distinct keys receive distinct tokens even
+   when their content matches. Tokens contain no signature delimiters. There is
+   no hash, metadata whitelist, truncation or table-identity comparison.
+4. Build the candidate map and next counter locally. Publish them only after the
+   complete operation succeeds, before swapping the accepted model. Fail explicitly
+   before allocation would exceed the exact-integer limit `2^53 - 1`; never wrap.
+   A failed allocation leaves the previous model, map, memo and counter intact.
+5. Keep only the current candidate's keys. Do not intern historical digests or
+   recycle tokens on removal, memo clearing, close/reopen or model replacement.
+   Removed and reintroduced keys get new tokens. A → B → A can also get a new
+   token: historical node reuse is not promised.
+
+Use tokens in `cellSignature` for parameters and attached colors, in device
+signature inputs including `attenuatedBy`, and in `sectionHeaderSignature` for its
+toggle. Keep every current panel-side input, field order and separator unchanged,
+including `sig(value)`'s 17-digit numeric precision. Equal raw bytes preserve
+retention; a changed arbitrary metadata field changes the token. Encoder key-order
+changes can still cause a harmless rebuild, never a stale hit.
+
+`Retain.keep(memo, structure.ids)` still runs only at accepted-model replacement.
+Parent hits keep descendants, including collapsed detail rows. Persistent token
+storage is bounded by the current structure, with no describe-history dictionary.
+Retain and queue APIs, handlers, exports, manifests and host configuration do not
+change. Full encoding and signature traversal still occur; this proposal reduces
+payload size rather than promising fewer calls or a particular millisecond gain.
+
+#### Correctness and scope
+
+Production changes are confined to `integrations/noctalia-plugin/panel.luau`;
+behavioral tests extend `plugin_test.lua`. The existing encoder fixture and real
+model harness remain the reference. Documentation and the implementation plan
+are updated through their review gates. No new dependency or module is needed.
+
+Tests must demonstrate retained/fresh tree equivalence, current-model handlers,
+unchanged FIFO and refresh behavior, and exactly the existing synchronous release
+correction. Add cases for equal fresh entries; arbitrary metadata changes;
+attached-color and attenuating-device identity; reordered children; removal and
+reintroduction; A → B → A; rejected/invalidated describes; collapse/reexpand;
+close/reopen and memo clear; exact token formatting and exhaustion without wrap.
+The numeric-signature regression must change an optimistic value after acceptance,
+so a changed describe digest cannot conceal lost precision. Use the repository's
+`just test-fast` front door and retain all existing queue/lifecycle coverage.
+
+#### Measurement and keep/revert gate
+
+Implement and review this token change alone after the written spec and plan are
+approved. A saved-model comparison of signature sizes and builder misses checks
+the mechanism; offline timings and call counts do not establish live acceptance.
+
+Before an extended live run, pilot the complete measurement path through its
+verdict. Obtain fresh live-desktop permission at that moment. Use matched baseline
+and candidate inputs, minimal callback timing and production-equivalent trees;
+keep phase/heap tracing in separate diagnostics. Cold samples use fresh parameter
+tables and an empty memo without metadata prewarming. Record at least five samples
+per original class, median and maximum, ordering/interference and budget errors.
+Include real releases and a real profile switch that changes most values; a
+same-model memo clear does not substitute for profile rebuilding. Record write
+completion and native correction behavior as additional diagnostics.
+
+Keep the candidate only if assembly/cold or total-render improvement repeats,
+correctness and builder reach stay unchanged, and no target class regresses
+reproducibly. Smaller signatures or heap deltas alone do not justify keeping it.
+If timings remain indistinguishable or worsen reproducibly, revert it. A single
+noisy maximum is not sufficient to decide regression.
+
+**The original gate stays strict:** full/cold/profile rebuild medians must be
+**<15 ms**, and drag, release, changed-describe and deferred-render medians must
+be **≤12 ms**, each with at least five in-host samples and zero budget errors.
+A full-rebuild median ≥15 ms returns to design before any further production code,
+including a metadata-helper refinement. If cold passes but release remains slow,
+acceptance is still incomplete; investigate the command-adjacent path before
+proposing a scheduling change. Tasks 7–8 and offline ceilings remain gated.
+
+Flattening repeated slider metadata getters is a possible later revision: cold
+profiling counted 552 metadata getter calls and 244 display wrappers, while warm
+rendering called none. It could address cold construction but cannot explain the
+slow warm release. It is not included in this implementation experiment; it needs
+new evidence and the written review gates if the token experiment fails.
 
 ### 6. What does not change
 
