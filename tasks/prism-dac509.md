@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-11T15:11:17Z
+updated: 2026-10-11T15:18:17Z
 started: 2026-10-10T16:20:49Z
 depends: []
 tags: [noctalia, performance]
@@ -103,3 +103,7 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
 - 2026-10-11T14:54:56Z (fix/panel-render-budget): Diagnostic evidence and execution status added to spec part5 and plan; corrected Task6 wrapper from getfenv(1).onFrameTick to direct global assignment. Luau documentation confirms getfenv deoptimization; local Noctalia pushCallback dynamically lua_getglobal-dispatches. No production code, ceiling or algorithm change; remaining work is offline call profiling then a reviewed design revision if required.
 - 2026-10-11T15:11:17Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves Task6 warm comparison; agent resumes prism-f15cbf in .worktrees/panel-budget, runs the prepared no-write paired button/frame diagnostic, restores host state, and uses measured phases to propose any required reviewed spec/plan revision before production changes. Cold/release diagnostic targets missed; Tasks7-8 remain gated. Original main plugin pointer restored; nothing running.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T15:16:00Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T15:16:25Z (fix/panel-render-budget): Fresh warm-comparison desktop approval received. Host pointer ~/.local/share/noctalia/plugins/prism from /mnt/ssd/Dropbox/prism/integrations/noctalia-plugin to /tmp/prism-budget-warm-comparison-n3_7du6c/probe-plugin. Restore with ln -sfn /mnt/ssd/Dropbox/prism/integrations/noctalia-plugin ~/.local/share/noctalia/plugins/prism, then disable/enable plugin, closing test panel first. Fresh runtime/profile bytes/describe/log offset saved before installation; keep probe until explicit completion or stop, restore pointer before park/done.
+- 2026-10-11T15:18:17Z (fix/panel-render-budget): Approved warm comparison finished with explicit owner confirmation; restored original plugin pointer/reload and verified all saved profile/scratch/canonical settings unchanged. Five paired button/frame samples saved; worker analysis running, no desktop probe or background host process.

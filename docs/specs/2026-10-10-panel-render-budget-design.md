@@ -241,6 +241,16 @@ and traversal remain, but call volume does not explain the live elapsed gap.
 These offline counts exclude real native work and are not acceptance ceilings;
 the report and reproducible harness are attached to `prism-f15cbf`.
 
+The no-write warm comparison `1791731787` measured ordinary button/frame
+callback medians of 8.522/8.124 ms (five raw pairs), with zero budget errors.
+Four pairs had no recorded intervening work; their paired frame-minus-button
+differences varied both ways (median −0.028 ms). One pair was excluded from strict
+aggregates because a describe callback intervened. There was no consistent
+ordinary-button penalty in this exercise. It does not cover release/command
+launch, prove live input equality, or resolve the cold rebuild. Investigate the
+command-adjacent render path before changing production scheduling; its cause
+remains a hypothesis. Detailed paired spans are attached to `prism-f15cbf`.
+
 Retention does nothing for a render in which every signature changes. Part 3 is
 expected to bring a full expanded rebuild from 8.5k calls to about 6.5k, plus the
 signature pass. That is near the 5.6k calls that measured 10–14 ms in-host on

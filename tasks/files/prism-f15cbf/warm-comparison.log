@@ -1,0 +1,466 @@
+2026-10-11 11:16:11.958 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_3162772' sender=':1.1603' -> bus=':1.1603' objectPath='/org/ayatana/NotificationItem/dropbox_client_3162772' elapsed=0ms
+2026-10-11 11:16:26.509 [INF] [plugins] disabling plugin 'khughitt/prism'
+2026-10-11 11:16:26.509 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from <home>/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-11 11:16:26.509 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from <home>/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-11 11:16:26.510 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from <home>/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-11 11:16:26.510 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from <home>/.local/share/noctalia/plugins/wali-panel
+2026-10-11 11:16:26.510 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from <home>/.local/share/noctalia/plugins/prism
+2026-10-11 11:16:26.511 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from <home>/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-11 11:16:26.511 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from <home>/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-11 11:16:26.512 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from <home>/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-11 11:16:26.512 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from <home>/.local/share/noctalia/plugins/wali-panel
+2026-10-11 11:16:26.513 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from <home>/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-11 11:16:26.513 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from <home>/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-11 11:16:26.514 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from <home>/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-11 11:16:26.514 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from <home>/.local/share/noctalia/plugins/wali-panel
+2026-10-11 11:16:26.515 [INF] [config] 1 bar(s) defined
+2026-10-11 11:16:26.515 [INF] [config] bar order: default
+2026-10-11 11:16:26.515 [INF] [config] idle behaviors=3
+2026-10-11 11:16:26.515 [INF] [config] hooks kinds with commands=3
+2026-10-11 11:16:26.523 [INF] [i18n] language: en (from en-US)
+2026-10-11 11:16:26.524 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from <home>/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-11 11:16:26.524 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from <home>/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-11 11:16:26.524 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from <home>/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-11 11:16:26.524 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from <home>/.local/share/noctalia/plugins/wali-panel
+2026-10-11 11:16:26.524 [INF] [bar] reloading config
+2026-10-11 11:16:26.524 [DBG] [file-watcher] unwatching id 160
+2026-10-11 11:16:26.525 [DBG] [file-watcher] unwatching id 161
+2026-10-11 11:16:26.525 [DBG] [file-watcher] unwatching id 162
+2026-10-11 11:16:26.525 [DBG] [file-watcher] unwatching id 163
+2026-10-11 11:16:26.526 [DBG] [bar] bar.default.dead_zone: right=panel-toggle control-center home
+2026-10-11 11:16:26.526 [WRN] [shell] widget factory: unknown widget "khughitt/prism:widget"
+2026-10-11 11:16:26.527 [DBG] [bar.actions] widget.workspaces: middle=settings-open-widget, scroll_up=workspace-switch prev, scroll_down=workspace-switch next
+2026-10-11 11:16:26.527 [DBG] [bar.actions] widget.cpu: left=panel-toggle control-center system, middle=settings-open-widget
+2026-10-11 11:16:26.527 [DBG] [bar.actions] widget.ram: left=panel-toggle control-center system, middle=settings-open-widget
+2026-10-11 11:16:26.527 [DBG] [bar.actions] widget.cat: middle=settings-open-widget
+2026-10-11 11:16:26.527 [DBG] [file-watcher] watching '<home>/.local/state/noctalia/plugins/materialized/community/cat/cat.luau' (id 164)
+2026-10-11 11:16:26.527 [DBG] [bar.actions] widget.active_window: middle=settings-open-widget
+2026-10-11 11:16:26.527 [DBG] [bar.actions] widget.widget: middle=settings-open-widget
+2026-10-11 11:16:26.527 [DBG] [file-watcher] watching '<home>/.local/state/noctalia/plugins/materialized/community/pomodoro/src/widget.luau' (id 165)
+2026-10-11 11:16:26.527 [DBG] [bar.actions] widget.tray: middle=settings-open-widget
+2026-10-11 11:16:26.527 [DBG] [bar.actions] widget.battery: left=panel-toggle control-center power, middle=settings-open-widget
+2026-10-11 11:16:26.527 [DBG] [bar.actions] widget.output_volume: left=panel-toggle control-center audio, right=volume-mute, middle=settings-open-widget, scroll_up=volume-up, scroll_down=volume-down
+2026-10-11 11:16:26.527 [DBG] [bar.actions] widget.khughitt/wali-panel:widget: middle=settings-open-widget
+2026-10-11 11:16:26.527 [DBG] [file-watcher] watching '<home>/.local/share/noctalia/plugins/wali-panel/widget.luau' (id 166)
+2026-10-11 11:16:26.527 [DBG] [bar.actions] widget.clock: left=panel-toggle control-center calendar, middle=settings-open-widget
+2026-10-11 11:16:26.600 [DBG] [plugins.git] git -C <home>/.local/state/noctalia/plugins/sources/community/repo config --get remote.origin.url took 33ms (exit 0)
+2026-10-11 11:16:26.631 [DBG] [plugins.git] git -C <home>/.local/state/noctalia/plugins/sources/community/repo remote set-url origin https://github.com/noctalia-dev/community-plugins took 31ms (exit 0)
+2026-10-11 11:16:26.651 [DBG] [plugins.git] git -C <home>/.local/state/noctalia/plugins/sources/community/repo rev-parse HEAD took 20ms (exit 0)
+2026-10-11 11:16:26.685 [DBG] [plugins.git] git -C <home>/.local/state/noctalia/plugins/sources/community/repo rev-parse FETCH_HEAD took 33ms (exit 0)
+2026-10-11 11:16:26.711 [DBG] [plugins.git] git -C <home>/.local/state/noctalia/plugins/sources/community/repo show 930ab86acbc8cde7ef10b187d527a507e0d8dc6d:catalog.toml took 27ms (exit 0)
+2026-10-11 11:16:26.739 [DBG] [plugins.git] git -C <home>/.local/state/noctalia/plugins/sources/official/repo config --get remote.origin.url took 21ms (exit 0)
+2026-10-11 11:16:26.759 [DBG] [plugins.git] git -C <home>/.local/state/noctalia/plugins/sources/official/repo remote set-url origin https://github.com/noctalia-dev/official-plugins took 20ms (exit 0)
+2026-10-11 11:16:26.779 [DBG] [plugins.git] git -C <home>/.local/state/noctalia/plugins/sources/official/repo rev-parse HEAD took 20ms (exit 0)
+2026-10-11 11:16:26.803 [DBG] [plugins.git] git -C <home>/.local/state/noctalia/plugins/sources/official/repo rev-parse FETCH_HEAD took 23ms (exit 0)
+2026-10-11 11:16:26.824 [DBG] [plugins.git] git -C <home>/.local/state/noctalia/plugins/sources/official/repo show c43dfe80e967c3a406c6f16abb6e28b2e73a77d6:catalog.toml took 21ms (exit 0)
+2026-10-11 11:16:26.825 [INF] [plugins] enabling plugin 'khughitt/prism' (resolved + exported in 258ms)
+2026-10-11 11:16:26.826 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from <home>/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-11 11:16:26.826 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from <home>/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-11 11:16:26.826 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from <home>/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-11 11:16:26.826 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from <home>/.local/share/noctalia/plugins/wali-panel
+2026-10-11 11:16:26.827 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from <home>/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-11 11:16:26.827 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from <home>/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-11 11:16:26.827 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from <home>/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-11 11:16:26.828 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from <home>/.local/share/noctalia/plugins/wali-panel
+2026-10-11 11:16:26.828 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from <home>/.local/share/noctalia/plugins/prism
+2026-10-11 11:16:26.829 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from <home>/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-11 11:16:26.829 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from <home>/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-11 11:16:26.829 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from <home>/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-11 11:16:26.829 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from <home>/.local/share/noctalia/plugins/wali-panel
+2026-10-11 11:16:26.829 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from <home>/.local/share/noctalia/plugins/prism
+2026-10-11 11:16:26.830 [INF] [config] 1 bar(s) defined
+2026-10-11 11:16:26.830 [INF] [config] bar order: default
+2026-10-11 11:16:26.830 [INF] [config] idle behaviors=3
+2026-10-11 11:16:26.830 [INF] [config] hooks kinds with commands=3
+2026-10-11 11:16:26.837 [INF] [i18n] language: en (from en-US)
+2026-10-11 11:16:26.838 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from <home>/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-11 11:16:26.838 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from <home>/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-11 11:16:26.838 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from <home>/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-11 11:16:26.839 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from <home>/.local/share/noctalia/plugins/wali-panel
+2026-10-11 11:16:26.839 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from <home>/.local/share/noctalia/plugins/prism
+2026-10-11 11:16:26.839 [INF] [bar] reloading config
+2026-10-11 11:16:26.839 [DBG] [file-watcher] unwatching id 164
+2026-10-11 11:16:26.839 [DBG] [file-watcher] unwatching id 165
+2026-10-11 11:16:26.840 [DBG] [file-watcher] unwatching id 166
+2026-10-11 11:16:26.840 [DBG] [bar] bar.default.dead_zone: right=panel-toggle control-center home
+2026-10-11 11:16:26.841 [DBG] [bar.actions] widget.workspaces: middle=settings-open-widget, scroll_up=workspace-switch prev, scroll_down=workspace-switch next
+2026-10-11 11:16:26.841 [DBG] [bar.actions] widget.cpu: left=panel-toggle control-center system, middle=settings-open-widget
+2026-10-11 11:16:26.841 [DBG] [bar.actions] widget.ram: left=panel-toggle control-center system, middle=settings-open-widget
+2026-10-11 11:16:26.841 [DBG] [bar.actions] widget.cat: middle=settings-open-widget
+2026-10-11 11:16:26.841 [DBG] [file-watcher] watching '<home>/.local/state/noctalia/plugins/materialized/community/cat/cat.luau' (id 167)
+2026-10-11 11:16:26.841 [DBG] [bar.actions] widget.active_window: middle=settings-open-widget
+2026-10-11 11:16:26.841 [DBG] [bar.actions] widget.widget: middle=settings-open-widget
+2026-10-11 11:16:26.841 [DBG] [file-watcher] watching '<home>/.local/state/noctalia/plugins/materialized/community/pomodoro/src/widget.luau' (id 168)
+2026-10-11 11:16:26.841 [DBG] [bar.actions] widget.tray: middle=settings-open-widget
+2026-10-11 11:16:26.841 [DBG] [bar.actions] widget.battery: left=panel-toggle control-center power, middle=settings-open-widget
+2026-10-11 11:16:26.841 [DBG] [bar.actions] widget.output_volume: left=panel-toggle control-center audio, right=volume-mute, middle=settings-open-widget, scroll_up=volume-up, scroll_down=volume-down
+2026-10-11 11:16:26.841 [DBG] [bar.actions] widget.khughitt/prism:widget: middle=settings-open-widget
+2026-10-11 11:16:26.841 [DBG] [file-watcher] watching '<home>/.local/share/noctalia/plugins/prism/widget.luau' (id 169)
+2026-10-11 11:16:26.841 [DBG] [bar.actions] widget.khughitt/wali-panel:widget: middle=settings-open-widget
+2026-10-11 11:16:26.841 [DBG] [file-watcher] watching '<home>/.local/share/noctalia/plugins/wali-panel/widget.luau' (id 170)
+2026-10-11 11:16:26.841 [DBG] [bar.actions] widget.clock: left=panel-toggle control-center calendar, middle=settings-open-widget
+2026-10-11 11:16:26.952 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_3162772' sender=':1.1603' -> bus=':1.1603' objectPath='/org/ayatana/NotificationItem/dropbox_client_3162772' elapsed=0ms
+2026-10-11 11:16:27.616 [DBG] [panel] panel manager: opened "khughitt/prism:panel" as attached layer-shell
+2026-10-11 11:16:27.621 [DBG] [surface] fractional scale preferred output=DP-1 surface=0x7f895c2c6a40 scale=1.000 raw=120/120 logical=0x0 buffer=0x0
+2026-10-11 11:16:27.623 [DBG] [file-watcher] watching '<home>/.local/share/noctalia/plugins/prism/panel.luau' (id 171)
+2026-10-11 11:16:27.642 [INF] [script-runtime] prism-diagnostic-run 1791731787 NOT acceptance data
+2026-10-11 11:16:27.642 [INF] [script-runtime] prism-diagnostic 1791731787 callback=1 update 0.002 ms NOT acceptance data
+2026-10-11 11:16:27.642 [DBG] [file-watcher] unwatching id 171
+2026-10-11 11:16:27.642 [DBG] [file-watcher] watching '<home>/.local/share/noctalia/plugins/prism/panel.luau' (id 172)
+2026-10-11 11:16:27.642 [DBG] [file-watcher] watching '/tmp/prism-budget-warm-comparison-n3_7du6c/probe-plugin/presentation.luau' (id 173)
+2026-10-11 11:16:27.642 [DBG] [file-watcher] watching '/tmp/prism-budget-warm-comparison-n3_7du6c/probe-plugin/queue.luau' (id 174)
+2026-10-11 11:16:27.642 [DBG] [file-watcher] watching '/tmp/prism-budget-warm-comparison-n3_7du6c/probe-plugin/retain.luau' (id 175)
+2026-10-11 11:16:27.642 [DBG] [file-watcher] watching '/tmp/prism-budget-warm-comparison-n3_7du6c/probe-plugin/shell.luau' (id 176)
+2026-10-11 11:16:27.642 [INF] [script-runtime] prism-diagnostic 1791731787 callback=2 panelRenderNative 0.009 ms NOT acceptance data
+2026-10-11 11:16:27.642 [INF] [script-runtime] prism-diagnostic 1791731787 callback=2 renderTotal 0.021 ms NOT acceptance data
+2026-10-11 11:16:27.642 [INF] [script-runtime] prism-diagnostic 1791731787 callback=2 runAsyncNative 0.082 ms NOT acceptance data
+2026-10-11 11:16:27.642 [INF] [script-runtime] prism-diagnostic 1791731787 callback=2 runTotal 0.115 ms NOT acceptance data
+2026-10-11 11:16:27.642 [INF] [script-runtime] prism-diagnostic 1791731787 callback=2 open 0.148 ms NOT acceptance data
+2026-10-11 11:16:27.837 [INF] [script-runtime] prism-diagnostic 1791731787 callback=3 describe 10.273 ms NOT acceptance data
+2026-10-11 11:16:27.864 [INF] [script-runtime] prism-diagnostic 1791731787 callback=4 renderTop 2.127 ms NOT acceptance data
+2026-10-11 11:16:27.864 [INF] [script-runtime] prism-diagnostic 1791731787 callback=4 renderPresentation 0.422 ms NOT acceptance data
+2026-10-11 11:16:27.864 [INF] [script-runtime] prism-diagnostic 1791731787 callback=4 renderAssembly 11.969 ms NOT acceptance data
+2026-10-11 11:16:27.864 [INF] [script-runtime] prism-diagnostic 1791731787 callback=4 panelRenderNative 1.527 ms NOT acceptance data
+2026-10-11 11:16:27.864 [INF] [script-runtime] prism-diagnostic 1791731787 callback=4 renderTotal 16.070 ms NOT acceptance data
+2026-10-11 11:16:27.864 [INF] [script-runtime] prism-diagnostic 1791731787 callback=4 describeRender 16.094 ms NOT acceptance data
+2026-10-11 11:16:27.865 [INF] [script-runtime] prism-diagnostic 1791731787 callback=5 describeRender 0.008 ms NOT acceptance data
+2026-10-11 11:16:28.643 [INF] [script-runtime] prism-diagnostic 1791731787 callback=6 update 0.004 ms NOT acceptance data
+2026-10-11 11:16:29.644 [INF] [script-runtime] prism-diagnostic 1791731787 callback=7 runAsyncNative 0.079 ms NOT acceptance data
+2026-10-11 11:16:29.644 [INF] [script-runtime] prism-diagnostic 1791731787 callback=7 runTotal 0.174 ms NOT acceptance data
+2026-10-11 11:16:29.644 [INF] [script-runtime] prism-diagnostic 1791731787 callback=7 update 0.201 ms NOT acceptance data
+2026-10-11 11:16:29.853 [INF] [script-runtime] prism-diagnostic 1791731787 callback=8 describe 0.011 ms NOT acceptance data
+2026-10-11 11:16:30.644 [INF] [script-runtime] prism-diagnostic 1791731787 callback=9 update 0.003 ms NOT acceptance data
+2026-10-11 11:16:31.644 [INF] [script-runtime] prism-diagnostic 1791731787 callback=10 runAsyncNative 0.088 ms NOT acceptance data
+2026-10-11 11:16:31.644 [INF] [script-runtime] prism-diagnostic 1791731787 callback=10 runTotal 0.179 ms NOT acceptance data
+2026-10-11 11:16:31.645 [INF] [script-runtime] prism-diagnostic 1791731787 callback=10 update 0.210 ms NOT acceptance data
+2026-10-11 11:16:31.851 [INF] [script-runtime] prism-diagnostic 1791731787 callback=11 describe 0.010 ms NOT acceptance data
+2026-10-11 11:16:32.645 [INF] [script-runtime] prism-diagnostic 1791731787 callback=12 update 0.005 ms NOT acceptance data
+2026-10-11 11:16:33.646 [INF] [script-runtime] prism-diagnostic 1791731787 callback=13 runAsyncNative 0.060 ms NOT acceptance data
+2026-10-11 11:16:33.646 [INF] [script-runtime] prism-diagnostic 1791731787 callback=13 runTotal 0.104 ms NOT acceptance data
+2026-10-11 11:16:33.646 [INF] [script-runtime] prism-diagnostic 1791731787 callback=13 update 0.118 ms NOT acceptance data
+2026-10-11 11:16:33.845 [INF] [script-runtime] prism-diagnostic 1791731787 callback=14 describe 0.014 ms NOT acceptance data
+2026-10-11 11:16:34.646 [INF] [script-runtime] prism-diagnostic 1791731787 callback=15 update 0.006 ms NOT acceptance data
+2026-10-11 11:16:35.647 [INF] [script-runtime] prism-diagnostic 1791731787 callback=16 runAsyncNative 0.075 ms NOT acceptance data
+2026-10-11 11:16:35.647 [INF] [script-runtime] prism-diagnostic 1791731787 callback=16 runTotal 0.150 ms NOT acceptance data
+2026-10-11 11:16:35.647 [INF] [script-runtime] prism-diagnostic 1791731787 callback=16 update 0.172 ms NOT acceptance data
+2026-10-11 11:16:35.854 [INF] [script-runtime] prism-diagnostic 1791731787 callback=17 describe 0.014 ms NOT acceptance data
+2026-10-11 11:16:36.648 [INF] [script-runtime] prism-diagnostic 1791731787 callback=18 update 0.005 ms NOT acceptance data
+2026-10-11 11:16:37.650 [INF] [script-runtime] prism-diagnostic 1791731787 callback=19 runAsyncNative 0.088 ms NOT acceptance data
+2026-10-11 11:16:37.650 [INF] [script-runtime] prism-diagnostic 1791731787 callback=19 runTotal 0.229 ms NOT acceptance data
+2026-10-11 11:16:37.650 [INF] [script-runtime] prism-diagnostic 1791731787 callback=19 update 0.254 ms NOT acceptance data
+2026-10-11 11:16:37.745 [DBG] [notification] notification added #14567 origin=external from="kitty" urgency=normal timeout=6000ms
+2026-10-11 11:16:37.745 [DBG] [app] notification added id=14567 origin=external
+2026-10-11 11:16:37.748 [DBG] [notification] notification toast: surface created on DP-1
+2026-10-11 11:16:37.749 [DBG] [notification] notification toast: showing #14567
+2026-10-11 11:16:37.749 [DBG] [surface] fractional scale preferred output=DP-1 surface=0x7f8956c88140 scale=1.000 raw=120/120 logical=0x0 buffer=0x0
+2026-10-11 11:16:37.861 [INF] [script-runtime] prism-diagnostic 1791731787 callback=20 describe 0.010 ms NOT acceptance data
+2026-10-11 11:16:38.650 [INF] [script-runtime] prism-diagnostic 1791731787 callback=21 update 0.013 ms NOT acceptance data
+2026-10-11 11:16:39.651 [INF] [script-runtime] prism-diagnostic 1791731787 callback=22 runAsyncNative 0.079 ms NOT acceptance data
+2026-10-11 11:16:39.651 [INF] [script-runtime] prism-diagnostic 1791731787 callback=22 runTotal 0.152 ms NOT acceptance data
+2026-10-11 11:16:39.651 [INF] [script-runtime] prism-diagnostic 1791731787 callback=22 update 0.179 ms NOT acceptance data
+2026-10-11 11:16:39.849 [INF] [script-runtime] prism-diagnostic 1791731787 callback=23 describe 0.014 ms NOT acceptance data
+2026-10-11 11:16:39.973 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_3162772' sender=':1.1603' -> bus=':1.1603' objectPath='/org/ayatana/NotificationItem/dropbox_client_3162772' elapsed=0ms
+2026-10-11 11:16:40.651 [INF] [script-runtime] prism-diagnostic 1791731787 callback=24 update 0.005 ms NOT acceptance data
+2026-10-11 11:16:41.150 [DBG] [panel] panel manager: closing "khughitt/prism:panel"
+2026-10-11 11:16:43.745 [DBG] [notification] notification expired #14567
+2026-10-11 11:16:43.745 [DBG] [app] notification closed id=14567 origin=external
+2026-10-11 11:16:43.963 [DBG] [notification] notification toast: all surfaces destroyed
+2026-10-11 11:16:44.663 [DBG] [panel] panel manager: opened "khughitt/prism:panel" as attached layer-shell
+2026-10-11 11:16:44.665 [DBG] [surface] fractional scale preferred output=DP-1 surface=0x7f892bc61ae0 scale=1.000 raw=120/120 logical=0x0 buffer=0x0
+2026-10-11 11:16:44.692 [INF] [script-runtime] prism-diagnostic 1791731787 callback=25 renderTop 2.421 ms NOT acceptance data
+2026-10-11 11:16:44.692 [INF] [script-runtime] prism-diagnostic 1791731787 callback=25 renderPresentation 0.458 ms NOT acceptance data
+2026-10-11 11:16:44.692 [INF] [script-runtime] prism-diagnostic 1791731787 callback=25 renderAssembly 3.595 ms NOT acceptance data
+2026-10-11 11:16:44.692 [INF] [script-runtime] prism-diagnostic 1791731787 callback=25 panelRenderNative 1.419 ms NOT acceptance data
+2026-10-11 11:16:44.692 [INF] [script-runtime] prism-diagnostic 1791731787 callback=25 renderTotal 7.925 ms NOT acceptance data
+2026-10-11 11:16:44.692 [INF] [script-runtime] prism-diagnostic 1791731787 callback=25 runAsyncNative 0.111 ms NOT acceptance data
+2026-10-11 11:16:44.692 [INF] [script-runtime] prism-diagnostic 1791731787 callback=25 runTotal 0.185 ms NOT acceptance data
+2026-10-11 11:16:44.692 [INF] [script-runtime] prism-diagnostic 1791731787 callback=25 open 8.161 ms NOT acceptance data
+2026-10-11 11:16:44.872 [INF] [script-runtime] prism-diagnostic 1791731787 callback=26 describe 0.016 ms NOT acceptance data
+2026-10-11 11:16:45.019 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from <home>/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-11 11:16:45.019 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from <home>/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-11 11:16:45.020 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from <home>/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-11 11:16:45.020 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from <home>/.local/share/noctalia/plugins/wali-panel
+2026-10-11 11:16:45.020 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from <home>/.local/share/noctalia/plugins/prism
+2026-10-11 11:16:45.021 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from <home>/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-11 11:16:45.021 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from <home>/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-11 11:16:45.021 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from <home>/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-11 11:16:45.021 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from <home>/.local/share/noctalia/plugins/wali-panel
+2026-10-11 11:16:45.021 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from <home>/.local/share/noctalia/plugins/prism
+2026-10-11 11:16:45.022 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from <home>/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-11 11:16:45.023 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from <home>/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-11 11:16:45.023 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from <home>/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-11 11:16:45.023 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from <home>/.local/share/noctalia/plugins/wali-panel
+2026-10-11 11:16:45.023 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from <home>/.local/share/noctalia/plugins/prism
+2026-10-11 11:16:45.024 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from <home>/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-11 11:16:45.024 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from <home>/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-11 11:16:45.024 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from <home>/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-11 11:16:45.024 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from <home>/.local/share/noctalia/plugins/wali-panel
+2026-10-11 11:16:45.024 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from <home>/.local/share/noctalia/plugins/prism
+2026-10-11 11:16:45.024 [INF] [wallpaper] state file changed, checking for updates
+2026-10-11 11:16:45.024 [INF] [wallpaper] changing DP-1 → <sync-root>/linux/backgrounds/3440/PXL_20220102_170053159.jpg
+2026-10-11 11:16:45.107 [INF] [texcache] uploaded <sync-root>/linux/backgrounds/3440/PXL_20220102_170053159.jpg
+2026-10-11 11:16:45.107 [INF] [backdrop] state changed, checking wallpaper updates
+2026-10-11 11:16:45.231 [DBG] [hooks] hook 'wallpaper_changed' running 2 command(s)
+2026-10-11 11:16:45.300 [DBG] [main] poll source 13IpcPollSource dispatch took 282.7ms
+2026-10-11 11:16:45.699 [INF] [script-runtime] prism-diagnostic 1791731787 callback=27 update 0.009 ms NOT acceptance data
+2026-10-11 11:16:45.733 [DBG] [template_engine] skipping template zathura-flatpak -> <home>/.var/app/org.pwmt.zathura/config/zathura/noctaliarc (client not installed)
+2026-10-11 11:16:45.999 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_3162772' sender=':1.1603' -> bus=':1.1603' objectPath='/org/ayatana/NotificationItem/dropbox_client_3162772' elapsed=0ms
+2026-10-11 11:16:46.062 [DBG] [surface] fractional scale preferred output=DP-1 surface=0x7f8956c874e0 scale=1.000 raw=120/120 logical=0x0 buffer=0x0
+2026-10-11 11:16:46.416 [DBG] [hooks] hook 'colors_changed' running 1 command(s)
+2026-10-11 11:16:46.450 [DBG] [main] poll source 22DeferredCallPollSource dispatch took 66.8ms
+2026-10-11 11:16:46.612 [INF] [texcache] evicted <sync-root>/linux/backgrounds/3440/PXL_20221116_172301225.jpg
+2026-10-11 11:16:46.713 [INF] [script-runtime] prism-diagnostic 1791731787 callback=28 runAsyncNative 0.094 ms NOT acceptance data
+2026-10-11 11:16:46.713 [INF] [script-runtime] prism-diagnostic 1791731787 callback=28 runTotal 0.170 ms NOT acceptance data
+2026-10-11 11:16:46.713 [INF] [script-runtime] prism-diagnostic 1791731787 callback=28 update 0.202 ms NOT acceptance data
+2026-10-11 11:16:46.933 [INF] [script-runtime] prism-diagnostic 1791731787 callback=29 describe 6.273 ms NOT acceptance data
+2026-10-11 11:16:46.955 [INF] [script-runtime] prism-diagnostic 1791731787 callback=30 renderTop 2.659 ms NOT acceptance data
+2026-10-11 11:16:46.955 [INF] [script-runtime] prism-diagnostic 1791731787 callback=30 renderPresentation 0.425 ms NOT acceptance data
+2026-10-11 11:16:46.955 [INF] [script-runtime] prism-diagnostic 1791731787 callback=30 renderAssembly 3.225 ms NOT acceptance data
+2026-10-11 11:16:46.955 [INF] [script-runtime] prism-diagnostic 1791731787 callback=30 panelRenderNative 1.596 ms NOT acceptance data
+2026-10-11 11:16:46.955 [INF] [script-runtime] prism-diagnostic 1791731787 callback=30 renderTotal 7.926 ms NOT acceptance data
+2026-10-11 11:16:46.955 [INF] [script-runtime] prism-diagnostic 1791731787 callback=30 describeRender 7.945 ms NOT acceptance data
+2026-10-11 11:16:47.700 [INF] [script-runtime] prism-diagnostic 1791731787 callback=31 update 0.003 ms NOT acceptance data
+2026-10-11 11:16:48.702 [INF] [script-runtime] prism-diagnostic 1791731787 callback=32 runAsyncNative 0.071 ms NOT acceptance data
+2026-10-11 11:16:48.702 [INF] [script-runtime] prism-diagnostic 1791731787 callback=32 runTotal 0.110 ms NOT acceptance data
+2026-10-11 11:16:48.702 [INF] [script-runtime] prism-diagnostic 1791731787 callback=32 update 0.121 ms NOT acceptance data
+2026-10-11 11:16:48.897 [INF] [script-runtime] prism-diagnostic 1791731787 callback=33 describe 0.014 ms NOT acceptance data
+2026-10-11 11:16:49.702 [INF] [script-runtime] prism-diagnostic 1791731787 callback=34 update 0.004 ms NOT acceptance data
+2026-10-11 11:16:49.955 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_3162772' sender=':1.1603' -> bus=':1.1603' objectPath='/org/ayatana/NotificationItem/dropbox_client_3162772' elapsed=0ms
+2026-10-11 11:16:50.017 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_3162772' sender=':1.1603' -> bus=':1.1603' objectPath='/org/ayatana/NotificationItem/dropbox_client_3162772' elapsed=0ms
+2026-10-11 11:16:50.703 [INF] [script-runtime] prism-diagnostic 1791731787 callback=35 runAsyncNative 0.115 ms NOT acceptance data
+2026-10-11 11:16:50.703 [INF] [script-runtime] prism-diagnostic 1791731787 callback=35 runTotal 0.190 ms NOT acceptance data
+2026-10-11 11:16:50.703 [INF] [script-runtime] prism-diagnostic 1791731787 callback=35 update 0.216 ms NOT acceptance data
+2026-10-11 11:16:50.897 [INF] [script-runtime] prism-diagnostic 1791731787 callback=36 describe 0.015 ms NOT acceptance data
+2026-10-11 11:16:51.703 [INF] [script-runtime] prism-diagnostic 1791731787 callback=37 update 0.006 ms NOT acceptance data
+2026-10-11 11:16:52.704 [INF] [script-runtime] prism-diagnostic 1791731787 callback=38 runAsyncNative 0.094 ms NOT acceptance data
+2026-10-11 11:16:52.704 [INF] [script-runtime] prism-diagnostic 1791731787 callback=38 runTotal 0.165 ms NOT acceptance data
+2026-10-11 11:16:52.704 [INF] [script-runtime] prism-diagnostic 1791731787 callback=38 update 0.190 ms NOT acceptance data
+2026-10-11 11:16:52.899 [INF] [script-runtime] prism-diagnostic 1791731787 callback=39 describe 0.017 ms NOT acceptance data
+2026-10-11 11:16:53.705 [INF] [script-runtime] prism-diagnostic 1791731787 callback=40 update 0.004 ms NOT acceptance data
+2026-10-11 11:16:54.706 [INF] [script-runtime] prism-diagnostic 1791731787 callback=41 runAsyncNative 0.104 ms NOT acceptance data
+2026-10-11 11:16:54.706 [INF] [script-runtime] prism-diagnostic 1791731787 callback=41 runTotal 0.199 ms NOT acceptance data
+2026-10-11 11:16:54.706 [INF] [script-runtime] prism-diagnostic 1791731787 callback=41 update 0.221 ms NOT acceptance data
+2026-10-11 11:16:54.900 [INF] [script-runtime] prism-diagnostic 1791731787 callback=42 describe 0.014 ms NOT acceptance data
+2026-10-11 11:16:55.707 [INF] [script-runtime] prism-diagnostic 1791731787 callback=43 update 0.004 ms NOT acceptance data
+2026-10-11 11:16:56.708 [INF] [script-runtime] prism-diagnostic 1791731787 callback=44 runAsyncNative 0.104 ms NOT acceptance data
+2026-10-11 11:16:56.708 [INF] [script-runtime] prism-diagnostic 1791731787 callback=44 runTotal 0.179 ms NOT acceptance data
+2026-10-11 11:16:56.708 [INF] [script-runtime] prism-diagnostic 1791731787 callback=44 update 0.205 ms NOT acceptance data
+2026-10-11 11:16:56.902 [INF] [script-runtime] prism-diagnostic 1791731787 callback=45 describe 0.009 ms NOT acceptance data
+2026-10-11 11:16:57.709 [INF] [script-runtime] prism-diagnostic 1791731787 callback=46 update 0.003 ms NOT acceptance data
+2026-10-11 11:16:58.003 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_3162772' sender=':1.1603' -> bus=':1.1603' objectPath='/org/ayatana/NotificationItem/dropbox_client_3162772' elapsed=0ms
+2026-10-11 11:16:58.710 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTop 1.121 ms NOT acceptance data
+2026-10-11 11:16:58.710 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderPresentation 0.233 ms NOT acceptance data
+2026-10-11 11:16:58.710 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderAssembly 1.851 ms NOT acceptance data
+2026-10-11 11:16:58.710 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 panelRenderNative 0.945 ms NOT acceptance data
+2026-10-11 11:16:58.710 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTotal 4.161 ms NOT acceptance data
+2026-10-11 11:16:58.710 [INF] [script-runtime] prism-diagnostic 1791731787 callback=47 runAsyncNative 0.080 ms NOT acceptance data
+2026-10-11 11:16:58.710 [INF] [script-runtime] prism-diagnostic 1791731787 callback=47 runTotal 0.120 ms NOT acceptance data
+2026-10-11 11:16:58.710 [INF] [script-runtime] prism-diagnostic 1791731787 callback=47 update 0.133 ms NOT acceptance data
+2026-10-11 11:16:58.913 [INF] [script-runtime] prism-diagnostic 1791731787 callback=48 describe 0.025 ms NOT acceptance data
+2026-10-11 11:16:59.168 [DBG] [surface] fractional scale preferred output=DP-1 surface=0x7f895c2c6aa0 scale=1.000 raw=120/120 logical=0x0 buffer=0x0
+2026-10-11 11:16:59.711 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTop 2.187 ms NOT acceptance data
+2026-10-11 11:16:59.711 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderPresentation 0.455 ms NOT acceptance data
+2026-10-11 11:16:59.711 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderAssembly 4.149 ms NOT acceptance data
+2026-10-11 11:16:59.711 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 panelRenderNative 2.477 ms NOT acceptance data
+2026-10-11 11:16:59.711 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTotal 9.293 ms NOT acceptance data
+2026-10-11 11:16:59.711 [INF] [script-runtime] prism-diagnostic 1791731787 callback=49 update 0.004 ms NOT acceptance data
+2026-10-11 11:17:00.711 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTop 1.105 ms NOT acceptance data
+2026-10-11 11:17:00.711 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderPresentation 0.246 ms NOT acceptance data
+2026-10-11 11:17:00.712 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderAssembly 2.059 ms NOT acceptance data
+2026-10-11 11:17:00.712 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 panelRenderNative 0.946 ms NOT acceptance data
+2026-10-11 11:17:00.712 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTotal 4.368 ms NOT acceptance data
+2026-10-11 11:17:00.712 [INF] [script-runtime] prism-diagnostic 1791731787 callback=50 runAsyncNative 0.086 ms NOT acceptance data
+2026-10-11 11:17:00.712 [INF] [script-runtime] prism-diagnostic 1791731787 callback=50 runTotal 0.125 ms NOT acceptance data
+2026-10-11 11:17:00.712 [INF] [script-runtime] prism-diagnostic 1791731787 callback=50 update 0.135 ms NOT acceptance data
+2026-10-11 11:17:00.917 [INF] [script-runtime] prism-diagnostic 1791731787 callback=51 describe 0.009 ms NOT acceptance data
+2026-10-11 11:17:01.712 [INF] [script-runtime] prism-diagnostic 1791731787 callback=52 update 0.005 ms NOT acceptance data
+2026-10-11 11:17:01.825 [DBG] [surface] fractional scale preferred output=DP-1 surface=0x7f893302dbe0 scale=1.000 raw=120/120 logical=0x0 buffer=0x0
+2026-10-11 11:17:02.740 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTop 2.058 ms NOT acceptance data
+2026-10-11 11:17:02.740 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderPresentation 0.450 ms NOT acceptance data
+2026-10-11 11:17:02.740 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderAssembly 3.657 ms NOT acceptance data
+2026-10-11 11:17:02.740 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 panelRenderNative 1.905 ms NOT acceptance data
+2026-10-11 11:17:02.740 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTotal 8.096 ms NOT acceptance data
+2026-10-11 11:17:02.740 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTop 2.093 ms NOT acceptance data
+2026-10-11 11:17:02.740 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderPresentation 0.458 ms NOT acceptance data
+2026-10-11 11:17:02.740 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderAssembly 4.055 ms NOT acceptance data
+2026-10-11 11:17:02.740 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 panelRenderNative 1.400 ms NOT acceptance data
+2026-10-11 11:17:02.740 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTotal 8.054 ms NOT acceptance data
+2026-10-11 11:17:02.740 [INF] [script-runtime] prism-diagnostic 1791731787 callback=53 runAsyncNative 0.127 ms NOT acceptance data
+2026-10-11 11:17:02.740 [INF] [script-runtime] prism-diagnostic 1791731787 callback=53 runTotal 0.249 ms NOT acceptance data
+2026-10-11 11:17:02.740 [INF] [script-runtime] prism-diagnostic 1791731787 callback=53 update 0.278 ms NOT acceptance data
+2026-10-11 11:17:02.923 [INF] [script-runtime] prism-diagnostic 1791731787 callback=54 describe 0.014 ms NOT acceptance data
+2026-10-11 11:17:03.728 [INF] [script-runtime] prism-diagnostic 1791731787 callback=55 update 0.006 ms NOT acceptance data
+2026-10-11 11:17:04.729 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTop 1.185 ms NOT acceptance data
+2026-10-11 11:17:04.729 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderPresentation 0.334 ms NOT acceptance data
+2026-10-11 11:17:04.729 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderAssembly 2.766 ms NOT acceptance data
+2026-10-11 11:17:04.729 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 panelRenderNative 0.941 ms NOT acceptance data
+2026-10-11 11:17:04.729 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTotal 5.238 ms NOT acceptance data
+2026-10-11 11:17:04.729 [INF] [script-runtime] prism-diagnostic 1791731787 callback=56 runAsyncNative 0.085 ms NOT acceptance data
+2026-10-11 11:17:04.729 [INF] [script-runtime] prism-diagnostic 1791731787 callback=56 runTotal 0.126 ms NOT acceptance data
+2026-10-11 11:17:04.729 [INF] [script-runtime] prism-diagnostic 1791731787 callback=56 update 0.182 ms NOT acceptance data
+2026-10-11 11:17:04.925 [INF] [script-runtime] prism-diagnostic 1791731787 callback=57 describe 0.014 ms NOT acceptance data
+2026-10-11 11:17:05.413 [DBG] [surface] fractional scale preferred output=DP-1 surface=0x7f892bd010c0 scale=1.000 raw=120/120 logical=0x0 buffer=0x0
+2026-10-11 11:17:05.733 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTop 1.855 ms NOT acceptance data
+2026-10-11 11:17:05.733 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderPresentation 0.399 ms NOT acceptance data
+2026-10-11 11:17:05.733 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderAssembly 3.318 ms NOT acceptance data
+2026-10-11 11:17:05.733 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 panelRenderNative 1.788 ms NOT acceptance data
+2026-10-11 11:17:05.733 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTotal 7.382 ms NOT acceptance data
+2026-10-11 11:17:05.733 [INF] [script-runtime] prism-diagnostic 1791731787 callback=58 update 0.005 ms NOT acceptance data
+2026-10-11 11:17:06.620 [DBG] [surface] fractional scale preferred output=DP-1 surface=0x7f892b6e9b40 scale=1.000 raw=120/120 logical=0x0 buffer=0x0
+2026-10-11 11:17:06.730 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTop 1.782 ms NOT acceptance data
+2026-10-11 11:17:06.730 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderPresentation 0.257 ms NOT acceptance data
+2026-10-11 11:17:06.730 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderAssembly 2.512 ms NOT acceptance data
+2026-10-11 11:17:06.730 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 panelRenderNative 1.025 ms NOT acceptance data
+2026-10-11 11:17:06.730 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTotal 5.590 ms NOT acceptance data
+2026-10-11 11:17:06.730 [INF] [script-runtime] prism-diagnostic 1791731787 callback=59 runAsyncNative 0.079 ms NOT acceptance data
+2026-10-11 11:17:06.730 [INF] [script-runtime] prism-diagnostic 1791731787 callback=59 runTotal 0.143 ms NOT acceptance data
+2026-10-11 11:17:06.730 [INF] [script-runtime] prism-diagnostic 1791731787 callback=59 update 0.160 ms NOT acceptance data
+2026-10-11 11:17:06.925 [INF] [script-runtime] prism-diagnostic 1791731787 callback=60 describe 0.014 ms NOT acceptance data
+2026-10-11 11:17:07.699 [DBG] [surface] fractional scale preferred output=DP-1 surface=0x7f892a6f6fe0 scale=1.000 raw=120/120 logical=0x0 buffer=0x0
+2026-10-11 11:17:07.731 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTop 1.874 ms NOT acceptance data
+2026-10-11 11:17:07.731 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderPresentation 0.405 ms NOT acceptance data
+2026-10-11 11:17:07.731 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderAssembly 3.582 ms NOT acceptance data
+2026-10-11 11:17:07.731 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 panelRenderNative 1.199 ms NOT acceptance data
+2026-10-11 11:17:07.731 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTotal 7.078 ms NOT acceptance data
+2026-10-11 11:17:07.731 [INF] [script-runtime] prism-diagnostic 1791731787 callback=61 update 0.004 ms NOT acceptance data
+2026-10-11 11:17:08.749 [INF] [script-runtime] prism-diagnostic 1791731787 callback=62 runAsyncNative 0.065 ms NOT acceptance data
+2026-10-11 11:17:08.749 [INF] [script-runtime] prism-diagnostic 1791731787 callback=62 runTotal 0.119 ms NOT acceptance data
+2026-10-11 11:17:08.749 [INF] [script-runtime] prism-diagnostic 1791731787 callback=62 update 0.135 ms NOT acceptance data
+2026-10-11 11:17:08.953 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTop 2.494 ms NOT acceptance data
+2026-10-11 11:17:08.953 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderPresentation 0.519 ms NOT acceptance data
+2026-10-11 11:17:08.953 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderAssembly 5.425 ms NOT acceptance data
+2026-10-11 11:17:08.953 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 panelRenderNative 2.150 ms NOT acceptance data
+2026-10-11 11:17:08.953 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTotal 10.622 ms NOT acceptance data
+2026-10-11 11:17:08.953 [INF] [script-runtime] prism-diagnostic 1791731787 callback=63 describe 0.012 ms NOT acceptance data
+2026-10-11 11:17:09.733 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTop 1.904 ms NOT acceptance data
+2026-10-11 11:17:09.733 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderPresentation 0.425 ms NOT acceptance data
+2026-10-11 11:17:09.733 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderAssembly 3.791 ms NOT acceptance data
+2026-10-11 11:17:09.733 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 panelRenderNative 1.866 ms NOT acceptance data
+2026-10-11 11:17:09.733 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTotal 8.008 ms NOT acceptance data
+2026-10-11 11:17:09.733 [INF] [script-runtime] prism-diagnostic 1791731787 callback=64 update 0.004 ms NOT acceptance data
+2026-10-11 11:17:10.024 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_3162772' sender=':1.1603' -> bus=':1.1603' objectPath='/org/ayatana/NotificationItem/dropbox_client_3162772' elapsed=0ms
+2026-10-11 11:17:10.441 [DBG] [surface] fractional scale preferred output=DP-1 surface=0x7f891bca6960 scale=1.000 raw=120/120 logical=0x0 buffer=0x0
+2026-10-11 11:17:10.735 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTop 1.794 ms NOT acceptance data
+2026-10-11 11:17:10.735 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderPresentation 0.385 ms NOT acceptance data
+2026-10-11 11:17:10.735 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderAssembly 2.713 ms NOT acceptance data
+2026-10-11 11:17:10.735 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 panelRenderNative 1.127 ms NOT acceptance data
+2026-10-11 11:17:10.735 [INF] [script-runtime] prism-diagnostic 1791731787 callback=0 renderTotal 6.034 ms NOT acceptance data
+2026-10-11 11:17:10.735 [INF] [script-runtime] prism-diagnostic 1791731787 callback=65 runAsyncNative 0.064 ms NOT acceptance data
+2026-10-11 11:17:10.735 [INF] [script-runtime] prism-diagnostic 1791731787 callback=65 runTotal 0.104 ms NOT acceptance data
+2026-10-11 11:17:10.735 [INF] [script-runtime] prism-diagnostic 1791731787 callback=65 update 0.115 ms NOT acceptance data
+2026-10-11 11:17:10.934 [INF] [script-runtime] prism-diagnostic 1791731787 callback=66 describe 0.009 ms NOT acceptance data
+2026-10-11 11:17:11.736 [INF] [script-runtime] prism-diagnostic 1791731787 callback=67 update 0.005 ms NOT acceptance data
+2026-10-11 11:17:12.736 [INF] [script-runtime] prism-diagnostic 1791731787 callback=68 runAsyncNative 0.076 ms NOT acceptance data
+2026-10-11 11:17:12.736 [INF] [script-runtime] prism-diagnostic 1791731787 callback=68 runTotal 0.160 ms NOT acceptance data
+2026-10-11 11:17:12.736 [INF] [script-runtime] prism-diagnostic 1791731787 callback=68 update 0.184 ms NOT acceptance data
+2026-10-11 11:17:12.933 [INF] [script-runtime] prism-diagnostic 1791731787 callback=69 describe 0.013 ms NOT acceptance data
+2026-10-11 11:17:13.737 [INF] [script-runtime] prism-diagnostic 1791731787 callback=70 update 0.005 ms NOT acceptance data
+2026-10-11 11:17:14.737 [INF] [script-runtime] prism-diagnostic 1791731787 callback=71 runAsyncNative 0.078 ms NOT acceptance data
+2026-10-11 11:17:14.737 [INF] [script-runtime] prism-diagnostic 1791731787 callback=71 runTotal 0.152 ms NOT acceptance data
+2026-10-11 11:17:14.737 [INF] [script-runtime] prism-diagnostic 1791731787 callback=71 update 0.175 ms NOT acceptance data
+2026-10-11 11:17:15.207 [INF] [script-runtime] prism-diagnostic 1791731787 callback=72 describe 0.013 ms NOT acceptance data
+2026-10-11 11:17:15.738 [INF] [script-runtime] prism-diagnostic 1791731787 callback=73 update 0.006 ms NOT acceptance data
+2026-10-11 11:17:15.988 [DBG] [surface] fractional scale preferred output=DP-1 surface=0x7f892b941600 scale=1.000 raw=120/120 logical=0x0 buffer=0x0
+2026-10-11 11:17:16.233 [INF] [script-runtime] prism-diagnostic 1791731787 callback=74 renderTop 1.995 ms NOT acceptance data
+2026-10-11 11:17:16.233 [INF] [script-runtime] prism-diagnostic 1791731787 callback=74 renderPresentation 0.418 ms NOT acceptance data
+2026-10-11 11:17:16.233 [INF] [script-runtime] prism-diagnostic 1791731787 callback=74 renderAssembly 4.032 ms NOT acceptance data
+2026-10-11 11:17:16.233 [INF] [script-runtime] prism-diagnostic 1791731787 callback=74 panelRenderNative 2.158 ms NOT acceptance data
+2026-10-11 11:17:16.233 [INF] [script-runtime] prism-diagnostic 1791731787 callback=74 renderTotal 8.629 ms NOT acceptance data
+2026-10-11 11:17:16.233 [INF] [script-runtime] prism-diagnostic 1791731787 callback=74 warmButton 8.654 ms NOT acceptance data
+2026-10-11 11:17:16.259 [INF] [script-runtime] prism-diagnostic 1791731787 callback=75 renderTop 2.042 ms NOT acceptance data
+2026-10-11 11:17:16.259 [INF] [script-runtime] prism-diagnostic 1791731787 callback=75 renderPresentation 0.419 ms NOT acceptance data
+2026-10-11 11:17:16.259 [INF] [script-runtime] prism-diagnostic 1791731787 callback=75 renderAssembly 4.281 ms NOT acceptance data
+2026-10-11 11:17:16.259 [INF] [script-runtime] prism-diagnostic 1791731787 callback=75 panelRenderNative 1.926 ms NOT acceptance data
+2026-10-11 11:17:16.259 [INF] [script-runtime] prism-diagnostic 1791731787 callback=75 renderTotal 8.693 ms NOT acceptance data
+2026-10-11 11:17:16.259 [INF] [script-runtime] prism-diagnostic 1791731787 callback=75 warmFrame 8.712 ms NOT acceptance data
+2026-10-11 11:17:16.739 [INF] [script-runtime] prism-diagnostic 1791731787 callback=76 runAsyncNative 0.070 ms NOT acceptance data
+2026-10-11 11:17:16.739 [INF] [script-runtime] prism-diagnostic 1791731787 callback=76 runTotal 0.154 ms NOT acceptance data
+2026-10-11 11:17:16.739 [INF] [script-runtime] prism-diagnostic 1791731787 callback=76 update 0.178 ms NOT acceptance data
+2026-10-11 11:17:16.934 [INF] [script-runtime] prism-diagnostic 1791731787 callback=77 describe 0.013 ms NOT acceptance data
+2026-10-11 11:17:17.600 [INF] [script-runtime] prism-diagnostic 1791731787 callback=78 renderTop 2.502 ms NOT acceptance data
+2026-10-11 11:17:17.600 [INF] [script-runtime] prism-diagnostic 1791731787 callback=78 renderPresentation 0.466 ms NOT acceptance data
+2026-10-11 11:17:17.600 [INF] [script-runtime] prism-diagnostic 1791731787 callback=78 renderAssembly 4.030 ms NOT acceptance data
+2026-10-11 11:17:17.600 [INF] [script-runtime] prism-diagnostic 1791731787 callback=78 panelRenderNative 2.019 ms NOT acceptance data
+2026-10-11 11:17:17.600 [INF] [script-runtime] prism-diagnostic 1791731787 callback=78 renderTotal 9.037 ms NOT acceptance data
+2026-10-11 11:17:17.600 [INF] [script-runtime] prism-diagnostic 1791731787 callback=78 warmButton 9.052 ms NOT acceptance data
+2026-10-11 11:17:17.620 [INF] [script-runtime] prism-diagnostic 1791731787 callback=79 renderTop 1.756 ms NOT acceptance data
+2026-10-11 11:17:17.620 [INF] [script-runtime] prism-diagnostic 1791731787 callback=79 renderPresentation 0.385 ms NOT acceptance data
+2026-10-11 11:17:17.620 [INF] [script-runtime] prism-diagnostic 1791731787 callback=79 renderAssembly 3.056 ms NOT acceptance data
+2026-10-11 11:17:17.620 [INF] [script-runtime] prism-diagnostic 1791731787 callback=79 panelRenderNative 1.714 ms NOT acceptance data
+2026-10-11 11:17:17.620 [INF] [script-runtime] prism-diagnostic 1791731787 callback=79 renderTotal 6.929 ms NOT acceptance data
+2026-10-11 11:17:17.620 [INF] [script-runtime] prism-diagnostic 1791731787 callback=79 warmFrame 6.945 ms NOT acceptance data
+2026-10-11 11:17:17.739 [INF] [script-runtime] prism-diagnostic 1791731787 callback=80 update 0.004 ms NOT acceptance data
+2026-10-11 11:17:18.740 [INF] [script-runtime] prism-diagnostic 1791731787 callback=81 runAsyncNative 0.089 ms NOT acceptance data
+2026-10-11 11:17:18.740 [INF] [script-runtime] prism-diagnostic 1791731787 callback=81 runTotal 0.160 ms NOT acceptance data
+2026-10-11 11:17:18.740 [INF] [script-runtime] prism-diagnostic 1791731787 callback=81 update 0.180 ms NOT acceptance data
+2026-10-11 11:17:18.943 [INF] [script-runtime] prism-diagnostic 1791731787 callback=82 renderTop 2.075 ms NOT acceptance data
+2026-10-11 11:17:18.943 [INF] [script-runtime] prism-diagnostic 1791731787 callback=82 renderPresentation 0.439 ms NOT acceptance data
+2026-10-11 11:17:18.943 [INF] [script-runtime] prism-diagnostic 1791731787 callback=82 renderAssembly 3.553 ms NOT acceptance data
+2026-10-11 11:17:18.943 [INF] [script-runtime] prism-diagnostic 1791731787 callback=82 panelRenderNative 2.299 ms NOT acceptance data
+2026-10-11 11:17:18.943 [INF] [script-runtime] prism-diagnostic 1791731787 callback=82 renderTotal 8.388 ms NOT acceptance data
+2026-10-11 11:17:18.943 [INF] [script-runtime] prism-diagnostic 1791731787 callback=82 warmButton 8.405 ms NOT acceptance data
+2026-10-11 11:17:18.944 [INF] [script-runtime] prism-diagnostic 1791731787 callback=83 describe 0.010 ms NOT acceptance data
+2026-10-11 11:17:18.955 [INF] [script-runtime] prism-diagnostic 1791731787 callback=84 renderTop 2.018 ms NOT acceptance data
+2026-10-11 11:17:18.955 [INF] [script-runtime] prism-diagnostic 1791731787 callback=84 renderPresentation 0.421 ms NOT acceptance data
+2026-10-11 11:17:18.955 [INF] [script-runtime] prism-diagnostic 1791731787 callback=84 renderAssembly 3.566 ms NOT acceptance data
+2026-10-11 11:17:18.955 [INF] [script-runtime] prism-diagnostic 1791731787 callback=84 panelRenderNative 2.079 ms NOT acceptance data
+2026-10-11 11:17:18.955 [INF] [script-runtime] prism-diagnostic 1791731787 callback=84 renderTotal 8.105 ms NOT acceptance data
+2026-10-11 11:17:18.955 [INF] [script-runtime] prism-diagnostic 1791731787 callback=84 warmFrame 8.124 ms NOT acceptance data
+2026-10-11 11:17:19.741 [INF] [script-runtime] prism-diagnostic 1791731787 callback=85 update 0.004 ms NOT acceptance data
+2026-10-11 11:17:20.209 [INF] [script-runtime] prism-diagnostic 1791731787 callback=86 renderTop 2.035 ms NOT acceptance data
+2026-10-11 11:17:20.209 [INF] [script-runtime] prism-diagnostic 1791731787 callback=86 renderPresentation 0.432 ms NOT acceptance data
+2026-10-11 11:17:20.209 [INF] [script-runtime] prism-diagnostic 1791731787 callback=86 renderAssembly 4.188 ms NOT acceptance data
+2026-10-11 11:17:20.209 [INF] [script-runtime] prism-diagnostic 1791731787 callback=86 panelRenderNative 1.820 ms NOT acceptance data
+2026-10-11 11:17:20.209 [INF] [script-runtime] prism-diagnostic 1791731787 callback=86 renderTotal 8.504 ms NOT acceptance data
+2026-10-11 11:17:20.209 [INF] [script-runtime] prism-diagnostic 1791731787 callback=86 warmButton 8.522 ms NOT acceptance data
+2026-10-11 11:17:20.222 [INF] [script-runtime] prism-diagnostic 1791731787 callback=87 renderTop 1.920 ms NOT acceptance data
+2026-10-11 11:17:20.222 [INF] [script-runtime] prism-diagnostic 1791731787 callback=87 renderPresentation 0.401 ms NOT acceptance data
+2026-10-11 11:17:20.222 [INF] [script-runtime] prism-diagnostic 1791731787 callback=87 renderAssembly 4.349 ms NOT acceptance data
+2026-10-11 11:17:20.222 [INF] [script-runtime] prism-diagnostic 1791731787 callback=87 panelRenderNative 1.696 ms NOT acceptance data
+2026-10-11 11:17:20.222 [INF] [script-runtime] prism-diagnostic 1791731787 callback=87 renderTotal 8.392 ms NOT acceptance data
+2026-10-11 11:17:20.222 [INF] [script-runtime] prism-diagnostic 1791731787 callback=87 warmFrame 8.408 ms NOT acceptance data
+2026-10-11 11:17:20.741 [INF] [script-runtime] prism-diagnostic 1791731787 callback=88 runAsyncNative 0.061 ms NOT acceptance data
+2026-10-11 11:17:20.741 [INF] [script-runtime] prism-diagnostic 1791731787 callback=88 runTotal 0.102 ms NOT acceptance data
+2026-10-11 11:17:20.741 [INF] [script-runtime] prism-diagnostic 1791731787 callback=88 update 0.114 ms NOT acceptance data
+2026-10-11 11:17:20.950 [INF] [script-runtime] prism-diagnostic 1791731787 callback=89 describe 0.009 ms NOT acceptance data
+2026-10-11 11:17:21.056 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_3162772' sender=':1.1603' -> bus=':1.1603' objectPath='/org/ayatana/NotificationItem/dropbox_client_3162772' elapsed=0ms
+2026-10-11 11:17:21.539 [INF] [script-runtime] prism-diagnostic 1791731787 callback=90 renderTop 1.212 ms NOT acceptance data
+2026-10-11 11:17:21.539 [INF] [script-runtime] prism-diagnostic 1791731787 callback=90 renderPresentation 0.404 ms NOT acceptance data
+2026-10-11 11:17:21.539 [INF] [script-runtime] prism-diagnostic 1791731787 callback=90 renderAssembly 2.642 ms NOT acceptance data
+2026-10-11 11:17:21.539 [INF] [script-runtime] prism-diagnostic 1791731787 callback=90 panelRenderNative 1.270 ms NOT acceptance data
+2026-10-11 11:17:21.539 [INF] [script-runtime] prism-diagnostic 1791731787 callback=90 renderTotal 5.542 ms NOT acceptance data
+2026-10-11 11:17:21.539 [INF] [script-runtime] prism-diagnostic 1791731787 callback=90 warmButton 5.551 ms NOT acceptance data
+2026-10-11 11:17:21.554 [INF] [script-runtime] prism-diagnostic 1791731787 callback=91 renderTop 1.961 ms NOT acceptance data
+2026-10-11 11:17:21.554 [INF] [script-runtime] prism-diagnostic 1791731787 callback=91 renderPresentation 0.425 ms NOT acceptance data
+2026-10-11 11:17:21.554 [INF] [script-runtime] prism-diagnostic 1791731787 callback=91 renderAssembly 3.316 ms NOT acceptance data
+2026-10-11 11:17:21.554 [INF] [script-runtime] prism-diagnostic 1791731787 callback=91 panelRenderNative 1.606 ms NOT acceptance data
+2026-10-11 11:17:21.554 [INF] [script-runtime] prism-diagnostic 1791731787 callback=91 renderTotal 7.330 ms NOT acceptance data
+2026-10-11 11:17:21.554 [INF] [script-runtime] prism-diagnostic 1791731787 callback=91 warmFrame 7.345 ms NOT acceptance data
+2026-10-11 11:17:21.742 [INF] [script-runtime] prism-diagnostic 1791731787 callback=92 update 0.003 ms NOT acceptance data
+2026-10-11 11:17:22.755 [INF] [script-runtime] prism-diagnostic 1791731787 callback=93 runAsyncNative 0.091 ms NOT acceptance data
+2026-10-11 11:17:22.755 [INF] [script-runtime] prism-diagnostic 1791731787 callback=93 runTotal 0.168 ms NOT acceptance data
+2026-10-11 11:17:22.755 [INF] [script-runtime] prism-diagnostic 1791731787 callback=93 update 0.197 ms NOT acceptance data
+2026-10-11 11:17:22.936 [INF] [script-runtime] prism-diagnostic 1791731787 callback=94 describe 0.015 ms NOT acceptance data
+2026-10-11 11:17:23.096 [DBG] [panel] panel manager: closing "khughitt/prism:panel"
+2026-10-11 11:17:25.016 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_3162772' sender=':1.1603' -> bus=':1.1603' objectPath='/org/ayatana/NotificationItem/dropbox_client_3162772' elapsed=0ms
+2026-10-11 11:17:25.071 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_3162772' sender=':1.1603' -> bus=':1.1603' objectPath='/org/ayatana/NotificationItem/dropbox_client_3162772' elapsed=0ms
+2026-10-11 11:17:30.320 [DBG] [panel] panel manager: opened "khughitt/wali-panel:panel" as attached layer-shell
+2026-10-11 11:17:30.322 [DBG] [surface] fractional scale preferred output=DP-1 surface=0x7f892d8c94e0 scale=1.000 raw=120/120 logical=0x0 buffer=0x0
+2026-10-11 11:17:30.325 [DBG] [file-watcher] watching '<home>/.local/share/noctalia/plugins/wali-panel/panel.luau' (id 177)
+2026-10-11 11:17:30.340 [DBG] [file-watcher] unwatching id 177
+2026-10-11 11:17:30.340 [DBG] [file-watcher] watching '<home>/.local/share/noctalia/plugins/wali-panel/panel.luau' (id 178)
+2026-10-11 11:17:30.340 [DBG] [file-watcher] watching '<sync-root>/wali/integrations/noctalia-plugin/logic.luau' (id 179)
+2026-10-11 11:17:30.340 [DBG] [file-watcher] watching '<sync-root>/wali/integrations/noctalia-plugin/shell.luau' (id 180)
+2026-10-11 11:17:30.683 [DBG] [surface] surface prepareFrame callback took 78.9ms (0x7f895a998800, 671x729 logical)
+2026-10-11 11:17:30.683 [DBG] [main] queued surface frame work took 78.9ms
+2026-10-11 11:17:39.127 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_3162772' sender=':1.1603' -> bus=':1.1603' objectPath='/org/ayatana/NotificationItem/dropbox_client_3162772' elapsed=0ms
+2026-10-11 11:17:41.021 [DBG] [panel] panel manager: closing "khughitt/wali-panel:panel"
+2026-10-11 11:17:41.492 [DBG] [panel] panel manager: opened "khughitt/wali-panel:panel" as attached layer-shell
+2026-10-11 11:17:41.494 [DBG] [surface] fractional scale preferred output=DP-1 surface=0x7f895c2deb00 scale=1.000 raw=120/120 logical=0x0 buffer=0x0
+2026-10-11 11:17:41.611 [DBG] [surface] surface prepareFrame callback took 113.6ms (0x7f8932ef0e00, 671x729 logical)
+2026-10-11 11:17:41.611 [DBG] [main] queued surface frame work took 113.7ms
+2026-10-11 11:17:41.746 [DBG] [surface] surface prepareFrame callback took 115.8ms (0x7f8932ef0e00, 671x729 logical)
+2026-10-11 11:17:41.746 [DBG] [main] queued surface frame work took 116.3ms
+2026-10-11 11:17:42.120 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_3162772' sender=':1.1603' -> bus=':1.1603' objectPath='/org/ayatana/NotificationItem/dropbox_client_3162772' elapsed=0ms
+2026-10-11 11:17:42.177 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_3162772' sender=':1.1603' -> bus=':1.1603' objectPath='/org/ayatana/NotificationItem/dropbox_client_3162772' elapsed=0ms
+2026-10-11 11:17:43.151 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_3162772' sender=':1.1603' -> bus=':1.1603' objectPath='/org/ayatana/NotificationItem/dropbox_client_3162772' elapsed=0ms

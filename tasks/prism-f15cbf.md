@@ -7,7 +7,7 @@ complexity: mid
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-10T17:06:10Z
-updated: 2026-10-11T15:11:17Z
+updated: 2026-10-11T15:26:43Z
 started: 2026-10-10T18:43:57Z
 depends: [prism-b81188]
 parent: prism-dac509
@@ -75,3 +75,12 @@ step: "Task 6: In-host measurement and the 15 ms gate"
 - 2026-10-11T15:06:30Z (fix/panel-render-budget): Offline real-model experiment DONE: verified1907 typed leaves,821 table shapes,83 keys,12 expanded cards. Calls/misses cold9742/142, warm3514/0, drag3982/4, release3572/0, changed describe4426/0, deferred3737/5. Source-shared signatures/counts/traversals remain; Lua5.4 call volume does not explain live elapsed gap. No production fix inferred. Worker prepares scratch warm-button versus following-frame comparison with coarse phases and no trace/writes, then agent requests new desktop approval.
 - 2026-10-11T15:11:17Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves ready /tmp/prism-budget-warm-comparison-n3_7du6c/probe-plugin; agent saves fresh state, opens Prism for five Warm comparison clicks, compares identical button/frame renders and coarse phases, then restores original plugin/settings after explicit completion. Lint/syntax/self-check pass; no probe installed and nothing running.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T15:16:01Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T15:16:26Z (fix/panel-render-budget): Owner approved warm comparison. Fresh snapshot saved under /tmp/prism-budget-warm-comparison-n3_7du6c; no scratch clearing or profile changes. Five button clicks compare unchanged immediate and following-frame renders; no writes. Keep installed until explicit completion or stop.
+- 2026-10-11T15:18:16Z (fix/panel-render-budget): Warm comparison complete confirmed before restore. Frozen run1791731787 has five warmButton and five warmFrame records, zero error lines. Original main pointer restored/reloaded; original aquamarine profile, exact scratch, all23 profile raw files and allcanonical values unchanged, latest wallpaper preserved. Worker analyzes paired frozen spans; no live probe installed, host-load nothing running.
+- 2026-10-11T15:26:39Z (fix/panel-render-budget): attached: warm-results-report.md (8077 bytes): Paired unchanged no-write button/frame renders; five raw pairs, four strict pairs, no consistent context penalty
+- 2026-10-11T15:26:39Z (fix/panel-render-budget): attached: warm-results.json (22158 bytes): Per-pair coarse spans and strict/raw distributions for run1791731787
+- 2026-10-11T15:26:40Z (fix/panel-render-budget): attached: warm-comparison.log (60259 bytes): Frozen warm comparison log with host paths redacted, timing records unchanged
+- 2026-10-11T15:26:40Z (fix/panel-render-budget): attached: analyze-warm.py (9191 bytes): Scratch parser with representative asserts for exact span sets, paired interference and within-sample gaps
+- 2026-10-11T15:26:40Z (fix/panel-render-budget): Warm run1791731787 analyzed: raw n5 each button median8.522/max9.052 ms and frame8.124/max8.712; strict n4 excludes pair82-to84 interrupted by describe83 at0.010ms. Strict medians8.588/7.8765; paired frame-minus-button differences vary both ways, median-0.028ms. Zero budget errors, no consistent ordinary-button penalty. Live input equality not hashed; not full acceptance. Worker prepares no-write readonly-launch comparison because slow release/completion paths launch commands before render; cause remains hypothesis, cold rebuild unresolved.

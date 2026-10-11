@@ -1,0 +1,854 @@
+{
+  "run": "1791731787",
+  "metric": "Luau os.clock elapsed ms; upper bound on thread CPU; diagnostic only",
+  "budget_error_lines_in_frozen_file": 0,
+  "raw_warm_callbacks": 10,
+  "candidate_pairs": 5,
+  "strict_pair_count": 4,
+  "unmatched_buttons": [],
+  "unmatched_frames": [],
+  "pairs": [
+    {
+      "pair_index": 1,
+      "button": {
+        "callback_id": 74,
+        "label": "warmButton",
+        "first_line": 364,
+        "last_line": 369,
+        "completion_log_timestamp": "2026-10-11 11:17:16.233",
+        "extra_spans": [],
+        "metrics_ms": {
+          "callback": 8.654,
+          "total": 8.629,
+          "top": 1.995,
+          "presentation": 0.418,
+          "assembly": 4.032,
+          "native": 2.158,
+          "residual": 6.471,
+          "render_gap": 0.0259999999999998,
+          "callback_gap": 0.025000000000000355
+        }
+      },
+      "frame": {
+        "callback_id": 75,
+        "label": "warmFrame",
+        "first_line": 370,
+        "last_line": 375,
+        "completion_log_timestamp": "2026-10-11 11:17:16.259",
+        "extra_spans": [],
+        "metrics_ms": {
+          "callback": 8.712,
+          "total": 8.693,
+          "top": 2.042,
+          "presentation": 0.419,
+          "assembly": 4.281,
+          "native": 1.926,
+          "residual": 6.7669999999999995,
+          "render_gap": 0.025000000000000355,
+          "callback_gap": 0.019000000000000128
+        }
+      },
+      "strict_unchanged_candidate": true,
+      "blockers": [],
+      "intervening_records": [],
+      "logged_completion_spacing_ms": 26.0,
+      "frame_minus_button_ms": {
+        "callback": 0.05799999999999983,
+        "total": 0.06400000000000006,
+        "top": 0.04699999999999971,
+        "presentation": 0.0010000000000000009,
+        "assembly": 0.24899999999999967,
+        "native": -0.23199999999999998,
+        "residual": 0.2959999999999994,
+        "render_gap": -0.0009999999999994458,
+        "callback_gap": -0.006000000000000227
+      }
+    },
+    {
+      "pair_index": 2,
+      "button": {
+        "callback_id": 78,
+        "label": "warmButton",
+        "first_line": 380,
+        "last_line": 385,
+        "completion_log_timestamp": "2026-10-11 11:17:17.600",
+        "extra_spans": [],
+        "metrics_ms": {
+          "callback": 9.052,
+          "total": 9.037,
+          "top": 2.502,
+          "presentation": 0.466,
+          "assembly": 4.03,
+          "native": 2.019,
+          "residual": 7.018000000000001,
+          "render_gap": 0.02000000000000135,
+          "callback_gap": 0.014999999999998792
+        }
+      },
+      "frame": {
+        "callback_id": 79,
+        "label": "warmFrame",
+        "first_line": 386,
+        "last_line": 391,
+        "completion_log_timestamp": "2026-10-11 11:17:17.620",
+        "extra_spans": [],
+        "metrics_ms": {
+          "callback": 6.945,
+          "total": 6.929,
+          "top": 1.756,
+          "presentation": 0.385,
+          "assembly": 3.056,
+          "native": 1.714,
+          "residual": 5.215,
+          "render_gap": 0.018000000000000682,
+          "callback_gap": 0.016000000000000014
+        }
+      },
+      "strict_unchanged_candidate": true,
+      "blockers": [],
+      "intervening_records": [],
+      "logged_completion_spacing_ms": 20.0,
+      "frame_minus_button_ms": {
+        "callback": -2.1069999999999993,
+        "total": -2.1080000000000005,
+        "top": -0.7459999999999998,
+        "presentation": -0.08100000000000002,
+        "assembly": -0.9740000000000002,
+        "native": -0.30500000000000016,
+        "residual": -1.8030000000000008,
+        "render_gap": -0.002000000000000668,
+        "callback_gap": 0.0010000000000012221
+      }
+    },
+    {
+      "pair_index": 3,
+      "button": {
+        "callback_id": 82,
+        "label": "warmButton",
+        "first_line": 396,
+        "last_line": 401,
+        "completion_log_timestamp": "2026-10-11 11:17:18.943",
+        "extra_spans": [],
+        "metrics_ms": {
+          "callback": 8.405,
+          "total": 8.388,
+          "top": 2.075,
+          "presentation": 0.439,
+          "assembly": 3.553,
+          "native": 2.299,
+          "residual": 6.089,
+          "render_gap": 0.02200000000000024,
+          "callback_gap": 0.01699999999999946
+        }
+      },
+      "frame": {
+        "callback_id": 84,
+        "label": "warmFrame",
+        "first_line": 403,
+        "last_line": 408,
+        "completion_log_timestamp": "2026-10-11 11:17:18.955",
+        "extra_spans": [],
+        "metrics_ms": {
+          "callback": 8.124,
+          "total": 8.105,
+          "top": 2.018,
+          "presentation": 0.421,
+          "assembly": 3.566,
+          "native": 2.079,
+          "residual": 6.026,
+          "render_gap": 0.021000000000000796,
+          "callback_gap": 0.019000000000000128
+        }
+      },
+      "strict_unchanged_candidate": false,
+      "blockers": [
+        {
+          "callback": 83,
+          "span": "describe",
+          "ms": 0.01,
+          "line": 402,
+          "timestamp": "2026-10-11 11:17:18.944"
+        }
+      ],
+      "intervening_records": [
+        {
+          "callback": 83,
+          "span": "describe",
+          "ms": 0.01,
+          "line": 402,
+          "timestamp": "2026-10-11 11:17:18.944"
+        }
+      ],
+      "logged_completion_spacing_ms": 12.0,
+      "frame_minus_button_ms": {
+        "callback": -0.2809999999999988,
+        "total": -0.2829999999999995,
+        "top": -0.057000000000000384,
+        "presentation": -0.018000000000000016,
+        "assembly": 0.0129999999999999,
+        "native": -0.21999999999999975,
+        "residual": -0.06300000000000061,
+        "render_gap": -0.0009999999999994458,
+        "callback_gap": 0.002000000000000668
+      }
+    },
+    {
+      "pair_index": 4,
+      "button": {
+        "callback_id": 86,
+        "label": "warmButton",
+        "first_line": 410,
+        "last_line": 415,
+        "completion_log_timestamp": "2026-10-11 11:17:20.209",
+        "extra_spans": [],
+        "metrics_ms": {
+          "callback": 8.522,
+          "total": 8.504,
+          "top": 2.035,
+          "presentation": 0.432,
+          "assembly": 4.188,
+          "native": 1.82,
+          "residual": 6.683999999999999,
+          "render_gap": 0.028999999999999915,
+          "callback_gap": 0.018000000000000682
+        }
+      },
+      "frame": {
+        "callback_id": 87,
+        "label": "warmFrame",
+        "first_line": 416,
+        "last_line": 421,
+        "completion_log_timestamp": "2026-10-11 11:17:20.222",
+        "extra_spans": [],
+        "metrics_ms": {
+          "callback": 8.408,
+          "total": 8.392,
+          "top": 1.92,
+          "presentation": 0.401,
+          "assembly": 4.349,
+          "native": 1.696,
+          "residual": 6.696,
+          "render_gap": 0.0259999999999998,
+          "callback_gap": 0.016000000000000014
+        }
+      },
+      "strict_unchanged_candidate": true,
+      "blockers": [],
+      "intervening_records": [],
+      "logged_completion_spacing_ms": 13.0,
+      "frame_minus_button_ms": {
+        "callback": -0.11400000000000077,
+        "total": -0.1120000000000001,
+        "top": -0.11500000000000021,
+        "presentation": -0.030999999999999972,
+        "assembly": 0.16100000000000048,
+        "native": -0.12400000000000011,
+        "residual": 0.012000000000000455,
+        "render_gap": -0.0030000000000001137,
+        "callback_gap": -0.002000000000000668
+      }
+    },
+    {
+      "pair_index": 5,
+      "button": {
+        "callback_id": 90,
+        "label": "warmButton",
+        "first_line": 427,
+        "last_line": 432,
+        "completion_log_timestamp": "2026-10-11 11:17:21.539",
+        "extra_spans": [],
+        "metrics_ms": {
+          "callback": 5.551,
+          "total": 5.542,
+          "top": 1.212,
+          "presentation": 0.404,
+          "assembly": 2.642,
+          "native": 1.27,
+          "residual": 4.272,
+          "render_gap": 0.014000000000000234,
+          "callback_gap": 0.009000000000000341
+        }
+      },
+      "frame": {
+        "callback_id": 91,
+        "label": "warmFrame",
+        "first_line": 433,
+        "last_line": 438,
+        "completion_log_timestamp": "2026-10-11 11:17:21.554",
+        "extra_spans": [],
+        "metrics_ms": {
+          "callback": 7.345,
+          "total": 7.33,
+          "top": 1.961,
+          "presentation": 0.425,
+          "assembly": 3.316,
+          "native": 1.606,
+          "residual": 5.724,
+          "render_gap": 0.02200000000000024,
+          "callback_gap": 0.01499999999999968
+        }
+      },
+      "strict_unchanged_candidate": true,
+      "blockers": [],
+      "intervening_records": [],
+      "logged_completion_spacing_ms": 15.0,
+      "frame_minus_button_ms": {
+        "callback": 1.7939999999999996,
+        "total": 1.7880000000000003,
+        "top": 0.7490000000000001,
+        "presentation": 0.020999999999999963,
+        "assembly": 0.6739999999999999,
+        "native": 0.3360000000000001,
+        "residual": 1.452,
+        "render_gap": 0.008000000000000007,
+        "callback_gap": 0.005999999999999339
+      }
+    }
+  ],
+  "summaries": {
+    "all_raw_callbacks": {
+      "warmButton": {
+        "callback": {
+          "n": 5,
+          "median_ms": 8.522,
+          "max_ms": 9.052,
+          "values_ms": [
+            8.654,
+            9.052,
+            8.405,
+            8.522,
+            5.551
+          ]
+        },
+        "total": {
+          "n": 5,
+          "median_ms": 8.504,
+          "max_ms": 9.037,
+          "values_ms": [
+            8.629,
+            9.037,
+            8.388,
+            8.504,
+            5.542
+          ]
+        },
+        "top": {
+          "n": 5,
+          "median_ms": 2.035,
+          "max_ms": 2.502,
+          "values_ms": [
+            1.995,
+            2.502,
+            2.075,
+            2.035,
+            1.212
+          ]
+        },
+        "presentation": {
+          "n": 5,
+          "median_ms": 0.432,
+          "max_ms": 0.466,
+          "values_ms": [
+            0.418,
+            0.466,
+            0.439,
+            0.432,
+            0.404
+          ]
+        },
+        "assembly": {
+          "n": 5,
+          "median_ms": 4.03,
+          "max_ms": 4.188,
+          "values_ms": [
+            4.032,
+            4.03,
+            3.553,
+            4.188,
+            2.642
+          ]
+        },
+        "native": {
+          "n": 5,
+          "median_ms": 2.019,
+          "max_ms": 2.299,
+          "values_ms": [
+            2.158,
+            2.019,
+            2.299,
+            1.82,
+            1.27
+          ]
+        },
+        "residual": {
+          "n": 5,
+          "median_ms": 6.471,
+          "max_ms": 7.018000000000001,
+          "values_ms": [
+            6.471,
+            7.018000000000001,
+            6.089,
+            6.683999999999999,
+            4.272
+          ]
+        },
+        "render_gap": {
+          "n": 5,
+          "median_ms": 0.02200000000000024,
+          "max_ms": 0.028999999999999915,
+          "values_ms": [
+            0.0259999999999998,
+            0.02000000000000135,
+            0.02200000000000024,
+            0.028999999999999915,
+            0.014000000000000234
+          ]
+        },
+        "callback_gap": {
+          "n": 5,
+          "median_ms": 0.01699999999999946,
+          "max_ms": 0.025000000000000355,
+          "values_ms": [
+            0.025000000000000355,
+            0.014999999999998792,
+            0.01699999999999946,
+            0.018000000000000682,
+            0.009000000000000341
+          ]
+        }
+      },
+      "warmFrame": {
+        "callback": {
+          "n": 5,
+          "median_ms": 8.124,
+          "max_ms": 8.712,
+          "values_ms": [
+            8.712,
+            6.945,
+            8.124,
+            8.408,
+            7.345
+          ]
+        },
+        "total": {
+          "n": 5,
+          "median_ms": 8.105,
+          "max_ms": 8.693,
+          "values_ms": [
+            8.693,
+            6.929,
+            8.105,
+            8.392,
+            7.33
+          ]
+        },
+        "top": {
+          "n": 5,
+          "median_ms": 1.961,
+          "max_ms": 2.042,
+          "values_ms": [
+            2.042,
+            1.756,
+            2.018,
+            1.92,
+            1.961
+          ]
+        },
+        "presentation": {
+          "n": 5,
+          "median_ms": 0.419,
+          "max_ms": 0.425,
+          "values_ms": [
+            0.419,
+            0.385,
+            0.421,
+            0.401,
+            0.425
+          ]
+        },
+        "assembly": {
+          "n": 5,
+          "median_ms": 3.566,
+          "max_ms": 4.349,
+          "values_ms": [
+            4.281,
+            3.056,
+            3.566,
+            4.349,
+            3.316
+          ]
+        },
+        "native": {
+          "n": 5,
+          "median_ms": 1.714,
+          "max_ms": 2.079,
+          "values_ms": [
+            1.926,
+            1.714,
+            2.079,
+            1.696,
+            1.606
+          ]
+        },
+        "residual": {
+          "n": 5,
+          "median_ms": 6.026,
+          "max_ms": 6.7669999999999995,
+          "values_ms": [
+            6.7669999999999995,
+            5.215,
+            6.026,
+            6.696,
+            5.724
+          ]
+        },
+        "render_gap": {
+          "n": 5,
+          "median_ms": 0.02200000000000024,
+          "max_ms": 0.0259999999999998,
+          "values_ms": [
+            0.025000000000000355,
+            0.018000000000000682,
+            0.021000000000000796,
+            0.0259999999999998,
+            0.02200000000000024
+          ]
+        },
+        "callback_gap": {
+          "n": 5,
+          "median_ms": 0.016000000000000014,
+          "max_ms": 0.019000000000000128,
+          "values_ms": [
+            0.019000000000000128,
+            0.016000000000000014,
+            0.019000000000000128,
+            0.016000000000000014,
+            0.01499999999999968
+          ]
+        }
+      }
+    },
+    "strict_pairs": {
+      "warmButton": {
+        "callback": {
+          "n": 4,
+          "median_ms": 8.588000000000001,
+          "max_ms": 9.052,
+          "values_ms": [
+            8.654,
+            9.052,
+            8.522,
+            5.551
+          ]
+        },
+        "total": {
+          "n": 4,
+          "median_ms": 8.5665,
+          "max_ms": 9.037,
+          "values_ms": [
+            8.629,
+            9.037,
+            8.504,
+            5.542
+          ]
+        },
+        "top": {
+          "n": 4,
+          "median_ms": 2.015,
+          "max_ms": 2.502,
+          "values_ms": [
+            1.995,
+            2.502,
+            2.035,
+            1.212
+          ]
+        },
+        "presentation": {
+          "n": 4,
+          "median_ms": 0.425,
+          "max_ms": 0.466,
+          "values_ms": [
+            0.418,
+            0.466,
+            0.432,
+            0.404
+          ]
+        },
+        "assembly": {
+          "n": 4,
+          "median_ms": 4.031000000000001,
+          "max_ms": 4.188,
+          "values_ms": [
+            4.032,
+            4.03,
+            4.188,
+            2.642
+          ]
+        },
+        "native": {
+          "n": 4,
+          "median_ms": 1.9195000000000002,
+          "max_ms": 2.158,
+          "values_ms": [
+            2.158,
+            2.019,
+            1.82,
+            1.27
+          ]
+        },
+        "residual": {
+          "n": 4,
+          "median_ms": 6.5775,
+          "max_ms": 7.018000000000001,
+          "values_ms": [
+            6.471,
+            7.018000000000001,
+            6.683999999999999,
+            4.272
+          ]
+        },
+        "render_gap": {
+          "n": 4,
+          "median_ms": 0.023000000000000576,
+          "max_ms": 0.028999999999999915,
+          "values_ms": [
+            0.0259999999999998,
+            0.02000000000000135,
+            0.028999999999999915,
+            0.014000000000000234
+          ]
+        },
+        "callback_gap": {
+          "n": 4,
+          "median_ms": 0.016499999999999737,
+          "max_ms": 0.025000000000000355,
+          "values_ms": [
+            0.025000000000000355,
+            0.014999999999998792,
+            0.018000000000000682,
+            0.009000000000000341
+          ]
+        }
+      },
+      "warmFrame": {
+        "callback": {
+          "n": 4,
+          "median_ms": 7.8765,
+          "max_ms": 8.712,
+          "values_ms": [
+            8.712,
+            6.945,
+            8.408,
+            7.345
+          ]
+        },
+        "total": {
+          "n": 4,
+          "median_ms": 7.861,
+          "max_ms": 8.693,
+          "values_ms": [
+            8.693,
+            6.929,
+            8.392,
+            7.33
+          ]
+        },
+        "top": {
+          "n": 4,
+          "median_ms": 1.9405000000000001,
+          "max_ms": 2.042,
+          "values_ms": [
+            2.042,
+            1.756,
+            1.92,
+            1.961
+          ]
+        },
+        "presentation": {
+          "n": 4,
+          "median_ms": 0.41000000000000003,
+          "max_ms": 0.425,
+          "values_ms": [
+            0.419,
+            0.385,
+            0.401,
+            0.425
+          ]
+        },
+        "assembly": {
+          "n": 4,
+          "median_ms": 3.7984999999999998,
+          "max_ms": 4.349,
+          "values_ms": [
+            4.281,
+            3.056,
+            4.349,
+            3.316
+          ]
+        },
+        "native": {
+          "n": 4,
+          "median_ms": 1.705,
+          "max_ms": 1.926,
+          "values_ms": [
+            1.926,
+            1.714,
+            1.696,
+            1.606
+          ]
+        },
+        "residual": {
+          "n": 4,
+          "median_ms": 6.21,
+          "max_ms": 6.7669999999999995,
+          "values_ms": [
+            6.7669999999999995,
+            5.215,
+            6.696,
+            5.724
+          ]
+        },
+        "render_gap": {
+          "n": 4,
+          "median_ms": 0.0235000000000003,
+          "max_ms": 0.0259999999999998,
+          "values_ms": [
+            0.025000000000000355,
+            0.018000000000000682,
+            0.0259999999999998,
+            0.02200000000000024
+          ]
+        },
+        "callback_gap": {
+          "n": 4,
+          "median_ms": 0.016000000000000014,
+          "max_ms": 0.019000000000000128,
+          "values_ms": [
+            0.019000000000000128,
+            0.016000000000000014,
+            0.016000000000000014,
+            0.01499999999999968
+          ]
+        }
+      }
+    },
+    "strict_paired_frame_minus_button": {
+      "callback": {
+        "n": 4,
+        "median_ms": -0.02800000000000047,
+        "max_ms": 1.7939999999999996,
+        "values_ms": [
+          0.05799999999999983,
+          -2.1069999999999993,
+          -0.11400000000000077,
+          1.7939999999999996
+        ]
+      },
+      "total": {
+        "n": 4,
+        "median_ms": -0.02400000000000002,
+        "max_ms": 1.7880000000000003,
+        "values_ms": [
+          0.06400000000000006,
+          -2.1080000000000005,
+          -0.1120000000000001,
+          1.7880000000000003
+        ]
+      },
+      "top": {
+        "n": 4,
+        "median_ms": -0.03400000000000025,
+        "max_ms": 0.7490000000000001,
+        "values_ms": [
+          0.04699999999999971,
+          -0.7459999999999998,
+          -0.11500000000000021,
+          0.7490000000000001
+        ]
+      },
+      "presentation": {
+        "n": 4,
+        "median_ms": -0.014999999999999986,
+        "max_ms": 0.020999999999999963,
+        "values_ms": [
+          0.0010000000000000009,
+          -0.08100000000000002,
+          -0.030999999999999972,
+          0.020999999999999963
+        ]
+      },
+      "assembly": {
+        "n": 4,
+        "median_ms": 0.20500000000000007,
+        "max_ms": 0.6739999999999999,
+        "values_ms": [
+          0.24899999999999967,
+          -0.9740000000000002,
+          0.16100000000000048,
+          0.6739999999999999
+        ]
+      },
+      "native": {
+        "n": 4,
+        "median_ms": -0.17800000000000005,
+        "max_ms": 0.3360000000000001,
+        "values_ms": [
+          -0.23199999999999998,
+          -0.30500000000000016,
+          -0.12400000000000011,
+          0.3360000000000001
+        ]
+      },
+      "residual": {
+        "n": 4,
+        "median_ms": 0.15399999999999991,
+        "max_ms": 1.452,
+        "values_ms": [
+          0.2959999999999994,
+          -1.8030000000000008,
+          0.012000000000000455,
+          1.452
+        ]
+      },
+      "render_gap": {
+        "n": 4,
+        "median_ms": -0.0015000000000000568,
+        "max_ms": 0.008000000000000007,
+        "values_ms": [
+          -0.0009999999999994458,
+          -0.002000000000000668,
+          -0.0030000000000001137,
+          0.008000000000000007
+        ]
+      },
+      "callback_gap": {
+        "n": 4,
+        "median_ms": -0.0004999999999997229,
+        "max_ms": 0.005999999999999339,
+        "values_ms": [
+          -0.006000000000000227,
+          0.0010000000000012221,
+          -0.002000000000000668,
+          0.005999999999999339
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "residual": "renderTotal minus native in same callback",
+    "render_gap": "renderTotal minus top, presentation, assembly and native in same callback",
+    "callback_gap": "outer callback minus renderTotal in same callback",
+    "strict_pair": "complete adjacent warm groups without logged describe/write/launch/render/key/open interference; actual live identity not proven",
+    "completion_spacing": "outer log timestamp spacing, not measured scheduler or execution latency"
+  },
+  "acceptance_applied": false,
+  "collection_seconds": 80.40518617630005,
+  "controller_restoration": {
+    "original_main_pointer_restored_and_reloaded": true,
+    "original_profile_and_exact_scratch_verified": true,
+    "all_profile_bytes_verified": 23,
+    "all_canonical_values_verified": true,
+    "processes_remaining": false
+  },
+  "verification": "Representative parser asserts pass; independent raw outer values, all ten exact span sets, per-callback residual/gaps, all statistics and excluded pair checked."
+}
