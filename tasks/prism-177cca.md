@@ -8,9 +8,9 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-11T18:13:25Z
-updated: 2026-10-11T21:03:06Z
+updated: 2026-10-11T21:13:34Z
 started: 2026-10-11T18:42:57Z
-completed: 2026-10-11T21:02:48Z
+completed: 2026-10-11T21:13:23Z
 depends: [prism-7d38d8]
 parent: prism-f15cbf
 tags: []
@@ -122,4 +122,23 @@ Build frozen baseline/candidate scratch copies with matching minimal instrumenta
 - 2026-10-11T21:02:48Z (fix/panel-render-budget): done
   provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
 - 2026-10-11T21:02:48Z (fix/panel-render-budget): Added explicit fresh startup, ready and eligible settled-drain evidence outside target timing; busy states refused; regenerated matched copies and focused calibration/identity/lint/gates pass; no live acceptance.
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T21:07:45Z (fix/panel-render-budget): review: impl round 4 — verdict: revise; findings: Important 1; reviewer: codex/gpt-6.1-sol
+- 2026-10-11T21:07:45Z (fix/panel-render-budget): Scoped readiness re-review: startup/drain addressed, but ordinary describe accepted immediately before sampling click leaves renderPending=true, readiness defers then sequence coldSetup skips ordinary render. Both variants ready0/decode+1/render+0. Fix ordinary pending-frame priority while readiness requested, then fresh scoped re-review; no host use.
+- 2026-10-11T21:08:33Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): detached: tail.lua: Round3: pending ordinary frame before click must complete before ready/sequence.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): attached: tail.lua (10830 bytes): Minimal requested-readiness barrier: original ordinary frame/class once, return, request retained; sequence only after observer.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): detached: self-check.lua: Add exact accepted-before-click pending render RED/GREEN both variants.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): attached: self-check.lua (35547 bytes): Pending-before-click fixture with exact ordinary/ready/cold ordering and existing native cadence/calibration.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): detached: manifest.json: Round3 minimal tail guard changes identical instrumentation hash.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): attached: manifest.json (2116 bytes): Round3 exact frozen-source/common-instrumentation hash; portable CLI display, exact runtime provenance in archive.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): detached: task-2-report.md: Append complete round3 scoped readiness-ordering correction and evidence.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): attached: task-2-report.md (32410 bytes): Round3 report: exact before-click RED/GREEN, covering logs, regenerated identities, no running checks.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): detached: task2-readiness.tar.gz: Preserve amended minimal barrier copies and all covering evidence.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): attached: task2-readiness.tar.gz (510207 bytes): Round3 complete readiness archive: before-click barrier fix, exact runtime copies/identity/diffs and RED/GREEN/calibration/gate logs.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): Fix round3 RED→GREEN: accepted ordinary describe pending before click now renders once in original class with no cold decode and readiness request intact; ready observer precedes cold setup→next actual frame. Both variants and covering readiness/frame/100ms/cold/periodic/parser/integrity/lint0/0/gates pass. No prefix/API/UI/prod/host changes, suite repeats or running checks.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): done
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): Fixed pending ordinary frame bypass of readiness before first cold sample; exact deferred/ready/setup/frame order and existing focused calibration/identity/lint/gates pass both variants; no live acceptance.
   provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}

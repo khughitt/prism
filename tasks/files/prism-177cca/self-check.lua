@@ -84,6 +84,25 @@ local function checkCold(variant)
   local old=h.state.model; h.env.onClose(); h.env.onOpen({}); assert(h.state.model==old,'close/open incorrectly treated as reset')
   return h
 end
+if arg[5]=='pending-ready' then
+  for _,variant in ipairs({'baseline','candidate'}) do
+    local h=host(base..'/'..variant..'/plugin',true)
+    local response=copy(success);response.stdout='accepted ordinary before diagnostics';h.launches[1].callback(response)
+    assert(h.state.renderPending and up(h.env.onFrameTick,'diagnosticDeferred')=='deferredRender')
+    local renders,decodes=h.renders,h.decodes;assert(button(h,'Sample diagnostics')).props.onClick()
+    h.env.onFrameTick(16)
+    assert(h.renders==renders+1 and h.decodes==decodes and not h.state.renderPending,'before-click pending ordinary render bypassed readiness barrier')
+    assert(up(h.env.onFrameTick,'diagnosticReadyRequested'),'ordinary work consumed readiness request')
+    for _,e in ipairs(h.emitted) do assert(e.class~='ready','ready emitted in ordinary target frame') end
+    local ordinary=false;for _,e in ipairs(up(h.env.onFrameTick,'diagnosticBuffer')) do if e.scope=='callback' and e.class=='deferredRender' and e.rendered then ordinary=true end end;assert(ordinary,'ordinary deferred class was lost')
+    h.env.onFrameTick(16);assert(h.emitted[#h.emitted-1].class=='ready' and h.emitted[#h.emitted-1].readyEligible)
+    assert(h.renders==renders+1 and h.decodes==decodes,'readiness observer performed cold work')
+    h.env.onFrameTick(16);assert(h.decodes==decodes+1 and h.renders==renders+1,'cold setup not after readiness')
+    h.env.onFrameTick(16);assert(h.renders==renders+2,'cold render not next actual frame after setup')
+  end
+  print('PASS pending-ready: accepted ordinary describe before click renders once in deferred class, keeps request, emits ready before cold decode, then exact cold next frame; both variants')
+  os.exit(0)
+end
 if arg[5]=='readiness' then
   for _,variant in ipairs({'baseline','candidate'}) do
     local h=host(base..'/'..variant..'/plugin',true)

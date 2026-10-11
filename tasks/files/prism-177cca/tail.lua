@@ -106,6 +106,11 @@ onFrameTick=function(deltaMs)
   local sequenceDue=diagnosticSequence~=nil and diagnosticPair==nil
   local pairRenderDue=diagnosticPair~=nil and not diagnosticPair.frameDone
   local coldRenderDue=diagnosticSequence~=nil and diagnosticSequence.phase=='render' and diagnosticSequence.coldRemaining>0
+  if diagnosticReadyRequested and ordinaryTickDue then
+    local class=state.drag~=nil and state.drag.dirty and 'dragTick' or (state.renderPending and diagnosticDeferred or 'idle')
+    diagnosticDeferred=nil
+    return diagnosticCallback(class or 'idle',diagnosticPlainTick,deltaMs)
+  end
   if diagnosticReadyRequested and not (ordinaryTickDue or pairRenderDue or coldRenderDue) then
     diagnosticReadyRequested=false
     if #diagnosticBuffer>0 then diagnosticFlush() end

@@ -380,3 +380,57 @@ Corrective commit subject: fix(panel): emit ready and settled drain evidence; fi
 hash is appended after commit in this workspace report and worker final. Root owns
 fresh scoped re-review and Task3 four-copy generation; desktop permission and live
 host acceptance remain missing.
+
+Fix round2 final commit: 8911851f4b77521efe376c26a9a88b05826bbc89 (`fix(panel): emit ready and settled drain evidence`).
+
+## Fix round3/5: accepted ordinary render pending before diagnostic click
+
+BASE:8911851. Scoped re-review task-2-rereview-2.md (codex/gpt-6.1-sol) found one
+Important readiness-ordering issue; controller recorded impl round4 revise and reopened
+the child before dispatch. The existing test changed inputs after click, so it did not
+cover an accepted ordinary describe already waiting for its deferred render.
+
+Minimal fix: while readiness remains requested and ordinary frame work is due, invoke
+the existing ordinary tick exactly once with its normal dragTick/deferredRender/
+profileRender/idle classification and return. Preserve the request. No sequence work
+can run through that path; only after the observer callback emits readiness may cold
+setup start. diagnosticDeferred is consumed exactly as in the original ordinary path.
+No general scheduler, production, host, UI, API, IPC or probe-prefix change occurred.
+Changed code is tail.lua and its focused fake fixture in self-check.lua.
+
+Focused RED and GREEN command (from .worktrees/panel-budget):
+
+```sh
+lua /tmp/prism-budget-matched-task2/self-check.lua /tmp/prism-budget-matched-task2/copies /tmp/prism-budget-matched-task2/model.lua integrations/noctalia-plugin/test_encode.lua "$PWD/bin/prism" pending-ready
+```
+
+review-round3-red.log fails `before-click pending ordinary render bypassed readiness
+barrier` on the previous copies. After rebuilding with the existing exact frozen
+builder commands, review-round3-green.log passes both variants. Sequence: accepted
+ordinary describe before click → one original deferred render (no additional decode,
+request intact, no ready emitted) → dedicated ready observer (no render/decode) →
+cold setup → cold render on following actual frame. The fixture independently asserts
+the ordinary deferred callback class and exact render/decode counts.
+
+Covering commands retain the same worktree, fixture and CLI args above, replacing the
+last mode with readiness, with no mode for existing calibration, or with periodic and
+sequence-copies for regular updates. Existing parser command is
+`python3 /tmp/prism-budget-matched-task2/analysis_check.py /tmp/prism-budget-matched-task2/sequence-copies`.
+Builder, integrity-check, both offline lint and just check commands are the exact
+round2 commands already listed, with round3 result filenames.
+
+Results: focused pending-ready, readiness/drain, cold142-unit equivalence, immediate/
+next-frame pairs, collision, ordinary/dirty/nondirty100ms precedence, periodic clean/
+foreign/error/timeout, numeric/parser/I1/I2/saved-log fixtures all PASS. Frozen-source
+identity/reversible/identical instrumentation checks PASS; lint0 errors/0 warnings
+each copy; just check exit0 and no task warnings. Covering logs:
+review-round3-green.log, -readiness.log, -existing.log, -periodic.log, -analysis.log,
+-integrity.log, -lint-baseline.log, -lint-candidate.log and -check.log.
+No unchanged repository suite repeated, no live host action and no running check.
+
+Current identical instrumentation SHA256: 9e92f80e44beea68ef3318eba78ada68b2f67140997a202425addc5b6c501e29.
+Amended tail/self-check, portable manifest, regenerated source/identity/diff copies,
+report and archive are preserved through child attachments. Parent/Task3 records are
+not staged. Corrective commit subject: fix(panel): preserve pending render before
+readiness; final hash appended after commit in workspace report and worker final.
+Root owns the next scoped re-review; live acceptance remains unproved.
