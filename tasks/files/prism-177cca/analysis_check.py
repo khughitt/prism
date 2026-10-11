@@ -1,4 +1,4 @@
-import copy,importlib.util,json,tempfile
+import copy,importlib.util,json,sys,tempfile
 from pathlib import Path
 spec=importlib.util.spec_from_file_location('analysis',Path(__file__).with_name('analyze.py')); a=importlib.util.module_from_spec(spec); spec.loader.exec_module(a)
 
@@ -44,13 +44,32 @@ def activation():
     return event(1,'activation','activation',False,0,initialModelEmpty=True,initialStructureEmpty=True,initialMemoEmpty=True,initialEnqueued=0,initialDragEmpty=True,initialQueueEmpty=True)
 def pair_events(n,start,state='pending',control=False):
     name=('control' if control else 'launch')+str(n)
-    rows=[];record=start
+    base=n*10+(100 if control else 0)
+    immediate,frame,completed=base+2,base+3,base+4
+    rows=[]
+    def add(class_,scope,callback,pair=name,**extra):
+        rows.append(event(start+len(rows),class_,scope,pair,callback,control,**extra))
+    def end(class_,callback,terminal=False):
+        add(class_,'callback',callback,False if terminal else name,rendered=class_!='comparisonCompletion')
+        if terminal: rows[-1]['control']=False
     if not control:
-        rows+=[event(record,'nativeLaunch','nativeLaunch',name,2),event(record+1,'launchHelper','launchHelper',name,2)];record+=2
-    rows+=[event(record,pair=name,control=control),event(record+1,'pairFrame','render',name,3,control,elapsedMs=1.0),event(record+2,'pairFrameState','metadata',name,3,control,completionState=state,pending=state=='pending')];record+=3
-    if not control:
-        rows+=[event(record,'comparisonCompletionResult','metadata',name,4,False,exitCode=0,timedOut=False,stdoutTruncated=False,stderrTruncated=False)];record+=1
-    rows+=[event(record,'pairDone','metadata',name,4,control,valid=True,completionState=state)]
+        add('nativeLaunch','nativeLaunch',immediate,rendered=False)
+        add('launchHelper','launchHelper',immediate,rendered=False)
+    add('pairImmediate','render',immediate)
+    end('pairImmediate',immediate)
+    if not control and state=='done':
+        add('comparisonCompletionResult','metadata',completed,exitCode=0,timedOut=False,stdoutTruncated=False,stderrTruncated=False)
+        end('comparisonCompletion',completed)
+    add('pairFrame','render',frame,elapsedMs=1.0,pending=state=='pending')
+    add('pairFrameState','metadata',frame,completionState=state,pending=state=='pending')
+    if control or state=='done':
+        add('pairDone','metadata',frame,valid=True,completionState=state)
+        end('pairFrame',frame,True)
+    else:
+        end('pairFrame',frame)
+        add('comparisonCompletionResult','metadata',completed,exitCode=0,timedOut=False,stdoutTruncated=False,stderrTruncated=False)
+        add('pairDone','metadata',completed,valid=True,completionState=state)
+        end('comparisonCompletion',completed,True)
     return rows
 rows=[activation()]
 for i in range(5): rows+=pair_events(i,2+i*20);rows+=pair_events(i,12+i*20,'done',True)
@@ -58,9 +77,10 @@ normal=a.normalize(rows,[identity]); result=a.pairs(normal)
 assert len(result['pairs'])==10 and not result['exclusions'] and not result['inconclusive']
 assert all(p['differenceMs']==3 and p['immediateSampleId']!=p['frameSampleId'] for p in result['pairs'])
 assert len(result['groups'])==2 and all(g['primary'] for g in result['groups'])
-split=copy.deepcopy(rows)
-for e in split:
-    if not e['control'] and e['pairId'] in ('launch3','launch4') and e['class'] in ('pairFrameState','pairDone'):e['completionState']='done'
+split=[activation()]
+for i in range(5):
+    split+=pair_events(i,2+i*20,'done' if i>=3 else 'pending')
+    split+=pair_events(i,12+i*20,'done',True)
 assert a.pairs(a.normalize(split,[identity]))['inconclusive']
 missing_control=[e for e in rows if not e['control']]
 assert a.pairs(a.normalize(missing_control,[identity]))['inconclusive'],'launch-only data lacks matched controls'
@@ -88,7 +108,7 @@ for mutation in ('missing-frame','incomplete','inconsistent-control','interferen
     if mutation=='inconsistent-control':frame['control']=True
     if mutation=='interference':frame['interference']='focus'
     if mutation=='same-callback':frame['callbackId']=first['callbackId']
-    if mutation=='failed-done':bad[-1]['valid']=False
+    if mutation=='failed-done':next(e for e in bad if e['class']=='pairDone')['valid']=False
     if mutation=='missing-native':bad.remove(next(e for e in bad if e['class']=='nativeLaunch'))
     if mutation=='malformed-result':next(e for e in bad if e['class']=='comparisonCompletionResult')['timedOut']='false'
     if mutation=='inconsistent-state':state['pending']=False
@@ -121,3 +141,56 @@ print('PASS intervals: measured origin-local seconds, negative/nonfinite spans r
 visible=[activation(),event(2,'deferredRender','callback',False,2,diagnosticsHidden=False)]
 assert [e['reason'] for e in a.normalize(visible,[identity])['exclusions']]==['diagnostic-control-visible'], 'visible diagnostic control entered selected samples'
 print('PASS readiness: callbacks with the transient diagnostic control visible are excluded from target samples')
+
+# I1: a completed pair disposition cannot replace the enclosing callback end.
+for control,state in ((False,'pending'),(False,'done'),(True,'done')):
+    complete=[activation()]+pair_events(0,2,state,control)
+    assert len(a.pairs(a.normalize(complete,[identity]))['pairs'])==1
+    endpoints=[e for e in complete if e['scope']=='callback']
+    for endpoint in endpoints:
+        truncated=[e for e in complete if e is not endpoint]
+        result=a.pairs(a.normalize(truncated,[identity]))
+        assert not result['pairs'] and len(result['exclusions'])==1, 'missing callback end admitted a pair'
+        incomplete=copy.deepcopy(complete)
+        next(e for e in incomplete if e['recordId']==endpoint['recordId'])['complete']=False
+        assert not a.pairs(a.normalize(incomplete,[identity]))['pairs'], 'incomplete callback end admitted a pair'
+all_ends_removed=[e for e in rows if e['scope']!='callback']
+result=a.pairs(a.normalize(all_ends_removed,[identity]))
+assert not result['pairs'] and result['inconclusive'], 'callback-free records formed primary evidence'
+print('PASS I1: immediate/frame/native/helper/completion callback ends required across all events, including pairId=false terminal ends; all-end truncation cannot become primary')
+
+# I2: labels that agree with each other still must match actual completion order.
+for actual,label in (('pending','done'),('done','pending')):
+    bad=[activation()]+pair_events(0,2,actual)
+    for e in bad:
+        if e['class'] in ('pairFrameState','pairDone'): e['completionState']=label
+        if e['class'] in ('pairFrame','pairFrameState'): e['pending']=label=='pending'
+    result=a.pairs(a.normalize(bad,[identity]))
+    assert not result['pairs'] and len(result['exclusions'])==1, 'contradictory early/late completion admitted a pair'
+print('PASS I2: early completion requires done; late completion requires pending; creation-order checks use a single activation clock origin')
+
+if len(sys.argv)>1:
+    saved=Path(sys.argv[1])
+    parser=a
+    if len(sys.argv)>2:
+        loaded=importlib.util.spec_from_file_location('checked_parser',sys.argv[2]);parser=importlib.util.module_from_spec(loaded);loaded.loader.exec_module(parser)
+    for variant in ('baseline','candidate'):
+        expected=json.loads((saved/variant/'identity.json').read_text())
+        actual=parser.read_rotated([saved/variant/'periodic-fake.log'])
+        result=parser.pairs(parser.normalize(actual,[expected]))
+        assert len(result['pairs'])==10 and not result['exclusions'] and not result['inconclusive']
+        truncated=[e for e in actual if e['scope']!='callback']
+        result=parser.pairs(parser.normalize(truncated,[expected]))
+        assert not result['pairs'] and result['inconclusive'], 'saved callback-free logs formed primary launch evidence'
+        terminal_callbacks={e['callbackId'] for e in actual if e['scope']=='callback' and e['pairId'] is False}
+        assert terminal_callbacks
+        terminal_cut=[e for e in actual if not (e['scope']=='callback' and e['callbackId'] in terminal_callbacks)]
+        result=parser.pairs(parser.normalize(terminal_cut,[expected]))
+        assert not result['pairs'] and result['inconclusive'], 'saved pairId=false terminal truncation admitted pairs'
+        contradiction=copy.deepcopy(actual)
+        for e in contradiction:
+            if e['class'] in ('pairFrameState','pairDone') and not e['control']:e['completionState']='done'
+            if e['class'] in ('pairFrame','pairFrameState') and not e['control']:e['pending']=False
+        result=parser.pairs(parser.normalize(contradiction,[expected]))
+        assert len(result['pairs'])==5 and all(p['control'] for p in result['pairs']) and result['inconclusive'], 'saved late-completion logs admitted a done launch group'
+    print('PASS saved periodic logs: original pairs survive; all callback/terminal-end truncations and consistent wrong completion labels cannot form primary launch evidence')

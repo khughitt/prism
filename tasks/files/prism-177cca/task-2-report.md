@@ -245,3 +245,61 @@ Current identical instrumentation SHA256: 12c724d9127044b7d9ce17b91ab06cd82b90d3
 Original tick concern is resolved; remaining boundary is unchanged: no live host
 installation or timing acceptance. Independent full review is controller-owned.
 All checks finished; no process remains running.
+
+## Independent implementation review fix round1/5: I1/I2
+
+FIX_BASE:6f5d212. Review: codex/gpt-6.1-sol; revise, Important2, Critical0, Minor0.
+The child review note was recorded before changes. Scope is analyze.py and
+analysis_check.py, their attachments, report/archive and the child record. The live
+probe, frozen copies, instrumentation, normal timing/cadence and other modules are
+unchanged; no host action, subagent, probe lint or repository-suite rerun occurred.
+
+I1: pairs now indexes complete callback-end records by (activationNonce,callbackId)
+across ALL events, including terminal ends whose pairId=false. Immediate/frame/
+native/helper/completion evidence and frame-state/disposition metadata require a
+matching eligible complete endpoint after each referenced event in the same clock
+origin. A missing/incomplete end excludes the pair, so pairDone cannot substitute
+for the enclosing callback's completion. Synthetic fixtures now include unique
+callback ids and actual callback endings. Each required end's removal/incompletion,
+all-end removal and saved terminal-end truncations are covered.
+
+I2: origin-local issued record ids and monotonic timestamps must put immediate
+render before frame render, and frame-state in its same callback after that frame.
+The recorded frame pending flag must agree with frame-state. Done requires actual
+comparison completion before the frame; pending requires completion after the
+frame-state. Consistently relabeling both metadata records cannot change the actual
+completion group. Synthetic done fixtures now complete before frame; both early→
+pending and late→done contradictions are rejected.
+
+Exact covering commands (from .worktrees/panel-budget):
+
+```sh
+python3 /tmp/prism-budget-matched-task2/analysis_check.py
+python3 /tmp/prism-budget-matched-task2/analysis_check.py /tmp/prism-budget-matched-task2/sequence-copies
+python3 /tmp/prism-budget-matched-task2/analyze.py --log /tmp/prism-budget-matched-task2/sequence-copies/baseline/periodic-fake.log --log /tmp/prism-budget-matched-task2/sequence-copies/candidate/periodic-fake.log --identity /tmp/prism-budget-matched-task2/sequence-copies/baseline/identity.json --identity /tmp/prism-budget-matched-task2/sequence-copies/candidate/identity.json --budget-errors 0 --output /tmp/prism-budget-matched-task2/review-round1-periodic-verdict.json
+python3 /tmp/prism-budget-matched-task2/analyze.py --log /tmp/prism-budget-matched-task2/sequence-copies/baseline/periodic-interference-fake.log --log /tmp/prism-budget-matched-task2/sequence-copies/candidate/periodic-interference-fake.log --identity /tmp/prism-budget-matched-task2/sequence-copies/baseline/identity.json --identity /tmp/prism-budget-matched-task2/sequence-copies/candidate/identity.json --budget-errors 0 --output /tmp/prism-budget-matched-task2/review-round1-interference-verdict.json
+just check
+tasks check
+```
+
+RED evidence: review-round1-red-I1.log fails `missing callback end admitted a pair`;
+after I1, review-round1-red-I2.log fails `contradictory early/late completion admitted
+a pair`. Saved-log RED checks use the exact pre-review analyze.py git blob from
+6f5d212, preserved as analyze-before-review.py; review-round1-red-saved-logs.log
+fails `saved callback-free logs formed primary launch evidence`, and
+review-round1-red-saved-I2.log fails `saved late completion was falsely admitted
+into done group`. These read-only mutations never changed the saved logs or probe.
+
+GREEN: review-round1-green.log and review-round1-green-saved-logs.log pass all
+existing numeric/parser/interval/readiness fixtures plus I1/I2. Clean saved periodic
+logs retain20 valid pairs, zero exclusions and primary pending launch/control
+groups; foreign-interference logs retain18 valid and2 excluded raw pair groups.
+All callback-free/terminal-end truncations and consistent late→done mutations are
+inconclusive and cannot form primary launch evidence. Required just check/tasks
+check exit0, zero warnings; evidence logs are review-round1-check.log and
+review-round1-tasks-check.log. No check/process remains running.
+
+Corrective evidence commit subject: fix(panel): reject incomplete and misordered
+launch evidence. Its final hash is appended to the workspace report after commit
+and supplied in the worker final response. Fresh scoped re-review is controller-owned.
+Live host timings/acceptance remain unproved.

@@ -8,9 +8,9 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-11T18:13:25Z
-updated: 2026-10-11T20:05:21Z
+updated: 2026-10-11T20:31:22Z
 started: 2026-10-11T18:42:57Z
-completed: 2026-10-11T20:05:05Z
+completed: 2026-10-11T20:31:14Z
 depends: [prism-7d38d8]
 parent: prism-f15cbf
 tags: []
@@ -77,4 +77,21 @@ Build frozen baseline/candidate scratch copies with matching minimal instrumenta
 - 2026-10-11T20:05:05Z (fix/panel-render-budget): done
   provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
 - 2026-10-11T20:05:05Z (fix/panel-render-budget): Corrected normal periodic update/unchanged refresh settlement without postponing frame/sample work; preserved raw contaminated-pair exclusions and validated full fake timelines, lint and repository gates; no live acceptance.
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T20:17:33Z (fix/panel-render-budget): review: impl round 1 — verdict: revise; findings: Important 2; reviewer: codex/gpt-6.1-sol
+- 2026-10-11T20:21:11Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T20:21:11Z (fix/panel-render-budget): review: impl round 1 — verdict: revise; findings: Important 2; reviewer: codex/gpt-6.1-sol
+- 2026-10-11T20:31:13Z (fix/panel-render-budget): detached: analyze.py: Review round1 I1/I2: require complete callback endpoints and origin-local completion ordering.
+- 2026-10-11T20:31:13Z (fix/panel-render-budget): attached: analyze.py (14499 bytes): Review-fixed parser: callback ends indexed across all events; incomplete/misordered pairs excluded.
+- 2026-10-11T20:31:13Z (fix/panel-render-budget): detached: analysis_check.py: Correct synthetic callback/completion timelines and add focused I1/I2 truncation/order fixtures.
+- 2026-10-11T20:31:13Z (fix/panel-render-budget): attached: analysis_check.py (14171 bytes): Focused I1/I2 RED/GREEN, early/late contradictions, terminal callback ends and saved periodic log assertions.
+- 2026-10-11T20:31:13Z (fix/panel-render-budget): detached: task-2-report.md: Append independent review fix round1 exact scope, commands and RED/GREEN results.
+- 2026-10-11T20:31:13Z (fix/panel-render-budget): attached: task-2-report.md (22497 bytes): Full report with independent-review I1/I2 fixes; parser-only validation and no running checks.
+- 2026-10-11T20:31:13Z (fix/panel-render-budget): detached: task2-readiness.tar.gz: Preserve review-fixed parser/fixtures and focused RED/GREEN logs with unchanged probe provenance.
+- 2026-10-11T20:31:14Z (fix/panel-render-budget): attached: task2-readiness.tar.gz (454409 bytes): Review-fixed complete archive: I1 endpoints/I2 temporal state, saved-log mutation proofs, unchanged probe/source identities.
+- 2026-10-11T20:31:14Z (fix/panel-render-budget): Impl review fix round1: I1 complete callback endpoints across activation/callback ids, including pairId=false terminal ends; I2 origin-local immediate/frame/completion order. Focused synthetic and saved-log RED→GREEN; clean20 valid/0 excluded, contaminated18 valid/2 excluded; gates0 errors/warnings; probe untouched, no lint/suite repetition or running checks.
+- 2026-10-11T20:31:14Z (fix/panel-render-budget): done
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T20:31:14Z (fix/panel-render-budget): Fixed Important I1/I2: incomplete callback spans and contradictory completion timelines cannot become primary launch evidence; focused fixtures/saved logs and required gates pass; no live acceptance.
   provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}

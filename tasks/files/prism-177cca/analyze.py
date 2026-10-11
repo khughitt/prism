@@ -120,9 +120,12 @@ def target_blocks(normalized):
 
 def pairs(normalized):
     grouped=defaultdict(list)
+    callback_ends={(e['activationNonce'],e['callbackId']):e for e in normalized['events'] if e['scope']=='callback'}
     for event in normalized['events']:
         if event['pairId']: grouped[(event['activationNonce'],event['block'],event['variant'],event['pairId'])].append(event)
     valid=[]; excluded=[]
+    def before(left,right):
+        return left['clockOrigin']==right['clockOrigin'] and left['recordId']<right['recordId'] and left['timestamp']<=right['timestamp']
     for identity,records in grouped.items():
         immediate=[e for e in records if e['class']=='pairImmediate' and e['scope']=='render']
         frame=[e for e in records if e['class']=='pairFrame' and e['scope']=='render']
@@ -143,6 +146,22 @@ def pairs(normalized):
         elif done[0]['control'] and (native or helper or completion or states[0]['pending']): reason='control-has-command'
         elif not done[0]['control'] and (len(native)!=1 or len(helper)!=1 or len(completion)!=1): reason='missing-launch-or-completion'
         elif not done[0]['control'] and (type(completion[0].get('exitCode')) is not int or completion[0]['exitCode']!=0 or any(completion[0].get(k) is not False for k in ('timedOut','stdoutTruncated','stderrTruncated'))): reason='failed-or-malformed-completion'
+        if reason is None:
+            for evidence in immediate+frame+native+helper+completion+states+done:
+                endpoint=callback_ends.get((evidence['activationNonce'],evidence['callbackId']))
+                if endpoint is None or not endpoint['complete'] or endpoint['interference'] or not endpoint['diagnosticsHidden'] or endpoint['clockOrigin']!=evidence['clockOrigin'] or endpoint['recordId']<=evidence['recordId'] or endpoint['timestamp']<evidence['timestamp']:
+                    reason='missing-or-incomplete-callback-end'
+                    break
+        if reason is None:
+            if states[0]['callbackId']!=frame[0]['callbackId'] or not before(immediate[0],frame[0]) or not before(frame[0],states[0]):
+                reason='invalid-immediate-frame-order'
+            elif frame[0]['pending']!=states[0]['pending']:
+                reason='inconsistent-frame-pending-state'
+            elif completion:
+                early=before(completion[0],frame[0])
+                late=before(states[0],completion[0])
+                if (states[0]['completionState']=='done' and not early) or (states[0]['completionState']=='pending' and not late):
+                    reason='completion-state-contradicts-order'
         if reason: excluded.append({'identity':identity,'reason':reason,'records':records}); continue
         first,second=immediate[0],frame[0]
         valid.append({'identity':identity,'control':done[0]['control'],'completionState':states[0]['completionState'],
