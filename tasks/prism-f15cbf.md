@@ -7,7 +7,7 @@ complexity: mid
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-10T17:06:10Z
-updated: 2026-10-11T14:57:20Z
+updated: 2026-10-11T15:06:33Z
 started: 2026-10-10T18:43:57Z
 depends: [prism-b81188]
 parent: prism-dac509
@@ -64,3 +64,12 @@ step: "Task 6: In-host measurement and the 15 ms gate"
 - 2026-10-11T14:52:37Z (fix/panel-render-budget): Frozen run 1791729887: cold median/max/n20.597/21.149/5 ms, release19.7795/21.816/6, dirty drag7.8985/11.613/238; zero budget errors. Cold rebuilt142 each, releases rebuilt0. Release render median19.523/native2.999 ms; enqueue0.198/native launch0.0875. Targets exceeded diagnostically; observer/scheduling/GC contributions unknown, no formal acceptance. Dedicated worker now measures offline call distribution on saved real describe, no production changes or live run. Spec/plan execution-status evidence updated; ceilings remain blocked.
 - 2026-10-11T14:57:19Z (fix/panel-render-budget): detached: follow-up-diagnostic.log: Replace host path text with portable markers for the machine-layout commit gate; original frozen capture retained in scratch, all diagnostic records unchanged
 - 2026-10-11T14:57:19Z (fix/panel-render-budget): attached: follow-up-diagnostic.log (342448 bytes): Frozen run1791729887 log with host paths redacted; timing/cache records unchanged, original capture retained in scratch
+- 2026-10-11T15:05:50Z (fix/panel-render-budget): attached: offline-call-profile-report.md (8353 bytes): Validated real-model offline call profile; retained hits leave signature/traversal work and do not explain live timing gap
+- 2026-10-11T15:05:51Z (fix/panel-render-budget): attached: offline-call-profile-results.json (129075 bytes): Seven phase totals and function/source-line counts; portable source paths, numeric fields unchanged
+- 2026-10-11T15:05:51Z (fix/panel-render-budget): attached: run-offline-call-profile.py (6640 bytes): Scratch standalone call-count experiment driver, with faithful-model and render-count assertions
+- 2026-10-11T15:05:51Z (fix/panel-render-budget): attached: offline-call-profile.lua (9762 bytes): Standalone scratch Lua measurement harness; no production modifications or cost ceilings
+- 2026-10-11T15:06:29Z (fix/panel-render-budget): detached: run-offline-call-profile.py: Use the original filename so the paired standalone harness can be reproduced without renaming
+- 2026-10-11T15:06:29Z (fix/panel-render-budget): detached: offline-call-profile.lua: Use experiment.lua, the filename required by the paired standalone driver
+- 2026-10-11T15:06:29Z (fix/panel-render-budget): attached: run-experiment.py (6640 bytes): Scratch standalone call-count experiment driver; paired with experiment.lua and a saved describe model
+- 2026-10-11T15:06:29Z (fix/panel-render-budget): attached: experiment.lua (9762 bytes): Scratch Lua call-count measurement harness paired with run-experiment.py; no production changes or ceilings
+- 2026-10-11T15:06:30Z (fix/panel-render-budget): Offline real-model experiment DONE: verified1907 typed leaves,821 table shapes,83 keys,12 expanded cards. Calls/misses cold9742/142, warm3514/0, drag3982/4, release3572/0, changed describe4426/0, deferred3737/5. Source-shared signatures/counts/traversals remain; Lua5.4 call volume does not explain live elapsed gap. No production fix inferred. Worker prepares scratch warm-button versus following-frame comparison with coarse phases and no trace/writes, then agent requests new desktop approval.

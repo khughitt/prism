@@ -1,0 +1,3911 @@
+{
+  "runtime": "Lua 5.4 debug.sethook call events, not Luau CPU/elapsed measurements",
+  "saved_model_sha256": "d3c4bd47bab57c799c571a56282aa76519131f9b84076d986ea5f42e88b78a8d",
+  "production_sha256": {
+    "panel.luau": "c265bff9c59004d1c6d4c77e091a21e1273e02f71aea6c11ecb0e47c6de3be79",
+    "presentation.luau": "7e7a9451350c26c332ea53342a066c2b6473557c347802b9b0c020ba00dddc2e",
+    "retain.luau": "9e5841acd546f1833a363c1c74d57f45d2e93c94ff464daae734ed1d2ea796f1"
+  },
+  "faithful_scalar_leaves_verified": 1907,
+  "table_shape_assertions": 821,
+  "checks": {
+    "param_count": 83,
+    "all_cards_expanded": 12,
+    "final_render_count": 20,
+    "release_callback_count": 1,
+    "write_callback_count": 1,
+    "describe_callback_count": 3,
+    "frame_callback_count": 3,
+    "fake_launch_count": 3
+  },
+  "phases": {
+    "expandedColdRender": {
+      "total_calls": 9742,
+      "renders": 1,
+      "builder_misses": 142,
+      "fake_launches": 0,
+      "fake_decodes": 0,
+      "fake_encodes": 0,
+      "functions": [
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 2527,
+          "label": "for iterator"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 23,
+          "calls": 747,
+          "label": "fake ui lookup"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 24,
+          "calls": 747,
+          "label": "fake ui constructor"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 31,
+          "calls": 552,
+          "label": "meta"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 420,
+          "label": "ipairs"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 342,
+          "label": "type"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 92,
+          "calls": 342,
+          "label": "sig"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 267,
+          "label": "tostring"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 45,
+          "calls": 244,
+          "label": "display"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 79,
+          "calls": 241,
+          "label": "gateOf"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 226,
+          "label": "floor"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 101,
+          "calls": 215,
+          "label": "cellSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 7,
+          "calls": 200,
+          "label": "stepPrecision"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 101,
+          "calls": 200,
+          "label": "normalizedTrack"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 142,
+          "label": "format"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/retain.luau",
+          "definition_line": 10,
+          "calls": 142,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 122,
+          "label": "abs"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 62,
+          "calls": 122,
+          "label": "rounded"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 114,
+          "label": "concat"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 100,
+          "label": "max"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 48,
+          "calls": 88,
+          "label": "percentPrecision"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 281,
+          "calls": 79,
+          "label": "holds"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 118,
+          "calls": 74,
+          "label": "noteFocus"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 745,
+          "calls": 74,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 779,
+          "calls": 74,
+          "label": "retainedCell"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 781,
+          "calls": 74,
+          "label": "build"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 597,
+          "calls": 72,
+          "label": "resetButton"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 610,
+          "calls": 72,
+          "label": "nativeControl"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 76,
+          "calls": 72,
+          "label": "asPercent"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 672,
+          "calls": 53,
+          "label": "nameButton"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 683,
+          "calls": 53,
+          "label": "rowHint"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 105,
+          "calls": 50,
+          "label": "sliderFrom"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 111,
+          "calls": 50,
+          "label": "sliderTo"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 117,
+          "calls": 50,
+          "label": "sliderStep"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 123,
+          "calls": 50,
+          "label": "toSliderValue"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 154,
+          "calls": 50,
+          "label": "fixed"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 160,
+          "calls": 50,
+          "label": "formatValue"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 46,
+          "label": "gsub"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 81,
+          "calls": 42,
+          "label": "rowHidden"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 705,
+          "calls": 41,
+          "label": "headCell"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 784,
+          "calls": 41,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 38,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 797,
+          "calls": 32,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 814,
+          "calls": 32,
+          "label": "retainedSingleRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 816,
+          "calls": 32,
+          "label": "build"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 886,
+          "calls": 24,
+          "label": "deviceDigest"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 890,
+          "calls": 24,
+          "label": "cardHeadSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 46,
+          "calls": 20,
+          "label": "scale"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 960,
+          "calls": 13,
+          "label": "resetModeButton"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 124,
+          "calls": 12,
+          "label": "noteCardFocus"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 846,
+          "calls": 12,
+          "label": "lightRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 866,
+          "calls": 12,
+          "label": "cardHead"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 898,
+          "calls": 12,
+          "label": "retainedCardHead"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 899,
+          "calls": 12,
+          "label": "build"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 911,
+          "calls": 12,
+          "label": "cardSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 924,
+          "calls": 12,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 954,
+          "calls": 12,
+          "label": "retainedCard"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 957,
+          "calls": 12,
+          "label": "build"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 80,
+          "calls": 12,
+          "label": "normalized"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 476,
+          "calls": 12,
+          "label": "pairsOf"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 474,
+          "calls": 11,
+          "label": "resetAction"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 805,
+          "calls": 9,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 821,
+          "calls": 9,
+          "label": "retainedMatrixRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 824,
+          "calls": 9,
+          "label": "build"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 8,
+          "label": "log"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 288,
+          "calls": 8,
+          "label": "editedCount"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 501,
+          "calls": 7,
+          "label": "neutralCount"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 493,
+          "calls": 5,
+          "label": "symmetricCount"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 716,
+          "calls": 4,
+          "label": "sourceSwatch"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 725,
+          "calls": 4,
+          "label": "sourceLock"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 972,
+          "calls": 4,
+          "label": "resetModeButtons"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/queue.luau",
+          "definition_line": 53,
+          "calls": 4,
+          "label": "captureSlots"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 583,
+          "calls": 3,
+          "label": "selectIndex"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 590,
+          "calls": 3,
+          "label": "selectOptions"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 791,
+          "calls": 3,
+          "label": "subgroupHeading"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1000,
+          "calls": 3,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1017,
+          "calls": 3,
+          "label": "sectionHeaderSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1027,
+          "calls": 3,
+          "label": "retainedSectionHeader"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1029,
+          "calls": 3,
+          "label": "build"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 349,
+          "calls": 3,
+          "label": "sectionColor"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 498,
+          "calls": 2,
+          "label": "commitAction"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 735,
+          "calls": 2,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 829,
+          "calls": 2,
+          "label": "matrixHeader"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1064,
+          "calls": 2,
+          "label": "appendSection"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 1,
+          "label": "match"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1033,
+          "calls": 1,
+          "label": "keepInLook"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1039,
+          "calls": 1,
+          "label": "editsRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1093,
+          "calls": 1,
+          "label": "appendRack"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1310,
+          "calls": 1,
+          "label": "profileRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1436,
+          "calls": 1,
+          "label": "wallpaperHeaderRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1465,
+          "calls": 1,
+          "label": "action"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 233,
+          "calls": 1,
+          "label": "gates"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 255,
+          "calls": 1,
+          "label": "attachedSwatches"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 297,
+          "calls": 1,
+          "label": "wallpaperHeader"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 328,
+          "calls": 1,
+          "label": "profileSection"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 440,
+          "calls": 1,
+          "label": "rackState"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 509,
+          "calls": 1,
+          "label": "visibleParams"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 33,
+          "calls": 1,
+          "label": "fake panel.render"
+        }
+      ],
+      "rebuilt_ids": [
+        "s:Glass",
+        "c:compositor.gaps",
+        "r:compositor.gaps",
+        "c:glass.paneLip",
+        "r:glass.paneLip",
+        "c:glass.inactive.bevelProfile",
+        "c:glass.bevelProfile",
+        "m:Glass\u0000Edge profile",
+        "c:glass.paneShiftX",
+        "r:glass.paneShiftX",
+        "c:glass.paneShiftY",
+        "r:glass.paneShiftY",
+        "c:glass.jellyFlex",
+        "r:glass.jellyFlex",
+        "c:glass.jellyRipple",
+        "r:glass.jellyRipple",
+        "s:Focus",
+        "c:glass.inactive.roughness",
+        "c:glass.roughness",
+        "h:backdrop",
+        "c:glass.bypass.backdrop",
+        "r:glass.bypass.backdrop",
+        "c:glass.inactive.backdropBlur",
+        "c:glass.backdropBlur",
+        "m:Focus\u0000Frosted backdrop",
+        "d:backdrop",
+        "c:glass.inactive.distortion",
+        "c:glass.distortion",
+        "h:distortion",
+        "c:glass.bypass.distortion",
+        "r:glass.bypass.distortion",
+        "c:glass.inactive.distortionScale",
+        "c:glass.distortionScale",
+        "m:Focus\u0000Distortion detail",
+        "d:distortion",
+        "c:glass.inactive.ior",
+        "c:glass.ior",
+        "h:refraction",
+        "c:glass.bypass.refraction",
+        "r:glass.bypass.refraction",
+        "c:glass.inactive.thickness",
+        "c:glass.thickness",
+        "m:Focus\u0000Depth",
+        "d:refraction",
+        "c:glass.inactive.chromaticAberration",
+        "c:glass.chromaticAberration",
+        "h:fringing",
+        "c:glass.bypass.fringing",
+        "r:glass.bypass.fringing",
+        "d:fringing",
+        "c:glass.inactive.anisotropicBlur",
+        "c:glass.anisotropicBlur",
+        "h:directionalBlur",
+        "c:glass.bypass.directionalBlur",
+        "r:glass.bypass.directionalBlur",
+        "d:directionalBlur",
+        "c:glass.inactive.saturation",
+        "c:glass.saturation",
+        "h:saturation",
+        "c:glass.bypass.saturation",
+        "r:glass.bypass.saturation",
+        "d:saturation",
+        "c:glass.inactive.noise",
+        "c:glass.noise",
+        "h:noise",
+        "c:glass.bypass.noise",
+        "r:glass.bypass.noise",
+        "c:glass.noiseType",
+        "r:glass.noiseType",
+        "d:noise",
+        "c:glass.inactive.attenuationColor",
+        "c:glass.attenuationColor",
+        "h:tint",
+        "c:glass.bypass.tint",
+        "r:glass.bypass.tint",
+        "c:glass.inactive.accentTint",
+        "c:glass.accentTint",
+        "m:Focus\u0000Session hue",
+        "c:glass.inactive.attenuationDistance",
+        "c:glass.attenuationDistance",
+        "m:Focus\u0000Tint distance",
+        "c:glass.tintSource",
+        "r:glass.tintSource",
+        "d:tint",
+        "c:glass.inactive.aurora",
+        "c:glass.aurora",
+        "h:aurora",
+        "c:glass.bypass.aurora",
+        "r:glass.bypass.aurora",
+        "c:glass.inactive.auroraDriftHz",
+        "c:glass.auroraDriftHz",
+        "m:Focus\u0000Drift rate",
+        "c:glass.inactive.auroraColorA",
+        "c:glass.auroraColorA",
+        "m:Focus\u0000Color A",
+        "c:glass.inactive.auroraColorB",
+        "c:glass.auroraColorB",
+        "m:Focus\u0000Color B",
+        "d:aurora",
+        "c:glass.inactive.reflection",
+        "c:glass.reflection",
+        "h:reflection",
+        "c:glass.bypass.reflection",
+        "r:glass.bypass.reflection",
+        "d:reflection",
+        "c:glass.inactive.edgeHighlight",
+        "c:glass.edgeHighlight",
+        "h:edgeHighlight",
+        "c:glass.bypass.edgeHighlight",
+        "r:glass.bypass.edgeHighlight",
+        "d:edgeHighlight",
+        "c:glass.inactive.iridescence",
+        "c:glass.iridescence",
+        "h:iridescence",
+        "c:glass.bypass.iridescence",
+        "r:glass.bypass.iridescence",
+        "d:iridescence",
+        "s:Ring",
+        "c:glass.ring.colorSource",
+        "r:glass.ring.colorSource",
+        "c:glass.ring.gap",
+        "r:glass.ring.gap",
+        "c:glass.ring.width",
+        "r:glass.ring.width",
+        "c:glass.lightIor",
+        "r:glass.lightIor",
+        "c:glass.ring.accent",
+        "r:glass.ring.accent",
+        "c:glass.ring.edgeTint",
+        "r:glass.ring.edgeTint",
+        "c:glass.ring.beamSpeed",
+        "r:glass.ring.beamSpeed",
+        "c:glass.ring.beamNoise",
+        "r:glass.ring.beamNoise",
+        "c:glass.ring.beamNoiseHz",
+        "r:glass.ring.beamNoiseHz",
+        "c:glass.ring.decay",
+        "r:glass.ring.decay",
+        "c:glass.ring.glow",
+        "r:glass.ring.glow",
+        "c:glass.ring.rest",
+        "r:glass.ring.rest"
+      ],
+      "category_calls": {
+        "production_Lua": 3894,
+        "fake_host": 1495,
+        "stdlib_C": 4353
+      }
+    },
+    "steadyWarmRender": {
+      "total_calls": 3514,
+      "renders": 1,
+      "builder_misses": 0,
+      "fake_launches": 0,
+      "fake_decodes": 0,
+      "fake_encodes": 0,
+      "functions": [
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 1659,
+          "label": "for iterator"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 284,
+          "label": "type"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 92,
+          "calls": 284,
+          "label": "sig"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 215,
+          "label": "tostring"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 198,
+          "label": "ipairs"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 79,
+          "calls": 156,
+          "label": "gateOf"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 102,
+          "label": "concat"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 281,
+          "calls": 79,
+          "label": "holds"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 101,
+          "calls": 75,
+          "label": "cellSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 118,
+          "calls": 74,
+          "label": "noteFocus"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 70,
+          "label": "format"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 23,
+          "calls": 42,
+          "label": "fake ui lookup"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 24,
+          "calls": 42,
+          "label": "fake ui constructor"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/retain.luau",
+          "definition_line": 10,
+          "calls": 34,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 81,
+          "calls": 31,
+          "label": "rowHidden"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 26,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 814,
+          "calls": 18,
+          "label": "retainedSingleRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 124,
+          "calls": 12,
+          "label": "noteCardFocus"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 886,
+          "calls": 12,
+          "label": "deviceDigest"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 890,
+          "calls": 12,
+          "label": "cardHeadSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 911,
+          "calls": 12,
+          "label": "cardSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 954,
+          "calls": 12,
+          "label": "retainedCard"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 476,
+          "calls": 7,
+          "label": "pairsOf"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 960,
+          "calls": 5,
+          "label": "resetModeButton"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 288,
+          "calls": 5,
+          "label": "editedCount"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 501,
+          "calls": 4,
+          "label": "neutralCount"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/queue.luau",
+          "definition_line": 53,
+          "calls": 4,
+          "label": "captureSlots"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 474,
+          "calls": 3,
+          "label": "resetAction"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 791,
+          "calls": 3,
+          "label": "subgroupHeading"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1017,
+          "calls": 3,
+          "label": "sectionHeaderSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1027,
+          "calls": 3,
+          "label": "retainedSectionHeader"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 349,
+          "calls": 3,
+          "label": "sectionColor"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 493,
+          "calls": 3,
+          "label": "symmetricCount"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 498,
+          "calls": 2,
+          "label": "commitAction"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 829,
+          "calls": 2,
+          "label": "matrixHeader"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1064,
+          "calls": 2,
+          "label": "appendSection"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 1,
+          "label": "match"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 821,
+          "calls": 1,
+          "label": "retainedMatrixRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 972,
+          "calls": 1,
+          "label": "resetModeButtons"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1033,
+          "calls": 1,
+          "label": "keepInLook"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1039,
+          "calls": 1,
+          "label": "editsRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1093,
+          "calls": 1,
+          "label": "appendRack"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1310,
+          "calls": 1,
+          "label": "profileRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1436,
+          "calls": 1,
+          "label": "wallpaperHeaderRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1465,
+          "calls": 1,
+          "label": "action"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 233,
+          "calls": 1,
+          "label": "gates"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 255,
+          "calls": 1,
+          "label": "attachedSwatches"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 297,
+          "calls": 1,
+          "label": "wallpaperHeader"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 328,
+          "calls": 1,
+          "label": "profileSection"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 440,
+          "calls": 1,
+          "label": "rackState"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 509,
+          "calls": 1,
+          "label": "visibleParams"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 33,
+          "calls": 1,
+          "label": "fake panel.render"
+        }
+      ],
+      "rebuilt_ids": [],
+      "category_calls": {
+        "stdlib_C": 2555,
+        "production_Lua": 874,
+        "fake_host": 85
+      }
+    },
+    "dirtyDragTick": {
+      "total_calls": 3982,
+      "renders": 1,
+      "builder_misses": 4,
+      "fake_launches": 0,
+      "fake_decodes": 0,
+      "fake_encodes": 0,
+      "functions": [
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 1970,
+          "label": "for iterator"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 289,
+          "label": "type"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 92,
+          "calls": 289,
+          "label": "sig"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 218,
+          "label": "tostring"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 212,
+          "label": "ipairs"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 79,
+          "calls": 158,
+          "label": "gateOf"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 103,
+          "label": "concat"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 101,
+          "calls": 83,
+          "label": "cellSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 281,
+          "calls": 79,
+          "label": "holds"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 118,
+          "calls": 74,
+          "label": "noteFocus"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 73,
+          "label": "format"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 23,
+          "calls": 62,
+          "label": "fake ui lookup"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 24,
+          "calls": 62,
+          "label": "fake ui constructor"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/retain.luau",
+          "definition_line": 10,
+          "calls": 39,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 81,
+          "calls": 32,
+          "label": "rowHidden"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 27,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 814,
+          "calls": 19,
+          "label": "retainedSingleRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 886,
+          "calls": 13,
+          "label": "deviceDigest"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 890,
+          "calls": 13,
+          "label": "cardHeadSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 124,
+          "calls": 12,
+          "label": "noteCardFocus"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 911,
+          "calls": 12,
+          "label": "cardSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 954,
+          "calls": 12,
+          "label": "retainedCard"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 31,
+          "calls": 9,
+          "label": "meta"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 476,
+          "calls": 9,
+          "label": "pairsOf"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 960,
+          "calls": 8,
+          "label": "resetModeButton"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 474,
+          "calls": 6,
+          "label": "resetAction"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 288,
+          "calls": 6,
+          "label": "editedCount"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 501,
+          "calls": 5,
+          "label": "neutralCount"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 4,
+          "label": "floor"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 101,
+          "calls": 4,
+          "label": "normalizedTrack"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 493,
+          "calls": 4,
+          "label": "symmetricCount"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/queue.luau",
+          "definition_line": 53,
+          "calls": 4,
+          "label": "captureSlots"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 791,
+          "calls": 3,
+          "label": "subgroupHeading"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1017,
+          "calls": 3,
+          "label": "sectionHeaderSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1027,
+          "calls": 3,
+          "label": "retainedSectionHeader"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 349,
+          "calls": 3,
+          "label": "sectionColor"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 2,
+          "label": "abs"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 498,
+          "calls": 2,
+          "label": "commitAction"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 779,
+          "calls": 2,
+          "label": "retainedCell"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 821,
+          "calls": 2,
+          "label": "retainedMatrixRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 829,
+          "calls": 2,
+          "label": "matrixHeader"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 972,
+          "calls": 2,
+          "label": "resetModeButtons"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1064,
+          "calls": 2,
+          "label": "appendSection"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 46,
+          "calls": 2,
+          "label": "scale"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 48,
+          "calls": 2,
+          "label": "percentPrecision"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 62,
+          "calls": 2,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 1,
+          "label": "match"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 597,
+          "calls": 1,
+          "label": "resetButton"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 610,
+          "calls": 1,
+          "label": "nativeControl"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 672,
+          "calls": 1,
+          "label": "nameButton"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 683,
+          "calls": 1,
+          "label": "rowHint"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 745,
+          "calls": 1,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 781,
+          "calls": 1,
+          "label": "build"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 846,
+          "calls": 1,
+          "label": "lightRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 866,
+          "calls": 1,
+          "label": "cardHead"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 898,
+          "calls": 1,
+          "label": "retainedCardHead"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 899,
+          "calls": 1,
+          "label": "build"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 924,
+          "calls": 1,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 957,
+          "calls": 1,
+          "label": "build"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1000,
+          "calls": 1,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1029,
+          "calls": 1,
+          "label": "build"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1033,
+          "calls": 1,
+          "label": "keepInLook"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1039,
+          "calls": 1,
+          "label": "editsRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1093,
+          "calls": 1,
+          "label": "appendRack"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1310,
+          "calls": 1,
+          "label": "profileRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1436,
+          "calls": 1,
+          "label": "wallpaperHeaderRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1465,
+          "calls": 1,
+          "label": "render"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1570,
+          "calls": 1,
+          "label": "onFrameTick"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 7,
+          "calls": 1,
+          "label": "stepPrecision"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 45,
+          "calls": 1,
+          "label": "display"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 76,
+          "calls": 1,
+          "label": "asPercent"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 80,
+          "calls": 1,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 105,
+          "calls": 1,
+          "label": "sliderFrom"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 111,
+          "calls": 1,
+          "label": "sliderTo"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 117,
+          "calls": 1,
+          "label": "sliderStep"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 123,
+          "calls": 1,
+          "label": "toSliderValue"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 154,
+          "calls": 1,
+          "label": "fixed"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 160,
+          "calls": 1,
+          "label": "formatValue"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 233,
+          "calls": 1,
+          "label": "gates"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 255,
+          "calls": 1,
+          "label": "attachedSwatches"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 297,
+          "calls": 1,
+          "label": "wallpaperHeader"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 328,
+          "calls": 1,
+          "label": "profileSection"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 440,
+          "calls": 1,
+          "label": "rackState"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 509,
+          "calls": 1,
+          "label": "visibleParams"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 33,
+          "calls": 1,
+          "label": "fake panel.render"
+        },
+        {
+          "category": "experiment_Lua",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 162,
+          "calls": 1,
+          "label": "action"
+        }
+      ],
+      "rebuilt_ids": [
+        "s:Focus",
+        "c:glass.inactive.roughness",
+        "h:backdrop",
+        "d:backdrop"
+      ],
+      "category_calls": {
+        "production_Lua": 957,
+        "fake_host": 125,
+        "stdlib_C": 2899,
+        "experiment_Lua": 1
+      }
+    },
+    "release": {
+      "total_calls": 3572,
+      "renders": 1,
+      "builder_misses": 0,
+      "fake_launches": 1,
+      "fake_decodes": 0,
+      "fake_encodes": 0,
+      "functions": [
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 1664,
+          "label": "for iterator"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 284,
+          "label": "type"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 92,
+          "calls": 284,
+          "label": "sig"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 220,
+          "label": "tostring"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 199,
+          "label": "ipairs"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 79,
+          "calls": 156,
+          "label": "gateOf"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 103,
+          "label": "concat"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 281,
+          "calls": 79,
+          "label": "holds"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 101,
+          "calls": 75,
+          "label": "cellSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 118,
+          "calls": 74,
+          "label": "noteFocus"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 70,
+          "label": "format"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 23,
+          "calls": 42,
+          "label": "fake ui lookup"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 24,
+          "calls": 42,
+          "label": "fake ui constructor"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/retain.luau",
+          "definition_line": 10,
+          "calls": 34,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 81,
+          "calls": 31,
+          "label": "rowHidden"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 26,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 814,
+          "calls": 18,
+          "label": "retainedSingleRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 124,
+          "calls": 12,
+          "label": "noteCardFocus"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 886,
+          "calls": 12,
+          "label": "deviceDigest"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 890,
+          "calls": 12,
+          "label": "cardHeadSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 911,
+          "calls": 12,
+          "label": "cardSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 954,
+          "calls": 12,
+          "label": "retainedCard"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 476,
+          "calls": 7,
+          "label": "pairsOf"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 31,
+          "calls": 6,
+          "label": "meta"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 960,
+          "calls": 5,
+          "label": "resetModeButton"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 288,
+          "calls": 5,
+          "label": "editedCount"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 4,
+          "label": "gsub"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 4,
+          "label": "abs"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 101,
+          "calls": 4,
+          "label": "normalizedTrack"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 501,
+          "calls": 4,
+          "label": "neutralCount"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/queue.luau",
+          "definition_line": 53,
+          "calls": 4,
+          "label": "captureSlots"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/shell.luau",
+          "definition_line": 3,
+          "calls": 4,
+          "label": "quote"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 474,
+          "calls": 3,
+          "label": "resetAction"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 791,
+          "calls": 3,
+          "label": "subgroupHeading"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1017,
+          "calls": 3,
+          "label": "sectionHeaderSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1027,
+          "calls": 3,
+          "label": "retainedSectionHeader"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 349,
+          "calls": 3,
+          "label": "sectionColor"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 493,
+          "calls": 3,
+          "label": "symmetricCount"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 498,
+          "calls": 2,
+          "label": "commitAction"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 829,
+          "calls": 2,
+          "label": "matrixHeader"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1064,
+          "calls": 2,
+          "label": "appendSection"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 46,
+          "calls": 2,
+          "label": "scale"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 1,
+          "label": "find"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 1,
+          "label": "max"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 1,
+          "label": "match"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 86,
+          "calls": 1,
+          "label": "current"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 140,
+          "calls": 1,
+          "label": "run"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 335,
+          "calls": 1,
+          "label": "syncFrameTick"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 423,
+          "calls": 1,
+          "label": "launch"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 429,
+          "calls": 1,
+          "label": "enqueue"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 560,
+          "calls": 1,
+          "label": "endDrag"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 649,
+          "calls": 1,
+          "label": "onDragEnd"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 821,
+          "calls": 1,
+          "label": "retainedMatrixRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 972,
+          "calls": 1,
+          "label": "resetModeButtons"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1033,
+          "calls": 1,
+          "label": "keepInLook"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1039,
+          "calls": 1,
+          "label": "editsRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1093,
+          "calls": 1,
+          "label": "appendRack"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1310,
+          "calls": 1,
+          "label": "profileRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1436,
+          "calls": 1,
+          "label": "wallpaperHeaderRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1465,
+          "calls": 1,
+          "label": "render"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 80,
+          "calls": 1,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 105,
+          "calls": 1,
+          "label": "sliderFrom"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 111,
+          "calls": 1,
+          "label": "sliderTo"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 117,
+          "calls": 1,
+          "label": "sliderStep"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 123,
+          "calls": 1,
+          "label": "toSliderValue"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 144,
+          "calls": 1,
+          "label": "canonicalFromSliderStep"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 233,
+          "calls": 1,
+          "label": "gates"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 255,
+          "calls": 1,
+          "label": "attachedSwatches"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 297,
+          "calls": 1,
+          "label": "wallpaperHeader"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 328,
+          "calls": 1,
+          "label": "profileSection"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 440,
+          "calls": 1,
+          "label": "rackState"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 509,
+          "calls": 1,
+          "label": "visibleParams"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/queue.luau",
+          "definition_line": 19,
+          "calls": 1,
+          "label": "affectsParams"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/queue.luau",
+          "definition_line": 27,
+          "calls": 1,
+          "label": "enqueue"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/queue.luau",
+          "definition_line": 71,
+          "calls": 1,
+          "label": "argvFor"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/shell.luau",
+          "definition_line": 7,
+          "calls": 1,
+          "label": "command"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 33,
+          "calls": 1,
+          "label": "fake panel.render"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 34,
+          "calls": 1,
+          "label": "fake panel.setNeedsFrameTick"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 41,
+          "calls": 1,
+          "label": "fake native runAsync"
+        },
+        {
+          "category": "experiment_Lua",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 165,
+          "calls": 1,
+          "label": "action"
+        }
+      ],
+      "rebuilt_ids": [],
+      "category_calls": {
+        "production_Lua": 907,
+        "fake_host": 87,
+        "stdlib_C": 2577,
+        "experiment_Lua": 1
+      }
+    },
+    "writeCompletion": {
+      "total_calls": 3544,
+      "renders": 1,
+      "builder_misses": 0,
+      "fake_launches": 1,
+      "fake_decodes": 0,
+      "fake_encodes": 0,
+      "functions": [
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 1663,
+          "label": "for iterator"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 284,
+          "label": "type"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 92,
+          "calls": 284,
+          "label": "sig"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 218,
+          "label": "tostring"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 199,
+          "label": "ipairs"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 79,
+          "calls": 156,
+          "label": "gateOf"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 103,
+          "label": "concat"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 281,
+          "calls": 79,
+          "label": "holds"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 101,
+          "calls": 75,
+          "label": "cellSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 118,
+          "calls": 74,
+          "label": "noteFocus"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 70,
+          "label": "format"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 23,
+          "calls": 42,
+          "label": "fake ui lookup"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 24,
+          "calls": 42,
+          "label": "fake ui constructor"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/retain.luau",
+          "definition_line": 10,
+          "calls": 34,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 81,
+          "calls": 31,
+          "label": "rowHidden"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 26,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 814,
+          "calls": 18,
+          "label": "retainedSingleRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 124,
+          "calls": 12,
+          "label": "noteCardFocus"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 886,
+          "calls": 12,
+          "label": "deviceDigest"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 890,
+          "calls": 12,
+          "label": "cardHeadSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 911,
+          "calls": 12,
+          "label": "cardSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 954,
+          "calls": 12,
+          "label": "retainedCard"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 476,
+          "calls": 7,
+          "label": "pairsOf"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 960,
+          "calls": 5,
+          "label": "resetModeButton"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 288,
+          "calls": 5,
+          "label": "editedCount"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 501,
+          "calls": 4,
+          "label": "neutralCount"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/queue.luau",
+          "definition_line": 53,
+          "calls": 4,
+          "label": "captureSlots"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 3,
+          "label": "gsub"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 474,
+          "calls": 3,
+          "label": "resetAction"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 791,
+          "calls": 3,
+          "label": "subgroupHeading"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1017,
+          "calls": 3,
+          "label": "sectionHeaderSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1027,
+          "calls": 3,
+          "label": "retainedSectionHeader"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 349,
+          "calls": 3,
+          "label": "sectionColor"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 493,
+          "calls": 3,
+          "label": "symmetricCount"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/shell.luau",
+          "definition_line": 3,
+          "calls": 3,
+          "label": "quote"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 498,
+          "calls": 2,
+          "label": "commitAction"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 829,
+          "calls": 2,
+          "label": "matrixHeader"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1064,
+          "calls": 2,
+          "label": "appendSection"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 1,
+          "label": "find"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 1,
+          "label": "match"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 140,
+          "calls": 1,
+          "label": "run"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 148,
+          "calls": 1,
+          "label": "resultError"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 313,
+          "calls": 1,
+          "label": "finishRefresh"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 384,
+          "calls": 1,
+          "label": "refresh"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 402,
+          "calls": 1,
+          "label": "finishWrite"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 424,
+          "calls": 1,
+          "label": "pendingWrite"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 821,
+          "calls": 1,
+          "label": "retainedMatrixRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 972,
+          "calls": 1,
+          "label": "resetModeButtons"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1033,
+          "calls": 1,
+          "label": "keepInLook"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1039,
+          "calls": 1,
+          "label": "editsRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1093,
+          "calls": 1,
+          "label": "appendRack"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1310,
+          "calls": 1,
+          "label": "profileRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1436,
+          "calls": 1,
+          "label": "wallpaperHeaderRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1465,
+          "calls": 1,
+          "label": "render"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 233,
+          "calls": 1,
+          "label": "gates"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 255,
+          "calls": 1,
+          "label": "attachedSwatches"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 297,
+          "calls": 1,
+          "label": "wallpaperHeader"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 328,
+          "calls": 1,
+          "label": "profileSection"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 440,
+          "calls": 1,
+          "label": "rackState"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 509,
+          "calls": 1,
+          "label": "visibleParams"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/queue.luau",
+          "definition_line": 3,
+          "calls": 1,
+          "label": "new"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/queue.luau",
+          "definition_line": 7,
+          "calls": 1,
+          "label": "isSample"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/queue.luau",
+          "definition_line": 23,
+          "calls": 1,
+          "label": "shouldRefresh"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/queue.luau",
+          "definition_line": 43,
+          "calls": 1,
+          "label": "finish"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/shell.luau",
+          "definition_line": 7,
+          "calls": 1,
+          "label": "command"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 33,
+          "calls": 1,
+          "label": "fake panel.render"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 41,
+          "calls": 1,
+          "label": "fake native runAsync"
+        },
+        {
+          "category": "experiment_Lua",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 98,
+          "calls": 1,
+          "label": "answer"
+        },
+        {
+          "category": "experiment_Lua",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 167,
+          "calls": 1,
+          "label": "action"
+        }
+      ],
+      "rebuilt_ids": [],
+      "category_calls": {
+        "production_Lua": 888,
+        "fake_host": 86,
+        "stdlib_C": 2568,
+        "experiment_Lua": 2
+      }
+    },
+    "changedDescribe": {
+      "total_calls": 4426,
+      "renders": 0,
+      "builder_misses": 0,
+      "fake_launches": 0,
+      "fake_decodes": 1,
+      "fake_encodes": 95,
+      "functions": [
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 2031,
+          "label": "for iterator"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 1256,
+          "label": "type"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 287,
+          "label": "ipairs"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 169,
+          "label": "pairs"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 158,
+          "calls": 164,
+          "label": "denseStringArray"
+        },
+        {
+          "category": "experiment_Lua",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 11,
+          "calls": 96,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 40,
+          "calls": 95,
+          "label": "fake native json.encode"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 192,
+          "calls": 83,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 169,
+          "calls": 79,
+          "label": "visibleParamError"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 281,
+          "calls": 79,
+          "label": "holds"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 382,
+          "calls": 20,
+          "label": "takeRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 391,
+          "calls": 15,
+          "label": "takeKey"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 12,
+          "label": "tostring"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 457,
+          "calls": 12,
+          "label": "cardParams"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 4,
+          "label": "pcall"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 265,
+          "calls": 2,
+          "label": "sectionParams"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 1,
+          "label": "next"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 1,
+          "label": "sort"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 148,
+          "calls": 1,
+          "label": "resultError"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 206,
+          "calls": 1,
+          "label": "layerOrderError"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 220,
+          "calls": 1,
+          "label": "profileListError"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 231,
+          "calls": 1,
+          "label": "buildStructure"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 261,
+          "calls": 1,
+          "label": "validateModel"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 313,
+          "calls": 1,
+          "label": "finishRefresh"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 325,
+          "calls": 1,
+          "label": "markEdits"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 335,
+          "calls": 1,
+          "label": "syncFrameTick"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 340,
+          "calls": 1,
+          "label": "described"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 170,
+          "calls": 1,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 185,
+          "calls": 1,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 233,
+          "calls": 1,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 358,
+          "calls": 1,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 440,
+          "calls": 1,
+          "label": "rackState"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 467,
+          "calls": 1,
+          "label": "rackParams"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/retain.luau",
+          "definition_line": 21,
+          "calls": 1,
+          "label": "keep"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 34,
+          "calls": 1,
+          "label": "fake panel.setNeedsFrameTick"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 39,
+          "calls": 1,
+          "label": "fake native json.decode"
+        },
+        {
+          "category": "experiment_Lua",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 98,
+          "calls": 1,
+          "label": "answer"
+        },
+        {
+          "category": "experiment_Lua",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 180,
+          "calls": 1,
+          "label": "action"
+        }
+      ],
+      "rebuilt_ids": [],
+      "category_calls": {
+        "stdlib_C": 3761,
+        "production_Lua": 470,
+        "experiment_Lua": 98,
+        "fake_host": 97
+      }
+    },
+    "deferredDescribeRender": {
+      "total_calls": 3737,
+      "renders": 1,
+      "builder_misses": 5,
+      "fake_launches": 0,
+      "fake_decodes": 0,
+      "fake_encodes": 0,
+      "functions": [
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 1682,
+          "label": "for iterator"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 289,
+          "label": "type"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 92,
+          "calls": 289,
+          "label": "sig"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 218,
+          "label": "tostring"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 207,
+          "label": "ipairs"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 79,
+          "calls": 159,
+          "label": "gateOf"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 103,
+          "label": "concat"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 101,
+          "calls": 84,
+          "label": "cellSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 281,
+          "calls": 79,
+          "label": "holds"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 74,
+          "label": "format"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 118,
+          "calls": 74,
+          "label": "noteFocus"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 23,
+          "calls": 64,
+          "label": "fake ui lookup"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 24,
+          "calls": 64,
+          "label": "fake ui constructor"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/retain.luau",
+          "definition_line": 10,
+          "calls": 40,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 81,
+          "calls": 32,
+          "label": "rowHidden"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 27,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 814,
+          "calls": 19,
+          "label": "retainedSingleRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 31,
+          "calls": 19,
+          "label": "meta"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 886,
+          "calls": 13,
+          "label": "deviceDigest"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 890,
+          "calls": 13,
+          "label": "cardHeadSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 124,
+          "calls": 12,
+          "label": "noteCardFocus"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 911,
+          "calls": 12,
+          "label": "cardSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 954,
+          "calls": 12,
+          "label": "retainedCard"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 7,
+          "calls": 8,
+          "label": "stepPrecision"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 101,
+          "calls": 8,
+          "label": "normalizedTrack"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 45,
+          "calls": 7,
+          "label": "display"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 476,
+          "calls": 7,
+          "label": "pairsOf"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 6,
+          "label": "floor"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 960,
+          "calls": 5,
+          "label": "resetModeButton"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 288,
+          "calls": 5,
+          "label": "editedCount"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 4,
+          "label": "max"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 501,
+          "calls": 4,
+          "label": "neutralCount"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/queue.luau",
+          "definition_line": 53,
+          "calls": 4,
+          "label": "captureSlots"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 3,
+          "label": "abs"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 474,
+          "calls": 3,
+          "label": "resetAction"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 779,
+          "calls": 3,
+          "label": "retainedCell"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 791,
+          "calls": 3,
+          "label": "subgroupHeading"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1017,
+          "calls": 3,
+          "label": "sectionHeaderSignature"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1027,
+          "calls": 3,
+          "label": "retainedSectionHeader"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 62,
+          "calls": 3,
+          "label": "rounded"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 349,
+          "calls": 3,
+          "label": "sectionColor"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 493,
+          "calls": 3,
+          "label": "symmetricCount"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 498,
+          "calls": 2,
+          "label": "commitAction"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 597,
+          "calls": 2,
+          "label": "resetButton"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 610,
+          "calls": 2,
+          "label": "nativeControl"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 672,
+          "calls": 2,
+          "label": "nameButton"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 683,
+          "calls": 2,
+          "label": "rowHint"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 745,
+          "calls": 2,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 781,
+          "calls": 2,
+          "label": "build"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 821,
+          "calls": 2,
+          "label": "retainedMatrixRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 829,
+          "calls": 2,
+          "label": "matrixHeader"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1064,
+          "calls": 2,
+          "label": "appendSection"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 46,
+          "calls": 2,
+          "label": "scale"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 48,
+          "calls": 2,
+          "label": "percentPrecision"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 105,
+          "calls": 2,
+          "label": "sliderFrom"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 111,
+          "calls": 2,
+          "label": "sliderTo"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 117,
+          "calls": 2,
+          "label": "sliderStep"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 123,
+          "calls": 2,
+          "label": "toSliderValue"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 154,
+          "calls": 2,
+          "label": "fixed"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 160,
+          "calls": 2,
+          "label": "formatValue"
+        },
+        {
+          "category": "stdlib_C",
+          "source": "=[C]",
+          "definition_line": -1,
+          "calls": 1,
+          "label": "match"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 335,
+          "calls": 1,
+          "label": "syncFrameTick"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 705,
+          "calls": 1,
+          "label": "headCell"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 784,
+          "calls": 1,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 797,
+          "calls": 1,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 816,
+          "calls": 1,
+          "label": "build"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 846,
+          "calls": 1,
+          "label": "lightRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 866,
+          "calls": 1,
+          "label": "cardHead"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 898,
+          "calls": 1,
+          "label": "retainedCardHead"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 899,
+          "calls": 1,
+          "label": "build"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 924,
+          "calls": 1,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 957,
+          "calls": 1,
+          "label": "build"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 972,
+          "calls": 1,
+          "label": "resetModeButtons"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1033,
+          "calls": 1,
+          "label": "keepInLook"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1039,
+          "calls": 1,
+          "label": "editsRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1093,
+          "calls": 1,
+          "label": "appendRack"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1310,
+          "calls": 1,
+          "label": "profileRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1436,
+          "calls": 1,
+          "label": "wallpaperHeaderRow"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1465,
+          "calls": 1,
+          "label": "render"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/panel.luau",
+          "definition_line": 1570,
+          "calls": 1,
+          "label": "onFrameTick"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 76,
+          "calls": 1,
+          "label": "asPercent"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 80,
+          "calls": 1,
+          "label": "(anonymous)"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 233,
+          "calls": 1,
+          "label": "gates"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 255,
+          "calls": 1,
+          "label": "attachedSwatches"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 297,
+          "calls": 1,
+          "label": "wallpaperHeader"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 328,
+          "calls": 1,
+          "label": "profileSection"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 440,
+          "calls": 1,
+          "label": "rackState"
+        },
+        {
+          "category": "production_Lua",
+          "source": "@.worktrees/panel-budget/integrations/noctalia-plugin/presentation.luau",
+          "definition_line": 509,
+          "calls": 1,
+          "label": "visibleParams"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 33,
+          "calls": 1,
+          "label": "fake panel.render"
+        },
+        {
+          "category": "fake_host",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 34,
+          "calls": 1,
+          "label": "fake panel.setNeedsFrameTick"
+        },
+        {
+          "category": "experiment_Lua",
+          "source": "@/tmp/prism-budget-cache-diagnostic-gdlbu7zz/offline-cost/experiment.lua",
+          "definition_line": 182,
+          "calls": 1,
+          "label": "action"
+        }
+      ],
+      "rebuilt_ids": [
+        "c:compositor.gaps",
+        "r:compositor.gaps",
+        "c:glass.inactive.roughness",
+        "h:backdrop",
+        "d:backdrop"
+      ],
+      "category_calls": {
+        "production_Lua": 992,
+        "fake_host": 130,
+        "stdlib_C": 2614,
+        "experiment_Lua": 1
+      }
+    }
+  },
+  "acceptance_applied": false,
+  "command": "python3 run-experiment.py <production-plugin-dir> <saved-before-describe.json>",
+  "setup_states": {
+    "expandedColdRender": "12 rack cards expanded; synthetic fresh describe decode/validation outside measured span; memo emptied; new entry metadata cold; step-precision cache remains warm as after real cold x; direct production render called once.",
+    "steadyWarmRender": "Same decoded model and populated memo from cold render; direct production render called once; all retained units hit.",
+    "dirtyDragTick": "Selected expanded-rack release-mode slider glass.inactive.roughness changed to 37% of its presented track before measurement; no render onChange; one dirty frame measured, four expected memo-path rebuilds.",
+    "release": "Same drag after that dirty frame, no further value change; one endDrag call final-enqueues then renders; no native reconciliation behavior in fake panel; zero memo misses.",
+    "writeCompletion": "Successful fake final-write result, queue drains, refresh launched, one immediate render; zero memo misses.",
+    "changedDescribe": "Fresh original snapshot entries reflect final drag value with scratch held and change compositor.gaps by one step; one queued describe response, no inline render.",
+    "deferredDescribeRender": "One following frame accepts pending render, five memo misses."
+  },
+  "limits": [
+    "Lua5.4 function-call events are not Luau host CPU budget interrupt events or milliseconds.",
+    "Fake UI lookup/constructors and API boundaries are separately counted; panel.render does not perform host readback/reconciliation.",
+    "Recursive model copying and test_encode canonical stand-ins run with hook disabled; their boundary/helper calls remain explicit.",
+    "C calls include Lua generic-for iterator functions and a few fake-host internals; they are not all production cost.",
+    "One explicit fixture sequence, not a timing distribution or a reproduction of every live drag; no acceptance applied.",
+    "Instruction/table/allocation counts, GC, scheduling and native work are not measured; root cause remains unknown."
+  ]
+}
