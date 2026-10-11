@@ -23,9 +23,10 @@ review round 2: accept).
 Task 6 remains unaccepted: diagnostic run `1791735860`, on production-equivalent
 measured trees, recorded cold median 19.869 ms (n=5) and release median 20.661 ms
 (n=5), with zero budget errors. Timing/heap observer overhead remains unquantified;
-profile acceptance is missing. Spec part 5 now proposes exact-equality-backed compact
-metadata tokens and awaits owner review. This original plan does not authorize that
-revision: revise and review the implementation plan only after written-spec approval.
+profile acceptance is missing. Spec part 5 proposes compact metadata tokens for
+cold construction, a same-session immediate-post-launch/frame comparison and a
+numeric two-block keep/revert rule; owner re-review is pending. This original plan
+does not authorize that revision: revise and review the implementation plan only after written-spec approval.
 Tasks 7–8 remain gated; do not redispatch completed Tasks 1–5.
 
 ## Global Constraints

@@ -221,8 +221,8 @@ units, and keeping them synchronous preserves the slider-correction handshake in
 
 ### 5. Proposed revision: compact metadata tokens
 
-**Review state:** proposed 2026-10-11; owner review of this written revision is
-required before revising the implementation plan. Parts 1–4 and the original
+**Review state:** proposed 2026-10-11; review-round-3 changes incorporated, owner
+re-review required before revising the implementation plan. Parts 1–4 and the original
 acceptance targets remain binding. This section replaces the previous speculative
 full-rebuild candidates. It selects one small experiment, with a measured keep or
 revert decision; it does not claim that the experiment will meet the targets.
@@ -273,12 +273,31 @@ to `prism-f15cbf`:
 [offline call profile](../../tasks/files/prism-f15cbf/offline-call-profile-report.md).
 Earlier diagnostics remain task evidence; they do not establish acceptance.
 
+#### Two separate performance questions
+
+The token experiment targets **cold construction**, whose 19.869-ms median misses
+<15 ms and whose assembly dominates the measured cost. It is not the proposed
+solution for slow release or write completion. Tokens also shorten warm signatures,
+but no evidence shows that this explains or removes their additional elapsed time.
+Do not attribute the entire 295–298 KB net heap increase to signatures.
+
+Release and completion had similar retained-render work to fast warm/drag renders,
+yet their callbacks took about 20.7/20.6 ms. Native tree readback also increased:
+release median 3.240 ms and completion 2.9195 ms, versus cold 1.491 ms. Tokens do
+not change that C++ traversal. In the current source, `endDrag` can enqueue and
+launch before rendering; `finishWrite` can launch the next write, or a drained
+refresh, before rendering. A post-launch effect extending through multiple phases
+is a plausible separate hypothesis, not a measured cause. The next proposed live
+session must answer the immediate-post-launch question alongside the cold token
+comparison, rather than postponing it until after token acceptance.
+
 #### Decision and alternatives
 
 **Selected: compact tokens backed by exact raw-digest equality.** Keep the current
 string signatures and Retain interface. Replace only their metadata digest payloads
-with short tokens allocated when accepted content changes. This removes repeated
-large-string copying without adding another equality engine.
+with short tokens allocated when accepted content changes. Test their effect on
+cold construction without adding another equality engine. Release/completion
+remain a separate measurement question in the same proposed live session.
 
 Immutable signature snapshots could remove more concatenation, but require new
 vector comparisons, allocation and lifetime rules. They are deferred until the
@@ -299,13 +318,15 @@ counter that lives as long as the panel runtime. For an accepted candidate:
    the previous accepted structure. Reuse its token exactly when the bytes match,
    regardless of decoded table identity.
 3. Otherwise allocate a distinct compact token string from the next integer,
-   formatted exactly with `%.17g`. Distinct keys receive distinct tokens even
+   formatted as an integer with `%d`. Distinct keys receive distinct tokens even
    when their content matches. Tokens contain no signature delimiters. There is
    no hash, metadata whitelist, truncation or table-identity comparison.
 4. Build the candidate map and next counter locally. Publish them only after the
-   complete operation succeeds, before swapping the accepted model. Fail explicitly
-   before allocation would exceed the exact-integer limit `2^53 - 1`; never wrap.
-   A failed allocation leaves the previous model, map, memo and counter intact.
+   complete operation succeeds, before swapping the accepted model. Tokens are
+   never recycled or reset. A single assertion that the next integer is greater
+   than the current counter is sufficient; there is no overflow recovery protocol,
+   injectable counter or exhaustion test seam. A failed construction leaves the
+   previous accepted model, map, memo and counter intact.
 5. Keep only the current candidate's keys. Do not intern historical digests or
    recycle tokens on removal, memo clearing, close/reopen or model replacement.
    Removed and reintroduced keys get new tokens. A → B → A can also get a new
@@ -337,40 +358,99 @@ unchanged FIFO and refresh behavior, and exactly the existing synchronous releas
 correction. Add cases for equal fresh entries; arbitrary metadata changes;
 attached-color and attenuating-device identity; reordered children; removal and
 reintroduction; A → B → A; rejected/invalidated describes; collapse/reexpand;
-close/reopen and memo clear; exact token formatting and exhaustion without wrap.
+close/reopen and memo clear; distinct integer token formatting. No artificial
+counter-exhaustion scenario is required.
 The numeric-signature regression must change an optimistic value after acceptance,
 so a changed describe digest cannot conceal lost precision. Use the repository's
 `just test-fast` front door and retain all existing queue/lifecycle coverage.
 
-#### Measurement and keep/revert gate
+#### One live session, two measurements
 
-Implement and review this token change alone after the written spec and plan are
+Implement and review the token change alone after the written spec and plan are
 approved. A saved-model comparison of signature sizes and builder misses checks
 the mechanism; offline timings and call counts do not establish live acceptance.
 
-Before an extended live run, pilot the complete measurement path through its
-verdict. Obtain fresh live-desktop permission at that moment. Use matched baseline
-and candidate inputs, minimal callback timing and production-equivalent trees;
-keep phase/heap tracing in separate diagnostics. Cold samples use fresh parameter
-tables and an empty memo without metadata prewarming. Record at least five samples
-per original class, median and maximum, ordering/interference and budget errors.
-Include real releases and a real profile switch that changes most values; a
-same-model memo clear does not substitute for profile rebuilding. Record write
-completion and native correction behavior as additional diagnostics.
+Before an extended live run, pilot both the cold comparison and post-launch pair
+through parsing and a verdict. Obtain fresh live-desktop permission at that moment,
+naming both measurements and their expected duration. Use matched baseline and
+candidate inputs, minimal callback timing and production-equivalent measured trees;
+keep phase/heap tracing in separate diagnostics. Preserve exact saved state and
+restore the original plugin before ending the approved session.
 
-Keep the candidate only if assembly/cold or total-render improvement repeats,
-correctness and builder reach stay unchanged, and no target class regresses
-reproducibly. Smaller signatures or heap deltas alone do not justify keeping it.
-If timings remain indistinguishable or worsen reproducibly, revert it. A single
-noisy maximum is not sufficient to decide regression.
+Run **two matched baseline/candidate blocks in that session**, baseline then
+candidate in block 1 and candidate then baseline in block 2. Each implementation
+gets at least five cold samples per block: fresh parameter tables and an empty
+memo, separate setup/decode callbacks, no metadata prewarming, identical expanded
+cards and model content. Record the sample lists, medians, maxima and block order.
+Do not use the earlier instrumented diagnostic as the matched baseline.
 
-**The original gate stays strict:** full/cold/profile rebuild medians must be
-**<15 ms**, and drag, release, changed-describe and deferred-render medians must
-be **≤12 ms**, each with at least five in-host samples and zero budget errors.
-A full-rebuild median ≥15 ms returns to design before any further production code,
-including a metadata-helper refinement. If cold passes but release remains slow,
-acceptance is still incomplete; investigate the command-adjacent path before
-proposing a scheduling change. Tasks 7–8 and offline ceilings remain gated.
+Also collect the original target classes, including actual slider releases, changed
+describes, deferred renders and real profile switches that change most values,
+with at least five samples per class per implementation in each block. A same-model
+memo clear does not substitute for a profile switch. Write completions and native
+release-correction behavior are additional diagnostics. Record interference and
+budget errors; incomplete classes cannot establish acceptance.
+
+**Post-launch comparison, during the same session:** collect at least five valid
+pairs on both baseline and candidate. In one callback launch a read-only
+`describe --json` through the existing process helper, then render immediately
+before returning; request one identical render on the next frame. Do not also
+render before launch in that callback. The diagnostic completion callback does
+not accept stdout or change the production queue/model. Include matched no-launch
+callback/frame pairs as the control, so an ordinary callback/frame difference is
+not mistaken for a launch effect. Measure the native launch separately from each
+render total, and record whether completion was pending or had already occurred
+at the frame. Require five valid pairs with the same completion state for a primary
+aggregate; report the other state separately. Finish the read-only command callback
+before starting another pair or a cold comparison, so diagnostic launches cannot
+contaminate those later measurements.
+
+Use the same retained memo and all render inputs within a pair. Verify production
+shape and input equality in the scratch-host self-check; record intervening describe,
+write, model/value, focus, expansion or other render-input changes and exclude
+contaminated pairs from paired aggregates while retaining their raw records. Never
+force GC, postpone normal queue work or alter production release/completion ordering.
+If fewer than five valid pairs survive, mark the launch question inconclusive rather
+than inferring a result from unmatched medians. Actual writes/apply and pointer
+release remain separate contexts even if a read-only launch reproduces the delay.
+
+Report immediate-minus-frame render differences for each valid pair, their median
+and maximum, alongside the no-launch controls. A repeated post-launch excess with
+fast next-frame/control renders supports a scheduling investigation. It does not
+prove thread CPU cost, isolate the process mechanism or authorize a queue change.
+A negative read-only result leaves the actual write/release question unresolved;
+report that limitation in this session's results rather than treating tokens as
+its solution. A supported deferral proposal needs a revised written design and
+plan that preserve FIFO and the synchronous `endDrag` correction handshake; simply
+deferring the complete release render would violate that existing constraint.
+
+#### Numeric keep/revert rule and original acceptance gate
+
+For each matched block, define the baseline spread as **MAD**:
+`median(abs(sample - baselineMedian))`, in milliseconds. The minimum meaningful
+gain is `max(1.0 ms, baselineMAD)`. Keep the token candidate only when its **cold
+callback median is lower by strictly more than that gain in both blocks**.
+Correctness and builder reach must also remain unchanged, with zero new budget
+errors. Signature/heap shrinkage alone never satisfies the rule.
+
+For each other measured target class, use its own baseline MAD and the same
+1.0-ms floor. A candidate median higher than baseline by more than that threshold
+in either matched block fails the no-regression condition. The recorded maximum
+alone does not decide regression. If any required class/block is incomplete,
+report the comparison as inconclusive and return to design; do not declare the
+candidate retained on performance grounds. If the two complete cold comparisons
+fail the gain rule, or any complete target comparison fails no-regression, revert
+the token experiment before further production changes.
+
+Keeping a useful candidate is **not** Task 6 acceptance. The original gate stays
+strict: full/cold/profile rebuild medians must be **<15 ms**, and drag, release,
+changed-describe and deferred-render medians must be **≤12 ms**, each with at least
+five in-host samples and zero budget errors. Check these targets separately for
+each candidate block; pooling cannot hide a failed block. A full-rebuild median
+≥15 ms returns to design before any further production code, including a metadata
+helper refinement. A passing cold result cannot compensate for slow release.
+Use the same-session launch evidence when drafting the separate release/completion
+revision if needed. Tasks 7–8 and offline ceilings remain gated.
 
 Flattening repeated slider metadata getters is a possible later revision: cold
 profiling counted 552 metadata getter calls and 244 display wrappers, while warm

@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-11T17:43:21Z
+updated: 2026-10-11T17:54:24Z
 started: 2026-10-10T16:20:49Z
 depends: []
 tags: [noctalia, performance]
@@ -119,4 +119,10 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
 - 2026-10-11T16:27:57Z (fix/panel-render-budget): Approved cold/release run completed with explicit owner confirmation and verified write/describe drain. Five automatic cold cases and five actual releases captured; log rotation recovered before restoration. Original main pointer/reload and all saved runtime/profile/canonical settings unchanged; no host processes left. Frozen phase/heap analysis running, Task6 not accepted.
 - 2026-10-11T17:42:29Z (fix/panel-render-budget): Return-to-design gate: latest cold median 19.869 ms (n5), release 20.661 ms (n5), zero diagnostic budget errors. Complete proposed part5 revision is in docs/specs/2026-10-10-panel-render-budget-design.md; owner written-spec review precedes revised plan. Original behavior and strict targets retained; Tasks7–8 remain gated.
 - 2026-10-11T17:43:21Z (fix/panel-render-budget): parked (waiting on user, review): Owner reviews proposed part5 in .worktrees/panel-budget/docs/specs/2026-10-10-panel-render-budget-design.md; controller then prepares the revised implementation plan for review. Task6 acceptance and Tasks7–8 remain gated; original host pointer restored
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T17:49:35Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T17:49:35Z (fix/panel-render-budget): review: spec round 3 — verdict: revise; findings: Important 3, Minor 1; reviewer: human
+- 2026-10-11T17:53:39Z (fix/panel-render-budget): Spec review round3 requests incorporated: tokens target cold construction; immediate-post-launch/frame pairs plus no-launch controls in the same proposed live session; keep requires cold median gain >max(1ms, baseline MAD) in both matched blocks; integer %d counter with one monotonicity assert, no injectable overflow seam. Release/completion remain separate unresolved evidence; synchronous correction and original targets binding.
+- 2026-10-11T17:54:24Z (fix/panel-render-budget): parked (waiting on user, review): Owner re-reviews proposed part5 in .worktrees/panel-budget/docs/specs/2026-10-10-panel-render-budget-design.md; after approval controller writes the revised implementation plan for review. No desktop session or production changes started; Tasks7–8 remain gated
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}

@@ -7,7 +7,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T17:06:10Z
-updated: 2026-10-11T17:43:21Z
+updated: 2026-10-11T17:54:24Z
 started: 2026-10-10T18:43:57Z
 depends: [prism-b81188]
 parent: prism-dac509
@@ -108,4 +108,10 @@ step: "Task 6: In-host measurement and the 15 ms gate"
 - 2026-10-11T17:42:28Z (fix/panel-render-budget): Frozen cold/release report, samples, parser and portable log attached. Parser assertions pass; redaction preserves every measurement record and parsed field. JSON additionally carries verified controller rotation/restoration metadata. Original plugin pointer is restored and host-load reports nothing running.
 - 2026-10-11T17:42:29Z (fix/panel-render-budget): Part 5 design revision drafted and self-reviewed: exact-raw-equality-backed compact tokens, existing signature composition and Retain/queue APIs; one measured experiment with keep/revert gate. Read-only architecture advice from codex/gpt-6-astra, not an implementation review verdict. Owner must review the written spec before revised implementation planning; no production changes or new host action.
 - 2026-10-11T17:43:21Z (fix/panel-render-budget): parked (waiting on user, review): Owner reviews proposed part5 in .worktrees/panel-budget/docs/specs/2026-10-10-panel-render-budget-design.md; after approval, controller revises the implementation plan for review, then resumes subagent-driven execution in the existing worktree
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T17:49:35Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T17:49:35Z (fix/panel-render-budget): Owner requests cold-only token framing, same-session immediate-post-launch/frame comparison, numeric two-run keep/revert threshold, and simpler integer counter handling. These are spec changes; no production code or live-host actions approved by this review.
+- 2026-10-11T17:53:39Z (fix/panel-render-budget): Revised live protocol proposes two matched baseline/candidate blocks plus same-session post-launch/frame comparison, with interference/completion-state checks, numeric cold keep/no-regression thresholds and original absolute gates. This written revision is not live-desktop approval; no probe installed or host setting changed.
+- 2026-10-11T17:54:24Z (fix/panel-render-budget): parked (waiting on user, review): Owner re-reviews proposed part5 in .worktrees/panel-budget/docs/specs/2026-10-10-panel-render-budget-design.md after review-round-3 changes; controller then prepares the revised implementation plan for review and resumes subagent-driven execution after its approval
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
