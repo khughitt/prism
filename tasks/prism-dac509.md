@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-11T14:54:56Z
+updated: 2026-10-11T15:11:17Z
 started: 2026-10-10T16:20:49Z
 depends: []
 tags: [noctalia, performance]
@@ -101,3 +101,5 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
 - 2026-10-11T14:44:46Z (fix/panel-render-budget): Host pointer for approved follow-up diagnostic: ~/.local/share/noctalia/plugins/prism from /mnt/ssd/Dropbox/prism/integrations/noctalia-plugin to /tmp/prism-budget-cache-diagnostic-gdlbu7zz/probe-plugin. Restore with ln -sfn /mnt/ssd/Dropbox/prism/integrations/noctalia-plugin ~/.local/share/noctalia/plugins/prism, then noctalia plugin disable/enable; close test panel first. Original runtime and all profile raw bytes saved; preserve latest independent wallpaper when restoring scratch. Pointer must be restored before park or done.
 - 2026-10-11T14:47:59Z (fix/panel-render-budget): Approved follow-up diagnostic completed and original main plugin pointer restored/reloaded before further work. All 23 profile raw files and exact original aquamarine profile/scratch verified; no restore write was needed. Host-load reports nothing left running. Worker now analyzes frozen run 1791729887; Task 6 acceptance still unestablished.
 - 2026-10-11T14:54:56Z (fix/panel-render-budget): Diagnostic evidence and execution status added to spec part5 and plan; corrected Task6 wrapper from getfenv(1).onFrameTick to direct global assignment. Luau documentation confirms getfenv deoptimization; local Noctalia pushCallback dynamically lua_getglobal-dispatches. No production code, ceiling or algorithm change; remaining work is offline call profiling then a reviewed design revision if required.
+- 2026-10-11T15:11:17Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves Task6 warm comparison; agent resumes prism-f15cbf in .worktrees/panel-budget, runs the prepared no-write paired button/frame diagnostic, restores host state, and uses measured phases to propose any required reviewed spec/plan revision before production changes. Cold/release diagnostic targets missed; Tasks7-8 remain gated. Original main plugin pointer restored; nothing running.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}

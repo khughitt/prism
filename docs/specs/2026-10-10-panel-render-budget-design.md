@@ -234,6 +234,13 @@ the remaining render work and measurement overhead before choosing the part-5
 revision. No production redesign is approved by this evidence note, and Tasks 7–8
 remain gated.
 
+The saved-model Lua 5.4 experiment validated all 83 parameters and 12 expanded
+cards. It counted 3,514 calls for a warm render and 3,572 for a release, with
+zero retained misses in both. Shared signature construction, presentation counts
+and traversal remain, but call volume does not explain the live elapsed gap.
+These offline counts exclude real native work and are not acceptance ceilings;
+the report and reproducible harness are attached to `prism-f15cbf`.
+
 Retention does nothing for a render in which every signature changes. Part 3 is
 expected to bring a full expanded rebuild from 8.5k calls to about 6.5k, plus the
 signature pass. That is near the 5.6k calls that measured 10–14 ms in-host on

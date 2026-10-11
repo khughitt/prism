@@ -7,7 +7,7 @@ complexity: mid
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-10T17:06:10Z
-updated: 2026-10-11T15:06:33Z
+updated: 2026-10-11T15:11:17Z
 started: 2026-10-10T18:43:57Z
 depends: [prism-b81188]
 parent: prism-dac509
@@ -73,3 +73,5 @@ step: "Task 6: In-host measurement and the 15 ms gate"
 - 2026-10-11T15:06:29Z (fix/panel-render-budget): attached: run-experiment.py (6640 bytes): Scratch standalone call-count experiment driver; paired with experiment.lua and a saved describe model
 - 2026-10-11T15:06:29Z (fix/panel-render-budget): attached: experiment.lua (9762 bytes): Scratch Lua call-count measurement harness paired with run-experiment.py; no production changes or ceilings
 - 2026-10-11T15:06:30Z (fix/panel-render-budget): Offline real-model experiment DONE: verified1907 typed leaves,821 table shapes,83 keys,12 expanded cards. Calls/misses cold9742/142, warm3514/0, drag3982/4, release3572/0, changed describe4426/0, deferred3737/5. Source-shared signatures/counts/traversals remain; Lua5.4 call volume does not explain live elapsed gap. No production fix inferred. Worker prepares scratch warm-button versus following-frame comparison with coarse phases and no trace/writes, then agent requests new desktop approval.
+- 2026-10-11T15:11:17Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves ready /tmp/prism-budget-warm-comparison-n3_7du6c/probe-plugin; agent saves fresh state, opens Prism for five Warm comparison clicks, compares identical button/frame renders and coarse phases, then restores original plugin/settings after explicit completion. Lint/syntax/self-check pass; no probe installed and nothing running.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
