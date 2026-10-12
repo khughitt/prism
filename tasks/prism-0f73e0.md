@@ -3,8 +3,9 @@ id: prism-0f73e0
 title: "Explore a more organic, analogue feel for the rack UI"
 status: idea
 priority: 2
+reviewed: true
 created: 2026-09-09T13:08:43Z
-updated: 2026-09-29T22:33:37Z
+updated: 2026-10-12T18:22:28Z
 depends: []
 parent: prism-a03862
 tags: [ui, noctalia]
