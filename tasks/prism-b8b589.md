@@ -3,8 +3,9 @@ id: prism-b8b589
 title: Mark a loaded profile as edited since load
 status: idea
 priority: 2
+reviewed: true
 created: 2026-09-10T17:00:50Z
-updated: 2026-09-13T11:09:26Z
+updated: 2026-10-12T18:22:31Z
 depends: []
 parent: prism-2f0b4b
 tags: [noctalia, ui, profiles]
