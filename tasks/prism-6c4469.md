@@ -3,8 +3,9 @@ id: prism-6c4469
 title: unset of an orphaned key fails while another orphan remains
 status: idea
 priority: 2
+reviewed: true
 created: 2026-09-05T08:21:27Z
-updated: 2026-09-29T22:48:49Z
+updated: 2026-10-12T18:22:24Z
 depends: []
 parent: prism-5a7c8a
 tags: [cli, store]
