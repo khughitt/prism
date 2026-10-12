@@ -3,8 +3,9 @@ id: prism-aab172
 title: Should explicit profile selection stop autosaving scratch into the outgoing pair?
 status: idea
 priority: 2
+reviewed: true
 created: 2026-09-27T16:00:56Z
-updated: 2026-09-29T22:37:44Z
+updated: 2026-10-12T18:22:26Z
 depends: []
 parent: prism-2f0b4b
 tags: [profiles, wallpaper]
