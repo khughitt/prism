@@ -3,8 +3,9 @@ id: prism-ad2b12
 title: One reset per level that loads the neutral look
 status: idea
 priority: 2
+reviewed: true
 created: 2026-09-10T17:00:50Z
-updated: 2026-09-13T11:09:26Z
+updated: 2026-10-12T18:22:30Z
 depends: []
 parent: prism-3415ef
 tags: [ui, noctalia, defs]
