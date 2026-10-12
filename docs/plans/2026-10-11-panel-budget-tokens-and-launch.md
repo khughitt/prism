@@ -24,6 +24,13 @@ brief corrections below require no further review round. Preserved execution
 method: subagent-driven. This plan adds children of `prism-f15cbf` (original Task 6);
 it does not reopen completed Tasks 1–5 or bypass original Tasks 7–8.
 
+**Execution status (2026-10-12):** Tasks 1–2 are reviewed; token performance remains
+unaccepted. Task 3's baseline-only pilot was stopped by independent wallpaper
+interference and restored exactly. Its 34.06-minute occupancy does not supply the
+missing three activations or profile timing, so no full-session estimate exists.
+The owner requires prior-state-preserving rotation pause/resume for the next pilot;
+that preparation is reviewed separately before a fresh retry permission request.
+
 ## Global Constraints
 
 - "full/cold/profile rebuild medians must be **<15 ms**, and drag, release,
@@ -495,6 +502,17 @@ this measurement child does not automatically close original Task 6.
   directions change most values. If none qualify, report scope limitation before
   requesting a run; cold memo clearing is not a substitute.
 
+  Before a pilot or full capture, save the automatic wallpaper rotation timer's
+  runtime state and unit configuration. The owner requires rotation paused for
+  sampling and resumed afterward. On this host, stop `wali-rotate.timer` at runtime
+  without disabling it, then wait for any in-flight `wali-rotate.service` to finish
+  before taking the fresh Prism snapshot/reference. Verify both are inactive.
+  On completion, abort or setup failure, restore Prism first, then restart the
+  timer only if it was active before the pause; an already inactive timer remains
+  inactive. Preserve enablement and unit configuration, and report an unrelated
+  state/configuration conflict rather than overriding it. Record pause/resume and
+  the final reference checks. Fresh retry permission remains required.
+
   Save owner-held scratch exactly, clear only with the explicitly approved test
   setup, and choose unedited sliders from the fresh snapshot. Do not reuse the old
   list of edited keys from a prior session. Never restore redundant scratch using
@@ -564,12 +582,12 @@ def estimate_minutes(pilot):
      The controller uses the established CLI commands, only after fresh host approval:
 
      ```bash
-     noctalia msg plugins panel-close khughitt/prism
+     noctalia msg panel-close khughitt/prism:panel
      noctalia msg plugins disable khughitt/prism
      # Controller performs and records the approved scratch-pointer swap here.
      noctalia msg plugins enable khughitt/prism
      # Wait for enable/export readiness before opening; marker verification follows.
-     noctalia msg plugins panel-open khughitt/prism
+     noctalia msg panel-open khughitt/prism:panel
      ```
 
   3. Build/install the selected scratch copy with a fresh activation nonce and

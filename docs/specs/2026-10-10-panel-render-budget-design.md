@@ -219,13 +219,24 @@ and `finishWrite`. With retained subtrees each of these costs a handful of rebui
 units, and keeping them synchronous preserves the slider-correction handshake in
 `endDrag` and the existing tests' expectations.
 
-### 5. Proposed revision: compact metadata tokens
+### 5. Compact metadata tokens
 
 **Review state:** approved by owner 2026-10-11, review round 4. The continuation
-implementation plan requires owner review before execution. Parts 1–4 and the original
+plan was approved in round 1 and its token/probe tasks are implemented and reviewed;
+the candidate is not performance-accepted. Parts 1–4 and the original
 acceptance targets remain binding. This section replaces the previous speculative
 full-rebuild candidates. It selects one small experiment, with a measured keep or
 revert decision; it does not claim that the experiment will meet the targets.
+
+**2026-10-12 pilot status:** the first baseline activation was stopped after an
+independent wallpaper change invalidated its matched reference. Its exploratory
+cold/release samples were 17.959/19.539 ms (one each), with zero budget errors and
+one valid launch/control pair. The other three activations and profile class were
+not sampled; this supplies no acceptance, keep/revert or causal conclusion. Exact
+profile/scratch/raw documents were restored and the latest wallpaper preserved.
+The owner now requires automatic rotation paused before each capture and its prior
+runtime state restored on completion or abort. The incomplete evidence is recorded
+on `prism-4ba651`; no full-session duration can be derived from it.
 
 #### Evidence prompting the revision
 

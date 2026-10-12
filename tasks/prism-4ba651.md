@@ -8,7 +8,7 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-11T18:13:25Z
-updated: 2026-10-12T11:51:59Z
+updated: 2026-10-12T11:59:53Z
 started: 2026-10-11T20:38:11Z
 depends: [prism-177cca]
 parent: prism-f15cbf
@@ -75,3 +75,9 @@ Controller gets fresh live permissions, pilot-derived duration, B-C/C-B swaps wi
 - 2026-10-12T11:51:58Z (fix/panel-render-budget): Rotation corrective round 1 I1: targeted inactive concurrent-epoch pause and resume fixtures both RED (missing expected activation-state refusal), then two post-snapshot complete-state checks via existing guard before ownership journaling. Full focused safe-branch GREEN once: both regressions refuse without calls/adoption; active stop/start, inactive disabled unchanged, natural service wait/timeout/failures/config-state guards pass. No real host action, unchanged B1/payload/copy/probe/full-suite checks rerun. I1 fix overlay attached; tasks check/just check exit 0 no warnings. Root owns scoped independent re-review then fresh retry permission.
 - 2026-10-12T11:51:58Z (fix/panel-render-budget): parked (waiting on agent, review): Root dispatches scoped independent re-review of I1 fix overlay in .worktrees/panel-budget, records verdict and resolves any findings, then obtains fresh stabilized-retry permission before real timer/desktop actions
   provenance: {"harness_session":"codex:01a12caf-4f06-7693-8eb9-7c23ac9a536e","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-12T11:59:50Z (fix/panel-render-budget): review: impl round 2 — verdict: accept; findings: none; reviewer: codex/gpt-6.1-sol
+- 2026-10-12T11:59:50Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-12T11:59:50Z (fix/panel-render-budget): Rotation guard a9cc967 clean scoped re-review: both prior-inactive epoch races refused before ownership adoption; no new findings. Stabilized4 fresh nonces/source hashes ready; actual timer stop/start unperformed. Aborted34.06min B1 no complete estimator. Fresh retry needs planning allowance45–60min including guided confirmations; no full-session estimate until all4pilot phases measured.
+- 2026-10-12T11:59:50Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves stabilized four-activation desktop pilot with rotation paused; root snapshots/stops prior-active wali-rotate.timer and drains service before fresh Prism reference, runs new B1→C1→C2→B2 with guided confirmations, restores exact Prism settings/link, resumes only prior-active timer and verifies latest state; then implementer analyzes complete pilot pace
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
