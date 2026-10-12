@@ -3,8 +3,9 @@ id: prism-b6d7ee
 title: "Panel: re-read the model when the wallpaper hook fires while the panel is open"
 status: idea
 priority: 2
+reviewed: true
 created: 2026-09-09T23:51:58Z
-updated: 2026-09-29T22:37:44Z
+updated: 2026-10-12T18:22:27Z
 depends: []
 tags: [noctalia, ui, profiles]
 ---
