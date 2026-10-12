@@ -3,8 +3,9 @@ id: prism-ed35d4
 title: Accent-colored icon buttons need a Noctalia contribution
 status: idea
 priority: 2
+reviewed: true
 created: 2026-09-05T22:29:35Z
-updated: 2026-09-29T22:58:39Z
+updated: 2026-10-12T18:22:23Z
 depends: []
 parent: prism-4e5039
 tags: [noctalia, ui]
