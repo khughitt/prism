@@ -3,8 +3,9 @@ id: prism-859bb7
 title: prism writes runtime contexts under the tracked per-host config dir
 status: idea
 priority: 2
+reviewed: true
 created: 2026-09-12T10:23:31Z
-updated: 2026-09-29T22:48:51Z
+updated: 2026-10-12T18:22:23Z
 depends: []
 parent: prism-5a7c8a
 tags: [dotfiles]
