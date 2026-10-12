@@ -3,8 +3,9 @@ id: prism-cafffa
 title: Explicit look rating from the panel or a keybinding
 status: idea
 priority: 2
+reviewed: true
 created: 2026-09-11T23:39:09Z
-updated: 2026-09-29T22:43:31Z
+updated: 2026-10-12T18:22:25Z
 depends: []
 parent: prism-179840
 tags: [profiles, noctalia]
