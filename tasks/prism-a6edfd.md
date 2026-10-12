@@ -3,8 +3,9 @@ id: prism-a6edfd
 title: Explore cohesive effect-inspired art banners for rack cards
 status: idea
 priority: 2
+reviewed: true
 created: 2026-09-09T13:08:43Z
-updated: 2026-09-29T22:33:38Z
+updated: 2026-10-12T18:22:27Z
 depends: []
 parent: prism-a03862
 tags: [ui, noctalia]
