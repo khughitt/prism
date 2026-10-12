@@ -7,8 +7,8 @@ size: m
 complexity: mid
 process: direct
 created: 2026-10-12T01:03:13Z
-updated: 2026-10-12T01:03:13Z
-depends: []
+updated: 2026-10-12T01:04:01Z
+depends: [ops-17cd42]
 tags: [cross-project]
 agent: claude-code/claude-opus-5-5
 ---
