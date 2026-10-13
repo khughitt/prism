@@ -238,6 +238,16 @@ The owner now requires automatic rotation paused before each capture and its pri
 runtime state restored on completion or abort. The incomplete evidence is recorded
 on `prism-4ba651`; no full-session duration can be derived from it.
 
+**2026-10-13 stabilized pilot status:** all four n=1 activations completed with
+rotation paused and prior host state restored. B1/C1/C2 records are complete, but
+C2 lacks its Q deferred profile render. B2 lost 1,096 records through collector
+inode reuse; preserved fragments cannot establish complete evidence. Actual
+desktop occupancy was 95.976 minutes. The collector fix and incomplete disposition
+are independently reviewed: `accepted=false`, `return_to_design=true`, with no
+complete full-session estimate. Original performance thresholds and keep/revert
+rules remain binding. The [capture-recovery design](2026-10-13-panel-budget-capture-recovery-design.md)
+is proposed for written owner review before another protocol is planned or run.
+
 #### Evidence prompting the revision
 
 The latest diagnostic, run `1791735860`, measured production-equivalent trees

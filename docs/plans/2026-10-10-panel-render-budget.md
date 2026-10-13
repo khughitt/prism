@@ -31,6 +31,13 @@ is owner-approved, including the three authorized brief corrections. Its executi
 remains subagent-driven.
 Tasks 7–8 remain gated; do not redispatch completed Tasks 1–5.
 
+**Latest evidence (2026-10-13):** the continuation's stabilized pilot completed
+four n=1 activations and exact restoration, but missed one C2 profile render and
+lost 1,096 B2 log records. Its reviewed disposition is inconclusive/unaccepted and
+returns to design. The collector defect is corrected and independently reviewed.
+The [capture-recovery design](../specs/2026-10-13-panel-budget-capture-recovery-design.md)
+is proposed; no full comparison or further production change is authorized by it.
+
 ## Global Constraints
 
 - Host budget: 25 ms of thread CPU per callback. 3 consecutive overruns, or 5 within

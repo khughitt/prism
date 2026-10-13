@@ -24,12 +24,16 @@ brief corrections below require no further review round. Preserved execution
 method: subagent-driven. This plan adds children of `prism-f15cbf` (original Task 6);
 it does not reopen completed Tasks 1–5 or bypass original Tasks 7–8.
 
-**Execution status (2026-10-12):** Tasks 1–2 are reviewed; token performance remains
-unaccepted. Task 3's baseline-only pilot was stopped by independent wallpaper
-interference and restored exactly. Its 34.06-minute occupancy does not supply the
-missing three activations or profile timing, so no full-session estimate exists.
-The owner requires prior-state-preserving rotation pause/resume for the next pilot;
-that preparation is reviewed separately before a fresh retry permission request.
+**Execution status (2026-10-13):** Tasks 1–2 are reviewed. Task 3 closes with a
+reviewed inconclusive evidence disposition; token performance remains unaccepted.
+The first baseline-only pilot stopped on wallpaper interference. The stabilized
+four-activation pilot paused and restored rotation and restored Prism exactly,
+but took 95.976 minutes, missed C2's Q profile render and lost 1,096 B2 records
+through collector inode reuse. The collector correction is reviewed; raw losses
+remain explicit. No complete full-session estimate or acceptance verdict exists.
+`return_to_design=true`; the [capture-recovery design](../specs/2026-10-13-panel-budget-capture-recovery-design.md)
+is proposed for owner review before planning or another desktop request. Original
+Task 6 and Tasks 7–8 stay gated.
 
 ## Global Constraints
 

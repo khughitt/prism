@@ -7,7 +7,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T17:06:10Z
-updated: 2026-10-12T11:59:50Z
+updated: 2026-10-13T22:11:43Z
 started: 2026-10-10T18:43:57Z
 depends: [prism-b81188]
 parent: prism-dac509
@@ -137,4 +137,9 @@ step: "Task 6: In-host measurement and the 15 ms gate"
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
 - 2026-10-12T11:10:01Z (fix/panel-render-budget): Aborted pilot B1 strict parser succeeds: exploratory cold17.959ms n1/release19.539ms n1,34dirty ticks, launch difference18.047ms versus control3.393ms (one pair each),0budget errors. Missing C1/C2/B2/profile class and wallpaper reference interference make result inconclusive/unaccepted; no medians/keep or scheduling fix authorized. Restoration fully verified. Analyze completed parts and add owner-requested rotation pause/resume before fresh pilot.
 - 2026-10-12T11:59:50Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves stabilized Task3 pilot; root runs reviewed rotation guard and four fresh activations from .worktrees/panel-budget preparation, restores Prism/timer, and derives full-session duration only from complete measured pilot
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-13T19:52:45Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-13T21:51:17Z (fix/panel-render-budget): Stabilized r2 pilot owner phases complete; original main plugin pointer/profile dark-wish-ii/scratch0/raw docs/canonical state verified restored, rotation prior active/waiting/enabled restored, host-load reports nothing left running. Preserved B2 collector inode-reuse loss prevents complete verdict; offline analysis/correction/review follows, no desktop retry authorized.
+- 2026-10-13T22:11:43Z (fix/panel-render-budget): parked (waiting on user, review): Owner reviews capture-recovery design in prism-111a3f; root then prepares reviewed plan and protocol before requesting a fresh pilot. Task6 acceptance remains false; original plugin and rotation restored.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}

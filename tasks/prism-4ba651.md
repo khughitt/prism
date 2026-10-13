@@ -1,15 +1,16 @@
 ---
 id: prism-4ba651
 title: "Pilot, measure both blocks and restore live state"
-status: doing
+status: done
 priority: 1
 size: l
 complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-11T18:13:25Z
-updated: 2026-10-13T22:05:01Z
+updated: 2026-10-13T22:10:41Z
 started: 2026-10-11T20:38:11Z
+completed: 2026-10-13T22:10:41Z
 depends: [prism-177cca]
 parent: prism-f15cbf
 tags: []
@@ -113,3 +114,11 @@ Controller gets fresh live permissions, pilot-derived duration, B-C/C-B swaps wi
 - 2026-10-13T22:05:00Z (fix/panel-render-budget): Stabilized r2 analyzed before correction: all67 originals preserved byte-equal; B1/C1/C2 strict exit0 with1136/1810/3093 complete records, required-class counts archived; C2 Q changedDescribe accepted after close and later open render cannot replace missing profileRender. B2 strict parser exit1, overwritten inode archive loses1290..2385 (1096 records); intact prefix/tail are separate exploratory evidence, final drain4630 valid. Whole pilot inconclusive/accepted=false/return_to_design=true, observedBudgetErrors0 monitoring-only and whole/B2 completeness false; no guessed budget input. Occupancy5758.535s=95.976min; explicit null analysisSeconds/C2 and B2 profile-cycle estimator fields, no estimator/full duration. Collector A-B-A RED then unique generation/hash-prefix integrity GREEN; payload12583 bytestrings unchanged in portable artifacts. tasks check/just check exit0 no warnings, no host/prod/probe/full-suite action, no processes. Root scoped correction/evidence review then written gate-yield/pace design decision before later fresh permission; Task3 incomplete.
 - 2026-10-13T22:05:00Z (fix/panel-render-budget): parked (waiting on agent, review): Root dispatches read-only scoped collector/evidence review of task3-r2-evidence-and-collector-fix in .worktrees/panel-budget, records full verdict and resolves findings, then drafts evidence-grounded gate-yield/pace design revision before any fresh desktop permission or full comparison
   provenance: {"harness_session":"codex:01a12caf-4f06-7693-8eb9-7c23ac9a536e","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-13T22:09:32Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-13T22:09:33Z (fix/panel-render-budget): review: impl round 4 — verdict: accept; findings: Minor 1; reviewer: codex/gpt-6.1-sol
+- 2026-10-13T22:10:06Z (fix/panel-render-budget): attached: task-3-collector-rereview-report.md (4295 bytes): Full read-only scoped review returned by codex/gpt-6.1-sol; collector fix and incomplete evidence accepted, Minor1 frozen-report parser wording retained.
+- 2026-10-13T22:10:41Z (fix/panel-render-budget): done
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-13T22:10:41Z (fix/panel-render-budget): Recorded reviewed inconclusive stabilized pilot (95.976min, missing C2 Q render/B2 loss1096), preserved raw evidence and fixed collector inode reuse0f54b6f; accepted=false/return_to_design=true, host fully restored, design recovery continues in prism-111a3f.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}

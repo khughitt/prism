@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-12T11:59:50Z
+updated: 2026-10-13T22:11:43Z
 started: 2026-10-10T16:20:49Z
 depends: []
 tags: [noctalia, performance]
@@ -142,4 +142,11 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
 - 2026-10-12T10:37:21Z (fix/panel-render-budget): host pointer: approved B1 pilot uses ~/.local/share/noctalia/plugins/prism -> /tmp/prism-budget-task3-prep/block1/baseline/plugin; original /mnt/ssd/Dropbox/prism/integrations/noctalia-plugin saved at /tmp/prism-budget-task3-prep/original-plugin-link-private.txt. Restore after explicit completion/stop and drain, before park/done.
 - 2026-10-12T11:10:01Z (fix/panel-render-budget): Pilot stopped after B1 independent wallpaper interference; original main plugin pointer restored/enabled, original aquamarine2 and exact12 scratch entries/all raw profile/base bytes/canonical values verified, latest wallpaper preserved. No session processes. Owner requires rotation paused before future pilot and resumed after completion; prepare stability guard before fresh retry permission.
 - 2026-10-12T11:59:50Z (fix/panel-render-budget): parked (waiting on user, approval): Owner approves stabilized Task6 pilot; root resumes prism-f15cbf/prism-4ba651, pauses rotation for four matched pilot phases, restores prior host state and analyzes complete pace before any full-run permission; Tasks7–8 remain gated
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-13T19:52:45Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-13T20:11:00Z (fix/panel-render-budget): host pointer: approved stabilizedB1 uses Noctalia prism -> /tmp/prism-budget-task3-prep/stabilized/block1/baseline/plugin; restoreoriginal /mnt/ssd/Dropbox/prism/integrations/noctalia-plugin beforepark/done. Rotation ownedpaused with r2journal; restoreafterPrism. Scope actualPdark-wish-ii/Qglass12 verified52/83, originalscratch0.
+- 2026-10-13T21:46:50Z (fix/panel-render-budget): Hostpointer restoration afterexplicitPilotcomplete/currentlive finaldrain: Noctalia prism stabilized/block2/baseline/plugin -> original /mnt/ssd/Dropbox/prism/integrations/noctalia-plugin; restoreexactPrismr2 then prioractive timer. B2 recycledinode capturedefect makes formal evidenceincomplete; noacceptance/automaticretry.
+- 2026-10-13T22:10:41Z (fix/panel-render-budget): Stabilized pilot evidence reviewed: complete B1/C1/C2, missing C2 Q render, B2 lost1096 records; collector fix0f54b6f accepted by fresh codex/gpt-6.1-sol review, Minor1 frozen-report wording retained. Actual95.976min occupancy; accepted=false/return_to_design=true. Exact Prism/settings/rotation restored. New proposed capture-recovery spec child prism-111a3f; Tasks7–8 gated, no further host/production action.
+- 2026-10-13T22:11:43Z (fix/panel-render-budget): parked (waiting on user, review): Owner reviews proposed capture-recovery design; root continues child prism-111a3f through planning and validated capture. OriginalTask6 performance acceptance is incomplete, Tasks7–8 gated, host resources restored.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
