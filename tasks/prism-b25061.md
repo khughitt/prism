@@ -3,8 +3,9 @@ id: prism-b25061
 title: "Undo in the Prism panel: a general mechanism, not a per-gesture guard"
 status: idea
 priority: 2
+reviewed: true
 created: 2026-09-10T10:13:16Z
-updated: 2026-10-14T11:03:11Z
+updated: 2026-10-14T11:03:12Z
 depends: [prism-f52f8e]
 parent: prism-67b1b2
 tags: [ui, noctalia, store]
@@ -15,3 +16,7 @@ Every write in the panel lands immediately and there is no way back. That was ac
 Design questions: where the history lives (the store, so the CLI can undo too, or the panel session); whether a unit of undo is one command or one gesture, given a batched 'prism reset' is already one command and a live drag is many; how it interacts with the layer the write landed in and with a write target that has since moved; whether redo is worth it; and how it surfaces in a panel that has no keyboard vocabulary yet (prism-84d308).
 
 Requested during the prism-91edc5 design session on 2026-09-10, when asked whether a neutral write should ask for confirmation first.
+
+## Notes
+
+- 2026-10-14T11:03:12Z (main): scope: briefed; parented under prism-67b1b2; waits on design prism-f52f8e. Since capture: scratch layer (ad17477) makes 'reset revert' a coarse undo; the dice adds an N-set gesture; ctrl+z is free in the prism-84d308 key vocabulary; prism-6aca8a's gesture records may share the log; brief: docs/notes/2026-10-14-panel-ergonomics-brief.md
