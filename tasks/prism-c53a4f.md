@@ -8,7 +8,7 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T07:08:45Z
+updated: 2026-10-14T09:12:40Z
 started: 2026-10-14T04:54:36Z
 depends: [prism-ed9400]
 parent: prism-111a3f
@@ -65,4 +65,15 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T07:08:19Z (fix/panel-render-budget): attached: task4-controller-fix2-dc798f97.tar.gz (184434 bytes): Round2 N1/N2 controller corrections, interruption cleanup, full code and scoped/cumulative diffs; offline PASS/hash evidence only
 - 2026-10-14T07:08:44Z (fix/panel-render-budget): Corrective round2 N1/N2 complete for fresh root review: stable physical dwell under ordinary callbacks, final actual raw/receipt reparse with immutable history and material-change refusal; interruption cleanup RED→GREEN assertion/TERM/INT plus success. Frozen code37 entries; exact payloads32 lifecycles/intents32/reverse copies18; all468 recorded identities gone; earlier4 archives unchanged. Public f801799ade78b38a329b144ec5e985a1cad4742e6a6332961a1c824e8880d232; private985ec4216f1f7652ce16870bdac7f5fd9a92524efe4ce733bbeee89424599b76 at unique fix2 run. Full appended report and scoped/cumulative text diffs in plan SDD workspace. Append-race/live-clock/concrete-host gates remain root-owned; no live action or collector relaxation.
 - 2026-10-14T07:08:44Z (fix/panel-render-budget): parked (waiting on agent, review): Root: inspect round2 task-4-report.md, task-4-fix2-code.diff, cumulative task-4-code.diff and frozen private/public package in .worktrees/panel-budget; dispatch fresh scoped N1/N2 plus cleanup review, then broad Tasks1–4 review and concurrent-append risk disposition before any unsynchronized rehearsal. All owned processes reaped; no host pointers or checks remain.
+  provenance: {"harness_session":"codex:01a13933-08ea-76d2-ac96-b6f1fe7a1056","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T08:56:00Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T08:56:00Z (fix/panel-render-budget): review: impl round 3 — verdict: revise; findings: Important 1; reviewer: codex/gpt-6.1-sol
+- 2026-10-14T08:56:01Z (fix/panel-render-budget): parked (waiting on agent): Available implementer fixes cleanup supervisor timeout/signal ownership with real detached-server RED-to-GREEN; root scoped re-reviews only this I1 in .worktrees/panel-budget.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T08:56:47Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a13933-08ea-76d2-ac96-b6f1fe7a1056","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T09:11:55Z (fix/panel-render-budget): attached: task4-controller-fix3-05e51b99.tar.gz (178363 bytes): Round3 Important I1 cleanup supervisor timeout/interruption ownership; full code/scoped cumulative diffs, focused PASS and private proof hashes only
+- 2026-10-14T09:11:55Z (fix/panel-render-budget): Round3 Important I1 corrected: supervisor owns launch before Popen; timeout/supervisor TERM/INT gracefully stops child and always reaps exact owned socket/pid-start-boot in outer finally. Real2s timeout RED with actual detached capture preserved and outer-driver reaped; latest frozen10 cases GREEN14.797580s including residual child-no-finally, startup and success. Source change only cleanup helper/README/runbook; N1/N2/core sources and prior32-lifecycle evidence unchanged. All173 unique recorded identities gone; six old archives unchanged. Public3b4c8662693a9a38723f8c0a7011007a01bd262a2a674ba1a02e8c76593a5ff1/privateeaefb44f167159065f29a817db470f7de776a04dbc82bd325b26edb5ede1d318; full appended report/diffs in existing SDD workspace. Root fresh scoped/broad reviews and append-risk/live-proof gates remain.
+- 2026-10-14T09:12:40Z (fix/panel-render-budget): parked (waiting on agent, review): Root: review round3 Important I1 supervisor ownership using appended task-4-report.md, task-4-fix3-code.diff/cumulative diff and fix3 frozen private/public packages in .worktrees/panel-budget; dispatch fresh scoped review, then broad Tasks1–4/concurrent-append risk disposition before any unsynchronized rehearsal. All owned processes and checks complete; no host pointers changed.
   provenance: {"harness_session":"codex:01a13933-08ea-76d2-ac96-b6f1fe7a1056","harness_session_source":"CODEX_THREAD_ID"}
