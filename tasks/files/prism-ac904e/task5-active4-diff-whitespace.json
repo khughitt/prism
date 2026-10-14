@@ -1,0 +1,53 @@
+{
+  "task5-active4-corrective-review.diff": {
+    "baseCodeDigest": "6fda210aabe48c829d2ba86035edd9a23271d63d994458ee1f1a419a32cf86e0",
+    "baseFileCount": 53,
+    "exactSha256": "c161e675a39a83e3c0ffb74b965c8ceee980813a6b1a492ad20b11599a4cfbdb",
+    "normalizedSha256": "b2ac7f8a2bb118b9cb166a1a5106537fbac0718e2234c638f8c20f2badac0e3f",
+    "restoreLines": {
+      "246": " \n",
+      "254": " \n",
+      "287": " \n",
+      "297": " \n",
+      "301": " \n",
+      "419": " \n",
+      "460": " \n",
+      "5": " \n",
+      "502": " \n"
+    }
+  },
+  "task5-active4-full-review.diff": {
+    "baseCodeDigest": "dc9ce83f5ad3a87398a4c4e70c7f2e4f8e0b649712718270edd07d14fca612e5",
+    "baseFileCount": 48,
+    "exactSha256": "1af36abb3d3e858f2d45c889a34d985bb514a3cf8dd5196b8a99fc6308b9f7fc",
+    "normalizedSha256": "72ca83658f2016f26cf068be81e45260bb6b359f0aa1a2f7635143d79bd818d0",
+    "restoreLines": {
+      "340": " \n",
+      "341": " \n",
+      "350": " \n",
+      "351": " \n",
+      "353": " \n",
+      "354": " \n",
+      "452": " \n",
+      "453": " \n",
+      "547": " \n",
+      "607": " \n",
+      "618": " \n",
+      "619": " \n",
+      "622": " \n",
+      "623": " \n",
+      "636": " \n",
+      "637": " \n",
+      "640": " \n",
+      "656": " \n",
+      "667": "+                \n",
+      "680": " \n",
+      "696": " \n",
+      "707": " \n",
+      "740": " \n",
+      "750": " \n",
+      "765": " \n",
+      "915": " \n"
+    }
+  }
+}
