@@ -8,7 +8,7 @@ complexity: mid
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T12:28:57Z
+updated: 2026-10-14T12:38:02Z
 started: 2026-10-14T12:02:14Z
 depends: [prism-c53a4f, prism-941a8d]
 parent: prism-111a3f
@@ -39,3 +39,8 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T12:28:56Z (fix/panel-render-budget): Packaging correction: first staged diff check exited2 on9 standard blank unified-diff context lines; commit7ecd969 had already proceeded. Replaced only standalone attachment with whitespace-clean equivalent; patch --dry-run against accepted48-file source exits0 for all4 files. Frozen code, archive and every run identity are unchanged; exact original diff remains in archive. Final staged and task checks will be rerun before correction commit.
 - 2026-10-14T12:28:56Z (fix/panel-render-budget): parked (waiting on agent, dependency): Root reviews Task5 preparation report, immutable code/archive, whitespace-clean full review diff and unstarted native manifest in .worktrees/panel-budget, then owns long launch and real human turn proof; no worker process running.
   provenance: {"harness_session":"codex:01a13a49-7fa7-7042-9feb-69873649eaec","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T12:31:43Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T12:31:43Z (fix/panel-render-budget): Root verified prepared51-file code equals immutable private/portable freeze, attached archive/diff hashes/readback and unstarted2400/2700 manifest. Preparation review dispatched fresh codex/gpt-6-astra high; no long start or live action.
+- 2026-10-14T12:38:01Z (fix/panel-render-budget): review: impl round 1 — verdict: revise; findings: Important 1; reviewer: codex/gpt-6-astra
+- 2026-10-14T12:38:01Z (fix/panel-render-budget): I1 verified: next-turn proof accepts matching read call result without successful completed artifact read. Fix requires explicit receipt+rollout acknowledgement bound to run/path/nonce and successful completed result; reject failure/error-only/still-running, positive harness-envelope fixture, fresh frozen sources/unstarted manifest. Long launch remains gated.
