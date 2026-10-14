@@ -1,10 +1,10 @@
 ---
 id: prism-ddeb30
 title: Add a toggle to expand or collapse all panel sections
-status: idea
+status: todo
 priority: 2
 created: 2026-10-11T17:56:38Z
-updated: 2026-10-11T17:56:57Z
+updated: 2026-10-14T11:02:55Z
 depends: []
 tags: []
 source: "mindful:thought:148b2a7e0eadeb97539e393871c9e4b6"
