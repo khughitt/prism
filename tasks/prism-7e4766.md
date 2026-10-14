@@ -6,7 +6,7 @@ priority: 2
 size: m
 complexity: high
 created: 2026-09-08T22:56:48Z
-updated: 2026-09-12T16:46:10Z
+updated: 2026-10-14T14:15:09Z
 depends: []
 tags: [defs, store, material]
 ---
@@ -18,3 +18,7 @@ Mechanism to design: a def-level marker (say 'inherits: focused') consulted when
 Open question: what 'unset' means against context layers (prism-2f0b4b), where a wallpaper context may set the focused half only.
 
 Cheaper alternative if this proves too subtle: a doctor check that warns when a focused optic is tuned and its twin still sits at the shipped default.
+
+## Notes
+
+- 2026-10-14T14:15:09Z (main): scope: drop; premise gone at 4bb72f3: the migration break on this host is historical (the active profile sets both halves of all five pairs), 22-24 of 24 saved profiles set both twins and diverge them in 17-22, and for backdropBlur 17 choose focused on/unfocused off with none unfocused on, so inheriting the focused value would go against the owner's own choices; 'Mirror focused onto unfocused' (reset symmetric, 06d568e) covers deliberate levelling; proposal: drop as superseded by the owner's tuning practice and reset symmetric; the receded-default question continues in prism-c3a7b9; prism-d2b31a (shelved, waits on this task's findings) should take this survey as that finding
