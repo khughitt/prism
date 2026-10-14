@@ -7,7 +7,7 @@ size: s
 complexity: low
 process: direct
 created: 2026-10-09T14:58:40Z
-updated: 2026-10-14T11:02:59Z
+updated: 2026-10-14T11:03:00Z
 depends: []
 parent: prism-67b1b2
 tags: [quick-add, noctalia, ui]
@@ -23,3 +23,7 @@ Done when:
 - widget.luau sets the chosen glyph, `noctalia plugins lint integrations/noctalia-plugin` passes, and the bar shows it after a plugin reload (disable/enable khughitt/prism).
 
 Handoff: docs/notes/2026-10-14-panel-ergonomics-brief.md.
+
+## Notes
+
+- 2026-10-14T11:02:59Z (main): scope: scoped; todo P3 s low direct under prism-67b1b2; candidate glyphs verified in Noctalia's tabler set (prism, prism-light, diamond, …); owner picks from a sheet; brief: docs/notes/2026-10-14-panel-ergonomics-brief.md
