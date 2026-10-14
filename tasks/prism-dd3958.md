@@ -7,7 +7,7 @@ size: xs
 complexity: low
 process: direct
 created: 2026-09-10T17:00:50Z
-updated: 2026-10-14T14:10:44Z
+updated: 2026-10-14T14:10:45Z
 depends: []
 tags: [testing, noctalia]
 ---
@@ -22,3 +22,7 @@ The test landed at `df9b602` (2026-09-20): 'every queue argv shape reaches a CLI
 - The item list is kept by hand (its length is asserted as 12), so a new verb in `Queue.argvFor` (`integrations/noctalia-plugin/queue.luau`) is not forced into the test.
 
 Done: the test asserts `status !== 2` for every argv (keeping the stderr in the message), and fails when `argvFor` handles a verb the item list does not cover. For example, compare the verbs `argvFor` accepts against the listed items' verbs.
+
+## Notes
+
+- 2026-10-14T14:10:45Z (main): scope: rescoped; the contract test landed at df9b602 but asserts by stderr regex, which misses enum usage errors (observed: 'context deactivate theme' exits 2 with 'kind must be one of'), and its 12-item list is hand-kept; narrowed to asserting status !== 2 and covering every argvFor verb; process direct
