@@ -7,7 +7,7 @@ size: m
 complexity: mid
 process: direct
 created: 2026-09-01T15:48:11Z
-updated: 2026-10-14T14:29:20Z
+updated: 2026-10-14T14:29:21Z
 depends: []
 tags: [migration, integration, terminal]
 ---
@@ -34,3 +34,4 @@ The paragraph above predates two decisions recorded in the notes. `terminal.wind
 
 - 2026-09-05T08:20:23Z (main): 2026-09-05: terminal.window.opacity.* were removed with the panel matrix (prism-aa9212); niri no longer emits whole-window opacity rules. The Ghostty sink binds only terminal.background.opacity.active as planned.
 - 2026-09-07T08:21:16Z (main): 2026-09-07: the body predates the zero-opacity decision. Kitty is no longer a focus-aware opacity consumer: Prism emits background_opacity 0 for it and niri's is-active material pair carries focus state (prism-5bc782, dots-a00088). The Ghostty sink should emit 0 from terminal.background.opacity.active so Ghostty joins the glass, and the dotfiles ghostty/config.ghostty line at 0.85 is the drift to remove. Re-read the acceptance with that in mind before starting.
+- 2026-10-14T14:29:20Z (main): scope: rescoped; premises hold at 570c1f7: no Ghostty sink, niri glass already matches com.mitchellh.ghostty, dotfiles config.ghostty still sets 0.85; body now folds in the 09-05/09-07 notes (emit 0, Kitty no longer focus-aware); new finding: the packaged Ghostty unit has no ExecReload, so the reload trigger must be verified; process direct
