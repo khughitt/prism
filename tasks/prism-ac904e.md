@@ -8,7 +8,7 @@ complexity: mid
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T14:07:03Z
+updated: 2026-10-14T14:27:17Z
 started: 2026-10-14T12:02:14Z
 depends: [prism-c53a4f, prism-941a8d]
 parent: prism-111a3f
@@ -85,3 +85,14 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T14:05:03Z (fix/panel-render-budget): resumed
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
 - 2026-10-14T14:07:03Z (fix/panel-render-budget): Second actual run failed at32.007s: poll gap breached during collection/checkpoint work, collection0.372437487s > configured0.367746176s, subsequent persistence0.269181453s, total0.64161894s. Captured21293721B/21segments independently rehashed vs source21566721B;273000B uncollected, no native/full/error certification. All4 actors and named socket gone/host-load empty. Root rescinds10:49handoff; preserve original for phase/load diagnosis, no threshold widening/retry until cause reviewed.
+- 2026-10-14T14:07:07Z (fix/panel-render-budget): parked (waiting on agent, dependency): Original implementer diagnoses32s actual-run collection/persistence gap refusal using frozen source and bounded phase/load probes; root then decides concrete correction or design return before any new long retry in .worktrees/panel-budget. All actors gone; no host pointer/paused timer stands.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T14:07:56Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a13a49-7fa7-7042-9feb-69873649eaec","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T14:26:39Z (fix/panel-render-budget): attached: task5-diagnostic3-final-code-and-summary.tar.gz (158197 bytes): Diagnostic-only52-file instrumented copy and exact probe harnesses with aggregate timings; unchanged qualified51-file source. Two bounded probes, no historical cause proven, no retry qualification.
+- 2026-10-14T14:26:39Z (fix/panel-render-budget): attached: task5-diagnostic3-instrumentation.diff (4373 bytes): Full textual diagnostic-only launch hooks and phase instrumentation against unchanged fix2 source; no active collector changes.
+- 2026-10-14T14:26:39Z (fix/panel-render-budget): attached: task5-diagnostic3-phase-summary.json (17783 bytes): Portable aggregate phase/fsync CPU/scheduling/I/O counts for two bounded diagnostic probes; historical gap cause unresolved.
+- 2026-10-14T14:26:39Z (fix/panel-render-budget): attached: task5-diagnostic3-source-inventory.json (5664 bytes): Diagnostic52-file and harness hashes; qualified51-file digest unchanged.
+- 2026-10-14T14:26:53Z (fix/panel-render-budget): Diagnostic-only after second32s actual failure: preserved failed run and unchanged qualified51-file digest dbb11ec8. Two private instrumented probes completed exit0: first9.103s/64polls/peak693180/gap0.158573; history21seed8.098s/67cycles/80writes/peak682500/gap0.156960. Neither reproduced guard breach; all5 owned child identities gone/named socket absent/host-load empty. Historical simultaneous long writer/collector persistence spans support shared blocking hypothesis only; direct current fsync waits max18.869ms with low threadCPU do not establish historical cause. Portable code/diff/inventory/phase aggregates attached, raw evidence private. NEEDS_CONTEXT: root reviews complete options and rules minimal permanent telemetry versus written design return before any further experiment. No behavior change, long retry, native/package suite repeat or Task5 closure.
+- 2026-10-14T14:27:17Z (fix/panel-render-budget): parked (waiting on agent, review): Root reads complete diagnostic-only Task5 report and attached phase summary/code diff in .worktrees/panel-budget, then rules permanent telemetry scope versus written design return before any further experiment or long retry. Historical cause unresolved; unchanged qualified source, all5 diagnostic child identities gone and no worker process running.
+  provenance: {"harness_session":"codex:01a13a49-7fa7-7042-9feb-69873649eaec","harness_session_source":"CODEX_THREAD_ID"}
