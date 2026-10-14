@@ -5,8 +5,9 @@ status: todo
 priority: 2
 size: m
 complexity: mid
+process: direct
 created: 2026-09-11T07:50:56Z
-updated: 2026-09-12T16:46:10Z
+updated: 2026-10-14T13:59:49Z
 depends: [material-bb3fe5]
 tags: [niri, rack]
 ---
