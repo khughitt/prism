@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-13T22:07:51Z
-updated: 2026-10-14T00:07:43Z
+updated: 2026-10-14T01:06:17Z
 started: 2026-10-13T22:08:29Z
 depends: []
 parent: prism-f15cbf
@@ -53,4 +53,11 @@ Approved capture recovery design (spec round3) and proposed implementation plan.
 - 2026-10-13T23:50:22Z (fix/panel-render-budget): Spec round3 accepted/approved planning. Folded Minor3 into spec and plan: collector starts before enable; initial/recovery/controller timestamps explicit, smoke ceil1.25step+120≤300 reserve and late-approval/full600s checks; Keith post45min message/Task5 park; Noctalia clock proof at pre-pilot with source+r2 corroboration, synthetic rehearsal cannot prove it. Draft plan has seven dependency-ordered children, first blocked pending written plan review; preserved subagent-driven. No implementation/rehearsal/live changes.
 - 2026-10-14T00:07:42Z (fix/panel-render-budget): Implementation plan self-reviewed: all approved spec sections and five ReviewFocus cases map to seven tasks; interfaces/schema2/operation ids/clock gates and stage ownership checked; placeholder scan clean. Numeric fixtures stage1=5min/stage2=8min, controller144s exact boundary vs144.000001 failure and full600s reservation independently checked. Corrected Lua tick versus boolean frame and actual inherited mode names/fixture23-profile count. just check/tasks check/diff check exit0, zero warnings. Task1 blocked until written plan approval; no code, tmux, rehearsal or desktop action.
 - 2026-10-14T00:07:42Z (fix/panel-render-budget): parked (waiting on user, review): Keith reviews docs/plans/2026-10-13-panel-budget-capture-recovery.md; on acceptance root unblocks prism-73a117 and executes the preserved subagent-driven plan. Headless real-turn rehearsal and fresh desktop permission remain separate later gates.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T00:58:46Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T00:58:47Z (fix/panel-render-budget): review: plan round 1 — verdict: revise; findings: Important 1, Minor 5; reviewer: claude-code/claude-opus-5-5
+- 2026-10-14T01:05:32Z (fix/panel-render-budget): attached: plan-review-1-report.md (5053 bytes)
+- 2026-10-14T01:05:32Z (fix/panel-render-budget): Plan round1 revision addresses Important1/Minor5: actual Codex rollout turn-id/time evidence replaces lifecycle session provenance; collector finish certifies byte integrity only; controller certifies settlement; probe endpoints feed overlap; schema2 hook prerequisites precede feature RED; collector alone captures between owner turns; Lua5.5.1/private synthetic inventory/park reason clarified. No implementation, rehearsal or desktop action. Written plan re-review gates prism-73a117.
+- 2026-10-14T01:06:17Z (fix/panel-render-budget): parked (waiting on user, review): Keith re-reviews the revised .worktrees/panel-budget/docs/plans/2026-10-13-panel-budget-capture-recovery.md; after written acceptance root unblocks prism-73a117 and executes the preserved subagent-driven plan.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
