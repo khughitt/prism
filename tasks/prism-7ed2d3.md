@@ -8,7 +8,7 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T23:43:24Z
+updated: 2026-10-14T23:43:33Z
 started: 2026-10-14T22:23:52Z
 depends: [prism-ac904e]
 parent: prism-111a3f
@@ -61,3 +61,5 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T23:43:10Z (fix/panel-render-budget): Async readiness helper follow-up: mocked RED reproduced first-query export refusal and restore returning without registration;6new tests now pass plus prior focused suites. export-ready and plugins-restore share one4s deadline under5s outer timeout, including mutation/IPC time; only valid opposite-registration observations retry. Malformed/source/exit/catalog failures refuse immediately; raw poll receipts retained. host.py SHAffedc55a350f749cbff680ff66d180c867a02ef31b1fd34cba32b4edb186068f; accepted54sources and original archives unchanged. Root must regenerate inventories; no live IPC.
 - 2026-10-14T23:43:10Z (fix/panel-render-budget): attached: task6-host-helpers-v2.tar.gz (27956 bytes): Inert helper v2: bounded async registration wait for export/restoration, mocked deadline and failure tests, explicit changed hashes; original packet retained
 - 2026-10-14T23:43:24Z (fix/panel-render-budget): Readiness follow-up gates: just check/tasks check exit0/no warnings, whitespace clean, accepted54 source hashes unchanged and old archive hash unchanged. New17-file v2 archive27956B SHA95a9882d9b9db044e72e49228f44ebfbd7a121f8b96d915f2ac3e72e2561d179. Mock-only checks; host-load session reports nothing left running.
+- 2026-10-14T23:43:33Z (fix/panel-render-budget): parked (waiting on agent, review): Root: regenerate session/contract/master inventories from task6-host-helpers-v2.tar.gz in .worktrees/panel-budget, finish numeric packet and timing gate, then dispatch pre-pilot review before fresh owner permission. Worker readiness follow-up complete; no running processes or live host effects.
+  provenance: {"harness_session":"codex:01a13c86-53cb-74e0-95a9-67a708bed5b0","harness_session_source":"CODEX_THREAD_ID"}
