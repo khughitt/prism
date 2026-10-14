@@ -1,6 +1,6 @@
 ---
 id: prism-111a3f
-title: Revise panel budget capture after inconclusive pilot
+title: Recover staged panel budget capture
 status: doing
 priority: 2
 size: s
@@ -8,16 +8,17 @@ complexity: mid
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-13T22:07:51Z
-updated: 2026-10-13T23:21:44Z
+updated: 2026-10-14T00:07:43Z
 started: 2026-10-13T22:08:29Z
 depends: []
 parent: prism-f15cbf
 tags: [performance]
 agent: codex
 spec: docs/specs/2026-10-13-panel-budget-capture-recovery-design.md
+plan: docs/plans/2026-10-13-panel-budget-capture-recovery.md
 ---
 
-Review an evidence-grounded collection revision after the stabilized pilot: preserve complete rotated logs, verify every target class including Q/P deferred profile renders, and reduce repeated chat handoffs. Original callback targets and token keep/revert rule stay binding. Written spec then plan review precede protocol implementation; fresh host permission and a complete smallest pilot precede extended acceptance. No production scheduling change is authorized.
+Approved capture recovery design (spec round3) and proposed implementation plan. Build and review incremental named-tmux collection, scratch readiness/reference records, ordered staged analysis and controller gates; prove a real-turn headless rehearsal before fresh desktop use. Stage1 cold/launch evidence precedes conditional Stage2 owner-heavy acceptance. Original Task6 performance acceptance remains open until complete targets/launch/restoration pass; no protocol implementation before plan approval.
 
 ## Notes
 
@@ -44,4 +45,12 @@ Review an evidence-grounded collection revision after the stabilized pilot: pres
 - 2026-10-13T23:20:26Z (fix/panel-render-budget): Ruling: retain cold-pass/short-launch return-to-design after the single combined same-activation recovery; separate launch-only recollection is not authorized here. It bounds owner work; cost if wrong is one extra design revision. Round2 revised proposal addresses Important2/Minor3 but tmux/probe/analyzer changes and ≥40min headless rehearsal remain unimplemented and gated on written spec/plan approval.
 - 2026-10-13T23:21:43Z (fix/panel-render-budget): Round2 revised-spec self-review: ordered predicates reject unknown/error/incomplete evidence before any revert; row2 says row1 does not apply. Timed live collector cap35min differs explicitly from fixed headless watchdog45min, ≥40min producer/rehearsal, with cleanup even if next turn late; no restart/wakeup promise. Full verification gates all incremental evidence; overlaps reported without deletion/subtraction. One combined packet example covers release+Q losses. All proposals remain unimplemented. just check/tasks check/diff check exit0, no warnings; no suite or live rehearsal run.
 - 2026-10-13T23:21:43Z (fix/panel-render-budget): parked (waiting on user, review): Owner re-reviews round2 revision of docs/specs/2026-10-13-panel-budget-capture-recovery-design.md; after acceptance root writes implementation plan. Named-tmux implementation and real-turn headless rehearsal remain future gates before any desktop request.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-13T23:27:13Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-13T23:27:14Z (fix/panel-render-budget): review: spec round 3 — verdict: accept; findings: Minor 3; reviewer: claude-code/claude-opus-5-5
+- 2026-10-13T23:50:22Z (fix/panel-render-budget): attached: spec-review-3-report.md (2996 bytes): Full supplied read-only spec round3 acceptance by claude-code/claude-opus-5-5, Minor3; owner approves planning. Controller persists report.
+- 2026-10-13T23:50:22Z (fix/panel-render-budget): Spec round3 accepted/approved planning. Folded Minor3 into spec and plan: collector starts before enable; initial/recovery/controller timestamps explicit, smoke ceil1.25step+120≤300 reserve and late-approval/full600s checks; Keith post45min message/Task5 park; Noctalia clock proof at pre-pilot with source+r2 corroboration, synthetic rehearsal cannot prove it. Draft plan has seven dependency-ordered children, first blocked pending written plan review; preserved subagent-driven. No implementation/rehearsal/live changes.
+- 2026-10-14T00:07:42Z (fix/panel-render-budget): Implementation plan self-reviewed: all approved spec sections and five ReviewFocus cases map to seven tasks; interfaces/schema2/operation ids/clock gates and stage ownership checked; placeholder scan clean. Numeric fixtures stage1=5min/stage2=8min, controller144s exact boundary vs144.000001 failure and full600s reservation independently checked. Corrected Lua tick versus boolean frame and actual inherited mode names/fixture23-profile count. just check/tasks check/diff check exit0, zero warnings. Task1 blocked until written plan approval; no code, tmux, rehearsal or desktop action.
+- 2026-10-14T00:07:42Z (fix/panel-render-budget): parked (waiting on user, review): Keith reviews docs/plans/2026-10-13-panel-budget-capture-recovery.md; on acceptance root unblocks prism-73a117 and executes the preserved subagent-driven plan. Headless real-turn rehearsal and fresh desktop permission remain separate later gates.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}

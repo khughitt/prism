@@ -1,8 +1,9 @@
 # Recover complete panel-budget measurements
 
 **Date:** 2026-10-13
-**Status:** revised proposal after spec review round 2; owner review required before
-implementation planning. No new probe, analyzer or live protocol is implemented.
+**Status:** approved for planning by owner after spec review round 3 (accept,
+Minor 3). The window, next-turn and clock-gate clarifications below fold those
+minors into the approved design. No new probe, analyzer or live protocol is implemented.
 **Task:** `prism-111a3f`; parent `prism-f15cbf`, original render-budget Task 6.
 **Authority:** [the render-budget design](2026-10-10-panel-render-budget-design.md),
 Parts 1–5. The staging exception below is proposed for explicit approval; all
@@ -285,6 +286,26 @@ probe or overwrite settings during an unfinished owner action. The controller
 waits for explicit completion/stop and drains before restoring. No automatic restart
 can repair a collector exit or missed gap, even if it was brief.
 
+The collector starts **before enabling the probe**, at `collectorStarted`, so
+activation startup cannot be lost. The initial 20-minute window begins at
+`initialCardIssued` and ends at the owner's `initialCompleteReceived` or stop.
+Recovery's 10-minute window begins at `recoveryCardIssued` after explicit approval
+and ends at `recoveryCompleteReceived` or stop. Controller time comprises startup
+through the initial card, checks after either completion, recovery request through
+approval, preparation of its card, and final checkpoint/finish. Those intervals
+consume the five-minute allowance; they are not silently charged to recovery.
+
+Measure the pre-card, post-card and finish steps in the offline controller smoke.
+Require `ceil(1.25 * sum(controllerStepSeconds)) + 120 s ≤300 s`, reserving at least
+two minutes for an approval response. The smoke's IPC is fake; record that limit
+and check actual elapsed controller time during live setup. If the requirement
+does not fit, revise the allowance before requesting the desktop. Before initial
+card issuance, reserve its full 20 minutes, a full 10-minute recovery and the smoke's
+remaining controller-step reserve. Before offering recovery, set an explicit
+approval deadline that reserves the full 10-minute card plus final checks within
+the original 35-minute deadline and remaining controller allowance. After a late
+approval, report that recovery is unavailable; never issue a shortened packet.
+
 If a collector spans a controller turn boundary, that turn's process report names
 its pids/socket, deadline and exact stop command, alongside `host-load`. The next
 turn inspects the independently saved heartbeat/exit receipt and archives. No
@@ -305,8 +326,8 @@ full burst requires it. A gap beyond the bound is a fault, not a safe assumption
 If two rotations occur before collection, refuse even if the cadence seemed safe.
 
 Record each poll's start/end, bytes and verification/checkpoint work on the same
-host monotonic origin as samples, verified by binding inspection and headless
-clock calibration. If a shared origin cannot be established, the rehearsal fails;
+host monotonic origin as samples, verified by the separate pre-pilot clock gate.
+If a shared origin cannot be established, that gate fails before desktop permission;
 do not infer overlap from log-arrival times. Analysis reports overlap counts and
 timing distributions by class/block and collector/checkpoint duration. Preserve
 all target samples; do not subtract collector work from elapsed times or discard
@@ -359,8 +380,9 @@ a **40-minute headless rehearsal across a real controller turn boundary**, longe
 than both the 20-minute initial card and the 35-minute live collector limit. Use
 only a synthetic rotating log and the isolated named tmux server. Publish its
 process identity/deadline/stop command in the first turn; explicitly arrange the
-next controller turn and inspect persisted receipts there. A tool yield inside
-one turn is not a turn-boundary test.
+next controller turn: **Keith sends a message after the 45-minute watchdog**.
+Park with `--waiting-on user` naming that message as his next action. Inspect
+persisted receipts on that turn. A tool yield inside one turn is not a turn-boundary test.
 
 This lifetime rehearsal has a fixed, **headless-only 45-minute watchdog**, so it
 can test persistence beyond the live 35-minute cap. The synthetic producer emits
@@ -376,6 +398,16 @@ gaps, all captured ids/bytes and server/process exits; any unexplained exit or g
 fails. The rehearsal wrapper owns its 45-minute watchdog and cleanup, so a late
 next turn leaves no process running. Do not rely on the process to notify or wake
 the harness.
+
+The synthetic rehearsal proves process lifetime, polling and cleanup, not the
+Noctalia clock. A separate **pre-pilot gate** reads the installed host's os.clock
+binding and its clock implementation, records source/version evidence that its
+origin agrees with Python time.monotonic, and checks r2's existing agreement:
+C2's probe timestamp294942.885 was followed by the controller phase stamp294942.898.
+That approximately13-ms difference is consistent with event/receipt ordering;
+it is corroboration, not a clock-source proof. Missing, mismatched or unverifiable
+binding evidence blocks the live request. A synthetic Python producer cannot
+satisfy this gate.
 
 Record setup, every activation's reload/start-card, automatic intervals, actual
 manual operation windows, final confirmation/verification, clean analysis and
