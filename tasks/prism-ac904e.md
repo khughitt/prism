@@ -8,7 +8,7 @@ complexity: mid
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T15:20:28Z
+updated: 2026-10-14T19:10:27Z
 started: 2026-10-14T12:02:14Z
 depends: [prism-c53a4f, prism-941a8d]
 parent: prism-111a3f
@@ -123,3 +123,7 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T15:20:27Z (fix/panel-render-budget): Fullyinstrumented manualrun started15:13:54.760431Z; watchdog15:58:54.760431Z/11:58:55EDT. Run task5-rehearsal-phase3-final-6e6e92c522ba4842b2e0311ddcd2a92c/nonce rehearsal-dfd79ab3f00343a2b7edf40ff6d2b7f9/source53digest6fda210a. Observed85segments/86266866B, phases contract and server520404/start36001820,wrapper520405/start36001821,collector520421/start36001830,producer520422/start36001842/bootcb12762c-a6f1-4a9e-9eb0-ed27df59e655 allalive. Named stop tmux -L prism-budget-capture-rehearsal-dfd79ab3f00343a2b7edf40ff6d2b7f9 kill-server. Wrapper owns cleanup/laternative; host-load session one namedserver520404. ActualfirstrootTurn01a13a98-d51c-70c2-9a09-21be0f78d76e/startrefs13481,13484 saved. Twofailedruns immutable; no live pointer/profile/timer changed; no latencyremedy claim.
 - 2026-10-14T15:20:27Z (fix/panel-render-budget): parked (waiting on user, dependency): Keith sends a plain Continue AFTER2026-10-14 noonEDT (watchdog11:58:55); root verifies currentphase3 receipts, exactreadack/realturnproof/allbytes/phases/cleanup andimportsforreview in .worktrees/panel-budget, oranalysesactualrefusal. Running named socket prism-budget-capture-rehearsal-dfd79ab3f00343a2b7edf40ff6d2b7f9; stop tmux -L prism-budget-capture-rehearsal-dfd79ab3f00343a2b7edf40ff6d2b7f9 kill-server. No hostpointer/pausedtimer stands.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T18:59:04Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T19:08:55Z (fix/panel-render-budget): run: 15.74 min (est 45, idle); rehearsal 15.74; failed: unexplained source metadata during append publication. Source638402085B/captured638333835B/624segments, uncaptured68250B; independently rehashed all segments. Last collection20.650ms + persistence3.567ms, no timing breach at failure. Raw integrity/error/lifetime/native certification incomplete; all4 actors gone/named socket gone/host-load empty. Private original root-failure-analysis/inventory preserved; no automatic retry. Fresh codex/gpt-6-astra xhigh diagnosis checks architecture and publication seam, no runtime patch or long launch authorized.
+- 2026-10-14T19:10:27Z (fix/panel-render-budget): attached: task5-phase3-failure-evidence.tar.gz (31161 bytes): Third headless rehearsal FAILED after944.356s at publication metadata invariant;624 independently rehashed segments/638333835B,68250B uncaptured. Actual phase/persistence data, cleanup facts and original hash inventory only; raw originals private. No lifetime/native/complete-error certification.
