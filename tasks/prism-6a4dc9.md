@@ -6,7 +6,7 @@ priority: 3
 size: xs
 complexity: low
 created: 2026-09-08T23:30:44Z
-updated: 2026-09-12T16:46:10Z
+updated: 2026-10-14T14:29:26Z
 depends: []
 tags: [errors]
 plan: docs/plans/2026-09-08-sink-requirements.md
@@ -14,3 +14,7 @@ step: "Task 4: File the follow-ups"
 ---
 
 Filed by the sink-requirements plan: the dots task for setup_preflight reading prism's declaration, and a note on material-09d8c0 recording what probe-material does not cover.
+
+## Notes
+
+- 2026-10-14T14:29:26Z (main): scope: drop; landed: both follow-ups exist: dots-f3f92e 'setup_preflight reads prism's declared sink requirements' (filed 2026-09-09, now done) and the probe-boundary note on material-09d8c0 (done; landed in prism 5201259); proposal: close as done, plan Task 4 complete
