@@ -8,7 +8,7 @@ complexity: mid
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T19:43:03Z
+updated: 2026-10-14T20:03:52Z
 started: 2026-10-14T12:02:14Z
 depends: [prism-c53a4f, prism-941a8d]
 parent: prism-111a3f
@@ -142,3 +142,18 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T19:39:58Z (fix/panel-render-budget): attached: task5-active4-source-inventory.json (5406 bytes): Correction4: exact active-append source, lossless full/corrective deltas, or bounded byte/hash evidence; no lifetime claim.
 - 2026-10-14T19:43:03Z (fix/panel-render-budget): parked (waiting on agent): Root performs scoped independent review of correction4 in .worktrees/panel-budget using task-5-active-append-fix-brief.md, appended task-5-report.md, the six task5-active4 attachments and matching private freeze; then disposes findings and decides the fresh unstarted rehearsal. No process or host pointer remains.
   provenance: {"harness_session":"codex:01a13be2-1b3f-7bf1-a002-fe29addd1269","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T19:43:55Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T19:51:16Z (fix/panel-render-budget): review: impl round 5 — verdict: revise; findings: Important 2; reviewer: codex/gpt-6-astra
+- 2026-10-14T19:53:10Z (fix/panel-render-budget): parked (waiting on agent): Fresh recovery_task5_active_append_fix5 starts in .worktrees/panel-budget, fixes both scoped Important findings with RED/GREEN and exact-source short proof, commits and releases to root final scoped re-review; no long launch.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T19:54:26Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a13bfa-06fe-7e60-969a-1df128f09554","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T19:55:28Z (fix/panel-render-budget): Round5 begins at e1571a7 in existing locked .worktrees/panel-budget; trial-arm not enrolled. Active source matches all 54 immutable round4 files. Scope: shared descriptor/live-path timestamp progression and receipt-only source failure contradiction, with real-byte RED/GREEN, unchanged guard/rate, exact-source short proof only.
+- 2026-10-14T20:02:08Z (fix/panel-render-budget): Round5 RED against immutable round4: six accepted timestamp regressions; five receipt-only successful-evidence contradictions; six incomplete receipt contradictions; two well-shaped receipt success contradictions. GREEN: shared progression for descriptor/path with descriptor convergence still required at growth; shared diagnostic shape/error/incomplete validation for receipt and rows. Seven affected contract commands pass; exact-source normal/emergency and independent PACED baseline n=1 pass with unchanged 682491/1425679 B/s. Audited 13 PID/start/boot identities absent and removed only 3 recorded unchanged ownerless endpoints of these new runs. Fresh 2400/2700 manifest prepared, never started.
+- 2026-10-14T20:03:47Z (fix/panel-render-budget): attached: task5-active5-code-and-evidence.tar.gz (205868 bytes): Round5 exact source, full and round4 corrective deltas, and bounded evidence; no lifetime claim.
+- 2026-10-14T20:03:48Z (fix/panel-render-budget): attached: task5-active5-corrective-review.diff (13093 bytes): Round5 textual correction against immutable round4; reconstruction map restores exact whitespace.
+- 2026-10-14T20:03:48Z (fix/panel-render-budget): attached: task5-active5-full-review.diff (141186 bytes): Exact cumulative code delta from accepted Task4, with standalone whitespace reconstruction.
+- 2026-10-14T20:03:48Z (fix/panel-render-budget): attached: task5-active5-diff-whitespace.json (1352 bytes): Lossless reconstruction map for normalized round5 review diffs.
+- 2026-10-14T20:03:49Z (fix/panel-render-budget): attached: task5-active5-source-inventory.json (5406 bytes): Round5 54-file exact source inventory and digest.
+- 2026-10-14T20:03:49Z (fix/panel-render-budget): attached: task5-active5-evidence-summary.json (13687 bytes): Round5 RED/GREEN, short exact-source qualification, cleanup and unstarted-manifest hash/count evidence.
