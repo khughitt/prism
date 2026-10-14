@@ -4,7 +4,7 @@ title: Quality tier bound to power and thermal state
 status: shelved
 priority: 2
 created: 2026-09-11T23:39:09Z
-updated: 2026-10-14T11:11:41Z
+updated: 2026-10-14T11:11:42Z
 depends: []
 parent: prism-2f0b4b
 tags: [profiles, performance, material]
@@ -15,3 +15,4 @@ A state profile (prism-9298b9) that activates a cheaper glass tier on battery, u
 ## Notes
 
 - 2026-10-14T11:11:41Z (main): shelved: A cheaper glass tier with measured whole-scene savings and visual acceptance exists (material-a91346 cost-tiered inactive glass, or a quality scalar from material-31074f); then bind it to Noctalia's battery_plugged / power_profile_changed hooks through the state layer (prism-9298b9)
+- 2026-10-14T11:11:42Z (main): scope: shelved; parented under prism-2f0b4b beside prism-9298b9. State side is available: Noctalia exposes battery_plugged and power_profile_changed hooks (config_types.h) and LAYER_ORDER reserves 'state'; no thermal hook exists, and render-cost overrun needs material-a0cbb0 (idea). Missing: the tier itself — material-a91346 and material-31074f are unresolved.
