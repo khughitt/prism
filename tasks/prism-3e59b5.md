@@ -4,7 +4,7 @@ title: Wallpaper properties and user nudges as data
 status: idea
 priority: 2
 created: 2026-09-11T23:34:15Z
-updated: 2026-10-14T11:07:07Z
+updated: 2026-10-14T11:07:08Z
 depends: []
 parent: prism-179840
 tags: [quick-add, adaptive, cross-project, wallpaper, profiles]
