@@ -8,7 +8,7 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T23:45:39Z
+updated: 2026-10-14T23:55:02Z
 started: 2026-10-14T22:23:52Z
 depends: [prism-ac904e]
 parent: prism-111a3f
@@ -68,3 +68,7 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T23:44:48Z (fix/panel-render-budget): Root completes pre-pilot packetv3: four exact inert sessions/hostActions/collector configs, contracts bound to canonical session bytes, all artifact hashes checked, no live directories/permits. ReferenceSnapshot points to B1 saved state. One outer pilot rotation journal keeps inputs stable across all4; per-activation timer snapshots restore inactive, outer original state resumes after final/abort cleanup.
 - 2026-10-14T23:44:48Z (fix/panel-render-budget): Root reserve ruling pending re-review: actual current read-only components and historical real broad-phase evidence remain separate from prospective pre35/post20/recovery20/finish65s ceilings. Sum140, padded175 leaves125 approval; initial remaining132, recovery107. Repeated close/reparses, bounded async restore readiness, outer resume and complete actual elapsed through restoration/analysis are counted; overrun makes collection ineligible while cleanup continues. No fake lifecycle timing funds allowance.
 - 2026-10-14T23:45:39Z (fix/panel-render-budget): attached: task6-root-action-packet-v3.tar.gz (2765 bytes)
+- 2026-10-14T23:49:57Z (fix/panel-render-budget): review: impl round 2 — verdict: revise; findings: Critical 0, Important 2, Minor 0; reviewer: codex/gpt-6-astra
+- 2026-10-14T23:49:57Z (fix/panel-render-budget): Scoped re-review accepts numeric prospective reserve/enforcement and outer rotation ownership, but found packet-only defects: all reconcile argv reverse helper contract/action; bare node under fixed PATH differs from pinned explicit Node. Root corrects argument arrays and consistent interpreter/hash/environment bindings, then obtains fresh scoped re-review before permission.
+- 2026-10-14T23:53:53Z (fix/panel-render-budget): Packet corrections verified: all68 reconcile arrays now contract-first/action-second; every helper PATH resolves bare node to declared pinned Node, matching actual running Noctalia child PATH observation. Canonical sessions/contracts/master regeneratedv4 and all artifacts rehashed. No source/live effects. Fresh scoped re-review2 dispatched before permission.
+- 2026-10-14T23:55:02Z (fix/panel-render-budget): attached: task6-root-action-packet-v4.tar.gz (2935 bytes)
