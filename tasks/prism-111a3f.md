@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-13T22:07:51Z
-updated: 2026-10-14T14:07:03Z
+updated: 2026-10-14T15:12:33Z
 started: 2026-10-13T22:08:29Z
 depends: []
 parent: prism-f15cbf
@@ -95,3 +95,5 @@ Approved capture recovery design (spec round3) and proposed implementation plan.
 - 2026-10-14T14:05:03Z (fix/panel-render-budget): resumed
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
 - 2026-10-14T14:07:03Z (fix/panel-render-budget): Second headless rehearsal stopped after32s at elapsed-time gap guard, unrelated reported error to metadata transition; full cause still unknown. All actors reaped. Root investigates slow collection/persistence phases with original implementer; no third long launch or live action before evidence-based disposition.
+- 2026-10-14T14:33:05Z (fix/panel-render-budget): Ruling: add minimal permanent collector phase observability under existing Task5 private record/instrumentation scope, to answer operation identity, wall versus threadCPU waiting and collection/persistence attribution at refusal. Choose fixed bounded summaries in existing durable records over heavy diagnostic tracing or async storage redesign. Preserve all durability/order/clock/guards/target behavior; no latency remedy or third-run authorization implied. Cost: small observed overhead and new freeze/review; covering induced-failure/checkpoint/persistence/cleanup proof required before later disposition.
+- 2026-10-14T15:12:33Z (fix/panel-render-budget): Ruling: launch one manually reviewed fully instrumented headless rehearsal on fresh phase3 source/nonce after preparation acceptance, to attempt required40-minute gate and identify actual blocking operation if guard refuses. This is observability, not a proven latency remedy; both earlier captures stay incomplete. Unchanged floor/guard/2400/2700 and durability, no automatic restart, no live desktop use. Alternative uninstrumented retry would not resolve historical attribution. Cost if wrong: another bounded failed run; retain phase evidence and return to concrete diagnosis/design disposition before any further run.
