@@ -8,7 +8,7 @@ complexity: mid
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T14:01:12Z
+updated: 2026-10-14T14:03:51Z
 started: 2026-10-14T12:02:14Z
 depends: [prism-c53a4f, prism-941a8d]
 parent: prism-111a3f
@@ -79,3 +79,6 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T14:01:11Z (fix/panel-render-budget): resumed
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
 - 2026-10-14T14:01:11Z (fix/panel-render-budget): review: impl round 3 — verdict: accept; findings: none; reviewer: codex/gpt-6-astra
+- 2026-10-14T14:03:50Z (fix/panel-render-budget): Root manual reviewed retry started14:02:13.456252Z; watchdog14:47:13.456252Z/10:47:14EDT. Fresh task5-rehearsal-fix2-6b6f791b7f6b4c56ac30ca120e818b32/nonce rehearsal-2b9e028019ca4e4b947cca47dd1c30d7/source51digestdbb11ec8. Observed19segments/19382748B and server346888/start35571686,wrapper346889/start35571687,collector346899/start35571694,producer346902/start35571708, bootcb12762c-a6f1-4a9e-9eb0-ed27df59e655 allalive. Named stop tmux -L prism-budget-capture-rehearsal-2b9e028019ca4e4b947cca47dd1c30d7 kill-server. Wrapper owns cleanup/laternative; host-load session one namedserver346888. ActualfirstrootTurn01a13a98-d51c-70c2-9a09-21be0f78d76e/startrefs13084,13087 savedprivate. Initialfailedrun immutable. No livepointer/profile/timer changed.
+- 2026-10-14T14:03:51Z (fix/panel-render-budget): parked (waiting on user, dependency): Keith sends a plain message after2026-10-14 10:49EDT (watchdog10:47:14); root verifies currentfix2 durable receipts, literal read acknowledgement, real rollout turn proof, all bytes/ids and cleanup in .worktrees/panel-budget. Running named socket prism-budget-capture-rehearsal-2b9e028019ca4e4b947cca47dd1c30d7; stop tmux -L prism-budget-capture-rehearsal-2b9e028019ca4e4b947cca47dd1c30d7 kill-server. No host pointer/paused timer stands.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
