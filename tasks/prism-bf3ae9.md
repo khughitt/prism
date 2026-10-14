@@ -1,12 +1,13 @@
 ---
 id: prism-bf3ae9
 title: Decide what panel-wide restore does under a loaded profile or a pinned wallpaper
-status: todo
+status: done
 priority: 2
 size: s
 complexity: high
 created: 2026-09-10T17:00:50Z
-updated: 2026-10-14T14:29:21Z
+updated: 2026-10-14T14:32:26Z
+completed: 2026-10-14T14:32:26Z
 depends: []
 parent: prism-2f0b4b
 tags: [ui, profiles, noctalia]
@@ -18,3 +19,7 @@ Neutral was settled 2026-09-10: clear the profile first. Restore still writes in
 
 - 2026-09-11T01:13:09Z (main): Wallpaper autosave (prism-46035b) would remove the pin, so the pinned-wallpaper half of this question becomes 'under a wallpaper that captures edits'; decide together.
 - 2026-10-14T14:29:21Z (main): scope: drop; settled and landed: docs/specs/2026-09-19-compositional-profiles-design.md Section 4 ('revert removes edits and the profile shows through, unchanged; a profile is never emptied by a reset') and its task table ('prism-bf3ae9: done by Section 4; close with the verdict'); implemented under prism-aec90f (done); the pinned-wallpaper half went with prism-46035b (dropped, pins removed); proposal: close with the Section 4 verdict
+- 2026-10-14T14:32:26Z (main): done
+  provenance: {"harness_session":"claude-code:d5788b22-f738-480a-9afd-2f01dfa7045c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-14T14:32:26Z (main): Settled by compositional profiles Section 4 (prism-aec90f, done): revert removes scratch edits and the profile shows through unchanged; no reset empties a profile; pins were removed with prism-46035b. Closed with owner approval 2026-10-14
+  provenance: {"harness_session":"claude-code:d5788b22-f738-480a-9afd-2f01dfa7045c","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
