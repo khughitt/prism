@@ -1,0 +1,199 @@
+--- a/broad-log-check.py
++++ b/broad-log-check.py
+@@ -1,12 +1,13 @@
+ """Real-file race schedules; injections select an interleaving, never replace file data."""
+-import importlib.util,os,tempfile,sys,json,threading
++import importlib.util,os,tempfile,sys,json,threading,types,time
++from unittest.mock import patch
+ from pathlib import Path
+ code=Path(os.environ.get('BROAD_CODE',Path(__file__).parent))
+ s=importlib.util.spec_from_file_location('logs',code/'logs.py');logs=importlib.util.module_from_spec(s);s.loader.exec_module(logs)
+ class AfterRead:
+  def __init__(self,file,action):self.file=file;self.action=action
+  def __getattr__(self,name):return getattr(self.file,name)
+  def read(self,*args):
+   data=self.file.read(*args)
+   if self.action:action,self.action=self.action,None;action()
+   return data
+@@ -55,31 +56,86 @@
+      return result
+     c._append=append_then_rotate;c.poll()
+     assert b''.join(p.read_bytes() for p in c.paths())==b'abc\nDnew\n'
+     assert c.checkpoint('finish')['integrityComplete']
+    elif name=='rotation-during-read':
+     append(b'D')
+     def rotate():log.rename(root/'host.log.1');log.write_bytes(b'new\n')
+     c.source=AfterRead(c.source,rotate);c.poll()
+     assert b''.join(p.read_bytes() for p in c.paths())==b'abc\nDnew\n'
+     assert c.checkpoint('finish')['integrityComplete']
++   elif name.startswith('metadata-'):
++    # Replay the real ext4 observation: updated timestamps can precede size growth.
++    # Only one fstat extent is delayed; every source/prefix byte uses actual file I/O.
++    padding=b'P'*(1024*1024-9) if name=='metadata-growth-capacity' else b''
++    if padding:append(padding);c.poll()
++    append(b'D');initial=os.fstat(c.source.fileno());real=os.fstat;calls=[];fired=[False]
++    evidence={p.name:p.read_bytes() for p in root.iterdir() if p.name.startswith(('manifest','segment'))}
++    def action():
++     fired[0]=True
++     if name=='metadata-no-growth':os.utime(log,ns=(initial.st_atime_ns,initial.st_mtime_ns+1000000))
++     elif name=='metadata-truncate':log.write_bytes(b'')
++     else:
++      if name=='metadata-rewrite-append':
++       with log.open('r+b',buffering=0) as f:f.write(b'xyz')
++      if name=='metadata-new-read-mutation':
++       with log.open('r+b',buffering=0) as f:f.seek(4);f.write(b'E')
++      if name=='metadata-regrowth':log.write_bytes(b'BAD')
++      append(b'TAIL')
++    c.source=AfterRead(c.source,action)
++    if name=='metadata-short-read':
++     read=c.source.read;c.source.read=lambda *args:read(*args)[:-1]
++    def stat(fd):
++     now=real(fd)
++     if fd==c.source.fileno():
++      if len(calls)==1 and name!='metadata-truncate':
++       values={k:getattr(now,k) for k in dir(now) if k.startswith('st_')};values['st_size']=initial.st_size;now=types.SimpleNamespace(**values)
++      elif len(calls)==2:
++       if name=='metadata-identity':
++        values={k:getattr(now,k) for k in dir(now) if k.startswith('st_')};values['st_ino']+=1;now=types.SimpleNamespace(**values)
++       elif name=='metadata-second-change':os.utime(log,ns=(now.st_atime_ns,now.st_mtime_ns+1000000));now=real(fd)
++       elif name=='metadata-second-rotation':log.rename(root/'host.log.2');log.write_bytes(b'new')
++       elif name=='metadata-archive-mutation':c.paths()[0].write_bytes(b'bad!')
++      calls.append(logs.snapshot(now))
++     return now
++    rejected=False;began=time.monotonic()
++    with patch.object(os,'fstat',stat):
++     try:c.poll()
++     except AssertionError as e:
++      rejected=True
++      if name in ('metadata-growth','metadata-growth-capacity'):raise
++      assert 'log changed during read' in str(e),str(e)
++      diagnostic=json.loads(str(e).split(': ',1)[1]);assert diagnostic['before'] and diagnostic['after'] and diagnostic['readBytes']==(0 if name=='metadata-short-read' else 1) and diagnostic['currentDescriptor']
++    assert fired[0]
++    if name=='metadata-no-growth':assert len(calls)==11,'transition must stop after eight observations plus diagnostic'
++    if name in ('metadata-growth','metadata-growth-capacity'):
++     duration=time.monotonic()-began
++     if padding:
++      assert duration<.36774617568190315,'transition exceeds accepted work/gap bound'
++      print('TRANSITION_METRIC',json.dumps({'sourceBytes':log.stat().st_size,'pollSeconds':duration}))
++     assert not rejected;c.poll();assert b''.join(p.read_bytes() for p in c.paths())==b'abc\n'+padding+b'DTAIL'
++     assert c.checkpoint('finish')['integrityComplete']
++    else:
++     assert rejected,'unsafe metadata transition accepted '+name
++     assert c.failed and not c.integrity_complete
++     if name!='metadata-archive-mutation':assert evidence=={p.name:p.read_bytes() for p in root.iterdir() if p.name.startswith(('manifest','segment'))},'refusal published evidence'
+    elif name=='read-growth':
+     append(b'1234567');c.source=AfterRead(c.source,lambda:append(b'D'))
+     c.poll();assert c.state['current']['offset']==11
+     c.poll();assert b''.join(p.read_bytes() for p in c.paths())==b'abc\n1234567D'
+     assert c.checkpoint('finish')['integrityComplete']
+    elif name=='checkpoint-growth':
+     c.source=AfterRead(c.source,lambda:append(b'D'))
+     c.checkpoint('ready');c.poll();assert c.checkpoint('finish')['integrityComplete']
+    elif name in ('growth-mutation','regrowth','archive-corrupt'):
+     append(b'D')
+     if name=='archive-corrupt':c.paths()[0].write_bytes(b'xxxx')
+     elif name=='regrowth':log.write_bytes(b'xyz\nLONG')
+     else:
+      with log.open('r+b') as f:f.write(b'xyz')
+     try:c.poll();c.checkpoint('finish')
+     except AssertionError:pass
+     else:raise AssertionError('corruption certified '+name)
+   finally:c.close()
+  print('PASS',name)
+ if __name__=='__main__':
+- for name in sys.argv[1:] or ['observed-growth-rotation','rotation-create-gap','rotation-after-append','rotation-during-read','finish-append','finish-error','finish-mutation','read-growth','checkpoint-growth','growth-mutation','regrowth','archive-corrupt']:case(name)
++ for name in sys.argv[1:] or ['metadata-growth','metadata-growth-capacity','metadata-short-read','metadata-no-growth','metadata-rewrite-append','metadata-new-read-mutation','metadata-regrowth','metadata-truncate','metadata-identity','metadata-second-change','metadata-second-rotation','metadata-archive-mutation','observed-growth-rotation','rotation-create-gap','rotation-after-append','rotation-during-read','finish-append','finish-error','finish-mutation','read-growth','checkpoint-growth','growth-mutation','regrowth','archive-corrupt']:case(name)
+--- a/logs.py
++++ b/logs.py
+@@ -182,35 +182,85 @@
+             self.archive=self._path(r).open('xb');segments.append(r)
+             self.metadata[self._path(r)]=snapshot(os.fstat(self.archive.fileno()))
+             save(self.manifest,self.state)
+
+     def _metadata(self):
+         for p,expected in self.metadata.items():
+             require(p.is_file(), 'archive missing; preserve capture')
+             require(snapshot(p.stat())==expected, 'archive integrity metadata changed; preserve capture')
+         require(snapshot(os.fstat(self.archive.fileno()))==self.metadata[self._path(self.state['segments'][-1])], 'archive descriptor changed')
+
++    def _append_growth(self, source, held, before, transition, data):
++        # An append can publish advanced timestamps before its larger extent is visible.
++        # Never accept stabilization alone: require the same append's later growth,
++        # then re-read both the prior captured prefix and this pending read interval.
++        stamps=(transition.st_mtime_ns,transition.st_ctime_ns)
++        require(stamps[0]>before.st_mtime_ns and stamps[1]>before.st_ctime_ns,
++                'non-advancing append timestamps')
++        for _ in range(8):
++            time.sleep(.001)
++            observed=os.fstat(source.fileno())
++            require(identity(observed)==identity(before) and observed.st_size>=before.st_size
++                    and (observed.st_mtime_ns,observed.st_ctime_ns)==stamps,
++                    'append transition identity/extent/timestamps changed')
++            require(self._locate(held)==self.log and identity(self._live_stat())==identity(before),
++                    'rotation during append transition')
++            if observed.st_size==before.st_size:continue
++            r=self.state['segments'][-1]
++            prefix=os.pread(source.fileno(),before.st_size-r['startOffset'],r['startOffset'])
++            require(len(prefix)==r['bytes']+len(data) and hashlib.sha256(prefix[:r['bytes']]).hexdigest()==r['sha256']
++                    and prefix[r['bytes']:]==data,'append transition prefix/read interval changed')
++            final=os.fstat(source.fileno())
++            require(identity(final)==identity(before) and final.st_size>=observed.st_size
++                    and (final.st_mtime_ns,final.st_ctime_ns)==stamps,
++                    'append transition changed during prefix validation')
++            require(self._locate(held)==self.log and identity(self._live_stat())==identity(before),
++                    'rotation during append transition validation')
++            self._metadata()
++            return final
++        raise AssertionError('append timestamps changed without observed growth')
++
++    def _read_failure(self, reason, source, held, before, after, data):
++        # Collector persists this structured exception in its private poll/receipt.
++        def stat_fields(st):
++            return dict(zip(('dev','inode','size','mtimeNs','ctimeNs'),snapshot(st)))
++        try:live=stat_fields(self.log.stat())
++        except OSError as error:live={'error':str(error)}
++        detail={'reason':str(reason),'generation':held['generation'],'offset':held['offset'],
++                'requestedBytes':before.st_size-held['offset'],'readBytes':len(data),
++                'before':stat_fields(before),'after':stat_fields(after),
++                'currentDescriptor':stat_fields(os.fstat(source.fileno())),'livePath':live}
++        raise AssertionError('log changed during read: '+json.dumps(detail,sort_keys=True)) from reason
++
+     def _append(self, source, held):
+         before=os.fstat(source.fileno())
+         require(identity(before)==(held['dev'],held['inode']) and before.st_size>=held['offset'], 'log truncated; preserve capture')
+         self.provisional_tail=None
+         archive_before=os.fstat(self.archive.fileno())
+         require(snapshot(archive_before)==self.metadata[self._path(self.state['segments'][-1])], 'archive metadata changed before append')
+         source.seek(held['offset']);data=source.read(before.st_size-held['offset'])
+         require(snapshot(archive_before)==snapshot(os.fstat(self.archive.fileno())), 'archive changed during source read')
+         after=os.fstat(source.fileno())
+-        renamed=(identity(before)==identity(after) and before.st_size==after.st_size
+-                 and before.st_mtime_ns==after.st_mtime_ns and snapshot(before)!=snapshot(after)
+-                 and self._locate(held)==self.log.with_name(self.log.name+'.1')
+-                 and identity(self._live_stat())!=identity(after))
+-        require(len(data)==before.st_size-held['offset'] and identity(before)==identity(after)
+-                and (snapshot(before)==snapshot(after) or after.st_size>before.st_size or renamed), 'log changed during read')
++        initial_after=after
++        try:
++            require(len(data)==before.st_size-held['offset'] and identity(before)==identity(after),
++                    'read length or source identity mismatch')
++            renamed=(before.st_size==after.st_size and before.st_mtime_ns==after.st_mtime_ns
++                     and snapshot(before)!=snapshot(after)
++                     and self._locate(held)==self.log.with_name(self.log.name+'.1')
++                     and identity(self._live_stat())!=identity(after))
++            if before.st_size==after.st_size and snapshot(before)!=snapshot(after) and not renamed:
++                after=self._append_growth(source,held,before,after,data)
++            require(snapshot(before)==snapshot(after) or after.st_size>before.st_size or renamed,
++                    'source extent/metadata changed')
++        except AssertionError as error:
++            self._read_failure(error,source,held,before,initial_after,data)
+         if after.st_size>before.st_size:self.provisional_tail=snapshot(after)
+         # New bytes remain provisional until a stable full source-prefix checkpoint.
+         # Growth never proves the already captured prefix unchanged.
+         r=self.state['segments'][-1]
+         require(archive_before.st_size==r['bytes'], 'interrupted archive append')
+         if data:
+             require(self.archive.write(data)==len(data), 'short archive append');self.archive.flush();os.fsync(self.archive.fileno())
+         archive_after=os.fstat(self.archive.fileno())
+         require(identity(archive_before)==identity(archive_after) and archive_after.st_size==r['bytes']+len(data), 'archive changed during append')
+         self.hasher.update(data);held['offset']+=len(data)

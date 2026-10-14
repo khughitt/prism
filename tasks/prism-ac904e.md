@@ -8,7 +8,7 @@ complexity: mid
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T13:29:20Z
+updated: 2026-10-14T13:51:24Z
 started: 2026-10-14T12:02:14Z
 depends: [prism-c53a4f, prism-941a8d]
 parent: prism-111a3f
@@ -64,3 +64,15 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T13:29:19Z (fix/panel-render-budget): resumed
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
 - 2026-10-14T13:29:19Z (fix/panel-render-budget): Long rehearsal failed before watchdog: collector log changed during read at636.731s, producer signalled/reaped after636.658s/430174080B, captured430037580B/421segments. All4 pid/start/boot identities gone, named socket unresponsive/default absent, host-load empty. No40-minute/native-workload/turn-proof acceptance; human response arrived before watchdog. Preserve run; diagnose before correction/new reviewed retry, no automatic restart.
+- 2026-10-14T13:30:38Z (fix/panel-render-budget): parked (waiting on agent, dependency): Original Task5 implementer diagnoses failed log changed during read from frozen636s run, reproduces and corrects the verified collector fault with focused tests; root then reviews fresh preparation before any new long retry in .worktrees/panel-budget. All actors gone; no host pointer/paused timer stands.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T13:31:45Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a13a49-7fa7-7042-9feb-69873649eaec","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T13:45:15Z (fix/panel-render-budget): attached: task5-fix2-code-and-evidence.tar.gz (170618 bytes): Bounded append/stat transition correction: frozen51-file sources, full/corrective text diffs, inventory, counts/hashes and real-filesystem proof script; no raw logs/transcript; no long retry.
+- 2026-10-14T13:45:15Z (fix/panel-render-budget): attached: task5-fix2-full-code-review.diff (71049 bytes): Full textual current source diff against immutable accepted48-file authority; dry-run patch validated.
+- 2026-10-14T13:45:15Z (fix/panel-render-budget): attached: task5-fix2-corrective-review.diff (13070 bytes): Round2 textual correction against reviewed fix1 freeze: bounded append timestamp-before-size observation and strict negative coverage.
+- 2026-10-14T13:45:15Z (fix/panel-render-budget): attached: task5-fix2-source-inventory.json (5358 bytes): Current51-file hashes and code digest; only logs.py and broad-log-check.py changed since fix1.
+- 2026-10-14T13:48:37Z (fix/panel-render-budget): attached: task5-fix2-qualified-code-and-evidence.tar.gz (171087 bytes): Final round2 review package adds requested actual PACED baseline n=1 pilot on unchanged new51-file freeze:26.506s,17730002B,complete protocol/zero errors/all5 identities gone. Earlier fix2 archive remains pre-pilot evidence; full/corrective text diffs and inventory unchanged.
+- 2026-10-14T13:51:23Z (fix/panel-render-budget): Round2 bounded correction after immutable636s failed run: real ext4 append probe proves advanced timestamps can precede visible size growth; historical stat pair absent, so historical conjunct remains unproved. Root ruled<=8x1ms only same-stamp actual growth plus full captured-prefix/pending-read equality before publication. Implemented logs.py transition check and structured private refusal stats; no writer sync/slowdown/gap change/restart. RED original read assertion; GREEN29 collector,24 seams (old12 and old8 late-outgoing negatives retained),53 rehearsal contracts, real kernel proof, same-code normal/emergency and actual final-freeze PACED baseline n1 pilot26.506s/17730002B/peak1093827Bps/gap0.144740s/zero complete errors/all5 identities gone. Final code digest dbb11ec8fd5fe5999a04eaac94d5ad4ecb6b3a5f43e0047532d8e13bf3af28f1; qualified archive plus full/corrective textual diffs and inventory attached. Fresh native2400/2700 manifest unstarted. just check/tasks check/diff check0/no warnings; no process running. Full report and exact next-turn read API in SDD. Root scoped review and explicit retry disposition required before any new long launch.
+- 2026-10-14T13:51:23Z (fix/panel-render-budget): parked (waiting on agent, review): Root reviews Task5 round2 report, reproduced append/stat defect, bounded implementation, final native pilot and immutable qualified package/diffs in .worktrees/panel-budget; dispatch scoped independent re-review and explicitly rule on retry before any fresh long launch. Worker done with bounded correction; all owned processes gone.
+  provenance: {"harness_session":"codex:01a13a49-7fa7-7042-9feb-69873649eaec","harness_session_source":"CODEX_THREAD_ID"}
