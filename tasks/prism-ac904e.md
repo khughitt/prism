@@ -7,8 +7,8 @@ size: m
 complexity: mid
 process: direct
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-13T23:49:40Z
-depends: [prism-c53a4f]
+updated: 2026-10-14T10:00:07Z
+depends: [prism-c53a4f, prism-941a8d]
 parent: prism-111a3f
 tags: [performance]
 agent: codex

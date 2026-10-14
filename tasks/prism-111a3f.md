@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-13T22:07:51Z
-updated: 2026-10-14T09:43:04Z
+updated: 2026-10-14T09:59:17Z
 started: 2026-10-13T22:08:29Z
 depends: []
 parent: prism-f15cbf
@@ -75,3 +75,4 @@ Approved capture recovery design (spec round3) and proposed implementation plan.
 - 2026-10-14T06:22:03Z (fix/panel-render-budget): Task4 corrective5a5788e package received; fresh gpt-6-astra scoped re-review dispatched for I1–I6 and connected exact recovery-ready contract. Broad-protocol handoff records independent append liveness/full-burst risk, deferred minors and later live fact gates; no long start or host use.
 - 2026-10-14T09:18:43Z (fix/panel-render-budget): Read-only clock provenance prepared: signed cached package binary equals installed, official package recipe hash equals BUILDINFO, recipe release archive checksum verified and all six clock source files match pinned source. Private proof preserved; fresh live binding/host recheck still gated, no desktop action.
 - 2026-10-14T09:43:04Z (fix/panel-render-budget): Task4 round4 commit0776753 and saved real RED/6-boundary/10-existing GREEN received; fresh scoped reviewer recovery_task4_rereview4 codex/gpt-6.1-sol high checks cleanup-entry N1. Broad Tasks1-4 handoff prepared with exact frozen source, independent-append failures and post-dwell chat-close/recovery boundary; no long or live action yet.
+- 2026-10-14T09:59:17Z (fix/panel-render-budget): review: impl round 1 — verdict: revise; findings: Important 3; reviewer: codex/gpt-6-astra
