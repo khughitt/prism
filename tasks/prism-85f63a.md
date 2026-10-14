@@ -7,8 +7,8 @@ size: l
 complexity: high
 process: planned
 created: 2026-09-09T03:03:30Z
-updated: 2026-10-14T13:59:43Z
-depends: [material-3fcba2]
+updated: 2026-10-14T13:59:44Z
+depends: [material-3fcba2, prism-be5abe]
 parent: prism-a03862
 tags: [material, bus, noctalia]
 ---
