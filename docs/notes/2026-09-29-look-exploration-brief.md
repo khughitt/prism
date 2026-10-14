@@ -29,7 +29,12 @@ The cost idea reports one hardware-specific aurora power result from
 Dulling [spike report](2026-09-07-glass-noise-dulling-spike-results.md) leaves
 incremental cost unresolved. Neither establishes a general per-slider estimator.
 The Mindful source `a476e6bcd1fd4297b70824758235d821` was unavailable through the local
-CLI; the preserved task bodies and notes supply the source context for this pass.
+CLI in the first pass; on 2026-10-14 it and the two later thoughts (`2bbac923…`,
+`766ce29a…`) resolve. The later thoughts add learning parameter ranges, defaults and
+slider scales from the values the user settles on, with the wallpaper as context, and a
+tentative "(?)" idea of global or multi-parameter modes near the top of the panel. No
+control in the panel moves several parameters today except the resets, the dice and
+profiles; a rack card's mix is one parameter row.
 
 ## Constraints
 
@@ -66,6 +71,11 @@ idea's claim that it is unregistered is superseded by the current project catalo
   separates requested state from applied appearance and explicit from implicit labels.
 - Where should capture and image properties live, and must every CLI change count?
   The design task checks the current Prism/wali boundary and records any deferred scope.
+- Must a record carry the settled value of a gesture, so ranges, defaults and scales can
+  be learned later? The design task answers; learning stays with `ops-be8b06` and
+  `material-0c7eed`.
+- Which multi-parameter mode, if any, earns a prominent control? The owner names one, or
+  captured edits and `material-0c7eed`'s influence ordering suggest one.
 - Which interaction hints and cost warnings are justified? Findings from the existing
   material tasks answer this; one validated interaction or reusable estimate can wake
   a bounded consumer without waiting for a complete learned model.
@@ -84,3 +94,7 @@ idea's claim that it is unregistered is superseded by the current project catalo
 - `prism-d54be4`: shelved until `material-31074f` supplies a reusable estimate with
   hardware/workload provenance, uncertainty, and focus-state coverage. Then unshelve
   and scope the warning or range consumer. No duplicate measurement task is filed.
+- 2026-10-14 rerun: `prism-3e59b5` stays briefed and now depends on `prism-6aca8a`
+  (edge recorded; the settled-value requirement is noted on the design task).
+  `prism-503759` joins this goal, shelved until a concrete mode is named with the
+  parameters it moves.
