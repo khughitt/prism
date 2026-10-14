@@ -1,12 +1,12 @@
 ---
 id: prism-1601f9
 title: One Lua harness for the three panel test files
-status: todo
+status: shelved
 priority: 3
 size: s
 complexity: low
 created: 2026-09-09T01:55:20Z
-updated: 2026-09-12T16:46:10Z
+updated: 2026-10-14T14:10:46Z
 depends: []
 tags: [testing, noctalia, dx]
 ---
@@ -16,3 +16,4 @@ Three files now stand panel.luau up against a stubbed host, each with its own co
 ## Notes
 
 - 2026-09-10T17:00:50Z (profile-selector): 2026-09-10: while unifying, decode describe output by copy. The stub returns the fixture table by reference, so an optimistic mutation of state.model (selector pick, neutralize clearing) leaks into the next describe result; it produced one wrong failure while fixing prism-b553da.
+- 2026-10-14T14:10:46Z (main): shelved: A plugin .luau gains a noctalia.* host call beyond json.decode, runAsync and openColorPicker (the body's own trigger); was a scoped todo, size s, low, process direct, re-scoped 2026-10-14
