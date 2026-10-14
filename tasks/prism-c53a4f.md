@@ -1,15 +1,16 @@
 ---
 id: prism-c53a4f
 title: "Controller runbook, window accounting and pre-pilot clock proof"
-status: doing
+status: done
 priority: 2
 size: m
 complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T09:37:04Z
+updated: 2026-10-14T09:45:55Z
 started: 2026-10-14T04:54:36Z
+completed: 2026-10-14T09:45:55Z
 depends: [prism-ed9400]
 parent: prism-111a3f
 tags: [performance]
@@ -88,3 +89,10 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T09:36:47Z (fix/panel-render-budget): Round4 N1 corrected for scoped review: handlers record first TERM/INT only; bounded0.1s waits enter cleanup normally,15s grace and identity-guarded forced kill retained, prior handlers restored together under blocked signals. Real cleanup-entry RED3 failures safely outer-reaped; frozen boundary6 plus existing10 GREEN,91 owned identities gone,8 older archives unchanged. Source delta only cleanup helper/new regression/README/runbook; core unchanged. Final private freeze task4-fix4-539e790b9a8e4d7f95c69f8c12c455e9/private-package-final/code. Public934abef8a6a29f8cf0c842fd85ffa4034f2b4d5db49dfec1918534d9b6288890/private3f0e1a307670f28bf271e8d0f065054eb284686a764cf49cfe2c26b2c23a7ddf; full appended report and text diffs in existing SDD workspace. Gates pass/no warnings; no live action. Root scoped review, broad append-risk and later live-proof/host gates remain.
 - 2026-10-14T09:37:04Z (fix/panel-render-budget): parked (waiting on agent, review): Root: fresh scoped N1 review of round4 appended task-4-report.md, task-4-fix4-code.diff/cumulative diff and immutable private-package-final in .worktrees/panel-budget; then broad Tasks1–4 append-risk disposition before unsynchronized rehearsal. All owned processes/checks finished; no host pointers changed.
   provenance: {"harness_session":"codex:01a139be-12d3-7603-8183-486185ee87f6","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T09:44:48Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T09:44:49Z (fix/panel-render-budget): review: impl round 5 — verdict: accept; findings: none; reviewer: codex/gpt-6.1-sol
+- 2026-10-14T09:45:55Z (fix/panel-render-budget): done
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T09:45:55Z (fix/panel-render-budget): Reviewed scratch controller/runbook/clock verifier through0776753; four corrective rounds accepted, immutable archives and saved cleanup checks verified; broad protocol review and actual live proof/command/permission gates remain before rehearsal/host use.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}

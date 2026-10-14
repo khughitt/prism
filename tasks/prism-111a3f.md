@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-13T22:07:51Z
-updated: 2026-10-14T04:53:09Z
+updated: 2026-10-14T09:43:04Z
 started: 2026-10-13T22:08:29Z
 depends: []
 parent: prism-f15cbf
@@ -70,3 +70,8 @@ Approved capture recovery design (spec round3) and proposed implementation plan.
 - 2026-10-14T02:35:18Z (fix/panel-render-budget): Task1 reviewed/closed after sealing correction. Task2 producer commit e11704d prepared and released; independent codex/gpt-6-astra high review dispatched against full source diff and immutable private calibration snapshot. Owner-derived records excluded from public archive. Task3 remains gated; no live action or long rehearsal.
 - 2026-10-14T03:20:33Z (fix/panel-render-budget): Task3 implementing explicit external planned-action/reference/approval context plus independent record-link validation. Readiness may retain completed buffered callbacks until final drain; creation-id completeness/endpoints required, final buffer empty. Recovery admin preludes allowed but never pre-approval target credit. No live action/rehearsal.
 - 2026-10-14T04:53:09Z (fix/panel-render-budget): Progress: Tasks1–3 prepared and independently reviewed; Task3 corrected two rounds through d26c638, cold/launch/generation/stage boundaries now certified. Task4 controller must verify same-source Stage1 facts and independent slider intent; no live permission used and no production change.
+- 2026-10-14T04:55:53Z (fix/panel-render-budget): Task4 dispatched fresh gpt-6-astra high for controller/source-clock integration (base e34b007), fake/temp only. Root prepared Task5 native-rollout classifier handoff metadata; no long rehearsal, live mutation, or desktop action started.
+- 2026-10-14T06:04:03Z (fix/panel-render-budget): Broad-review gate added from observed evidence: two unchanged collector concurrent-append refusals in Task4 short integration; failed raw/polls/error receipts retained, writer endpoints absent in original failures. Synchronized protocol smoke is not independent capture proof; no unsynchronized long rehearsal before this load-bearing risk is reviewed.
+- 2026-10-14T06:22:03Z (fix/panel-render-budget): Task4 corrective5a5788e package received; fresh gpt-6-astra scoped re-review dispatched for I1–I6 and connected exact recovery-ready contract. Broad-protocol handoff records independent append liveness/full-burst risk, deferred minors and later live fact gates; no long start or host use.
+- 2026-10-14T09:18:43Z (fix/panel-render-budget): Read-only clock provenance prepared: signed cached package binary equals installed, official package recipe hash equals BUILDINFO, recipe release archive checksum verified and all six clock source files match pinned source. Private proof preserved; fresh live binding/host recheck still gated, no desktop action.
+- 2026-10-14T09:43:04Z (fix/panel-render-budget): Task4 round4 commit0776753 and saved real RED/6-boundary/10-existing GREEN received; fresh scoped reviewer recovery_task4_rereview4 codex/gpt-6.1-sol high checks cleanup-entry N1. Broad Tasks1-4 handoff prepared with exact frozen source, independent-append failures and post-dwell chat-close/recovery boundary; no long or live action yet.

@@ -3,7 +3,7 @@
 **Date:** 2026-10-13
 **Status:** approved for planning by owner after spec review round 3 (accept,
 Minor 3). The window, next-turn and clock-gate clarifications below fold those
-minors into the approved design. Plan review round2 accepted; Task1 incremental collector/lifecycle is prepared and reviewed through d20c9c0. Task2 schema2 probe is prepared/reviewed through bfb6e68. Task3 analyzer is prepared/reviewed through d26c638 after two corrective rounds; controller, rehearsal and live protocol remain pending.
+minors into the approved design. Plan review round2 accepted; Task1 incremental collector/lifecycle is prepared and reviewed through d20c9c0. Task2 schema2 probe is prepared/reviewed through bfb6e68. Task3 analyzer is prepared/reviewed through d26c638 after two corrective rounds; Task4 controller/runbook/clock-verifier implementation is prepared/reviewed through0776753. Broad Tasks1–4 review, headless rehearsal, actual host clock endorsement/concrete live commands and fresh live permission remain pending.
 **Task:** `prism-111a3f`; parent `prism-f15cbf`, original render-budget Task 6.
 **Authority:** [the render-budget design](2026-10-10-panel-render-budget-design.md),
 Parts 1–5. The staging exception below is approved with this design and plan; all
