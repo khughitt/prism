@@ -7,7 +7,7 @@ size: m
 complexity: mid
 process: direct
 created: 2026-10-05T01:45:48Z
-updated: 2026-10-14T13:59:45Z
+updated: 2026-10-14T13:59:46Z
 depends: [prism-eef38f, material-cf32e5, prism-e11d93, prism-a56441]
 parent: prism-a03862
 tags: [ui, noctalia, material, bus]
@@ -48,3 +48,4 @@ Done: `glass.noiseSite` resolves through every layer and resets, the niri sink e
 ## Notes
 
 - 2026-10-06T03:57:46Z (main): Schema vendored by prism-a56441 (niri-material 1d2777aa). For the rack: the spec's Section 5 shadows sentence is wrong (renderer spec plan §6), and the interaction document needs the measured softening and cost prose: backdrop grain keeps 4% at one blur pass and nothing above the 8-bit floor from three passes or any roughness level above 0, so site=backdrop reads as grain only with backdrop-blur false and roughness 0; cost per backdrop damage ~1.8 ms GPU at either site (grain pass ~0.09 ms), a dragged backdrop amount ~1.4 ms per change vs 0.29 ms for glass. Evidence: niri-material docs/materials/2026-10-05-noise-placement-evidence.md. Owner's look at the backdrop site still pending.
+- 2026-10-14T13:59:46Z (main): scope: rescoped; premises hold at prism 8b9757a: all four deps done, design settled by docs/specs/2026-10-04-pipeline-schema-design.md Section 5, no glass.noiseSite key yet; body records what is established and the stacked-noise relation; process direct
