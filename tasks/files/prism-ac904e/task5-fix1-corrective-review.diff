@@ -1,0 +1,223 @@
+--- a/rehearsal-check.py
++++ b/rehearsal-check.py
+@@ -4,58 +4,107 @@
+ sys.path.insert(0,str(ROOT));import controller as c
+ os.umask(0o077)
+ assert (ROOT/'rehearse.py').exists(), 'Task5 prepare/start/verify interfaces are absent'
+ r=c.module('rehearse',ROOT/'rehearse.py')
+ checks=[]
+ def reject(label,fn):
+  try:fn()
+  except (ValueError,AssertionError):checks.append(label);return
+  raise AssertionError('accepted '+label)
+ def proof_fixture(root):
+- run={'runNonce':'fixture-nonce','runDir':str(root),'watchdogWall':1000,'threadId':'thread-fixture'}
++ run={'runNonce':'fixture-nonce','runDir':str(root),'watchdogWall':1000,'threadId':'thread-fixture','codeSha256':r.inventory(ROOT)}
+  rows=[]
+  def add(kind,payload,sec):
+   rows.append({'timestamp':datetime.datetime.fromtimestamp(sec,datetime.timezone.utc).isoformat(),'type':kind,'payload':payload})
+  add('session_meta',{'id':run['threadId'],'cwd':str(root),'originator':'codex-tui','thread_source':'user'},1)
+  add('event_msg',{'type':'task_started','turn_id':'first','turn_attribution':{'turn_trigger':'user'}},10)
+  add('response_item',{'type':'custom_tool_call','call_id':'start-id','input':f'rehearse.py start {root} --nonce fixture-nonce'},11)
+  add('response_item',{'type':'custom_tool_call_output','call_id':'start-id','output':json.dumps({'runDir':str(root),'runNonce':'fixture-nonce','started':True})},12)
+  add('event_msg',{'type':'task_complete','turn_id':'first'},13)
+  add('event_msg',{'type':'task_started','turn_id':'next','turn_attribution':{'turn_trigger':'user'}},1001)
+  add('event_msg',{'type':'user_message','message':'The watchdog has passed.'},1002)
+  add('response_item',{'type':'message','role':'user','content':[{'type':'input_text','text':'The watchdog has passed.'}]},1002)
+  add('event_msg',{'type':'item_completed','turn_id':'next','item':{'type':'UserMessage'}},1002)
+- add('response_item',{'type':'custom_tool_call','call_id':'read-id','input':f'cat {root}/receipt.json {root}/rollout.jsonl'},1003)
+- add('response_item',{'type':'custom_tool_call_output','call_id':'read-id','output':'read receipts and rollout'},1004)
++ add('response_item',{'type':'custom_tool_call','call_id':'read-id','input':f'python3 {ROOT}/rehearse.py read-evidence {root} --receipt {root}/receipt.json --rollout {root}/rollout.jsonl --nonce fixture-nonce'},1003)
++ (root/'receipt.json').write_text(json.dumps({'syntheticFixture':True,'integrityComplete':True})+'\n')
++ (root/'rollout.jsonl').write_text(''.join(json.dumps(x)+'\n' for x in rows))
++ ack=r.evidence_read(run,root/'receipt.json',root/'rollout.jsonl','fixture-nonce')
++ # Representative actual root functions.exec envelope; acknowledgement is from real fixture reads.
++ output=[{'type':'input_text','text':'Script completed\nWall time 0.2 seconds\nOutput:\n'},
++  {'type':'input_text','text':json.dumps({'chunk_id':'fixture','wall_time_seconds':.2,'exit_code':0,'original_token_count':200,'output':json.dumps(ack)+'\n'})}]
++ add('response_item',{'type':'custom_tool_call_output','call_id':'read-id','output':output},1004)
+  return run,rows
+ with tempfile.TemporaryDirectory() as temp:
+  root=pathlib.Path(temp);run,rows=proof_fixture(root);rollout=root/'rollout.jsonl'
+  def prove(changes=None):
+   data=copy.deepcopy(rows)
+   if changes:changes(data)
+   rollout.write_text(''.join(json.dumps(x)+'\n' for x in data))
+   proof=r.turn_proof(run,rollout,'first','next',pathlib.Path.home()/'.agents/bin/session-episodes')
+   return r.verify_turn(run,proof)
+  assert prove()['distinctHumanTurn'];checks.append('task_started before serialized human associates correctly')
++ def result_change(data,**changes):
++  envelope=json.loads(data[10]['payload']['output'][1]['text']);envelope.update(changes)
++  data[10]['payload']['output'][1]['text']=json.dumps(envelope)
++ def ack_change(data,change):
++  envelope=json.loads(data[10]['payload']['output'][1]['text']);ack=json.loads(envelope['output']);change(ack);result_change(data,output=json.dumps(ack))
+  for label,change in [
++  ('completed command permission denied',lambda x:result_change(x,exit_code=1,output='Permission denied')),
++  ('error-only successful exit',lambda x:result_change(x,output='Permission denied')),
++  ('success prose without acknowledgement',lambda x:result_change(x,output='read receipts and rollout')),
++  ('still-running nested command',lambda x:result_change(x,exit_code=None,session_id=42)),
++  ('session id with success ack',lambda x:result_change(x,session_id=42)),
++  ('error property with success ack',lambda x:result_change(x,error='Permission denied')),
++  ('yielded exec framing',lambda x:x[10]['payload']['output'][0].update(text='Script running with cell ID 1')),
++  ('wrong acknowledgement nonce',lambda x:ack_change(x,lambda a:a.update(runNonce='wrong'))),
++  ('wrong acknowledgement run',lambda x:ack_change(x,lambda a:a.update(runDir='/other'))),
++  ('wrong acknowledgement thread',lambda x:ack_change(x,lambda a:a.update(threadId='other'))),
++  ('wrong acknowledgement code',lambda x:ack_change(x,lambda a:a.update(codeDigest='0'*64))),
++  ('wrong receipt path',lambda x:ack_change(x,lambda a:a['receipt'].update(path='/other'))),
++  ('wrong receipt digest',lambda x:ack_change(x,lambda a:a['receipt'].update(sha256='0'*64))),
++  ('wrong rollout path',lambda x:ack_change(x,lambda a:a['rollout'].update(path='/other'))),
++  ('wrong rollout prefix digest',lambda x:ack_change(x,lambda a:a['rollout'].update(prefixSha256='0'*64))),
++  ('prefix excludes evidence-read call',lambda x:ack_change(x,lambda a:a['rollout'].update(prefixBytes=1))),
++  ('prefix includes its own result',lambda x:ack_change(x,lambda a:a['rollout'].update(prefixBytes=10**9))),
++  ('wrong read call nonce',lambda x:x[9]['payload'].update(input=x[9]['payload']['input'].replace('fixture-nonce','other'))),
++  ('wrong read result call id',lambda x:x[10]['payload'].update(call_id='other'))]:reject(label,lambda:prove(change))
++ assert prove(lambda x:x.append({'timestamp':'1970-01-01T00:16:45+00:00','type':'event_msg','payload':{'type':'task_complete','turn_id':'next'}}))['distinctHumanTurn']
++ checks.append('later rollout growth preserves actual read prefix')
++ receipt_bytes=(root/'receipt.json').read_bytes();(root/'receipt.json').write_bytes(receipt_bytes+b' ')
++ reject('receipt changed after actual read',lambda:prove());(root/'receipt.json').write_bytes(receipt_bytes)
++ for missing in (root/'receipt.json',rollout):
++  saved=missing.read_bytes();missing.unlink()
++  try:r.evidence_read(run,root/'receipt.json',rollout,'fixture-nonce')
++  except FileNotFoundError:checks.append('actual unreadable '+missing.name+' emits no ack')
++  else:raise AssertionError('acknowledged absent evidence')
++  missing.write_bytes(saved)
++ reject('read API wrong nonce',lambda:r.evidence_read(run,root/'receipt.json',rollout,'other'))
++
++ for label,change in [
++  ('failed evidence read Permission denied',lambda x:x[10]['payload'].update(output=json.dumps({'exit_code':1,'output':'cat: receipt.json: Permission denied; cat: rollout: Permission denied'}))),
+   ('same turn with parks',lambda x:x[5]['payload'].update(turn_id='first')),
+   ('missing first task_complete',lambda x:x[4]['payload'].update(type='other')),
+   ('injected user content',lambda x:x[7]['payload']['content'][0].update(text='# AGENTS.md injected')),
+   ('child-agent trigger',lambda x:x[5]['payload']['turn_attribution'].update(turn_trigger='agent')),
+   ('missing UserMessage completed',lambda x:x[8]['payload']['item'].update(type='Tool')),
+   ('wrong-turn UserMessage completed',lambda x:x[8]['payload'].update(turn_id='first')),
+   ('pre-watchdog reply',lambda x:x[7].update(timestamp='1970-01-01T00:16:39+00:00')),
+   ('wrong run nonce',lambda x:x[2]['payload'].update(input=f'rehearse.py start {root} --nonce other')),
+   ('failed start result',lambda x:x[3]['payload'].update(output=json.dumps({'runDir':str(root),'runNonce':'fixture-nonce','started':False}))),
+   ('mismatched tool result',lambda x:x[3]['payload'].update(call_id='other')),
+   ('aborted first turn',lambda x:x[4]['payload'].update(type='turn_aborted')),
+   ('wrong session',lambda x:x[0]['payload'].update(id='other'))]:reject(label,lambda:prove(change))
++ # verify_turn must independently reject a once-valid proof when the read result fails.
++ prove();valid=r.turn_proof(run,rollout,'first','next',pathlib.Path.home()/'.agents/bin/session-episodes')
++ failed=copy.deepcopy(rows);result_change(failed,exit_code=1,output='Permission denied')
++ rollout.write_text(''.join(json.dumps(x)+'\n' for x in failed))
++ reject('verify_turn rechecks failed completed read',lambda:r.verify_turn(run,valid))
+  reject('session-only provenance',lambda:r.verify_turn(run,{'threadId':run['threadId']}))
+  rollout.write_text(''.join(json.dumps(x)+'\n' for x in rows));p=r.turn_proof(run,rollout,'first','next',pathlib.Path.home()/'.agents/bin/session-episodes');p['events']['startCall']['sha256']='0'*64
+  reject('altered event reference',lambda:r.verify_turn(run,p))
+  # Controlled monotonic receipts: no real wait is used to claim lifetime.
+  good={'complete':True,'started':100.,'ended':2500.,'deadline':2800.,'exitReason':'complete','bytes':2400*1117592,'blocks':24000,'starts':1}
+  r.production_contract(good,2400,1117592)
+  for label,change in [('premature SIGTERM',{'complete':False,'exitReason':'signal'}),('short lifetime',{'ended':2499}),('deadline',{'ended':2800}),('restarted producer',{'starts':2}),('silently reduced byte rate',{'bytes':2400*1117592-1})]:
+   bad=good|change;reject(label,lambda:r.production_contract(bad,2400,1117592))
+  polls=[{'start':1.,'end':1.01,'previousIntervalPersistence':None},{'start':1.1,'end':1.11,'previousIntervalPersistence':{'start':1.01,'end':1.02,'persistedObservationStart':1.}}]
+  receipt={'lastIntervalPersistence':{'start':1.11,'end':1.12,'persistedObservationStart':1.1}}
+--- a/rehearse.py
++++ b/rehearse.py
+@@ -60,20 +60,58 @@
+         except (ValueError,TypeError):
+             # Harness output may wrap an exact JSON acknowledgement in tool status text.
+             for i,char in enumerate(value):
+                 if char!='{':continue
+                 try:decoded,_=json.JSONDecoder().raw_decode(value[i:])
+                 except ValueError:continue
+                 if start_ack(decoded,run):return True
+             return False
+         return decoded!=value and start_ack(decoded,run)
+     return False
++
++def evidence_read(run,receipt,rollout,nonce):
++    """Emit an acknowledgement only after both actual reads; rollout may keep growing."""
++    c.require(nonce==run['runNonce'],'evidence-read nonce mismatch')
++    c.require(receipt==Path(run['runDir'])/'receipt.json' and receipt.is_absolute() and rollout.is_absolute(),'evidence-read path mismatch')
++    c.require(inventory(ROOT)==run['codeSha256'],'evidence-read code changed')
++    receipt_bytes=receipt.read_bytes();json.loads(receipt_bytes)
++    rollout_bytes=rollout.read_bytes()
++    # A concurrently serialized last line is outside this stable, complete-line prefix.
++    prefix=rollout_bytes[:rollout_bytes.rfind(b'\n')+1]
++    c.require(bool(prefix),'empty evidence-read rollout prefix')
++    first=json.loads(prefix.splitlines()[0])
++    c.require(first['type']=='session_meta' and first['payload']['id']==run['threadId'],'evidence-read thread mismatch')
++    return {'schema':1,'kind':'rehearsal-evidence-read','runDir':run['runDir'],'runNonce':nonce,
++        'threadId':run['threadId'],'codeDigest':c.digest(c.encoded(run['codeSha256'])),
++        'receipt':{'path':str(receipt),'bytes':len(receipt_bytes),'sha256':c.digest(receipt_bytes)},
++        'rollout':{'path':str(rollout),'prefixBytes':len(prefix),'prefixSha256':c.digest(prefix)}}
++
++def read_ack(value,run,rollout,raw,call_index,result_index):
++    # Exact functions.exec text(await tools.exec_command(...)) completed envelope.
++    # No recursive/string search: yielded sessions and arbitrary output cannot qualify.
++    c.require(isinstance(value,list) and len(value)==2 and all(isinstance(x,dict) and set(x)=={'type','text'} and x['type']=='input_text' and isinstance(x['text'],str) for x in value),'invalid evidence-read harness envelope')
++    framing=value[0]['text'].splitlines()
++    c.require(len(framing)==3 and framing[0]=='Script completed' and framing[1].startswith('Wall time ') and framing[1].endswith(' seconds') and framing[2]=='Output:','evidence-read exec not completed')
++    result=json.loads(value[1]['text'])
++    c.require(isinstance(result,dict) and set(result)=={'chunk_id','wall_time_seconds','exit_code','original_token_count','output'} and type(result['exit_code']) is int and result['exit_code']==0 and isinstance(result['output'],str),'evidence-read command failed or still running')
++    ack=json.loads(result['output'])
++    c.require(isinstance(ack,dict) and set(ack)=={'schema','kind','runDir','runNonce','threadId','codeDigest','receipt','rollout'},'invalid evidence-read acknowledgement')
++    prefix_info=ack['rollout']
++    c.require(isinstance(prefix_info,dict) and set(prefix_info)=={'path','prefixBytes','prefixSha256'},'invalid evidence-read prefix')
++    count=prefix_info['prefixBytes'];data=b''.join(raw)
++    c.require(type(count) is int and sum(map(len,raw[:call_index+1]))<=count<=sum(map(len,raw[:result_index])) and data[:count].endswith(b'\n'),'evidence-read prefix does not cover call before result')
++    receipt=Path(run['runDir'])/'receipt.json';receipt_bytes=receipt.read_bytes()
++    expected={'schema':1,'kind':'rehearsal-evidence-read','runDir':run['runDir'],'runNonce':run['runNonce'],
++        'threadId':run['threadId'],'codeDigest':c.digest(c.encoded(run['codeSha256'])),
++        'receipt':{'path':str(receipt),'bytes':len(receipt_bytes),'sha256':c.digest(receipt_bytes)},
++        'rollout':{'path':str(rollout),'prefixBytes':count,'prefixSha256':c.digest(data[:count])}}
++    c.require(ack==expected,'evidence-read artifact/run/code binding mismatch')
+
+ def turn_proof(run,rollout,first,next_turn,classifier):
+     """Root calls only after its evidence-read call and completed first turn exist."""
+     c.require(first!=next_turn,'same turn is not a handoff')
+     c.require(classifier.resolve()==(Path.home()/'.agents/bin/session-episodes').resolve(),'unrecognized human classifier')
+     raw=rollout.read_bytes().splitlines(keepends=True);rows=[json.loads(x) for x in raw]
+     classified=runpy.run_path(str(classifier))['read_codex'](rollout)
+     c.require(classified.malformed==0 and classified.session_id==run['threadId'] and not classified.subagent,'wrong session or malformed rollout')
+     human_lines={e.line for e in classified.events if e.kind=='human'}
+     refs={};active=None
+@@ -97,24 +135,26 @@
+         if active==first and kind=='response_item' and typ in ('custom_tool_call_output','function_call_output') and 'startCall' in refs:
+             call=rows[refs['startCall']['line']-1]['payload']
+             if p.get('call_id')==call['call_id']:
+                 c.require(start_ack(p.get('output'),run),'start result lacks successful run binding');put('startResult',i)
+         if active==next_turn:
+             if i+1 in human_lines:put('human',i)
+             if kind=='event_msg' and typ=='item_completed' and p.get('item',{}).get('type')=='UserMessage':
+                 c.require(p.get('turn_id')==next_turn,'wrong-turn UserMessage item_completed');put('humanCompleted',i)
+             if kind=='response_item' and typ in ('custom_tool_call','function_call'):
+                 text=str(p.get('input',p.get('arguments','')))
+-                if str(rollout) in text and str(Path(run['runDir'])/'receipt.json') in text and 'rehearse.py verify' not in text:put('readCall',i)
++                if 'rehearse.py' in text and 'read-evidence' in text and run['runNonce'] in text and str(rollout) in text and str(Path(run['runDir'])/'receipt.json') in text:put('readCall',i)
+             if kind=='response_item' and typ in ('custom_tool_call_output','function_call_output') and 'readCall' in refs:
+                 call=rows[refs['readCall']['line']-1]['payload']
+-                if p.get('call_id')==call['call_id']:put('readResult',i);break
++                if p.get('call_id')==call['call_id']:
++                    read_ack(p.get('output'),run,rollout,raw,refs['readCall']['line']-1,i)
++                    put('readResult',i);break
+     required={'session','firstStarted','startCall','startResult','firstComplete','nextStarted','human','humanCompleted','readCall','readResult'}
+     c.require(set(refs)==required,'missing turn evidence: '+','.join(sorted(required-set(refs))))
+     c.require(rows[refs['session']['line']-1]['payload']['id']==run['threadId'],'session identity mismatch')
+     c.require(refs['firstStarted']['line']<refs['startCall']['line']<refs['startResult']['line']<refs['firstComplete']['line']<refs['nextStarted']['line']<=refs['human']['line']<refs['readCall']['line']<refs['readResult']['line'],'turn bracket/tool order mismatch')
+     c.require(refs['nextStarted']['line']<refs['humanCompleted']['line']<refs['readCall']['line'],'human completed outside next turn')
+     c.require(epoch(refs['human']['timestamp'])>run['watchdogWall'] and epoch(refs['nextStarted']['timestamp'])>run['watchdogWall'],'pre-watchdog message')
+     return {'threadId':run['threadId'],'firstTurnId':first,'nextTurnId':next_turn,'rolloutPath':str(rollout),'classifierPath':str(classifier),'classifierSha256':c.digest(classifier.read_bytes()),'events':refs}
+
+ def verify_turn(run,proof):
+     c.require(set(proof)=={'threadId','firstTurnId','nextTurnId','rolloutPath','classifierPath','classifierSha256','events'},'session-only/invalid proof')
+@@ -345,17 +385,18 @@
+             'writerOverlapCount':sum(any(p['start']<w['end'] and w['start']<p['end'] for p in intervals) for w in spans),
+             'protocolWindowOverlap':'inapplicable: controlled synthetic protocol and actual host monotonic are distinct clocks'}
+     return {'bytes':stream['bytes'],'sha256':stream['sha256'],'blocks':stream['blocks'],'protocolRecords':normal['records'],'protocolSha256':stream['protocolSha256'],'producerSeconds':pr['ended']-pr['started'],'peakBytesPerSecond':pr['peakBytesPerSecond'],'limits':limits,'polls':poll,'overlap':overlap,'processesGone':True,'socketGone':True}
+
+ def verify(root,proof_path):
+     run=verify_inputs(root);c.require(not run['smoke'],'seconds-long smoke is not lifetime proof')
+     result=verify_capture(root);binding=run|c.load(root/'start.json');proof=c.load(proof_path);result['turnProof']=verify_turn(binding,proof)
+     c.immutable(root/'verified.json',result);return result
+
+ def main():
+-    os.umask(0o077);p=argparse.ArgumentParser();p.add_argument('mode',choices=['prepare','start','verify','produce']);p.add_argument('run',type=Path);p.add_argument('--nonce');p.add_argument('--turn-proof',type=Path);p.add_argument('--smoke-seconds',type=float);p.add_argument('--native-smoke',action='store_true');a=p.parse_args();root=a.run.resolve()
++    os.umask(0o077);p=argparse.ArgumentParser();p.add_argument('mode',choices=['prepare','start','verify','produce','read-evidence']);p.add_argument('run',type=Path);p.add_argument('--nonce');p.add_argument('--receipt',type=Path);p.add_argument('--rollout',type=Path);p.add_argument('--turn-proof',type=Path);p.add_argument('--smoke-seconds',type=float);p.add_argument('--native-smoke',action='store_true');a=p.parse_args();root=a.run.resolve()
+     if a.mode=='prepare':result=prepare(root,a.smoke_seconds,a.native_smoke)
+     elif a.mode=='start':result=start(root,a.nonce)
+     elif a.mode=='verify':result=verify(root,a.turn_proof)
++    elif a.mode=='read-evidence':result=evidence_read(verify_inputs(root)|c.load(root/'start.json'),a.receipt,a.rollout,a.nonce)
+     else:return produce(root)
+     print(json.dumps(result));return 0
+ if __name__=='__main__':sys.exit(main())

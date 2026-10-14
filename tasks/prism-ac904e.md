@@ -8,7 +8,7 @@ complexity: mid
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T12:38:02Z
+updated: 2026-10-14T12:50:19Z
 started: 2026-10-14T12:02:14Z
 depends: [prism-c53a4f, prism-941a8d]
 parent: prism-111a3f
@@ -44,3 +44,14 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T12:31:43Z (fix/panel-render-budget): Root verified prepared51-file code equals immutable private/portable freeze, attached archive/diff hashes/readback and unstarted2400/2700 manifest. Preparation review dispatched fresh codex/gpt-6-astra high; no long start or live action.
 - 2026-10-14T12:38:01Z (fix/panel-render-budget): review: impl round 1 — verdict: revise; findings: Important 1; reviewer: codex/gpt-6-astra
 - 2026-10-14T12:38:01Z (fix/panel-render-budget): I1 verified: next-turn proof accepts matching read call result without successful completed artifact read. Fix requires explicit receipt+rollout acknowledgement bound to run/path/nonce and successful completed result; reject failure/error-only/still-running, positive harness-envelope fixture, fresh frozen sources/unstarted manifest. Long launch remains gated.
+- 2026-10-14T12:38:05Z (fix/panel-render-budget): parked (waiting on agent, review): Original implementer fixes I1 failed evidence-read certification, proves focused RED/GREEN and fresh same-code smoke in .worktrees/panel-budget; root then dispatches scoped preparation re-review before long launch.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T12:38:54Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a13a49-7fa7-7042-9feb-69873649eaec","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T12:48:10Z (fix/panel-render-budget): attached: task5-fix1-code-and-evidence.tar.gz (168996 bytes): Task5 I1 correction: frozen51-file source, full and corrective text diffs, source inventory,53 contracts and same-version normal/emergency smoke counts; private raw evidence excluded.
+- 2026-10-14T12:48:10Z (fix/panel-render-budget): attached: task5-fix1-full-code-review.diff (57979 bytes): Full textual current source diff against immutable accepted48-file authority; dry-run patch validated.
+- 2026-10-14T12:48:10Z (fix/panel-render-budget): attached: task5-fix1-corrective-review.diff (19835 bytes): I1-only textual correction against reviewed51-file preparation; actual completed evidence-read acknowledgement and regression coverage.
+- 2026-10-14T12:48:10Z (fix/panel-render-budget): attached: task5-fix1-source-inventory.json (5364 bytes): Fresh51-file source hashes and code digest; only rehearse.py and rehearsal-check.py changed since previous preparation.
+- 2026-10-14T12:50:18Z (fix/panel-render-budget): I1 corrective round1: failed receipt/rollout read reproduced RED (Permission denied accepted). Added actual read-evidence CLI with nonce/path/thread/code binding, exact final receipt hash and growing-rollout prefix hash; strict completed functions.exec/exit0 envelope rejects failed/error-only/yielded/session results. Final53 contracts and same-code normal/emergency smoke pass;8 identities gone/default tmux unchanged. New51-file digest b65dbb60bc76edb9b67f6b84000e2a40d462a5310ccf9eb46547ce0823453947; fresh native2400/2700 manifest unstarted. Previous native runtime qualification retained under old digest, unchanged runtime functions. Full/corrective textual diffs, inventory and archive attached. just check/tasks check/diff check0, no warnings. Root exact next-turn read API and full report in SDD; no long start/live effects.
+- 2026-10-14T12:50:18Z (fix/panel-render-budget): parked (waiting on agent, review): Root reads Task5 I1 corrective report, exact root read API and immutable new51-file source/diffs in .worktrees/panel-budget, dispatches scoped re-review, then owns approved long launch and real user-turn proof; worker correction complete and no process running.
+  provenance: {"harness_session":"codex:01a13a49-7fa7-7042-9feb-69873649eaec","harness_session_source":"CODEX_THREAD_ID"}
