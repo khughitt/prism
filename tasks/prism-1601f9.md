@@ -6,7 +6,7 @@ priority: 3
 size: s
 complexity: low
 created: 2026-09-09T01:55:20Z
-updated: 2026-10-14T14:10:46Z
+updated: 2026-10-14T14:10:47Z
 depends: []
 tags: [testing, noctalia, dx]
 ---
@@ -17,3 +17,4 @@ Three files now stand panel.luau up against a stubbed host, each with its own co
 
 - 2026-09-10T17:00:50Z (profile-selector): 2026-09-10: while unifying, decode describe output by copy. The stub returns the fixture table by reference, so an optimistic mutation of state.model (selector pick, neutralize clearing) leaks into the next describe result; it produced one wrong failure while fixing prism-b553da.
 - 2026-10-14T14:10:46Z (main): shelved: A plugin .luau gains a noctalia.* host call beyond json.decode, runAsync and openColorPicker (the body's own trigger); was a scoped todo, size s, low, process direct, re-scoped 2026-10-14
+- 2026-10-14T14:10:47Z (main): scope: shelved; premises hold at 2eb5bfd: three harnesses still each build their own noctalia stub (plugin_test.lua:368, plugin-panel-lifecycle.test.js:118, contract.test.mjs:166 and :432); the panel's host calls are json.decode, runAsync and openColorPicker, unchanged since cf2e115 (2026-08-29), so the trigger has not fired; the lifecycle stub's noctalia.state is now unused by any plugin .luau; openColorPicker is stubbed by none of the three
