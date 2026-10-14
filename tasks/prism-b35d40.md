@@ -7,9 +7,13 @@ size: m
 complexity: mid
 process: direct
 created: 2026-09-11T07:50:56Z
-updated: 2026-10-14T13:59:49Z
+updated: 2026-10-14T13:59:50Z
 depends: [material-bb3fe5]
 tags: [niri, rack]
 ---
 
 Ice portion split from prism-763054. Follow niri-material optics design section 9: cracks after Distortion, mix glass.cracks, detail glass.cracksScale, focus-state variants and bypass, manifest and KDL renderer coverage. Emit only after the installed niri capability probe accepts cracks.
+
+## Notes
+
+- 2026-10-14T13:59:50Z (main): scope: confirmed; premises hold: material-bb3fe5 (ice, cracks optic) still todo and no cracks code in niri-material 433fb253; optics design section 9 (Prism) and the iridescence/aurora device precedent (033f7af) settle the approach; process direct
