@@ -5,8 +5,9 @@ status: todo
 priority: 2
 size: m
 complexity: mid
+process: direct
 created: 2026-10-05T01:45:48Z
-updated: 2026-10-06T03:57:46Z
+updated: 2026-10-14T13:59:45Z
 depends: [prism-eef38f, material-cf32e5, prism-e11d93, prism-a56441]
 parent: prism-a03862
 tags: [ui, noctalia, material, bus]
@@ -18,6 +19,31 @@ Prism side of the first movable device. One flat key, glass.noiseSite (backdrop 
 Expose placement through a select first, then drag: both write the same key. Drag uses Noctalia dragSource/dropZone with only the sites the schema allows for noise lit, and keeps a keyboard-accessible equivalent (the select). Arbitrary permutations are out of scope; prism-542904 stays shelved until a second device moves.
 
 Depends on the schema design (prism-eef38f) for the legal sites and on the renderer work (material noise placement task) for the attribute to exist.
+
+## Established (re-scope 2026-10-14)
+
+- Every dependency is done. The renderer accepts `noise site=backdrop|glass|film` (`material-cf32e5`; evidence in niri-material `docs/materials/2026-10-05-noise-placement-evidence.md`). `defs/rack/pipeline.json` carries three noise stages picked by the `noise site=` selector: `backdrop-grain` (source site, output scope), `noise` (behind) and `film-grain` (post). It was vendored by `prism-a56441` at `f404f37`. Dry fields map through the manifest (`prism-e11d93`).
+- The design is settled in `docs/specs/2026-10-04-pipeline-schema-design.md` Section 5, so this needs no new spec:
+  - `glass.noiseSite` is bound to node `noise site=`.
+  - A rack device may name a `selector` parameter instead of a fixed `stage`, and `validateRack` checks that every variant's stage belongs to the same optic.
+  - The card sits at its stage's position in site order. At an output-scope stage it says "one amount, per output" and hides the unfocused mix cell with that reason.
+  - Only the selector's variants are offered as drop zones.
+  - The `shadows` edges arrive with the film stage, and `describe` carries the noise optic's stages.
+- No `glass.noiseSite` key exists yet in `defs/glass.yaml` or `integrations/niri/manifest.yaml`. The native Noctalia reconciler supports `drag_source` and `drop_zone` nodes.
+
+## Corrections and prose to carry (from the 2026-10-06 note)
+
+- The spec's Section 5 sentence on shadows is wrong (renderer spec, plan §6).
+- The interaction document (`docs/notes/pipeline-interactions.md`) needs the measured softening and cost prose:
+  - Backdrop grain keeps 4% at one blur pass and nothing above the 8-bit floor from three passes or at any roughness above 0. So `site=backdrop` reads as grain only with backdrop-blur false and roughness 0.
+  - Cost per backdrop damage is ~1.8 ms GPU at either site (the grain pass is ~0.09 ms). A dragged backdrop amount costs ~1.4 ms per change, against 0.29 ms for glass.
+- The owner's look at the backdrop site was still pending on 2026-10-06.
+
+## Relation to stacked noise
+
+`prism-85f63a` extends this key per layer (the renderer now takes up to four noise nodes, each with its own `site=`). Here, `glass.noiseSite` is the single layer's site.
+
+Done: `glass.noiseSite` resolves through every layer and resets, the niri sink emits `site=`, the rack places and explains the card, and select and drag write the same key. Covered by tests in `test/` and `integrations/noctalia-plugin/plugin_test.lua`.
 
 ## Notes
 
