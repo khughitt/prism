@@ -1,10 +1,10 @@
 ---
 id: prism-cc589b
 title: "Replace prism's panel icon (a gem, or other options)"
-status: idea
+status: todo
 priority: 3
 created: 2026-10-09T14:58:40Z
-updated: 2026-10-09T14:58:40Z
+updated: 2026-10-14T11:02:58Z
 depends: []
 tags: [quick-add]
 source: "mindful:thought:831df9055e45b067f2ed480991d90d04"
