@@ -5,8 +5,9 @@ status: todo
 priority: 2
 size: m
 complexity: low
+process: direct
 created: 2026-09-11T07:51:05Z
-updated: 2026-09-12T16:46:10Z
+updated: 2026-10-14T14:29:24Z
 depends: [prism-b35d40]
 tags: [profiles, niri]
 ---
