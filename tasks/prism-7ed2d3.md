@@ -8,7 +8,7 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T22:56:53Z
+updated: 2026-10-14T22:57:18Z
 started: 2026-10-14T22:23:52Z
 depends: [prism-ac904e]
 parent: prism-111a3f
@@ -47,3 +47,5 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T22:56:30Z (fix/panel-render-budget): Prepared private exact IPC/readiness, independent locked state/restoration, normal/physical-only-abort drain and conservative attempt-bound reconciliation helpers; frozen54-file runtime unchanged. Focused refusal fixtures RED→GREEN. Current83/12/24 full Stage1 fake burst both variants5cold+5launch/control: peaks318875/319617B/s below unchanged1425679 guard; exact raw, fake restoration and cleanup verified. Root owns actual timing, concrete session/contract/permit binding, reserve provenance review and fresh owner permission.
 - 2026-10-14T22:56:30Z (fix/panel-render-budget): attached: task6-host-helpers.tar.gz (25282 bytes): Inert concrete host helper sources/tests, full root command and recovery handoff, source hashes and current24-profile Stage1 burst proof; no owner raw data or authorization
 - 2026-10-14T22:56:53Z (fix/panel-render-budget): Preparation verification:7 host/4 drain/2 reconciliation tests plus independent Node state scenarios and retained-capture timing front door pass; accepted54 files and7 prior calibration proofs unchanged. just check, tasks check and whitespace checks exit0/no warnings. Nine temporary collector identities and three producers reaped, three owned sockets absent; host-load session says nothing left running. Portable helper archive16files/25282B SHA23bd006826dd37a392ade4b921540926c334f945e4808ead22276f871d9db2a3. No live host effects.
+- 2026-10-14T22:57:18Z (fix/panel-render-budget): parked (waiting on agent, review): Root: review task-6-report.md and task6-host-helpers.tar.gz in .worktrees/panel-budget; run actual read-only helper timings, materialize concrete session/contract/permit commands and reserve provenance, dispatch pre-pilot review, then request fresh owner permission only if accepted. Worker preparation complete; no running actors or live host effects.
+  provenance: {"harness_session":"codex:01a13c86-53cb-74e0-95a9-67a708bed5b0","harness_session_source":"CODEX_THREAD_ID"}
