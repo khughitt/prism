@@ -293,6 +293,8 @@ Broad Tasks1–4 review and two corrective waves accepted through25ba964, tracke
 
 ### Task 5: Prepare, cross the real turn boundary and verify lifetime
 
+**Execution:** preparation and scoped corrective review accepted through525ef8a. Root launched the reviewed headless rehearsal on2026-10-14; actual40-minute lifetime and post-watchdog human-turn proof remain pending. No live desktop action is authorized by this run.
+
 **Files:** create `CAPTURE_ROOT/code/{rehearse.py,rehearsal-check.py}`; root-controlled `runs/<rehearsal-id>/{run.json,processes.json,polls.jsonl,receipt.json,raw/,rehearsal-report.md}`. Portable attachment and task notes record actual result.
 
 **Interfaces:** `rehearse.py prepare RUN_DIR` exclusively creates a synthetic manifest/log/producer config from Task2 full-burst calibration, with watchdog2700 s, producer≥2400 s, synthetic environment and host monotonic polling. `start RUN_DIR` starts the reviewed named tmux mechanism; only root invokes long start. `verify RUN_DIR --turn-proof TURN_PROOF.json` requires ≥2400 elapsed synthetic production, no restart, all expected ids/payloads and final integrity receipt plus strict protocol verification, no socket/pids alive. Exit/gap/missing next-turn proof fails. Root obtains turn proof from the actual Codex rollout using the session-logs skill. Task lifecycle harness_session is the stable thread identity, not a turn id; park/resume notes corroborate the handoff only. A yielded tool in one turn is insufficient.

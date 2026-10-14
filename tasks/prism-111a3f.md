@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-13T22:07:51Z
-updated: 2026-10-14T12:00:27Z
+updated: 2026-10-14T13:00:05Z
 started: 2026-10-13T22:08:29Z
 depends: []
 parent: prism-f15cbf
@@ -81,3 +81,6 @@ Approved capture recovery design (spec round3) and proposed implementation plan.
 - 2026-10-14T11:51:35Z (fix/panel-render-budget): review: impl round 3 — verdict: accept; findings: Minor 1; reviewer: codex/gpt-6.1-sol
 - 2026-10-14T11:58:59Z (fix/panel-render-budget): Accepted-freeze first short proof refused its configured rate guard: observed1098376B/s >1095521; actual gap0.152338s within derived0.477330, exact17684296bytes/zero errors/full protocol/all actors reaped. Retain original; retry unchanged freeze using original prospective1425679 guard, a stricter gap, same682491 native floor.
 - 2026-10-14T12:00:27Z (fix/panel-render-budget): Accepted-freeze short proof passed both variants; exact17773130/17772966bytes independently rehashed, full protocol/zero errors, max gaps0.144620/0.144233s, all actors reaped/default tmux unchanged. Task5 prep unblocked; conservative prospective guard1425679, observed sourcepeak1117592 retained.
+- 2026-10-14T13:00:04Z (fix/panel-render-budget): Task5 preparation correction accepted with no new findings; actual reviewed headless rehearsal started, autonomous watchdog09:42:53EDT today. Keith plain message after09:44EDT opens required real human turn; root then reads actualreceipts/rollout via strict completed ack, verifies40-minute bytes/protocol/cleanup/proof, imports and reviews Task5 evidence. Long acceptance pending; no desktop action or host pointer/timer change.
+- 2026-10-14T13:00:04Z (fix/panel-render-budget): parked (waiting on user, dependency): Keith sends a plain message after2026-10-14 09:44EDT; root resumes Task5 real-turn receipt/proof/cleanup verification, then imports evidence and dispatches final Task5 review in .worktrees/panel-budget. Autonomous named collector watchdog09:42:53EDT; stop tmux -L prism-budget-capture-rehearsal-7160d22ea26d4fba96f0f218ce8fecd6 kill-server. No host pointer/paused timer stands.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}

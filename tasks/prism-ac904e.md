@@ -8,7 +8,7 @@ complexity: mid
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T12:56:51Z
+updated: 2026-10-14T13:00:05Z
 started: 2026-10-14T12:02:14Z
 depends: [prism-c53a4f, prism-941a8d]
 parent: prism-111a3f
@@ -58,3 +58,6 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T12:56:50Z (fix/panel-render-budget): resumed
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
 - 2026-10-14T12:56:50Z (fix/panel-render-budget): review: impl round 2 — verdict: accept; findings: none; reviewer: codex/gpt-6.1-sol
+- 2026-10-14T13:00:04Z (fix/panel-render-budget): Root launched one approved headless rehearsal: task5-rehearsal-fix1-d8c12d1344db4b30bb4e9b778f88277d, nonce rehearsal-7160d22ea26d4fba96f0f218ce8fecd6, source525ef8a/freeze51 digestb65dbb60bc76edb9b67f6b84000e2a40d462a5310ccf9eb46547ce0823453947. Start12:57:52.730564Z; watchdog13:42:52.730564Z/09:42:53EDT. Observed25segments/25183926B and server65339/start35185635,wrapper65340/start35185636,collector65358/start35185644,producer65363/start35185652, bootcb12762c-a6f1-4a9e-9eb0-ed27df59e655 allalive. Named stop: tmux -L prism-budget-capture-rehearsal-7160d22ea26d4fba96f0f218ce8fecd6 kill-server. Wrapper owns cleanup/later native Lua. host-load session one named server65339; all4 identities independently checked. No live pointer/profile/timer changed. Exact root read handoff saved in plan SDD workspace.
+- 2026-10-14T13:00:04Z (fix/panel-render-budget): parked (waiting on user, dependency): Keith sends a plain message after2026-10-14 09:44EDT (watchdog09:42:53); root then verifies durable Task5 receipts, literal read acknowledgement, real rollout turn proof, all captured bytes/ids and cleanup in .worktrees/panel-budget. Running named socket prism-budget-capture-rehearsal-7160d22ea26d4fba96f0f218ce8fecd6; emergency stop tmux -L prism-budget-capture-rehearsal-7160d22ea26d4fba96f0f218ce8fecd6 kill-server. No host pointer/paused timer stands.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
