@@ -1,13 +1,13 @@
 ---
 id: prism-ddeb30
-title: Add a toggle to expand or collapse all panel sections
+title: Add one control to expand or collapse every rack card
 status: todo
 priority: 2
 size: s
 complexity: low
 process: direct
 created: 2026-10-11T17:56:38Z
-updated: 2026-10-14T11:02:57Z
+updated: 2026-10-14T11:03:21Z
 depends: []
 parent: prism-67b1b2
 tags: [noctalia, ui]
