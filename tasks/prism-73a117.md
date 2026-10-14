@@ -1,13 +1,13 @@
 ---
 id: prism-73a117
 title: Incremental collector and cleanup-owned tmux lifecycle
-status: blocked
+status: todo
 priority: 2
 size: m
 complexity: high
 process: direct
 created: 2026-10-13T23:49:39Z
-updated: 2026-10-13T23:49:41Z
+updated: 2026-10-14T01:22:15Z
 depends: []
 parent: prism-111a3f
 tags: [performance]
