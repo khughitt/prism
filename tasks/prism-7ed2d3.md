@@ -8,7 +8,7 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T23:43:33Z
+updated: 2026-10-14T23:45:39Z
 started: 2026-10-14T22:23:52Z
 depends: [prism-ac904e]
 parent: prism-111a3f
@@ -63,3 +63,8 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T23:43:24Z (fix/panel-render-budget): Readiness follow-up gates: just check/tasks check exit0/no warnings, whitespace clean, accepted54 source hashes unchanged and old archive hash unchanged. New17-file v2 archive27956B SHA95a9882d9b9db044e72e49228f44ebfbd7a121f8b96d915f2ac3e72e2561d179. Mock-only checks; host-load session reports nothing left running.
 - 2026-10-14T23:43:33Z (fix/panel-render-budget): parked (waiting on agent, review): Root: regenerate session/contract/master inventories from task6-host-helpers-v2.tar.gz in .worktrees/panel-budget, finish numeric packet and timing gate, then dispatch pre-pilot review before fresh owner permission. Worker readiness follow-up complete; no running processes or live host effects.
   provenance: {"harness_session":"codex:01a13c86-53cb-74e0-95a9-67a708bed5b0","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T23:44:48Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T23:44:48Z (fix/panel-render-budget): Root completes pre-pilot packetv3: four exact inert sessions/hostActions/collector configs, contracts bound to canonical session bytes, all artifact hashes checked, no live directories/permits. ReferenceSnapshot points to B1 saved state. One outer pilot rotation journal keeps inputs stable across all4; per-activation timer snapshots restore inactive, outer original state resumes after final/abort cleanup.
+- 2026-10-14T23:44:48Z (fix/panel-render-budget): Root reserve ruling pending re-review: actual current read-only components and historical real broad-phase evidence remain separate from prospective pre35/post20/recovery20/finish65s ceilings. Sum140, padded175 leaves125 approval; initial remaining132, recovery107. Repeated close/reparses, bounded async restore readiness, outer resume and complete actual elapsed through restoration/analysis are counted; overrun makes collection ineligible while cleanup continues. No fake lifecycle timing funds allowance.
+- 2026-10-14T23:45:39Z (fix/panel-render-budget): attached: task6-root-action-packet-v3.tar.gz (2765 bytes)

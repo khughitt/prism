@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-13T22:07:51Z
-updated: 2026-10-14T21:48:59Z
+updated: 2026-10-14T22:42:10Z
 started: 2026-10-13T22:08:29Z
 depends: []
 parent: prism-f15cbf
@@ -107,3 +107,4 @@ Approved capture recovery design (spec round3) and proposed implementation plan.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
 - 2026-10-14T21:48:59Z (fix/panel-render-budget): resumed
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T22:42:10Z (fix/panel-render-budget): Task6 root read-only preparation: fresh prospective Stage1-n1 clock source/package/running/boot binding verified; live log identified through host file descriptor and pinned source1MiB/one backup/8KiB cap; locked preflight pair eligible, scratch currently empty. No desktop/timer/plugin/pointer/store mutation or live permit. Concrete host helpers and current-model Stage1 burst coverage remain before fresh permission.
