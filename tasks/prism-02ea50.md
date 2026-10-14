@@ -7,7 +7,7 @@ size: xs
 complexity: low
 process: direct
 created: 2026-09-05T22:55:53Z
-updated: 2026-10-14T14:10:42Z
+updated: 2026-10-14T14:10:43Z
 depends: []
 tags: [cli, testing]
 ---
@@ -22,3 +22,7 @@ Three rules the context-layers branch states but leaves to inference. (1) contex
   - Wallpaper-pair deletes skip that refusal (`without.kind === 'wallpaper'`). The test should pin what a pair delete does under a broken active profile as observed, not assume refusal.
 
 Done: tests in `test/context-cli.test.js` for the empty listing, the kind-before-name order, and the inactive delete under a broken active profile (plus the observed wallpaper-pair case), all against the current code.
+
+## Notes
+
+- 2026-10-14T14:10:43Z (main): scope: rescoped; checked at 2eb5bfd: rule (1) covered by cli-surface enum baselines since 325d9a8, rule (2) reshaped (context list takes no kind; kind enum precedes assertName), rule (3) holds for profiles in changeSlots and is untested, wallpaper-pair deletes bypass it; process direct
