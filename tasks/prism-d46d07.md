@@ -4,8 +4,9 @@ title: "Modulate the wallpaper behind windows: blur, desaturation, noise, bright
 status: idea
 priority: 2
 created: 2026-09-11T01:13:09Z
-updated: 2026-09-11T01:13:09Z
+updated: 2026-10-14T11:11:36Z
 depends: []
+parent: prism-85caf6
 tags: [quick-add, wallpaper, integration, defs]
 source: "mindful:thought:1e2513d2f5ea48609022559f3c687d01"
 ---
