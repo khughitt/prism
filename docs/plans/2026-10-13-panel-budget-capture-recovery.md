@@ -293,7 +293,7 @@ Broad Tasks1–4 review and two corrective waves accepted through25ba964, tracke
 
 ### Task 5: Prepare, cross the real turn boundary and verify lifetime
 
-**Execution:** preparation and scoped corrective review accepted through0a97533. The first headless rehearsal failed after636.7s and remains incomplete. A reproduced concurrent-append observation defect was corrected and independently reviewed; root launched one fresh reviewed rehearsal on2026-10-14. Actual40-minute lifetime and post-watchdog human-turn proof remain pending. No live desktop action is authorized by this run.
+**Execution:** preparation and scoped corrective review accepted through0a97533. The first headless rehearsal failed after636.7s; a reproduced concurrent-append observation defect was corrected and independently reviewed. The fresh rehearsal failed after32.0s at the unchanged elapsed-time gap guard. Both captures remain incomplete and immutable. Root investigates collection and persistence costs before any further retry or design disposition. Actual40-minute lifetime and post-watchdog human-turn proof remain pending; no collector is running. No live desktop action is authorized by these runs.
 
 **Files:** create `CAPTURE_ROOT/code/{rehearse.py,rehearsal-check.py}`; root-controlled `runs/<rehearsal-id>/{run.json,processes.json,polls.jsonl,receipt.json,raw/,rehearsal-report.md}`. Portable attachment and task notes record actual result.
 
