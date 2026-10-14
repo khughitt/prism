@@ -7,7 +7,7 @@ size: s
 complexity: low
 process: direct
 created: 2026-10-11T17:56:38Z
-updated: 2026-10-14T11:02:56Z
+updated: 2026-10-14T11:02:57Z
 depends: []
 parent: prism-67b1b2
 tags: [noctalia, ui]
@@ -30,3 +30,4 @@ Related: the dice rolls only drawn sliders once prism-d2ba46 lands, so expand-al
 ## Notes
 
 - 2026-10-11T17:56:57Z (main): concerns: prism-3ea2a0 extension — Add one control to expand or collapse all sections beyond the existing individual card expanders.
+- 2026-10-14T11:02:57Z (main): scope: scoped; todo P2 s low direct under prism-67b1b2; reading fixed to rack cards (the only collapsible units); rack-header button, Lua tests, contract doc, render budget check; brief: docs/notes/2026-10-14-panel-ergonomics-brief.md
