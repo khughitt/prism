@@ -4,8 +4,9 @@ title: "Undo in the Prism panel: a general mechanism, not a per-gesture guard"
 status: idea
 priority: 2
 created: 2026-09-10T10:13:16Z
-updated: 2026-09-10T10:13:16Z
+updated: 2026-10-14T11:03:10Z
 depends: []
+parent: prism-67b1b2
 tags: [ui, noctalia, store]
 ---
 
