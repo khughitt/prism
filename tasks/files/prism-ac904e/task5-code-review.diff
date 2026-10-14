@@ -14,15 +14,15 @@
 +    if 'rehearsal' in run:
 +        logs.require(run['environment']=='synthetic' and Path(run['rehearsal'])==path.parent/'run.json','rehearsal is synthetic-only and run-local')
      return run
- 
- 
+
+
  class Interrupted(Exception):pass
  class Stopped(Exception):pass
- 
- 
+
+
  def interrupt(signum, frame):raise Interrupted(signal.Signals(signum).name)
- 
- 
+
+
 @@ -180,57 +182,96 @@
          atomic(Path(cfg['identities']),{'server':server,'wrapper':wrapper})
          atomic(root/'wrapper-ready.json',{'socket':cfg['socket']})
@@ -31,8 +31,8 @@
          atomic(Path(cfg['receipt']),{'schema':2,'runId':cfg['runId'],'exitReason':'launch-failure','integrityComplete':False,'error':str(e)})
          raise
      return 0
- 
- 
+
+
  def supervise(path):
 -    cfg=config(path);root=path.parent;identities={'wrapper':process(os.getpid())};reason='unexpected';error=None;started=None;receipt=None;child=None
 +    cfg=config(path);root=path.parent;identities={'wrapper':process(os.getpid())};reason='unexpected';error=None;started=None;receipt=None;child=None;producer=None;rehearsal=None;producer_checked=False;ready_sent=False;finish_sent=False
@@ -120,7 +120,7 @@
          if 'server' in identities and same_process(identities['server']):tmux(cfg,'kill-server',check=False)
          atomic(Path(cfg['receipt']),final)
      return 0 if complete else 1
- 
+
 --- accepted/rehearsal-check.py
 +++ task5/rehearsal-check.py
 @@ -0,0 +1,82 @@
