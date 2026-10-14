@@ -8,7 +8,7 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T06:18:29Z
+updated: 2026-10-14T07:08:45Z
 started: 2026-10-14T04:54:36Z
 depends: [prism-ed9400]
 parent: prism-111a3f
@@ -45,3 +45,24 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T06:18:28Z (fix/panel-render-budget): Corrective round1 I1–I6 GREEN: final authoritative CAPTURE_ROOT/runs/task4-fix1-f1239c00d5f844ea867ec2c46335af1e/private-package-final/code; portable archive SHA256 4007820efe237ae7b9b3359d236fe21bf121b57c2ffdebfc1387e2a9d1d5da1c; private archive SHA256 59fa00be80c285b8272defc20352f88e4b3af50d7d19701a306683f27edbe729. Actual producer/controller/collector lifecycle, partial abort/crash cleanup, independent prior-stage binding and negative suites pass; fake measured reserves2–4s. just check/tasks check/diff check passed, no warnings; all369 recorded process identities reaped and host-load nothing left. No live authorization/endorsement or production edit. Root review and observed concurrent-append risk disposition remain mandatory.
 - 2026-10-14T06:18:28Z (fix/panel-render-budget): parked (waiting on agent, review): Root reviews exact final Task4 corrective package at CAPTURE_ROOT/runs/task4-fix1-f1239c00d5f844ea867ec2c46335af1e/private-package-final and .worktrees/panel-budget/.superpowers/sdd/2026-10-13-panel-budget-capture-recovery/task-4-report.md; dispatch scoped I1-I6/readiness re-review, then broad Tasks1-4 review that dispositions concurrent-append capture risk before unsynchronized rehearsal and prepares missing live proof/command gates.
   provenance: {"harness_session":"codex:01a138c2-c6a4-7133-8329-83cbeff748e7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T06:30:58Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T06:30:58Z (fix/panel-render-budget): review: impl round 2 — verdict: revise; findings: Important 2; reviewer: codex/gpt-6-astra
+- 2026-10-14T06:30:59Z (fix/panel-render-budget): parked (waiting on agent): Original implementer fixes periodic drain dwell anchors and final captured-tail validation N1/N2 with actual producer periodic lifecycle RED-to-GREEN; root runs fresh scoped re-review in .worktrees/panel-budget.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T06:31:36Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a138c2-c6a4-7133-8329-83cbeff748e7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T06:48:51Z (fix/panel-render-budget): Task4 corrective round2: reproduced N1 periodic dwell reset and N2 actual final raw reparse equality refusal in unique private task4-fix2-dc798f97a77c46b69eb621a1b9cabce0. Implemented stable settlement timing plus immutable inspected raw prefix/final CLI reread with material-tail refusal; final covering calibration and archives pending. Fake IPC/temp state only; synchronized writer is protocol calibration, concurrent-append risk remains root broad-review gate.
+- 2026-10-14T06:54:05Z (fix/panel-render-budget): Original model capacity failed twice before round2 finalization. Root verified exact RED-case socket/PID/start/boot identities and stopped only that named synthetic tmux server; all three recorded processes gone, root-cleanup-proof.json preserved. Completed integration/proof/abort outputs retained; fresh available model finalizes without resetting evidence.
+- 2026-10-14T06:55:30Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T06:55:30Z (fix/panel-render-budget): took over session 01a138c2-c6a4-7133-8329-83cbeff748e7 (owner fix/panel-render-budget, live, forced); reason: Original subagent errored twice on model capacity and is interrupted; root verified no check running and reaped its exact owned synthetic collector before reassignment.
+- 2026-10-14T06:55:30Z (fix/panel-render-budget): Tooling friction filed as hq-7c80a5. Forced takeover audited because errored subagent claim remained live; original interrupted, exact owned processes gone, available-model finalization next.
+- 2026-10-14T06:55:31Z (fix/panel-render-budget): parked (waiting on agent): Fresh available implementer finalizes preserved Task4 round2 source/evidence after original model capacity failure; root then dispatches scoped N1/N2 review in .worktrees/panel-budget.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T06:57:51Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a13933-08ea-76d2-ac96-b6f1fe7a1056","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T07:08:19Z (fix/panel-render-budget): attached: task4-controller-fix2-dc798f97.tar.gz (184434 bytes): Round2 N1/N2 controller corrections, interruption cleanup, full code and scoped/cumulative diffs; offline PASS/hash evidence only
+- 2026-10-14T07:08:44Z (fix/panel-render-budget): Corrective round2 N1/N2 complete for fresh root review: stable physical dwell under ordinary callbacks, final actual raw/receipt reparse with immutable history and material-change refusal; interruption cleanup RED→GREEN assertion/TERM/INT plus success. Frozen code37 entries; exact payloads32 lifecycles/intents32/reverse copies18; all468 recorded identities gone; earlier4 archives unchanged. Public f801799ade78b38a329b144ec5e985a1cad4742e6a6332961a1c824e8880d232; private985ec4216f1f7652ce16870bdac7f5fd9a92524efe4ce733bbeee89424599b76 at unique fix2 run. Full appended report and scoped/cumulative text diffs in plan SDD workspace. Append-race/live-clock/concrete-host gates remain root-owned; no live action or collector relaxation.
+- 2026-10-14T07:08:44Z (fix/panel-render-budget): parked (waiting on agent, review): Root: inspect round2 task-4-report.md, task-4-fix2-code.diff, cumulative task-4-code.diff and frozen private/public package in .worktrees/panel-budget; dispatch fresh scoped N1/N2 plus cleanup review, then broad Tasks1–4 review and concurrent-append risk disposition before any unsynchronized rehearsal. All owned processes reaped; no host pointers or checks remain.
+  provenance: {"harness_session":"codex:01a13933-08ea-76d2-ac96-b6f1fe7a1056","harness_session_source":"CODEX_THREAD_ID"}
