@@ -7,7 +7,7 @@ size: s
 complexity: mid
 process: direct
 created: 2026-09-09T13:08:43Z
-updated: 2026-10-14T13:59:47Z
+updated: 2026-10-14T13:59:48Z
 depends: []
 parent: prism-a03862
 tags: [ui, noctalia]
@@ -34,3 +34,7 @@ Reference: [desktop acceptance screenshot](../docs/notes/2026-09-09-device-chain
   - the `rowHint` layer and wallpaper-shadow feedback
 
 Done: one bypass control per card, an individual reset reachable without expanding the card, and `plugin_test.lua` cases for set, reset and the hint.
+
+## Notes
+
+- 2026-10-14T13:59:48Z (main): scope: rescoped; duplication confirmed in panel.luau deviceCard/lightRow at 8b9757a; Noctalia 7f547389f kButton accepts color, tooltip and onRightClick, so the lean is a light button with right-click reset (installed 5.2.1 at API 22 to confirm); process direct
