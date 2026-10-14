@@ -1,15 +1,16 @@
 ---
 id: prism-73a117
 title: Incremental collector and cleanup-owned tmux lifecycle
-status: doing
+status: done
 priority: 2
 size: m
 complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:39Z
-updated: 2026-10-14T02:01:24Z
+updated: 2026-10-14T02:06:09Z
 started: 2026-10-14T01:24:06Z
+completed: 2026-10-14T02:06:07Z
 depends: []
 parent: prism-111a3f
 tags: [performance]
@@ -44,3 +45,10 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T02:01:00Z (fix/panel-render-budget): attached: task1-rotation-seal-fix-round1.tar.gz (33491 bytes): I1 sealing fix round1: exact reviewed-original-to-fix/full collector diffs, fixed/reviewed code hashes, deterministic five-failure RED to eight-case GREEN, covering checks, payload equality; original attachment preserved.
 - 2026-10-14T02:01:24Z (fix/panel-render-budget): parked (waiting on agent): Root: run scoped re-review of I1 sealing fix from task1-rotation-seal-fix-round1.tar.gz and appended task-1-report.md in .worktrees/panel-budget, then disposition findings before closure/Task2; no process or check remains.
   provenance: {"harness_session":"codex:01a13801-f6fe-7a03-a1a0-9164fe63c9d1","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T02:06:07Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T02:06:07Z (fix/panel-render-budget): review: impl round 2 — verdict: accept; findings: none; reviewer: codex/gpt-6.1-sol
+- 2026-10-14T02:06:07Z (fix/panel-render-budget): done
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T02:06:07Z (fix/panel-render-budget): Incremental collector and named tmux lifecycle prepared51e221e; sealing fixd20c9c0 accepted in scoped review, five RED false-completion cases to eight GREEN refusals,16 covering collector tests plus inherited checks/gates. Capture integrity only; live/rehearsal/settlement remain later gates. Minor M1/M2 retained in SDD ledger.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}

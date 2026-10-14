@@ -60,6 +60,8 @@ These are private calibration/self-check scripts, as in the prior approved exper
 
 ### Task 1: Incremental collector and cleanup-owned tmux lifecycle
 
+**Execution:** complete through d20c9c0, independent task review plus scoped sealing-fix re-review accepted. Two Minor calibration-harness findings remain in the SDD ledger. No long rehearsal or live use yet.
+
 **Files:** modify `CAPTURE_ROOT/code/logs.py`, `log-check.py`; create `capture.py`, `capture-wrapper.sh`, `capture-check.py`. Attach portable archive to this task.
 
 **Interfaces:**
@@ -71,7 +73,7 @@ These are private calibration/self-check scripts, as in the prior approved exper
 - Durable JSONL polls `{runId,start,end,clockOrigin,bytes,checkpoint:false|reason}`; heartbeat and terminal receipt include last poll/end, generations, exit reason, `integrityComplete` and recorded process identities. Clean finish with a successful checkpoint certifies capture integrity only; the controller/analyzer produces `protocolComplete` separately. Append failure, stop or unexpected exit cannot leave integrityComplete=true.
 - Wrapper launches isolated `tmux -L SOCKET -f /dev/null`, explicit options, one `capture` session. Record server/wrapper/collector pids plus Linux start identities; EXIT/TERM/INT/HUP traps reap only recorded children. No controller restart is needed. `kill-server` targets only recorded socket. No `&`/nohup launch outside the named server.
 
-- [ ] **Step 1: Freeze inputs and write RED fixtures.** Copy/validate inputs as above. Extend original first-offset/A→B→A/rotation/idempotence checks. Instrument file reads to pin incremental work:
+- [x] **Step 1: Freeze inputs and write RED fixtures.** Copy/validate inputs as above. Extend original first-offset/A→B→A/rotation/idempotence checks. Instrument file reads to pin incremental work:
 
 ```python
 # capture-check.py; tempfile synthetic log, no Noctalia or owner files.
@@ -94,9 +96,9 @@ assert c.checkpoint('finish')['integrityComplete'] is True
 
 `read_meter` is this test's file-open/read spy (wrap existing real file handles; count actual `read` bytes, not calls). Add source same-inode copytruncate/regrowth, captured-prefix mutation, sealed archive mutation/missing archive, interrupted append-before-manifest and malformed generation fixtures. Each asserts checkpoint refuses without repairing evidence or setting complete=true.
 
-- [ ] **Step 2: Run focused RED.** `python3 "$CAPTURE_ROOT/code/capture-check.py"`; expect missing Capture/incremental-read assertion, preserve exit/output. Do not accept an import/path failure as the target RED.
+- [x] **Step 2: Run focused RED.** `python3 "$CAPTURE_ROOT/code/capture-check.py"`; expect missing Capture/incremental-read assertion, preserve exit/output. Do not accept an import/path failure as the target RED.
 
-- [ ] **Step 3: Implement append/checkpoint state.** Keep generation paths `segment-{generation:06d}-{dev}-{inode}.raw`. Hash incremental appended bytes in memory; manifest saves length/end offset/digest. One loop owns writers. Poll validates identity/size/archive metadata and detects missing/multiple rotations. On rotation, fully compare outgoing source range to archived bytes before sealing; final checkpoint hashes every archive and current captured prefix. A crash/reopen validates all saved bytes once before resuming **offline investigation only**; live unexpected exit invalidates that activation, never resumes it into complete evidence.
+- [x] **Step 3: Implement append/checkpoint state.** Keep generation paths `segment-{generation:06d}-{dev}-{inode}.raw`. Hash incremental appended bytes in memory; manifest saves length/end offset/digest. One loop owns writers. Poll validates identity/size/archive metadata and detects missing/multiple rotations. On rotation, fully compare outgoing source range to archived bytes before sealing; final checkpoint hashes every archive and current captured prefix. A crash/reopen validates all saved bytes once before resuming **offline investigation only**; live unexpected exit invalidates that activation, never resumes it into complete evidence.
 
 ```python
 # Core poll order inside Capture, after identity/truncation validation.
@@ -113,9 +115,9 @@ cursor['offset'] += len(delta)
 
 Snapshot both descriptors with fstat around reads. If rename/second rotation makes them ambiguous, preserve and refuse. Treat poll-gap breach as incomplete even if bytes happen to be recoverable. Do not start a Python interpreter per poll. Loop logs every poll/checkpoint interval before/after work, on host monotonic origin; neither traffic nor failure changes host state.
 
-- [ ] **Step 4: Add wrapper ownership and seconds-long lifecycle smoke.** Refuse an existing socket. Use `exit-unattached off`, `exit-empty on`, `remain-on-exit off` and empty configuration; test those effective values. Wrapper enforces deadline and atomically emits exit receipt on normal finish, deadline and signals. The quick smoke starts one unique synthetic named server, receives `collectorStarted`, writes known startup/final bytes, sends finish, then asserts integrityComplete=true and no matching pids/socket remain. It needs no panel record schema. Separate smoke issues exact named `kill-server` and asserts wrapper/collector/synthetic producer all gone and incomplete receipt. Test live2100 expiry using injected monotonic clock, not a35-minute sleep.
+- [x] **Step 4: Add wrapper ownership and seconds-long lifecycle smoke.** Refuse an existing socket. Use `exit-unattached off`, `exit-empty on`, `remain-on-exit off` and empty configuration; test those effective values. Wrapper enforces deadline and atomically emits exit receipt on normal finish, deadline and signals. The quick smoke starts one unique synthetic named server, receives `collectorStarted`, writes known startup/final bytes, sends finish, then asserts integrityComplete=true and no matching pids/socket remain. It needs no panel record schema. Separate smoke issues exact named `kill-server` and asserts wrapper/collector/synthetic producer all gone and incomplete receipt. Test live2100 expiry using injected monotonic clock, not a35-minute sleep.
 
-- [ ] **Step 5: GREEN, package and review handoff.** Run `capture-check.py` and inherited `log-check.py`; save commands/exits and file-read measurements. Quick smoke exercises all startup/finish/stop gates before any long rehearsal. Run `just check`, `tasks check`, `git diff --check`; attach the new code/proofs without private raw logs and commit conventionally. Park child on controller review, with no server/process/check running. Independent review verifies incremental work and integrity, not just happy-path collector receipts.
+- [x] **Step 5: GREEN, package and review handoff.** Run `capture-check.py` and inherited `log-check.py`; save commands/exits and file-read measurements. Quick smoke exercises all startup/finish/stop gates before any long rehearsal. Run `just check`, `tasks check`, `git diff --check`; attach the new code/proofs without private raw logs and commit conventionally. Park child on controller review, with no server/process/check running. Independent review verifies incremental work and integrity, not just happy-path collector receipts.
 
 ### Task 2: Expansion, operation-qualified readiness and unmeasured references
 

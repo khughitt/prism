@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-13T22:07:51Z
-updated: 2026-10-14T01:22:16Z
+updated: 2026-10-14T01:48:17Z
 started: 2026-10-13T22:08:29Z
 depends: []
 parent: prism-f15cbf
@@ -66,3 +66,4 @@ Approved capture recovery design (spec round3) and proposed implementation plan.
 - 2026-10-14T01:20:53Z (fix/panel-render-budget): review: plan round 2 — verdict: accept; findings: Minor 3; reviewer: claude-code/claude-opus-5-5
 - 2026-10-14T01:22:15Z (fix/panel-render-budget): attached: plan-review-2-report.md (2893 bytes)
 - 2026-10-14T01:22:15Z (fix/panel-render-budget): Plan accepted round2; all three minors folded into execution briefs. Reuse locked panel-budget worktree, baseline just test-fast passes 574 plus plugin Lua. Begin Task1 scratch-only collector; no desktop permission or rehearsal start yet.
+- 2026-10-14T01:48:17Z (fix/panel-render-budget): Task1 preparation committed51e221e; worker released claim and reports27 synthetic checks green/no processes. Independent codex/gpt-6-astra high review dispatched against full textual scratch diff plus archive identity and saved evidence; Task2 waits on that gate. No desktop or long rehearsal action.
