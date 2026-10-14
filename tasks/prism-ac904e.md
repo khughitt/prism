@@ -1,15 +1,16 @@
 ---
 id: prism-ac904e
 title: "Prepare, cross the real turn boundary and verify lifetime"
-status: doing
+status: done
 priority: 2
 size: m
 complexity: mid
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T22:07:48Z
+updated: 2026-10-14T22:15:32Z
 started: 2026-10-14T12:02:14Z
+completed: 2026-10-14T22:15:31Z
 depends: [prism-c53a4f, prism-941a8d]
 parent: prism-111a3f
 tags: [performance]
@@ -178,3 +179,12 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T22:07:47Z (fix/panel-render-budget): Import committed as ad4384d. just check, tasks check, unstaged and staged whitespace checks all exited 0 without warnings; pre-commit gate passed. Nine-member attached packet passed readback hash checks. This pass changed only report attachment/task evidence and spec/plan execution status; no verifier, native/lifetime suite, code or host run was repeated. Root owns fresh read-only result review before Task5 closure.
 - 2026-10-14T22:07:47Z (fix/panel-render-budget): parked (waiting on agent, review): Root starts prism-ac904e in .worktrees/panel-budget, dispatches a fresh read-only review of actual lifetime/turn evidence, immutable capture hashes, cleanup, phase observations and exact calibration/source provenance against ad4384d, records the full review and disposition, then closes Task5 only if accepted.
   provenance: {"harness_session":"codex:01a13bfa-06fe-7e60-969a-1df128f09554","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T22:08:56Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T22:10:12Z (fix/panel-render-budget): timing correction to the preceding active5 run note: actual verifier call21:49:40.396 to completed result21:52:00.434 is140.038s (2.334min), not the118.120s wait duration. Rehearsal40.4147min plus verifier2.33397min is42.74867min. Same single run; no verifier repetition or additional attempt. Actual tool chain and immutable verified.json retained by result import.
+- 2026-10-14T22:15:30Z (fix/panel-render-budget): review: impl round 7 — verdict: accept; findings: Minor 1; reviewer: codex/gpt-6-astra
+- 2026-10-14T22:15:30Z (fix/panel-render-budget): Final Task5 review accepted synthetic lifetime/result gate with0Critical/Important and1Minor: original portable packet default-server-after assertion must be read as root-reported, not an immediate final observation. Root now saved later read-only post-run observation (actual timestamp retained privately); no default server present. Original packet/provenance preserved, qualification retained in SDD minor ledger for final review. Owned-process/endpoint cleanup remains independently proved. Live clock/commands/permission/performance still pending.
+- 2026-10-14T22:15:31Z (fix/panel-render-budget): done
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T22:15:31Z (fix/panel-render-budget): Reviewed synthetic lifetime gate passed:2424.882s,1637984592B/1600segments/2774records, actual post-watchdog human-turn proof, unchanged timing/rate guards and all owned actors/endpoints gone; documentary default-after qualification retained. No live performance acceptance.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}

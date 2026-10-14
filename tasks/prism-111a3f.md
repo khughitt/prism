@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-13T22:07:51Z
-updated: 2026-10-14T20:21:11Z
+updated: 2026-10-14T21:48:59Z
 started: 2026-10-13T22:08:29Z
 depends: []
 parent: prism-f15cbf
@@ -104,4 +104,6 @@ Approved capture recovery design (spec round3) and proposed implementation plan.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
 - 2026-10-14T20:16:11Z (fix/panel-render-budget): Task5 final correction accepted through9243616; all scoped findings addressed at round5 cap. Root verified54-file freeze/active/archive/calibration equality and short-run cleanup. Root will manually launch one fresh approved headless40-minute rehearsal with45-minute watchdog, then require actual post-watchdog human turn to verify; no live desktop permission or performance acceptance implied.
 - 2026-10-14T20:21:11Z (fix/panel-render-budget): parked (waiting on user, dependency): Keith sends plain Continue after17:04EDT on2026-10-14; root resumes prism-ac904e active5 rehearsal after21:02:56UTC watchdog, reads durable receipts and actual rollout, verifies lifetime/bytes/turn/cleanup and dispatches import review or cap-aware refusal disposition in .worktrees/panel-budget. Named server1722210 and owned wrapper/collector/producer live under watchdog; exact stop in Task5 note. No plugin pointer or paused timer stands.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T21:48:59Z (fix/panel-render-budget): resumed
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
