@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-13T22:07:51Z
-updated: 2026-10-14T13:29:20Z
+updated: 2026-10-14T14:01:11Z
 started: 2026-10-13T22:08:29Z
 depends: []
 parent: prism-f15cbf
@@ -87,3 +87,5 @@ Approved capture recovery design (spec round3) and proposed implementation plan.
 - 2026-10-14T13:29:19Z (fix/panel-render-budget): resumed
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
 - 2026-10-14T13:29:19Z (fix/panel-render-budget): Task5 real run failed after10.6min with log changed during read; watchdog cleanup reaped every actor. Task5 remains open/live gates blocked; root resumes failure analysis and subagent corrective preparation, original raw evidence immutable. No live host state changed.
+- 2026-10-14T13:34:59Z (fix/panel-render-budget): Task5 real-file diagnostic confirms concurrent append can expose same dev/inode/size4096 with advancedmtime/ctime before later size8192 with same timestamps; one append68250+fsync, child reaped. Historical run lacks stats so exact conjunct unproven. Ruling: bounded<=8x1ms observation may resolve this transition only by actual growth with same changedtimestamps and exact full captured-prefix equality before provisional publication. No-growth/identity/prefix/sealed/secondrotation faults still refuse; keep deadlines/gaps/old8seam negatives. Alternative permanent refusal rejects legitimate independentappend. Cost: focused corruption negatives/independent proof and freshreview must expose weakened integrity before any new long retry.
+- 2026-10-14T14:01:11Z (fix/panel-render-budget): Ruling: manually launch one fresh corrected headless rehearsal after failure analysis, reproduced append defect, bounded correction and independent scoped acceptance; continued approved Task5 work covers this reviewed synthetic retry. Failed run stays immutable/unrestartable; fresh51 digestdbb11ec8 and nonce, unchanged2400/2700 lifetime/rate/gaps. This is a deliberate new run after review, not an automatic restart or live-desktop action. Alternative diagnostics-only stop would leave required lifetime gate untested. Cost if wrong: another bounded failed run must be analyzed before any further action; no acceptance or live permission inferred.
