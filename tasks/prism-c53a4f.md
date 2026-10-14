@@ -8,7 +8,7 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T09:12:40Z
+updated: 2026-10-14T09:37:04Z
 started: 2026-10-14T04:54:36Z
 depends: [prism-ed9400]
 parent: prism-111a3f
@@ -77,3 +77,14 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T09:11:55Z (fix/panel-render-budget): Round3 Important I1 corrected: supervisor owns launch before Popen; timeout/supervisor TERM/INT gracefully stops child and always reaps exact owned socket/pid-start-boot in outer finally. Real2s timeout RED with actual detached capture preserved and outer-driver reaped; latest frozen10 cases GREEN14.797580s including residual child-no-finally, startup and success. Source change only cleanup helper/README/runbook; N1/N2/core sources and prior32-lifecycle evidence unchanged. All173 unique recorded identities gone; six old archives unchanged. Public3b4c8662693a9a38723f8c0a7011007a01bd262a2a674ba1a02e8c76593a5ff1/privateeaefb44f167159065f29a817db470f7de776a04dbc82bd325b26edb5ede1d318; full appended report/diffs in existing SDD workspace. Root fresh scoped/broad reviews and append-risk/live-proof gates remain.
 - 2026-10-14T09:12:40Z (fix/panel-render-budget): parked (waiting on agent, review): Root: review round3 Important I1 supervisor ownership using appended task-4-report.md, task-4-fix3-code.diff/cumulative diff and fix3 frozen private/public packages in .worktrees/panel-budget; dispatch fresh scoped review, then broad Tasks1–4/concurrent-append risk disposition before any unsynchronized rehearsal. All owned processes and checks complete; no host pointers changed.
   provenance: {"harness_session":"codex:01a13933-08ea-76d2-ac96-b6f1fe7a1056","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T09:27:40Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T09:27:41Z (fix/panel-render-budget): review: impl round 4 — verdict: revise; findings: Important 1; reviewer: codex/gpt-6.1-sol
+- 2026-10-14T09:27:42Z (fix/panel-render-budget): parked (waiting on agent): Fresh escalated implementer fixes cleanup-entry/repeated-stop N1 with boundary RED-to-GREEN; root scoped re-reviews the round4 fix in .worktrees/panel-budget.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T09:29:28Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a139be-12d3-7603-8183-486185ee87f6","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T09:36:47Z (fix/panel-render-budget): attached: task4-controller-fix4-539e790b.tar.gz (182838 bytes): Round4 N1 cleanup-entry/repeated-stop safety; final code, scoped/cumulative diffs, focused PASS and hashes only; raw proofs remain private
+- 2026-10-14T09:36:47Z (fix/panel-render-budget): Round4 N1 corrected for scoped review: handlers record first TERM/INT only; bounded0.1s waits enter cleanup normally,15s grace and identity-guarded forced kill retained, prior handlers restored together under blocked signals. Real cleanup-entry RED3 failures safely outer-reaped; frozen boundary6 plus existing10 GREEN,91 owned identities gone,8 older archives unchanged. Source delta only cleanup helper/new regression/README/runbook; core unchanged. Final private freeze task4-fix4-539e790b9a8e4d7f95c69f8c12c455e9/private-package-final/code. Public934abef8a6a29f8cf0c842fd85ffa4034f2b4d5db49dfec1918534d9b6288890/private3f0e1a307670f28bf271e8d0f065054eb284686a764cf49cfe2c26b2c23a7ddf; full appended report and text diffs in existing SDD workspace. Gates pass/no warnings; no live action. Root scoped review, broad append-risk and later live-proof/host gates remain.
+- 2026-10-14T09:37:04Z (fix/panel-render-budget): parked (waiting on agent, review): Root: fresh scoped N1 review of round4 appended task-4-report.md, task-4-fix4-code.diff/cumulative diff and immutable private-package-final in .worktrees/panel-budget; then broad Tasks1–4 append-risk disposition before unsynchronized rehearsal. All owned processes/checks finished; no host pointers changed.
+  provenance: {"harness_session":"codex:01a139be-12d3-7603-8183-486185ee87f6","harness_session_source":"CODEX_THREAD_ID"}
