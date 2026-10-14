@@ -8,7 +8,7 @@ complexity: mid
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T20:15:27Z
+updated: 2026-10-14T20:21:11Z
 started: 2026-10-14T12:02:14Z
 depends: [prism-c53a4f, prism-941a8d]
 parent: prism-111a3f
@@ -162,3 +162,6 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T20:09:10Z (fix/panel-render-budget): resumed
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
 - 2026-10-14T20:15:27Z (fix/panel-render-budget): review: impl round 6 — verdict: accept; findings: none; reviewer: codex/gpt-6.1-sol
+- 2026-10-14T20:21:10Z (fix/panel-render-budget): Reviewed final correction headless rehearsal began2026-10-14T20:17:56.765392Z; watchdog21:02:56.765392Z/17:02:56.765392EDT. Run active5-c015055152584abcb9666bd3c535f420, nonce rehearsal-fc881784c4934067bf73e08ff7fc12e6, source54digest4203ac59, actual firstTurn01a13bd0-9e93-7722-b3ef-7c7c4ac7963c/launchrefs14252-14255. Four actors observedalive: server1722210,wrapper1722211,collector1722220,producer1722234; recorded start/boot identities private.56gens/56783253B startup; host-load namedserver1722210. Stop: tmux -L prism-budget-capture-rehearsal-fc881784c4934067bf73e08ff7fc12e6 kill-server. Watchdog owns cleanup; plain human Continue after17:04EDT needed for root exact next-turn read/proof/strict verification. No live pointer/timer stands; prior failed runs preserved; correction cap0open/no automatic retry.
+- 2026-10-14T20:21:10Z (fix/panel-render-budget): parked (waiting on user, dependency): Keith sends plain Continue after17:04EDT on2026-10-14, after21:02:56UTC watchdog; root reads exact active5 receipts/rollout, verifies actual turn proof/bytes/phases/cleanup and imports for review, or preserves failure and makes cap-aware design disposition in .worktrees/panel-budget. Named tmux owns server1722210/wrapper1722211/collector1722220/producer1722234 and later native child; stop via tmux -L prism-budget-capture-rehearsal-fc881784c4934067bf73e08ff7fc12e6 kill-server. No host pointer or paused timer stands.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
