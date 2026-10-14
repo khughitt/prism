@@ -1,13 +1,15 @@
 ---
 id: prism-941a8d
 title: Correct broad capture protocol before turn-boundary rehearsal
-status: todo
+status: doing
 priority: 2
 size: m
 complexity: high
 process: direct
+owner: fix/panel-render-budget
 created: 2026-10-14T09:59:37Z
-updated: 2026-10-14T10:00:07Z
+updated: 2026-10-14T10:54:02Z
+started: 2026-10-14T10:03:19Z
 depends: []
 parent: prism-111a3f
 tags: [performance, noctalia]
@@ -22,3 +24,14 @@ Fix broad review Important I1-I3: validated fully captured finish cutoff, safe b
 
 - 2026-10-14T10:00:06Z (fix/panel-render-budget): concerns: prism-73a117 defect — broad review found finish can certify an unread suffix and valid independent tail appends terminate capture.
 - 2026-10-14T10:00:07Z (fix/panel-render-budget): concerns: prism-c53a4f defect — broad cross-component review found the required post-dwell return-to-chat close remains buffered or invalidates original timing on recovery.
+- 2026-10-14T10:03:19Z (fix/panel-render-budget): started
+  provenance: {"harness_session":"codex:01a139dc-ab91-7852-8f47-e17971897835","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T10:05:27Z (fix/panel-render-budget): Root ruling: permit provisional bounded same-inode tail growth and bounded safe-growth consume/retry at strict full checkpoints; finish needs stable fully consumed cutoff. Original deadline/gap and full checks binding; corruption/ambiguous rotation never retryable success. Required unsynchronized measured full-burst proof must pass without writer synchronization/slowdown before long start; inability obtains refusal, not weakened certificate.
+- 2026-10-14T10:23:53Z (fix/panel-render-budget): Wave1: I1/I2 real-file REDs and I3 actual generated-host close RED preserved; bounded stable-prefix/provisional growth and explicit terminalCutoff/handoff now pass focused checks. Independent pilot passed26.50s,2.96MB,743879B/s1s peak. Full-rate trial exposed consumed-range rename ctime boundary; deterministic RED and all8 preserved seal negatives now GREEN. Representative3261.5MiB full checkpoints measured2.57–2.89s versus observedT/2≈0.368s: extended-run cadence BLOCKED, no full checks removed; root interpretation requested. New run broad-fix1-1c7d59b7cac546beaad62e8da3864cf8 preserves writer spans and all refusals.
+- 2026-10-14T10:25:04Z (fix/panel-render-budget): Measured full-history validation exceeds actual rate-derived gap; root ruling permits outgoing-only full rotation validation plus sealed metadata continuity until full final check (per spec), and cooperative bounded collection during full-history readiness/settled/finish validation. No wider gaps, omitted hashes, parallel verifier or synchronized/slower writer; stop/deadline and exact cutoff/current epochs remain proven. New capacity/independent proof and scoped review required.
+- 2026-10-14T10:32:01Z (fix/panel-render-budget): Root ruling: bounded tail already observed during provisional append before first rotation decision may be fully consumed under unique stable .1 full-prefix/archive validation; outgoing anchor starts at resulting validated exact cutoff. Unobserved growth/mutation after anchor/ambiguous identity/second rotation still refuse. Preserve/run eight historical negatives verbatim; explicitly report any expectation change with exact complete bytes/error proof, never hide it by moving a fixture.
+- 2026-10-14T10:38:23Z (fix/panel-render-budget): Root rate ruling: use max floor/complete native five-unit peak across both variants; filler supplements quiet intervals without additive burst ratchet or delayed native cadence/collector synchronization. Derive actual T/poll/gap/history by approved formula; .25s extra guard and3261.5MiB additive-padding stress are not spec constants, retain their failures as explicit stress limits. Final actual rate/cutoff/gap and cadence proof must pass fresh review.
+- 2026-10-14T10:53:10Z (fix/panel-render-budget): attached: broad-protocol-fix1-portable.tar.gz (295035 bytes): Broad wave1 scratch code, complete reviewed/cumulative text diffs, neutral PASS and source hashes; bounded synthetic qualification only
+- 2026-10-14T10:53:48Z (fix/panel-render-budget): Wave1 I1-I3 implementation and bounded synthetic qualification PASS; root review pending. Both complete five-unit independent generated variants passed with complementary padding and exact cutoff/raw audit. Native peak681599B/s; actual combined peak1094869B/s. Actual collector with3261.5MiB retained history fully hashed3273 final generations; max gap.445614s within spec-derived.478859s (33ms margin). Earlier additive/.25s stress refusals preserved. Capture29/all8 old seal negatives, cooperative10/control3, handoff close/reopen negatives,574 Node+Lua, just check/tasks check/diff check pass;0 task warnings/errors.121 owned identities reaped; host-load empty. Full scratch report/diffs in SDD broad-protocol-fix-report.md; portable attachment61534e70; private immutable freeze broad-fix1-1c7d59b7cac546beaad62e8da3864cf8/private-package-final. No production/live/long actions.
+- 2026-10-14T10:54:02Z (fix/panel-render-budget): parked (waiting on agent, review): Root dispatch fresh scoped review of broad wave1 frozen code/report and accepted-freeze short qualification before Task5
+  provenance: {"harness_session":"codex:01a139dc-ab91-7852-8f47-e17971897835","harness_session_source":"CODEX_THREAD_ID"}
