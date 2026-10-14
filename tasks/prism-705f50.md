@@ -7,7 +7,7 @@ size: xs
 complexity: low
 process: direct
 created: 2026-09-09T01:19:27Z
-updated: 2026-10-14T14:15:05Z
+updated: 2026-10-14T14:15:06Z
 depends: []
 tags: [noctalia, ui, material]
 ---
@@ -30,3 +30,7 @@ Outcome: either a capture showing the rows are fine, or the panel.luau layout fi
 
 - One look at the current panel with Backdrop expanded (the toggle pair against the Blur slider row) and at the Tint card's current color cells. The look is the owner's, or an agent's capture with the owner's go-ahead for the desktop.
 - If either misaligns, fix it in `controlCell` (`integrations/noctalia-plugin/panel.luau`) and pin the fix in `plugin_test.lua`.
+
+## Notes
+
+- 2026-10-14T14:15:06Z (main): scope: rescoped; the Tint color pair is seen and aligned in the accepted 2026-09-09 rack screenshot; narrowed to the redesigned color cell (e232a5a, d7c0b4e) and the Frosted backdrop toggle pair in Backdrop's expanded details, which no capture shows; process direct
