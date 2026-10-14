@@ -8,7 +8,7 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T23:55:02Z
+updated: 2026-10-14T23:58:17Z
 started: 2026-10-14T22:23:52Z
 depends: [prism-ac904e]
 parent: prism-111a3f
@@ -72,3 +72,7 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T23:49:57Z (fix/panel-render-budget): Scoped re-review accepts numeric prospective reserve/enforcement and outer rotation ownership, but found packet-only defects: all reconcile argv reverse helper contract/action; bare node under fixed PATH differs from pinned explicit Node. Root corrects argument arrays and consistent interpreter/hash/environment bindings, then obtains fresh scoped re-review before permission.
 - 2026-10-14T23:53:53Z (fix/panel-render-budget): Packet corrections verified: all68 reconcile arrays now contract-first/action-second; every helper PATH resolves bare node to declared pinned Node, matching actual running Noctalia child PATH observation. Canonical sessions/contracts/master regeneratedv4 and all artifacts rehashed. No source/live effects. Fresh scoped re-review2 dispatched before permission.
 - 2026-10-14T23:55:02Z (fix/panel-render-budget): attached: task6-root-action-packet-v4.tar.gz (2935 bytes)
+- 2026-10-14T23:57:21Z (fix/panel-render-budget): review: impl round 3 — verdict: accept; findings: Critical 0, Important 0, Minor 0; reviewer: codex/gpt-6-astra
+- 2026-10-14T23:57:21Z (fix/panel-render-budget): Fresh scoped re-review accepts currentv4 packet for requesting permission; verified68 reconcile arrays,132 argv PATH environments,4x96 artifact bindings and all regenerated session/contract/master hashes. No live permission/effect or performance acceptance. Root now requests fresh25-minute four-card n1 pilot; whole-pilot rotation pause and exact restoration remain required.
+- 2026-10-14T23:58:17Z (fix/panel-render-budget): parked (waiting on user, approval): Keith answers the fresh25-minute four-card Stage1 n1 desktop-pilot request; root revalidates acceptedv4 hashes/clock/current state, then runs the authorized pilot or retains preparation if declined. No probe installed, timer pause, pointer change or owned process is standing.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
