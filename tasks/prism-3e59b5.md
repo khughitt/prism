@@ -4,14 +4,18 @@ title: Wallpaper properties and user nudges as data
 status: idea
 priority: 2
 created: 2026-09-11T23:34:15Z
-updated: 2026-10-10T13:15:01Z
+updated: 2026-10-14T11:07:07Z
 depends: []
 parent: prism-179840
 tags: [quick-add, adaptive, cross-project, wallpaper, profiles]
 source: "mindful:thought:a476e6bcd1fd4297b70824758235d821"
 ---
 
-Pre-compute useful image properties per wallpaper (brightness, contrast, busyness, dominant palette, possibly embeddings) and record every parameter change the user makes together with the wallpaper active at the time. This is the dataset for learning wallpaper-conditioned parameter sets. Builds on prism-2f0b4b (per-wallpaper profiles are the mechanism that applies a learned set) and prism-d46d07. wali (walictl) already keeps like/dislike stats per image and is the natural owner of the property precompute if that work materializes; it is not a registered tasks project yet.
+Pre-compute useful image properties per wallpaper (brightness, contrast, busyness, dominant palette, possibly embeddings) and record every parameter change the user makes together with the wallpaper active at the time. This is the dataset for learning wallpaper-conditioned parameter sets. Builds on prism-2f0b4b (per-wallpaper profiles are the mechanism that applies a learned set) and prism-d46d07. wali (walictl) already keeps like/dislike stats per image and is the natural owner of the property precompute if that work materializes; wali is now a registered tasks project (`wali`), so property work can be filed there once prism-6aca8a checks its API.
+
+The records must also carry the value a gesture settles on, not only that a change happened: mindful:thought:2bbac923f0b258f2d9034dd79bf3c84b and mindful:thought:766ce29a8cf53281108d5b33c42cb264 ask to learn parameter ranges, defaults and slider scales from what the user nudges toward and settles on, with the wallpaper as context. Learning itself belongs to ops-be8b06 and material-0c7eed; this idea owns the data.
+
+Waits on prism-6aca8a, which settles what a record is (explicit snapshot versus gesture, requested versus applied appearance, carried values versus intent) and where records live.
 
 Source: mindful:thought:a476e6bcd1fd4297b70824758235d821
 
