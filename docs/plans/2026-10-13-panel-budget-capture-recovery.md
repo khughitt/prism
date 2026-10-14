@@ -289,6 +289,8 @@ Validate r2 corroboration without relabelling its stored origins: C2 probe294942
 
 - [x] **Step 6: GREEN and independent review.** Run controller-check with temp store and fake IPC, inherited state-check/rotation guard cases, and clock-gate negative fixtures. No real IPC/timer/window action. Save measured controller-step budget, rate/gap inputs and all signals/receipts. Package, repository gates and commit/park. Root resolves review before Task5 and obtains a broad protocol review of Tasks1–4 with frozen code inventories, scoped correction rounds as needed; no long rehearsal before the seconds-long smoke's verdict is read.
 
+Broad Tasks1–4 review and two corrective waves accepted through25ba964, tracked by completed direct corrective child prism-941a8d. Full captured cutoff, bounded growth/rotation, visible per-card handoff, cooperative full validation and persistence-aware gap/overlap checks are prepared and reviewed. Both independent five-unit workloads and3.42GB initialized-history capacity passed; these are synthetic proofs. Minor complete-pair duplicate overlap accounting remains in the SDD ledger. Root accepted-freeze short proof and Task5 preparation/real-turn rehearsal remain required before any live request.
+
 ### Task 5: Prepare, cross the real turn boundary and verify lifetime
 
 **Files:** create `CAPTURE_ROOT/code/{rehearse.py,rehearsal-check.py}`; root-controlled `runs/<rehearsal-id>/{run.json,processes.json,polls.jsonl,receipt.json,raw/,rehearsal-report.md}`. Portable attachment and task notes record actual result.

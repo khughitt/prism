@@ -1,15 +1,16 @@
 ---
 id: prism-941a8d
 title: Correct broad capture protocol before turn-boundary rehearsal
-status: doing
+status: done
 priority: 2
 size: m
 complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-14T09:59:37Z
-updated: 2026-10-14T11:36:05Z
+updated: 2026-10-14T11:51:36Z
 started: 2026-10-14T10:03:19Z
+completed: 2026-10-14T11:51:36Z
 depends: []
 parent: prism-111a3f
 tags: [performance, noctalia]
@@ -48,3 +49,9 @@ Fix broad review Important I1-I3: validated fully captured finish cutoff, safe b
 - 2026-10-14T11:35:56Z (fix/panel-render-budget): Wave2 N1/N2 RED-to-GREEN and same-code bounded qualification PASS; root review pending. Per-card exact original/recovery reference gates; actual post-persistence start guard and explicit previous/final persistence spans with strict parser pairing. Capture29/all8 races, growth12/cooperative10/control3,18 card references,42 prior handoff negatives,4 fresh lifecycle variants and slow-fsync/overlap/type negatives pass. Final independent workloads75.29/75.18s; native ceiling682491B/s, combined peak1095521B/s; all1335 work rows paired.3261.5MiB capacity:3272 final generations fully hashed, actual max gap.215787s within.478574s, max persistence49.09ms observed. just check/tasks check/diff check pass;0 warnings/errors;39 identities gone and host-load empty.48-file immutable final freeze and full appended SDD report/diffs; neutral attachment e3133dba. Synthetic proof only; actual frame jitter and prior narrow/stress limits preserved. No production/live/long actions.
 - 2026-10-14T11:36:05Z (fix/panel-render-budget): parked (waiting on agent, review): Root dispatch fresh scoped wave2 review of immutable scratch freeze and N1/N2 proof in .worktrees/panel-budget, then accepted-freeze qualification/Task5 gate
   provenance: {"harness_session":"codex:01a139dc-ab91-7852-8f47-e17971897835","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T11:51:35Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T11:51:36Z (fix/panel-render-budget): done
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T11:51:36Z (fix/panel-render-budget): Broad I1-I3 plus N1/N2 corrected and fresh scoped reviews accepted through25ba964; terminal cutoff, independent growth/rotation, per-card visible handoff and persistence-aware guards verified, both full workloads/capacity pass. Minor duplicate overlap-pair accounting deferred; accepted-freeze short proof/Task5 real boundary/live gates remain.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
