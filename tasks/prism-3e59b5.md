@@ -3,8 +3,9 @@ id: prism-3e59b5
 title: Wallpaper properties and user nudges as data
 status: idea
 priority: 2
+reviewed: true
 created: 2026-09-11T23:34:15Z
-updated: 2026-10-14T11:07:09Z
+updated: 2026-10-14T11:07:13Z
 depends: [prism-6aca8a]
 parent: prism-179840
 tags: [quick-add, adaptive, cross-project, wallpaper, profiles]
@@ -26,3 +27,4 @@ Source: mindful:thought:a476e6bcd1fd4297b70824758235d821
 - 2026-10-04T22:53:37Z (main): also raised in mindful:thought:2bbac923f0b258f2d9034dd79bf3c84b
 - 2026-10-04T22:53:37Z (main): From that thought, beyond wallpaper-conditioned sets: learn parameter ranges, default values and scales from the values the user nudges toward and settles on, with the wallpaper as context.
 - 2026-10-10T13:15:01Z (main): also raised in mindful:thought:766ce29a8cf53281108d5b33c42cb264
+- 2026-10-14T11:07:13Z (main): scope: briefed; all three source thoughts now resolve; body records the settled-value requirement and that wali is registered; dep edge on prism-6aca8a added (its wake list already names this idea) and the requirement noted there; brief: docs/notes/2026-09-29-look-exploration-brief.md
