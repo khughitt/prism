@@ -4,7 +4,7 @@ title: "State profiles: activate contexts from theme mode and other Noctalia hoo
 status: shelved
 priority: 2
 created: 2026-09-05T18:50:49Z
-updated: 2026-09-29T22:37:44Z
+updated: 2026-10-14T11:11:43Z
 depends: [prism-6fd864]
 parent: prism-2f0b4b
 tags: [profiles, noctalia]
@@ -18,3 +18,4 @@ Generalise the wallpaper activation to other states Noctalia already reports thr
 - 2026-09-19T21:15:37Z (prism-aec90f): Reframed 2026-09-19: a state context is a delta kind per compositional profiles Section 3 (a kind in LAYER_ORDER, a key source, an entry verb); the fold rule comes free
 - 2026-09-29T22:37:44Z (main): shelved: A concrete hook state and the appearance values it should change are identified; then design its activation and scratch rules.
 - 2026-09-29T22:37:44Z (main): scope: shelved; state is reserved and layer precedence is settled, but no concrete state-to-adjustment mapping justifies activation or stacking yet
+- 2026-10-14T11:11:43Z (main): prism-d1fcd9 names a concrete state (battery / power profile -> cheaper glass tier), shelved until material supplies the tier; when it wakes, it is a candidate first state profile.
