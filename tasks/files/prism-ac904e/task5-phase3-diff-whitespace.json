@@ -1,0 +1,60 @@
+{
+  "purpose": "Lossless blank-line whitespace restoration for standalone review diffs; one-based line numbers; no source changes.",
+  "diffs": {
+    "task5-phase3-full-review.diff": {
+      "originalSha256": "9af6ff96f9522c1346756d3a60713297953d8edaa2dc999e2e9c2f6942e460ab",
+      "restoreLines": {
+        "162": " \n",
+        "163": " \n",
+        "172": " \n",
+        "173": " \n",
+        "175": " \n",
+        "176": " \n",
+        "267": " \n",
+        "268": " \n",
+        "362": " \n",
+        "422": " \n",
+        "433": " \n",
+        "434": " \n",
+        "437": " \n",
+        "438": " \n",
+        "451": " \n",
+        "452": " \n",
+        "455": " \n",
+        "465": " \n",
+        "476": "+                \n",
+        "489": " \n",
+        "508": " \n",
+        "514": " \n",
+        "543": " \n"
+      }
+    },
+    "task5-phase3-corrective-review.diff": {
+      "originalSha256": "4a08e5a440bfbdc88e916059b135c4e0efb12e4c1630d4248dff51c524eba19d",
+      "restoreLines": {
+        "84": " \n",
+        "85": " \n",
+        "88": " \n",
+        "89": " \n",
+        "192": " \n",
+        "193": " \n",
+        "218": " \n",
+        "278": " \n",
+        "289": " \n",
+        "290": " \n",
+        "293": " \n",
+        "294": " \n",
+        "307": " \n",
+        "308": " \n",
+        "311": " \n",
+        "321": " \n",
+        "332": "+                \n",
+        "345": " \n",
+        "364": " \n",
+        "370": " \n",
+        "399": " \n",
+        "429": " \n"
+      }
+    }
+  }
+}

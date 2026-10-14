@@ -329,7 +329,7 @@
              try:
 -                live=self.log.stat()
 -                if missing is not None:require(snapshot(os.fstat(self.source.fileno()))==missing, 'outgoing changed during absent live path')
-+                
++
 +                with phases.measure(self.observer,'source.stat'):live=self.log.stat()
 +                if missing is not None:require(snapshot(self._source_stat(self.source))==missing, 'outgoing changed during absent live path')
                  return live
