@@ -8,7 +8,7 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-14T09:59:37Z
-updated: 2026-10-14T10:54:02Z
+updated: 2026-10-14T11:36:05Z
 started: 2026-10-14T10:03:19Z
 depends: []
 parent: prism-111a3f
@@ -34,4 +34,17 @@ Fix broad review Important I1-I3: validated fully captured finish cutoff, safe b
 - 2026-10-14T10:53:10Z (fix/panel-render-budget): attached: broad-protocol-fix1-portable.tar.gz (295035 bytes): Broad wave1 scratch code, complete reviewed/cumulative text diffs, neutral PASS and source hashes; bounded synthetic qualification only
 - 2026-10-14T10:53:48Z (fix/panel-render-budget): Wave1 I1-I3 implementation and bounded synthetic qualification PASS; root review pending. Both complete five-unit independent generated variants passed with complementary padding and exact cutoff/raw audit. Native peak681599B/s; actual combined peak1094869B/s. Actual collector with3261.5MiB retained history fully hashed3273 final generations; max gap.445614s within spec-derived.478859s (33ms margin). Earlier additive/.25s stress refusals preserved. Capture29/all8 old seal negatives, cooperative10/control3, handoff close/reopen negatives,574 Node+Lua, just check/tasks check/diff check pass;0 task warnings/errors.121 owned identities reaped; host-load empty. Full scratch report/diffs in SDD broad-protocol-fix-report.md; portable attachment61534e70; private immutable freeze broad-fix1-1c7d59b7cac546beaad62e8da3864cf8/private-package-final. No production/live/long actions.
 - 2026-10-14T10:54:02Z (fix/panel-render-budget): parked (waiting on agent, review): Root dispatch fresh scoped review of broad wave1 frozen code/report and accepted-freeze short qualification before Task5
+  provenance: {"harness_session":"codex:01a139dc-ab91-7852-8f47-e17971897835","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T11:07:02Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T11:07:03Z (fix/panel-render-budget): Broad wave1 scoped re-review reports original I1/I2 addressed, I3 per-card reference incomplete N1, and new N2 interval persistence excluded from gap/overlap. Fresh codex/gpt-6-astra high verified exact archives/raw both workloads/capacity and all121 identities gone. Full returned report/identity in SDD workspace; wave2 resumes original worker for exact handoff/gap RED-to-GREEN, no long or live start.
+- 2026-10-14T11:07:03Z (fix/panel-render-budget): parked (waiting on agent): Original worker fixes broad N1 per-card handoff reference and N2 actual collection-start/persistence coverage with focused RED-to-GREEN; root fresh scoped re-review then accepted-freeze gate in .worktrees/panel-budget.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T11:07:53Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a139dc-ab91-7852-8f47-e17971897835","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T11:08:43Z (fix/panel-render-budget): concerns: prism-c6140a defect — completed close evidence stayed buffered after production disabled ticks, leaving the card handoff and visible-dwell boundary unproven; the broad correction adds a durable exact handoff.
+- 2026-10-14T11:18:56Z (fix/panel-render-budget): review: impl round 1 — verdict: revise; findings: Important 2; reviewer: codex/gpt-6-astra
+- 2026-10-14T11:35:31Z (fix/panel-render-budget): attached: broad-protocol-fix2-portable.tar.gz (287672 bytes): Broad wave2 N1 per-card exact references and N2 persistence gap/overlap; 48-file scratch freeze, scoped/cumulative diffs, hashes and neutral bounded qualification evidence
+- 2026-10-14T11:35:56Z (fix/panel-render-budget): Wave2 N1/N2 RED-to-GREEN and same-code bounded qualification PASS; root review pending. Per-card exact original/recovery reference gates; actual post-persistence start guard and explicit previous/final persistence spans with strict parser pairing. Capture29/all8 races, growth12/cooperative10/control3,18 card references,42 prior handoff negatives,4 fresh lifecycle variants and slow-fsync/overlap/type negatives pass. Final independent workloads75.29/75.18s; native ceiling682491B/s, combined peak1095521B/s; all1335 work rows paired.3261.5MiB capacity:3272 final generations fully hashed, actual max gap.215787s within.478574s, max persistence49.09ms observed. just check/tasks check/diff check pass;0 warnings/errors;39 identities gone and host-load empty.48-file immutable final freeze and full appended SDD report/diffs; neutral attachment e3133dba. Synthetic proof only; actual frame jitter and prior narrow/stress limits preserved. No production/live/long actions.
+- 2026-10-14T11:36:05Z (fix/panel-render-budget): parked (waiting on agent, review): Root dispatch fresh scoped wave2 review of immutable scratch freeze and N1/N2 proof in .worktrees/panel-budget, then accepted-freeze qualification/Task5 gate
   provenance: {"harness_session":"codex:01a139dc-ab91-7852-8f47-e17971897835","harness_session_source":"CODEX_THREAD_ID"}
