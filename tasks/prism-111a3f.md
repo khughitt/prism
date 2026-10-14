@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-13T22:07:51Z
-updated: 2026-10-14T02:35:18Z
+updated: 2026-10-14T04:53:09Z
 started: 2026-10-13T22:08:29Z
 depends: []
 parent: prism-f15cbf
@@ -68,3 +68,5 @@ Approved capture recovery design (spec round3) and proposed implementation plan.
 - 2026-10-14T01:22:15Z (fix/panel-render-budget): Plan accepted round2; all three minors folded into execution briefs. Reuse locked panel-budget worktree, baseline just test-fast passes 574 plus plugin Lua. Begin Task1 scratch-only collector; no desktop permission or rehearsal start yet.
 - 2026-10-14T01:48:17Z (fix/panel-render-budget): Task1 preparation committed51e221e; worker released claim and reports27 synthetic checks green/no processes. Independent codex/gpt-6-astra high review dispatched against full textual scratch diff plus archive identity and saved evidence; Task2 waits on that gate. No desktop or long rehearsal action.
 - 2026-10-14T02:35:18Z (fix/panel-render-budget): Task1 reviewed/closed after sealing correction. Task2 producer commit e11704d prepared and released; independent codex/gpt-6-astra high review dispatched against full source diff and immutable private calibration snapshot. Owner-derived records excluded from public archive. Task3 remains gated; no live action or long rehearsal.
+- 2026-10-14T03:20:33Z (fix/panel-render-budget): Task3 implementing explicit external planned-action/reference/approval context plus independent record-link validation. Readiness may retain completed buffered callbacks until final drain; creation-id completeness/endpoints required, final buffer empty. Recovery admin preludes allowed but never pre-approval target credit. No live action/rehearsal.
+- 2026-10-14T04:53:09Z (fix/panel-render-budget): Progress: Tasks1–3 prepared and independently reviewed; Task3 corrected two rounds through d26c638, cold/launch/generation/stage boundaries now certified. Task4 controller must verify same-source Stage1 facts and independent slider intent; no live permission used and no production change.
