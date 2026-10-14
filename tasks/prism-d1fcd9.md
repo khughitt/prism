@@ -4,8 +4,9 @@ title: Quality tier bound to power and thermal state
 status: idea
 priority: 2
 created: 2026-09-11T23:39:09Z
-updated: 2026-09-11T23:39:09Z
+updated: 2026-10-14T11:11:40Z
 depends: []
+parent: prism-2f0b4b
 tags: [profiles, performance, material]
 ---
 
