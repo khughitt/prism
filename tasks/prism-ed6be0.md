@@ -6,7 +6,7 @@ priority: 2
 size: m
 complexity: high
 created: 2026-09-08T20:15:43Z
-updated: 2026-10-14T14:29:22Z
+updated: 2026-10-14T14:29:23Z
 depends: []
 tags: [performance, material, investigation]
 source: "docs/notes/2026-09-07-glass-noise-dulling-spike-results.md#completed-actual-output-resolution-check"
@@ -29,3 +29,4 @@ Done when slow draws have a reproducible cause, or a bounded measurement limitat
 - 2026-09-08T20:20:00Z (glass-noise-spike-plan): User clarified that the benchmark tests ran while the machine was in use. No continuous GPU-heavy tasks were running, but intermittent desktop activity could have contributed to slow draws. This is a possible confound, not an established cause; capture activity and GPU state during focused follow-up measurements.
 - 2026-09-08T20:29:51Z (glass-noise-spike-plan): Preservation prepared and restore-tested: niri-experiments results/glass-dulling at ebea8e25; 2725 hash-verified evidence files, self-contained native bundle 17dfe00a and all 26 HEAD Git LFS objects. Package/import helper is in Prism .local-artifacts/glass-dulling-2026-09-08. Destination import awaits user execution because niri-experiments is outside writable roots; investigation remains todo.
 - 2026-10-14T14:29:22Z (main): shelved: Dulling (GIMP-style grain) is proposed for production, or material-f386ae's GPU clock trace leaves the slow-draw cause open; was a scoped todo, re-scoped 2026-10-14
+- 2026-10-14T14:29:23Z (main): scope: shelved; at 570c1f7: the general slow/bimodal draw question is being worked as material-f386ae (doing: sample clocks.gr/pstate through cost captures), under material-5d6b2c which lists this task as related; Dulling has no planned implementation (niri-material NoiseType is white|fine|lightness, no Dulling task open); the raw artifact root /mnt/ssd3/tmp/prism-dulling-spike no longer exists; the restore-tested preservation package (2.9G, IMPORT.json, import.py, bundles) still sits in .local-artifacts/glass-dulling-2026-09-08 (excluded via .git/info/exclude) and was never imported into niri-experiments
