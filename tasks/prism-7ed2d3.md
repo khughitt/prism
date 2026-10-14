@@ -8,7 +8,7 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T22:57:18Z
+updated: 2026-10-14T23:43:24Z
 started: 2026-10-14T22:23:52Z
 depends: [prism-ac904e]
 parent: prism-111a3f
@@ -49,3 +49,15 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T22:56:53Z (fix/panel-render-budget): Preparation verification:7 host/4 drain/2 reconciliation tests plus independent Node state scenarios and retained-capture timing front door pass; accepted54 files and7 prior calibration proofs unchanged. just check, tasks check and whitespace checks exit0/no warnings. Nine temporary collector identities and three producers reaped, three owned sockets absent; host-load session says nothing left running. Portable helper archive16files/25282B SHA23bd006826dd37a392ade4b921540926c334f945e4808ead22276f871d9db2a3. No live host effects.
 - 2026-10-14T22:57:18Z (fix/panel-render-budget): parked (waiting on agent, review): Root: review task-6-report.md and task6-host-helpers.tar.gz in .worktrees/panel-budget; run actual read-only helper timings, materialize concrete session/contract/permit commands and reserve provenance, dispatch pre-pilot review, then request fresh owner permission only if accepted. Worker preparation complete; no running actors or live host effects.
   provenance: {"harness_session":"codex:01a13c86-53cb-74e0-95a9-67a708bed5b0","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T23:33:54Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T23:33:54Z (fix/panel-render-budget): review: impl round 1 — verdict: revise; findings: Critical 0, Important 2, Minor 0; reviewer: codex/gpt-6-astra
+- 2026-10-14T23:33:54Z (fix/panel-render-budget): Independent preparation review found no helper implementation defect. Two root packet items remain: concrete four-activation hostActions/immutable contract bindings and numeric pre/post/recovery/finish reserve with elapsed enforcement through restoration. Root completes them before focused re-review and any desktop request.
+- 2026-10-14T23:39:18Z (fix/panel-render-budget): Root preparation self-check: export-ready's single parsed registration query can precede completion of async enable, and restore has no separate readiness action. Delegate narrow bounded read-only registry wait in scratch helper; malformed/source/IPC failures still refuse. Frozen code unchanged; no live action.
+- 2026-10-14T23:39:18Z (fix/panel-render-budget): parked (waiting on agent): Preparation worker tests bounded asynchronous registration wait in scratch helpers, then returns committed evidence to root
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T23:39:38Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a13c86-53cb-74e0-95a9-67a708bed5b0","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-14T23:43:10Z (fix/panel-render-budget): Async readiness helper follow-up: mocked RED reproduced first-query export refusal and restore returning without registration;6new tests now pass plus prior focused suites. export-ready and plugins-restore share one4s deadline under5s outer timeout, including mutation/IPC time; only valid opposite-registration observations retry. Malformed/source/exit/catalog failures refuse immediately; raw poll receipts retained. host.py SHAffedc55a350f749cbff680ff66d180c867a02ef31b1fd34cba32b4edb186068f; accepted54sources and original archives unchanged. Root must regenerate inventories; no live IPC.
+- 2026-10-14T23:43:10Z (fix/panel-render-budget): attached: task6-host-helpers-v2.tar.gz (27956 bytes): Inert helper v2: bounded async registration wait for export/restoration, mocked deadline and failure tests, explicit changed hashes; original packet retained
+- 2026-10-14T23:43:24Z (fix/panel-render-budget): Readiness follow-up gates: just check/tasks check exit0/no warnings, whitespace clean, accepted54 source hashes unchanged and old archive hash unchanged. New17-file v2 archive27956B SHA95a9882d9b9db044e72e49228f44ebfbd7a121f8b96d915f2ac3e72e2561d179. Mock-only checks; host-load session reports nothing left running.
