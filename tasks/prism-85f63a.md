@@ -7,7 +7,7 @@ size: l
 complexity: high
 process: planned
 created: 2026-09-09T03:03:30Z
-updated: 2026-10-14T13:59:44Z
+updated: 2026-10-14T13:59:45Z
 depends: [material-3fcba2, prism-be5abe]
 parent: prism-a03862
 tags: [material, bus, noctalia]
@@ -39,3 +39,4 @@ Where to look: `docs/specs/2026-09-08-device-chain-rack-design.md`, `docs/specs/
 ## Notes
 
 - 2026-10-06T10:02:02Z (main): material-3fcba2's accepted design (niri-material docs/specs/2026-10-06-noise-layers-design.md): the renderer accepts up to four glass noise nodes, each with amount, type=, site= and a new scale= (grain cell size, 1-16 px); pipeline.json gains only the noise scale= parameter and carries no multiplicity field, so how the bus and rack represent layers (and whether the schema needs a repeat field, which bumps its version) is this goal's brainstorm. Shipped KDL keeps one node.
+- 2026-10-14T13:59:45Z (main): scope: rescoped; renderer side established as landed (material-3fcba2 done 2026-10-08: up to four noise nodes with type/site/scale=; schema vendored at fc129ec), body narrowed to the prism design and build; depends on prism-be5abe, whose glass.noiseSite it extends per layer; process planned
