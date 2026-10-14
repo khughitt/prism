@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-13T22:07:51Z
-updated: 2026-10-14T11:51:35Z
+updated: 2026-10-14T12:00:27Z
 started: 2026-10-13T22:08:29Z
 depends: []
 parent: prism-f15cbf
@@ -79,3 +79,5 @@ Approved capture recovery design (spec round3) and proposed implementation plan.
 - 2026-10-14T10:03:47Z (fix/panel-render-budget): Root read-only current clock proof verified using frozen clock-gate source: signed package/official recipe/release/source hashes and actual running binary/boot agree; Noctalia/Python CLOCK_MONOTONIC source chain no offset/host override, historical corroboration delta0.012336772s. Private root-binding-70049969310f4526bc498fb9ab74a232 retained under durable clock-proof namespace. This is clock preparation only, no host authorization; fresh actual-session binding/recheck and evidence review remain before pilot.
 - 2026-10-14T11:07:02Z (fix/panel-render-budget): review: impl round 2 — verdict: revise; findings: Important 2; reviewer: codex/gpt-6-astra
 - 2026-10-14T11:51:35Z (fix/panel-render-budget): review: impl round 3 — verdict: accept; findings: Minor 1; reviewer: codex/gpt-6.1-sol
+- 2026-10-14T11:58:59Z (fix/panel-render-budget): Accepted-freeze first short proof refused its configured rate guard: observed1098376B/s >1095521; actual gap0.152338s within derived0.477330, exact17684296bytes/zero errors/full protocol/all actors reaped. Retain original; retry unchanged freeze using original prospective1425679 guard, a stricter gap, same682491 native floor.
+- 2026-10-14T12:00:27Z (fix/panel-render-budget): Accepted-freeze short proof passed both variants; exact17773130/17772966bytes independently rehashed, full protocol/zero errors, max gaps0.144620/0.144233s, all actors reaped/default tmux unchanged. Task5 prep unblocked; conservative prospective guard1425679, observed sourcepeak1117592 retained.
