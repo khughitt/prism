@@ -323,6 +323,8 @@ tasks park prism-ac904e 'Keith sends a message after the recorded 45-minute watc
 
 ### Task 6: Stage 1 pilot, cold/launch comparison and disposition
 
+**Execution:** Read-only pilot preparation completed; four selected B1→C1→C2→B2 schema2 n=1 builds and inert proposals are retained privately. Current-model fake-only collection/restoration passed, with performance inconclusive. Live clock/session endorsement, concrete readiness/drain/restoration/reconciliation commands, rate qualification and fresh owner permission remain root-owned gates. No live pilot, authorization or host mutation occurred; Task 6 remains open. Portable evidence: task attachment `task6-pilot-preparation-v2.tar.gz`.
+
 **Files:** private new builds/session manifests/action cards/raw logs/parsed results; task attachments, spec/plan evidence status and Tasks CLI records. Only a required token revert may change production.
 
 **Interfaces:** consume reviewed Tasks1–5, pre-pilot clock proof, existing state/rotation guards and strict stage1 analyzer. Worker prepares fresh matched copies and frozen analysis; root owns permission/desktop/snapshot/pointer/rotation and prompts. Returns protocol gate, measured estimate, two independent cold blocks, launch/control report, restoration and ordered disposition.
