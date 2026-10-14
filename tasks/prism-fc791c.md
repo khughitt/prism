@@ -7,9 +7,13 @@ size: m
 complexity: low
 process: direct
 created: 2026-09-11T07:51:05Z
-updated: 2026-10-14T14:29:24Z
+updated: 2026-10-14T14:29:25Z
 depends: [prism-b35d40]
 tags: [profiles, niri]
 ---
 
 Ice portion split from prism-08c1de. Once cracks is available through Prism, ship an ordinary Ice profile matching resources/materials/ice.kdl, using the same profile file and installation convention as Aurora and Rainbow. Validate with the installed compositor.
+
+## Notes
+
+- 2026-10-14T14:29:25Z (main): scope: confirmed; premises hold at 570c1f7: depends on prism-b35d40, itself blocked on material-bb3fe5 (ice, todo; no cracks optic or ice.kdl in niri-material yet); Aurora and Rainbow give the starter-profile convention (test/starter-profiles.test.js); process direct
