@@ -8,7 +8,7 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-15T01:30:51Z
+updated: 2026-10-15T02:31:27Z
 started: 2026-10-14T22:23:52Z
 depends: [prism-ac904e]
 parent: prism-111a3f
@@ -85,3 +85,5 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-15T01:23:29Z (fix/panel-render-budget): Manual abort restoration verified: original plugin pointer/enabled/registered, exact scratch/documents/canonical state and original outer rotation restored; collector reaped. Enable effect reconciled from successful actual IPC+later observation without replay. No card issued; protocol incomplete; no retry authorized.
 - 2026-10-15T01:27:56Z (fix/panel-render-budget): Authorized B1 startup aborted before first owner card: read_capture rejected a growing/incomplete checkpoint. No samples or fresh activation certificate; C1/C2/B2 unstarted. Original config link/plugin enabled+registered, exact documents/scratch/canonical state and outer timer restored, collector identities reaped/owned endpoint removed. Real logs load data-directory plugin, not swapped config link; diagnose captured boundaries headlessly before any new permission.
 - 2026-10-15T01:30:51Z (fix/panel-render-budget): attached: task6-b1-aborted-startup.tar.gz (2211 bytes)
+- 2026-10-15T02:00:02Z (fix/panel-render-budget): diagnosis: fresh codex/gpt-6-astra high confirmed a legitimate append can reproduce reader refusal and a second filesystem read can parse unaudited tail; exact failed B1 interleaving remains unknown. Pinned discovery source confirms wrong pointer entry, and pending enable permits initial disabled state. Full returned report retained; original54 unchanged, no host effects. Root prepares bounded private shared-reader/source-binding/pending-enable correction and full lifecycle proof before any new packet or permission.
+- 2026-10-15T02:31:27Z (fix/panel-render-budget): attached: task6-startup-correction-v1.tar.gz (94500 bytes): Bounded offline Task6 startup correction v1: shared immutable reader, fresh-ready acknowledgment, discovered-source binding and receipt-bound enable observation; synthetic checks only, pending independent review.

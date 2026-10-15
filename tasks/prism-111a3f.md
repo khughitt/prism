@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-13T22:07:51Z
-updated: 2026-10-15T01:27:56Z
+updated: 2026-10-15T02:03:25Z
 started: 2026-10-13T22:08:29Z
 depends: []
 parent: prism-f15cbf
@@ -113,3 +113,4 @@ Approved capture recovery design (spec round3) and proposed implementation plan.
 - 2026-10-15T01:14:13Z (fix/panel-render-budget): resumed
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
 - 2026-10-15T01:27:56Z (fix/panel-render-budget): Task6 first authorized startup aborted before a card; restoration verified and no actor stands. Root owns bounded evidence diagnosis and corrective scope; no desktop retry authorized. Performance comparison remains incomplete.
+- 2026-10-15T02:03:25Z (fix/panel-render-budget): Task6 authorized B1 attempt aborted before any owner card; original plugin, exact state and original rotation restored and all owned actors/socket gone. Full bounded diagnosis retained. Shared-reader/source-binding/pending-enable correction is delegated headlessly in a new private version; original accepted54 and collector lifetime evidence remain unchanged. No desktop retry or performance disposition authorized.
