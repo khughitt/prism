@@ -8,7 +8,7 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-14T23:58:17Z
+updated: 2026-10-15T01:30:51Z
 started: 2026-10-14T22:23:52Z
 depends: [prism-ac904e]
 parent: prism-111a3f
@@ -76,3 +76,12 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-14T23:57:21Z (fix/panel-render-budget): Fresh scoped re-review accepts currentv4 packet for requesting permission; verified68 reconcile arrays,132 argv PATH environments,4x96 artifact bindings and all regenerated session/contract/master hashes. No live permission/effect or performance acceptance. Root now requests fresh25-minute four-card n1 pilot; whole-pilot rotation pause and exact restoration remain required.
 - 2026-10-14T23:58:17Z (fix/panel-render-budget): parked (waiting on user, approval): Keith answers the fresh25-minute four-card Stage1 n1 desktop-pilot request; root revalidates acceptedv4 hashes/clock/current state, then runs the authorized pilot or retains preparation if declined. No probe installed, timer pause, pointer change or owned process is standing.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-15T01:14:13Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-15T01:17:29Z (fix/panel-render-budget): HOST ROTATION PAUSED throughout approved four-card pilot: wali-rotate.timer; journal /home/keith/.local/state/prism/panel-budget/capture-recovery-2026-10-13/runs/task6-root-packet-8e365f6d27924eb18e408d88cb1c5b93/pilot-rotation-journal.json; original active=True; root restore command /home/keith/.local/state/prism/panel-budget/capture-recovery-2026-10-13/runs/task6-root-packet-8e365f6d27924eb18e408d88cb1c5b93/root-live.py outer-restore
+- 2026-10-15T01:17:36Z (fix/panel-render-budget): HOST POINTER STANDING: /home/keith/.config/noctalia/plugins/prism from /home/keith/d/prism/integrations/noctalia-plugin to /home/keith/.local/state/prism/panel-budget/capture-recovery-2026-10-13/runs/task6-prep-1ad93ca29ee94e6da15500c7cc979c81/build-B1/baseline/plugin; restore inverse literal via reviewed RootHost pointer-restore after drain/disable; root command /home/keith/.local/state/prism/panel-budget/capture-recovery-2026-10-13/runs/task6-root-packet-8e365f6d27924eb18e408d88cb1c5b93/root-live.py finish B1
+- 2026-10-15T01:20:45Z (fix/panel-render-budget): HOST POINTER RESTORED: /home/keith/.config/noctalia/plugins/prism now /home/keith/d/prism/integrations/noctalia-plugin
+- 2026-10-15T01:23:29Z (fix/panel-render-budget): HOST ROTATION RESTORED: original outer timer state verified; journal /home/keith/.local/state/prism/panel-budget/capture-recovery-2026-10-13/runs/task6-root-packet-8e365f6d27924eb18e408d88cb1c5b93/pilot-rotation-journal.json
+- 2026-10-15T01:23:29Z (fix/panel-render-budget): Manual abort restoration verified: original plugin pointer/enabled/registered, exact scratch/documents/canonical state and original outer rotation restored; collector reaped. Enable effect reconciled from successful actual IPC+later observation without replay. No card issued; protocol incomplete; no retry authorized.
+- 2026-10-15T01:27:56Z (fix/panel-render-budget): Authorized B1 startup aborted before first owner card: read_capture rejected a growing/incomplete checkpoint. No samples or fresh activation certificate; C1/C2/B2 unstarted. Original config link/plugin enabled+registered, exact documents/scratch/canonical state and outer timer restored, collector identities reaped/owned endpoint removed. Real logs load data-directory plugin, not swapped config link; diagnose captured boundaries headlessly before any new permission.
+- 2026-10-15T01:30:51Z (fix/panel-render-budget): attached: task6-b1-aborted-startup.tar.gz (2211 bytes)
