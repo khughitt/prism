@@ -17,9 +17,18 @@ new ready issuance is bound to its consumed authorization, and restoration requi
 the catalog source to match the discovered local files. Its complete schema2
 synthetic lifecycle passed. The original54 files remain immutable; the40-minute
 result qualifies only the unchanged collector/supervisor/producer/probe components,
-not the new reader. The complete future Root driver and concrete packet still need
-review and fresh host permission. No live sample or performance acceptance follows
-from these headless checks.
+not the new reader. The complete inert Root driver and packet in `26f9116` received
+four Important integration findings: repeated permit ambiguity, reconciliation
+representation, log rotation during descriptor checks, and outer timer restoration
+after elapsed failure. The final Task6 corrective round in `fe3f29a` addresses all
+four; scoped review accepts with no new Critical, Important or Minor findings.
+The exact attempt-bound helper seam and driver fixes remain in new private copies;
+58 focused/inherited tests and the source-qualified integrated lifecycle cover
+normal, short-class and administrative-abort outcomes. Root verified the current
+packet and actual read-only clock/source/log binding. The unchanged reconciliation
+helper retains an explicit ambiguity/manual-recovery boundary. Fresh host permission,
+authorized setup and live feasibility remain pending. No live sample or performance
+acceptance follows from these headless checks.
 
 ## Intent and terms
 
