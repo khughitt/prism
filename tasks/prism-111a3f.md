@@ -8,7 +8,7 @@ complexity: mid
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-13T22:07:51Z
-updated: 2026-10-15T05:10:41Z
+updated: 2026-10-15T05:11:51Z
 started: 2026-10-13T22:08:29Z
 depends: []
 parent: prism-f15cbf
@@ -115,3 +115,5 @@ Approved capture recovery design (spec round3) and proposed implementation plan.
 - 2026-10-15T01:27:56Z (fix/panel-render-budget): Task6 first authorized startup aborted before a card; restoration verified and no actor stands. Root owns bounded evidence diagnosis and corrective scope; no desktop retry authorized. Performance comparison remains incomplete.
 - 2026-10-15T02:03:25Z (fix/panel-render-budget): Task6 authorized B1 attempt aborted before any owner card; original plugin, exact state and original rotation restored and all owned actors/socket gone. Full bounded diagnosis retained. Shared-reader/source-binding/pending-enable correction is delegated headlessly in a new private version; original accepted54 and collector lifetime evidence remain unchanged. No desktop retry or performance disposition authorized.
 - 2026-10-15T05:10:41Z (fix/panel-render-budget): Task6 complete driver final corrective round5 accepted after integrated RED-GREEN/lifecycle and scoped review; current fe3f29a packet and Root audits qualify permission-request preparation only. Readonly current clock/source/log checks pass; no actual host approval or actors. Next gate is fresh25-minute four-card n1 desktop consent, then actual snapshots and one-click cards; no performance disposition yet.
+- 2026-10-15T05:11:51Z (fix/panel-render-budget): parked (waiting on user, approval): Keith answers the fresh25-minute Task6 corrected pilot request; Root then performs actual authorization/preflight/B1 card and restores exact plugin/settings/rotation at completion or safe stop. Reviewed fe3f29a packet, disposition2c37d73, fix5 locator in .worktrees/panel-budget. No work running, live namespace/permit/collector/socket, host pointer change or timer pause stands.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}

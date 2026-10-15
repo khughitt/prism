@@ -8,7 +8,7 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-15T05:10:41Z
+updated: 2026-10-15T05:11:51Z
 started: 2026-10-14T22:23:52Z
 depends: [prism-ac904e]
 parent: prism-111a3f
@@ -100,3 +100,5 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-15T05:05:22Z (fix/panel-render-budget): Final round5 attachment fe3f29a is prepared; authoritative reviewed archive b20600da/master e5e350b8 supersede earlier drafts. Root read full fix report and verified472 inputs/canonical sessions/contracts,266 archive payloads/9 source copies, actual readonly clock/source and rotation-aware log binding (1 observation/0.035671s). Saved RED/GREEN and integrated normal/short/abort evidence read; final scoped re-review is running. No actual authority/live namespace/host effect; cap disposition and Step1 closure remain pending.
 - 2026-10-15T05:09:38Z (fix/panel-render-budget): review: impl round 7 — verdict: accept; findings: Critical 0, Important 0, Minor 0; reviewer: codex/gpt-6-astra
 - 2026-10-15T05:10:41Z (fix/panel-render-budget): Final corrective round5/5 accepted: all4 findings addressed, no new Critical/Important/Minor; full scoped review and exact identity retained. Root actual review receipt binds master e5e350b8 and report hash. Read-only preparation Step1 complete; fresh25-minute four-card n1 host consent is next. Unchanged reconciliation ambiguity remains a documented manual boundary; no automatic sixth correction. Actual approval/permits/live namespaces remain absent; no process or host mutation. No performance/Task7/full-stage acceptance.
+- 2026-10-15T05:11:51Z (fix/panel-render-budget): parked (waiting on user, approval): Keith approves or defers the fresh25-minute corrected four-card n1 desktop pilot; on approval Root records real human provenance, revalidates reviewed master e5e350b8/current facts and runs explicit packet_driver start B1 from the fix5 locator in .worktrees/panel-budget. All own checks/reviews stopped and complete. No live namespace/permit/collector/socket, no standing plugin pointer or timer mutation; original discovered pointer remains unchanged and no new rotation journal exists. Deferred use needs a fresh request.
+  provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
