@@ -8,7 +8,7 @@ complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-15T02:31:27Z
+updated: 2026-10-15T03:17:20Z
 started: 2026-10-14T22:23:52Z
 depends: [prism-ac904e]
 parent: prism-111a3f
@@ -87,3 +87,7 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-15T01:30:51Z (fix/panel-render-budget): attached: task6-b1-aborted-startup.tar.gz (2211 bytes)
 - 2026-10-15T02:00:02Z (fix/panel-render-budget): diagnosis: fresh codex/gpt-6-astra high confirmed a legitimate append can reproduce reader refusal and a second filesystem read can parse unaudited tail; exact failed B1 interleaving remains unknown. Pinned discovery source confirms wrong pointer entry, and pending enable permits initial disabled state. Full returned report retained; original54 unchanged, no host effects. Root prepares bounded private shared-reader/source-binding/pending-enable correction and full lifecycle proof before any new packet or permission.
 - 2026-10-15T02:31:27Z (fix/panel-render-budget): attached: task6-startup-correction-v1.tar.gz (94500 bytes): Bounded offline Task6 startup correction v1: shared immutable reader, fresh-ready acknowledgment, discovered-source binding and receipt-bound enable observation; synthetic checks only, pending independent review.
+- 2026-10-15T02:50:01Z (fix/panel-render-budget): review: impl round 4 — verdict: revise; findings: Critical 0, Important 2, Minor 0; reviewer: codex/gpt-6-astra
+- 2026-10-15T03:03:03Z (fix/panel-render-budget): attached: task6-startup-correction-v2.tar.gz (101349 bytes): Task6 corrective round4: durable fresh-ready issuance and exact local restoration catalog; scoped/cumulative diffs, preservation inventories and offline RED/GREEN/lifecycle evidence
+- 2026-10-15T03:11:53Z (fix/panel-render-budget): review: impl round 5 — verdict: accept; findings: Critical 0, Important 0, Minor 0; reviewer: codex/gpt-6.1-sol
+- 2026-10-15T03:17:20Z (fix/panel-render-budget): Scoped round4 correction accepted: retained ready sequence and conflicting final catalog-source findings both addressed; new58 code4ea47695 and v2 archivef80ae7ab independently verified, original69/v1 preserved. Complete synthetic schema2 lifecycle and affected checks pass, zero warnings. Root readonly clock/data-entry/local-enabled-registration/log-descriptor/current83-12-24 model observations retained for prospective new group. Complete inert driver/action-phase packet preparation delegated; no host permission or live sample.

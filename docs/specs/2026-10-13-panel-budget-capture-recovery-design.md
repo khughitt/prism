@@ -9,6 +9,18 @@ minors into the approved design. Plan review round2 accepted; Task1 incremental 
 Parts 1–5. The staging exception below is approved with this design and plan; all
 correctness requirements, numerical thresholds and full acceptance counts remain.
 
+Task6 execution update: the first authorized startup aborted before any owner card,
+and exact plugin/settings/rotation restoration was independently verified. A new
+private reader/helper version is reviewed through `a5e0989`: parsing and auditing
+share immutable bytes, append/publication retries preserve exact source lineage,
+new ready issuance is bound to its consumed authorization, and restoration requires
+the catalog source to match the discovered local files. Its complete schema2
+synthetic lifecycle passed. The original54 files remain immutable; the40-minute
+result qualifies only the unchanged collector/supervisor/producer/probe components,
+not the new reader. The complete future Root driver and concrete packet still need
+review and fresh host permission. No live sample or performance acceptance follows
+from these headless checks.
+
 ## Intent and terms
 
 Obtain complete, matched in-host evidence with fewer owner/chat handoffs. Production
