@@ -4,8 +4,9 @@ title: Mark a loaded profile as edited since load
 status: idea
 priority: 2
 reviewed: true
+reviewed_at: 2026-10-17T21:14:44Z
 created: 2026-09-10T17:00:50Z
-updated: 2026-10-12T18:22:31Z
+updated: 2026-10-17T21:14:44Z
 depends: []
 parent: prism-2f0b4b
 tags: [noctalia, ui, profiles]
@@ -16,3 +17,4 @@ Show '*' beside the profile name once parameters change after loading. Fact to d
 ## Notes
 
 - 2026-09-13T11:09:26Z (scope-acceptance): scope: briefed; current writes persist directly; indicator lifecycle across queued writes and profile switches awaits prism-e37618; brief: docs/notes/2026-09-13-profile-editing-brief.md
+- 2026-10-17T21:14:44Z (main): scope: drop; rechecked at 93625b4: the edited-since-load marker landed as the edits row's count derived from describe's held (integrations/noctalia-plugin/panel.luau editsRow, 'N edits'/'No edits'), and the pairs amendment loads a look with zero pending edits, so the count is exactly 'edited since load'; spec docs/specs/2026-09-19-compositional-profiles-design.md Section 7 and its task map ('done by Section 7 (the edits count); close'); proposal: drop as landed in ad17477 under prism-aec90f (done; step prism-d4488f)
