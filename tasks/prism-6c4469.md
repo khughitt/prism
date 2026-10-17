@@ -5,8 +5,8 @@ status: idea
 priority: 2
 reviewed: true
 created: 2026-09-05T08:21:27Z
-updated: 2026-10-12T18:22:24Z
-depends: []
+updated: 2026-10-17T17:37:17Z
+depends: [prism-d47f43]
 parent: prism-5a7c8a
 tags: [cli, store]
 ---
