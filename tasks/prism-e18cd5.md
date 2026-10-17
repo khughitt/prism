@@ -1,13 +1,14 @@
 ---
 id: prism-e18cd5
 title: Re-anchor the parked panel pilot's packets to the rewritten commit ids
-status: todo
+status: dropped
 priority: 2
 size: xs
 complexity: low
 process: direct
 created: 2026-10-17T02:02:01Z
-updated: 2026-10-17T02:11:03Z
+updated: 2026-10-17T21:21:22Z
+closed: 2026-10-17T21:21:22Z
 depends: []
 tags: []
 agent: claude-code/claude-opus-5-5
@@ -19,3 +20,7 @@ The authorship rewrite (prism-10c518, 2026-10-17) re-hashed every t@t commit wit
 
 - 2026-10-17T02:02:02Z (main): concerns: prism-10c518 extension — the rewrite could not note the new ids on the pilot's branch-only records
 - 2026-10-17T02:11:03Z (main): Old ids also sit outside git in the pilot's run state, ~/.local/state/prism/panel-budget/capture-recovery-2026-10-13/runs/ (hundreds of files across the task5/task6/broad-fix runs); revalidation must read them through the map in tasks/files/prism-10c518/.
+- 2026-10-17T21:21:22Z (main): dropped
+  provenance: {"harness_session":"claude-code:2efe5e59-1ac2-4da3-a170-7b5188325415","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-17T21:21:22Z (main): Moot: the parked panel pilot it would re-anchor was closed 2026-10-17 without resuming its frozen packets (prism-111a3f dropped, prism-dac509 done); the packets' run state is deleted.
+  provenance: {"harness_session":"claude-code:2efe5e59-1ac2-4da3-a170-7b5188325415","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
