@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-17T21:22:38Z
+updated: 2026-10-17T21:25:35Z
 started: 2026-10-10T16:20:49Z
 completed: 2026-10-17T21:20:14Z
 closed: 2026-10-17T21:20:14Z
@@ -159,3 +159,4 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
 - 2026-10-17T21:22:34Z (main): attached: 2026-10-10-panel-render-budget-ledger.md (24552 bytes): SDD ledger for plan 2026-10-10-panel-render-budget (rulings and deferred minors), kept when the panel-budget worktree was removed
 - 2026-10-17T21:22:36Z (main): attached: 2026-10-11-panel-budget-tokens-and-launch-ledger.md (21206 bytes): SDD ledger for plan 2026-10-11-panel-budget-tokens-and-launch (rulings and deferred minors), kept when the panel-budget worktree was removed
 - 2026-10-17T21:22:38Z (main): attached: 2026-10-13-panel-budget-capture-recovery-ledger.md (60738 bytes): SDD ledger for plan 2026-10-13-panel-budget-capture-recovery (rulings and deferred minors), kept when the panel-budget worktree was removed
+- 2026-10-17T21:25:35Z (main): attached: 2026-10-13-capture-recovery-design-review-ledger.md (3818 bytes): Design-review ledger for the capture-recovery spec, kept when the panel-budget worktree was removed
