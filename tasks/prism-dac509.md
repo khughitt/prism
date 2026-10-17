@@ -1,15 +1,17 @@
 ---
 id: prism-dac509
 title: Panel renders overrun the host's 25 ms callback budget and Noctalia silently disables the panel
-status: doing
+status: done
 priority: 1
 size: m
 complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-13T22:11:43Z
+updated: 2026-10-17T21:20:14Z
 started: 2026-10-10T16:20:49Z
+completed: 2026-10-17T21:20:14Z
+closed: 2026-10-17T21:20:14Z
 depends: []
 tags: [noctalia, performance]
 agent: claude-code/claude-opus-5-5
@@ -150,3 +152,7 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
 - 2026-10-13T22:10:41Z (fix/panel-render-budget): Stabilized pilot evidence reviewed: complete B1/C1/C2, missing C2 Q render, B2 lost1096 records; collector fix0f54b6f accepted by fresh codex/gpt-6.1-sol review, Minor1 frozen-report wording retained. Actual95.976min occupancy; accepted=false/return_to_design=true. Exact Prism/settings/rotation restored. New proposed capture-recovery spec child prism-111a3f; Tasks7–8 gated, no further host/production action.
 - 2026-10-13T22:11:43Z (fix/panel-render-budget): parked (waiting on user, review): Owner reviews proposed capture-recovery design; root continues child prism-111a3f through planning and validated capture. OriginalTask6 performance acceptance is incomplete, Tasks7–8 gated, host resources restored.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-17T21:20:14Z (fix/panel-render-budget): done
+  provenance: {"harness_session":"claude-code:2efe5e59-1ac2-4da3-a170-7b5188325415","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-17T21:20:14Z (fix/panel-render-budget): Retained subtrees and a deferred describe render keep every panel callback under the host's 25 ms budget: in-host with all cards expanded, drag frame ~8 ms, release 18 ms, cold rebuild 16 ms median / 24 ms worst, zero budget errors over four runtimes; Lua-call ceilings pinned in contract.test.mjs; token change reverted; cold-render headroom follows in prism-9d063e.
+  provenance: {"harness_session":"claude-code:2efe5e59-1ac2-4da3-a170-7b5188325415","harness_session_source":"CLAUDE_CODE_SESSION_ID"}

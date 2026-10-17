@@ -1,5 +1,7 @@
 # Recover complete panel-budget measurements
 
+**Status:** superseded 2026-10-17. The owner closed the panel-budget pilot with one short in-host comparison instead (prism-f15cbf, attachment short-comparison-report.md); the capture-recovery protocol was retired unexecuted beyond its rehearsals, and its run state deleted. The text below is the record as it stood.
+
 **Date:** 2026-10-13
 **Status:** approved for planning by owner after spec review round 3 (accept,
 Minor 3). The window, next-turn and clock-gate clarifications below fold those

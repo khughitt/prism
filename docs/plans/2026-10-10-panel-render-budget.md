@@ -1981,11 +1981,13 @@ git commit -m "test(noctalia): pin panel render cost on real describe output"
 
 ### Task 8: Documentation, follow-ups, and closing
 
+**Execution (2026-10-17):** contract note and spec status updated with the in-host figures; follow-ups filed as prism-953f63 (upstream metering/disabled-state issue, search recorded there), prism-ea3efb (panel notice idea) and prism-9d063e (cold full-render headroom).
+
 **Files:**
 - Modify: `docs/notes/noctalia-plugin-contract.md:72-79` (budget paragraph)
 - Modify: `docs/specs/2026-10-10-panel-render-budget-design.md:4` (status)
 
-- [ ] **Step 1: Update the contract note**
+- [x] **Step 1: Update the contract note**
 
 In `docs/notes/noctalia-plugin-contract.md`, replace the sentences from
 `A full render costs 10-14 ms` through `which keeps the idle re-read free.` with:
@@ -2009,12 +2011,12 @@ pins the render cost in Lua calls on real describe output, with every card
 expanded.
 ```
 
-- [ ] **Step 2: Mark the spec implemented**
+- [x] **Step 2: Mark the spec implemented**
 
 Change the spec's status line to
 `**Status:** implemented 2026-10-10; in-host figures recorded on prism-dac509`.
 
-- [ ] **Step 3: File the follow-ups the spec names**
+- [x] **Step 3: File the follow-ups the spec names**
 
 First, search the upstream Noctalia issues and PRs for interrupt-metering cost and for
 a plugin-disabled signal. Use `gh search issues --repo <upstream noctalia repo> "CPU budget"`
@@ -2028,7 +2030,7 @@ tasks add "Panel notice when the host has disabled it" --status idea -b "From pr
 
 Record what the upstream search found in a note on the first task.
 
-- [ ] **Step 4: Gate and close**
+- [x] **Step 4: Gate and close**
 
 ```bash
 just check

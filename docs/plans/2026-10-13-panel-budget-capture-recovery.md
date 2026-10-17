@@ -1,5 +1,7 @@
 # Panel Budget Capture Recovery Implementation Plan
 
+**Status:** superseded 2026-10-17. The owner closed the panel-budget pilot with one short in-host comparison instead (prism-f15cbf, attachment short-comparison-report.md); its Task 6 and Task 7 were dropped with prism-111a3f, and its run state deleted. The text below is the record as it stood.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. The owner selected subagent-driven execution earlier; preserve that choice.
 
 **Goal:** Obtain trustworthy staged cold/launch evidence before spending owner time on full panel acceptance.

@@ -1,14 +1,16 @@
 ---
 id: prism-f15cbf
 title: In-host measurement and the 15 ms gate
-status: doing
+status: done
 priority: 1
 complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T17:06:10Z
-updated: 2026-10-17T21:14:01Z
+updated: 2026-10-17T21:15:12Z
 started: 2026-10-10T18:43:57Z
+completed: 2026-10-17T21:15:12Z
+closed: 2026-10-17T21:15:12Z
 depends: [prism-b81188]
 parent: prism-dac509
 tags: []
@@ -153,3 +155,7 @@ step: "Task 6: In-host measurement and the 15 ms gate"
 - 2026-10-17T21:13:57Z (fix/panel-render-budget): attached: instrument.py (4006 bytes): Short comparison probe tooling: instrument.py
 - 2026-10-17T21:13:57Z (fix/panel-render-budget): attached: analyze.py (2404 bytes): Short comparison probe tooling: analyze.py
 - 2026-10-17T21:13:57Z (fix/panel-render-budget): attached: session.sh (2160 bytes): Short comparison probe tooling: session.sh
+- 2026-10-17T21:15:12Z (fix/panel-render-budget): done
+  provenance: {"harness_session":"claude-code:2efe5e59-1ac2-4da3-a170-7b5188325415","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-17T21:15:12Z (fix/panel-render-budget): In-host (4 fresh runtimes, every card expanded, 0 budget errors): cold render median 16.0 ms / max 24.1 (first full cold render 20.7-24.1 each run), release 18.1 / 18.6, write completion 16.5 / 18.8, drag frame 7.7; token change showed no cold gain and is reverted (db2473e). Gate revised by owner to headroom under 25 ms; first-cold headroom filed as follow-up in Task 8.
+  provenance: {"harness_session":"claude-code:2efe5e59-1ac2-4da3-a170-7b5188325415","harness_session_source":"CLAUDE_CODE_SESSION_ID"}

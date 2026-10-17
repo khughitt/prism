@@ -1,7 +1,7 @@
 # Panel render within the host's callback budget
 
 **Date:** 2026-10-10
-**Status:** original design approved by owner 2026-10-10 (review round 2: accept); Tasks 1–5 implemented. Part 5 revised and approved by owner 2026-10-11 (review round 4: accept). Task 6 acceptance and Tasks 7–8 remain gated. Plan: [docs/plans/2026-10-10-panel-render-budget.md](../plans/2026-10-10-panel-render-budget.md)
+**Status:** implemented 2026-10-10; Part 5 (compact metadata tokens) implemented 2026-10-11 and reverted 2026-10-17 after the in-host comparison showed no cold-render gain. In-host figures recorded on prism-f15cbf; the 15/12 ms gate was replaced by the owner with headroom under the 25 ms budget and zero budget errors. Plan: [docs/plans/2026-10-10-panel-render-budget.md](../plans/2026-10-10-panel-render-budget.md).
 **Task:** `prism-dac509` (absorbs the dropped `prism-5172ea`)
 **Builds on:** `prism-dfbd7f` (one drag render per frame tick) and `prism-831604`
 (`refresh` never renders; an unchanged describe is skipped), both recorded in

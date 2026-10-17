@@ -1,5 +1,7 @@
 # Panel Budget Tokens and Launch Comparison Implementation Plan
 
+**Status:** superseded 2026-10-17. The owner closed the panel-budget pilot with one short in-host comparison instead (prism-f15cbf, attachment short-comparison-report.md); the token change from its Task 1 showed no cold-render gain and was reverted. The text below is the record as it stood.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Test whether compact metadata tokens reduce cold render cost and answer
