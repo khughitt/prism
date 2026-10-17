@@ -1,0 +1,528 @@
+--- a/code/README.md
++++ b/code/README.md
+@@ -104,3 +104,29 @@
+ Overlap expands heartbeat and persistence carriers uniquely, rejecting repeated complete pairs and duplicate heartbeat identities. Only containing operation intervals enter overlap; nested phase summaries do not inflate it or alter target samples. Current rehearsal verification and independent native proof require strict phase validation before acceptance.
+
+ There are19 fixed names, at most19 summaries per observation, and a16KiB phase-summary validation bound. Runtime memory is one fixed-name recorder per active window plus completed carriers, independent of archive history. No new durable file or fsync is added. Phase bookkeeping, JSON serialization and extra bytes remain inside the existing actual time guards. Observer overhead is measured in preparation; this is observability, not a remedy for historical latency or evidence of long-run reliability.
++
++Active append observations use one eight-observation budget (1 ms waits, including
++post-validation observation) shared across a poll's read/publication seams and
++across an active checkpoint's retries. The existing both-advanced fixed timestamp
++pair remains valid. The additional split sequence permits one ctime-first epoch,
++then exactly one mtime catch-up to that epoch; larger size under the converged
++pair remains mandatory. Stable timestamps alone never establish an append.
++
++The resolver validates the entire captured interval by hash and pending read bytes
++by exact comparison. Observed source extent is distinct from captured cursor:
++unread tail is provisional and never included in a prefix hash or terminal cutoff.
++Source identity, unique live pathname, and archive metadata remain mandatory.
++Active checkpoints repeat the full prefix read after resolution; held source
++reads are unbuffered so a repeat cannot reuse stale Python reader bytes. Outgoing
++seal checks have no active-transition exception. Finish still requires an exact,
++fully consumed terminal source snapshot.
++
++Private sourceObservationFailure records carry the failing stage, compared stat
++tuples, captured/pending intervals, cursor and pre-transition observed extent.
++archivePublished/manifestPublished indicate publication by the failing append
++stage; prior captured bytes are always identified by capturedInterval, including
++at a checkpoint that performs no append publication itself. A collection row's
++pollComplete reports whether its poll returned. bytes counts completed polls;
++an incomplete poll can have already published provisional bytes, exposed by the
++failure record. Existing poll/receipt writes carry the bounded details; no new
++per-poll durable write is introduced. All work remains inside the actual guards.
+--- /dev/null
++++ b/code/active-append-check.py
+@@ -0,0 +1,149 @@
++"""Real byte/cursor evidence under bounded active-source stat interleavings."""
++import hashlib,json,os,sys,tempfile,time,types,unittest
++from pathlib import Path
++from unittest.mock import patch
++os.umask(0o077);sys.dont_write_bytecode=True
++sys.path.insert(0,os.environ.get('ACTIVE_CODE',str(Path(__file__).parent)))
++import logs
++
++def stat(st,**changes):
++    return types.SimpleNamespace(**({k:getattr(st,k) for k in dir(st) if k.startswith('st_')}|changes))
++
++def append(path,data):
++    with path.open('ab',buffering=0) as f:
++        assert f.write(data)==len(data);os.fsync(f.fileno())
++
++def sha(data):return hashlib.sha256(data).hexdigest()
++
++class ActiveAppend(unittest.TestCase):
++    def exercise(self,stage='read',sequence='split',pending=True,bad=None,extent=4096):
++        with tempfile.TemporaryDirectory() as tmp:
++            d=Path(tmp);p=d/'source.log';p.write_bytes(b'ignored\n');manifest=d/'manifest.json'
++            logs.start(p,manifest);c=logs.Capture(manifest)
++            try:
++                prefix=b'P'*extent;new=b'pending-read\n' if pending and stage in ('read','publication','prior-growth') else b''
++                append(p,prefix);c.poll();append(p,new)
++                old=os.fstat(c.source.fileno());old_saved=manifest.read_bytes()
++                tail=b'A'*68250;append(p,tail);grown=os.fstat(c.source.fileno())
++                self.assertGreater(grown.st_mtime_ns,old.st_mtime_ns)
++                self.assertEqual(grown.st_mtime_ns,grown.st_ctime_ns)
++                epoch=grown.st_ctime_ns
++                split=stat(grown,st_size=old.st_size,st_mtime_ns=old.st_mtime_ns)
++                caught=stat(grown,st_size=old.st_size)
++                before=split if sequence=='intermediate' else old
++                transition=split if sequence=='split' else caught
++                if stage=='prior-growth':
++                    before_pub=grown;append(p,b'B'*7919);grown=os.fstat(c.source.fileno())
++                    transition=stat(grown,st_size=before_pub.st_size,st_mtime_ns=before_pub.st_mtime_ns)
++                    seq=[old,before_pub,transition,grown]
++                else:seq=([before,before] if stage=='publication' else [before])+[transition]
++                trigger=len(seq)-1 if stage!='prior-growth' else 2
++                if stage!='prior-growth':
++                    if sequence=='split':seq.append(caught)
++                    seq.append(grown)
++                if bad in ('no-growth','exhausted'):
++                    seq=seq[:trigger+1]+[caught]*9
++                elif bad=='second-epoch':seq[trigger+1]=stat(grown,st_mtime_ns=epoch+1,st_ctime_ns=epoch+1)
++                elif bad=='mtime-value':seq[trigger+1]=stat(grown,st_mtime_ns=epoch+1)
++                elif bad=='mtime-regression':seq=seq[:trigger+1]+[caught,split,grown]
++                elif bad=='identity':seq[trigger+1]=stat(grown,st_ino=grown.st_ino+1)
++                elif bad=='truncation':seq[trigger+1]=stat(grown,st_size=old.st_size-1)
++                elif bad=='growth-before-catchup':seq=seq[:trigger+1]+[stat(grown,st_mtime_ns=old.st_mtime_ns)]
++                elif bad=='second-after-growth':seq=seq[:trigger+1]+[grown,stat(grown,st_mtime_ns=epoch+1,st_ctime_ns=epoch+1)]
++                if bad=='checkpoint-reread-mutation':
++                    resolve=c._append_growth
++                    def mutate_after_resolution(*args):
++                        value=resolve(*args)
++                        with p.open('r+b',buffering=0) as f:f.seek(8);f.write(b'X')
++                        return value
++                    c._append_growth=mutate_after_resolution
++                real=c._source_stat;calls=[];fired=False
++                def observe(source):
++                    nonlocal fired
++                    index=len(calls)
++                    if index==trigger+1 and not fired:
++                        fired=True
++                        if bad=='prefix-mutation':
++                            with p.open('r+b',buffering=0) as f:f.seek(8);f.write(b'X')
++                        if bad=='pending-mutation':
++                            with p.open('r+b',buffering=0) as f:f.seek(8+len(prefix));f.write(b'X')
++                        if bad=='regrowth':p.write_bytes(b'X'*grown.st_size)
++                        if bad=='archive-mutation':c.paths()[0].write_bytes(b'X'*len(prefix))
++                        if bad=='missing':p.unlink()
++                        if bad=='ambiguous':os.link(p,d/'source.log.alias')
++                        if bad=='rotation':p.rename(d/'source.log.1');p.write_bytes(b'new occurrence\n')
++                    value=seq[index] if index<len(seq) else real(source)
++                    calls.append(logs.snapshot(value));return value
++                c._source_stat=observe
++                began=time.monotonic();error=None
++                try:
++                    if stage in ('read','publication','prior-growth'):c.poll()
++                    else:c.checkpoint(stage)
++                except AssertionError as exc:error=exc
++                elapsed=time.monotonic()-began
++                expected=prefix+new
++                archived=b''.join(x.read_bytes() for x in c.paths());saved=json.loads(manifest.read_text())
++                if stage=='finish' and not bad:
++                    self.assertIsNotNone(error);self.assertIn('uncaptured source tail at finish',str(error))
++                    self.assertTrue(c.failed);self.assertFalse(c.integrity_complete);self.assertFalse(saved['integrityComplete'])
++                    self.assertNotIn('terminalCutoff',saved);self.assertEqual(archived,prefix)
++                    self.assertEqual(manifest.read_bytes(),old_saved)
++                    return error,elapsed
++                if bad:
++                    self.assertIsNotNone(error,(stage,sequence,bad))
++                    self.assertTrue(c.failed);self.assertFalse(c.integrity_complete);self.assertFalse(saved['integrityComplete'])
++                    if bad!='archive-mutation':
++                        self.assertEqual(archived,expected if stage=='publication' else prefix)
++                    if stage!='publication':self.assertEqual(manifest.read_bytes(),old_saved)
++                    else:self.assertEqual(saved['current']['offset'],8+len(expected))
++                    detail=c.failure_detail
++                    self.assertEqual(detail['stage'],'during-read' if stage=='read' else 'post-publication' if stage=='publication' else 'active-checkpoint')
++                    self.assertEqual(detail['manifestPublished'],stage=='publication')
++                    self.assertEqual(detail['capturedInterval']['end'],8+len(expected if stage=='publication' else prefix))
++                    self.assertEqual(detail['observedExtent'],grown.st_size if bad=='checkpoint-reread-mutation' else old.st_size)
++                    self.assertTrue(all(k in detail for k in ('before','initialObserved','finalDescriptor','livePath','generation','cursor','pendingInterval','archivePublished')))
++                    self.assertLess(len(json.dumps(detail)),4096)
++                    if bad in ('no-growth','exhausted'):self.assertLessEqual(len(calls),trigger+1+8+1)
++                    for op in (c.poll,lambda:c.checkpoint('finish')):
++                        with self.assertRaises(AssertionError):op()
++                else:
++                    self.assertIsNone(error,(stage,sequence,str(error)))
++                    self.assertEqual(archived,expected)
++                    self.assertEqual(saved['current']['offset'],8+len(expected))
++                    self.assertEqual(saved['segments'][0]['sha256'],sha(expected))
++                    self.assertFalse(c.integrity_complete)
++                    c._source_stat=real
++                    if stage=='prior-growth':self.assertGreater(old.st_size+len(tail),saved['current']['offset'])
++                    if stage=='finish':raise AssertionError('finish certified an unread tail')
++                    c.poll();self.assertTrue(c.checkpoint('finish')['integrityComplete'])
++                    final=p.read_bytes()[8:];self.assertEqual(b''.join(x.read_bytes() for x in c.paths()),final)
++                    self.assertEqual(c.state['terminalCutoff']['sourceSize'],p.stat().st_size)
++                    self.assertEqual(c.state['terminalCutoff']['segmentSha256'],[sha(final)])
++                    if extent>=1024*1024:
++                        self.assertLess(elapsed,.36774617568190315)
++                        print('PREFIX_COST',json.dumps({'stage':stage,'bytes':extent,'seconds':elapsed}))
++                return error,elapsed
++            finally:c.close()
++
++    def test_active_seams_exact_followup(self):
++        for stage in ('read','publication','ready','settled'):
++            for sequence in ('both','split','intermediate'):
++                for pending in ((False,True) if stage in ('read','publication') else (False,)):
++                    with self.subTest(stage=stage,sequence=sequence,pending=pending):self.exercise(stage,sequence,pending)
++    def test_publication_after_prior_visible_read_growth(self):self.exercise('prior-growth')
++    def test_refusals_preserve_evidence(self):
++        for stage in ('read','publication','ready'):
++            for bad in ('no-growth','exhausted','second-epoch','mtime-value','mtime-regression','second-after-growth','growth-before-catchup','identity','truncation','regrowth','prefix-mutation','archive-mutation','missing','ambiguous','rotation'):
++                with self.subTest(stage=stage,bad=bad):self.exercise(stage,bad=bad)
++            if stage=='ready':self.exercise(stage,bad='checkpoint-reread-mutation')
++            if stage in ('read','publication'):
++                with self.subTest(stage=stage,bad='pending-mutation'):self.exercise(stage,bad='pending-mutation')
++    def test_finish_transition_never_certifies_unread_growth(self):
++        for sequence in ('both','split','intermediate'):
++            with self.subTest(sequence=sequence):
++                self.exercise('finish',sequence,pending=False)
++    def test_representative_full_prefix_cost(self):
++        for stage in ('read','publication','ready'):
++            with self.subTest(stage=stage):self.exercise(stage,extent=1024*1024)
++
++if __name__=='__main__':unittest.main(verbosity=2)
+--- a/code/broad-log-check.py
++++ b/code/broad-log-check.py
+@@ -104,7 +104,7 @@
+       rejected=True
+       if name in ('metadata-growth','metadata-growth-capacity'):raise
+       assert 'log changed during read' in str(e),str(e)
+-      diagnostic=json.loads(str(e).split(': ',1)[1]);assert diagnostic['before'] and diagnostic['after'] and diagnostic['readBytes']==(0 if name=='metadata-short-read' else 1) and diagnostic['currentDescriptor']
++      diagnostic=json.loads(str(e).split(': ',1)[1]);assert diagnostic['before'] and diagnostic['initialObserved'] and diagnostic['readBytes']==(0 if name=='metadata-short-read' else 1) and diagnostic['finalDescriptor']
+     assert fired[0]
+     if name=='metadata-no-growth':assert len(calls)==11,'transition must stop after eight observations plus diagnostic'
+     if name in ('metadata-growth','metadata-growth-capacity'):
+--- a/code/capture.py
++++ b/code/capture.py
+@@ -79,6 +79,7 @@
+         identities=json.loads(Path(cfg['identities']).read_text())
+         return {'schema':2,'runId':cfg['runId'],'clockOrigin':cfg['clockOrigin'],'collectorStarted':started,
+                 'lastPollStart':last_start,'lastPollEnd':last_end,'lastIntervalPersistence':last_persistence,'phaseSchema':1,'lastHeartbeat':last_heartbeat,'heartbeatCount':heartbeat_count,'generations':len(c.state['segments']) if c else 0,
++                'sourceObservationFailure':c.failure_detail if c else None,
+                 'terminalCutoff':c.state.get('terminalCutoff') if c and complete else None,'lastSequence':last_sequence,'exitReason':reason,'integrityComplete':complete,'processes':dict(identities,collector=me),'error':error}
+     def heartbeat():
+         nonlocal last_heartbeat,heartbeat_count
+@@ -103,12 +104,13 @@
+         with Path(cfg['polls']).open('x') as intervals:
+             def interval(checkpoint=False):
+                 nonlocal last_start,last_end,last_sequence,control_version,last_persistence,last_heartbeat
+-                begin=None;count=0;effective_checkpoint=checkpoint
++                begin=None;count=0;poll_complete=False;effective_checkpoint=checkpoint
+                 def close_interval(failure=None):
+                     nonlocal last_end,begin,last_persistence,last_heartbeat
+                     if begin is None:return
+                     last_end=time.monotonic()
+                     row={'runId':cfg['runId'],'start':begin,'end':last_end,'clockOrigin':cfg['clockOrigin'],'bytes':count,'checkpoint':effective_checkpoint,'error':failure,
++                         'pollComplete':poll_complete,'sourceObservationFailure':c.failure_detail,
+                          'observation':'collection','previousIntervalPersistence':last_persistence,'previousHeartbeat':last_heartbeat,'phases':c.observer.snapshot()}
+                     begin=None;last_heartbeat=None;c.observer=None
+                     observer=phases.Recorder();persistence_error=failure
+@@ -125,9 +127,10 @@
+                     logs.require(not expired(cfg['deadlineSeconds'],started),'collector deadline expired during work')
+                     logs.require(last_start is None or (time.monotonic() if now is None else now)-last_start<=cfg['maxGapSeconds'],'poll gap breached during collection/checkpoint work')
+                 def collect():
+-                    nonlocal begin,count,last_start,effective_checkpoint
++                    nonlocal begin,count,poll_complete,last_start,effective_checkpoint
+                     guard();close_interval();actual_start=time.monotonic();guard(actual_start);begin=actual_start;last_start=actual_start;c.observer=phases.Recorder()
+-                    before=sum(r['bytes'] for r in c.state['segments']);generations=len(c.state['segments']);c.poll();count=sum(r['bytes'] for r in c.state['segments'])-before
++                    count=0;poll_complete=False
++                    before=sum(r['bytes'] for r in c.state['segments']);generations=len(c.state['segments']);c.poll();count=sum(r['bytes'] for r in c.state['segments'])-before;poll_complete=True
+                     if not effective_checkpoint and len(c.state['segments'])!=generations:effective_checkpoint='rotation'
+                     guard()
+                 def service(force):
+--- a/code/logs.py
++++ b/code/logs.py
+@@ -49,6 +49,7 @@
+         self.log = Path(self.state['log'])
+         self.integrity_complete = False
+         self.failed = False
++        self.failure_detail = None
+         self.source = self.archive = None
+         self.metadata = {}
+         try:
+@@ -153,31 +154,37 @@
+     def _source_stat(self, source):return os.fstat(source.fileno())
+
+     def _source(self, held):
+-        p=self._locate(held); f=p.open('rb')
++        p=self._locate(held); f=p.open('rb',buffering=0)
+         try:
+             require(identity(os.fstat(f.fileno()))==(held['dev'],held['inode']), 'log rotated during open')
+             return f
+         except BaseException: f.close(); raise
+
+     @phases.operation('source.prefix')
+-    def _prefix(self, source, held):
+-        before=self._source_stat(source)
+-        require(identity(before)==(held['dev'],held['inode']) and before.st_size>=held['offset'], 'log truncated; preserve capture')
+-        if held['generation'] <= len(self.state['segments']):
+-            r=self.state['segments'][held['generation']-1]
+-            source.seek(r['startOffset']);data=source.read(r['bytes'])
+-            require(len(data)==r['bytes'] and hashlib.sha256(data).hexdigest()==r['sha256'], 'log prefix changed; preserve capture')
+-        after=self._source_stat(source)
+-        if snapshot(before)!=snapshot(after):
+-            require(identity(after)==identity(before) and after.st_size>before.st_size,
+-                    'source changed during checkpoint')
+-            raise GrowingSource('source grew during checkpoint')
+-        return before
++    def _prefix(self, source, held, active_budget=None):
++        before=self._source_stat(source);after=before;captured=self._captured(held)
++        try:
++            require(identity(before)==(held['dev'],held['inode']) and before.st_size>=held['offset'], 'log truncated; preserve capture')
++            source.seek(captured['start']);data=source.read(captured['end']-captured['start'])
++            require(len(data)==captured['end']-captured['start'] and hashlib.sha256(data).hexdigest()==captured['sha256'], 'log prefix changed; preserve capture')
++            after=self._source_stat(source)
++            if snapshot(before)!=snapshot(after):
++                if active_budget is not None and after.st_size==before.st_size:
++                    self._append_growth(source,held,before,after,captured,b'',active_budget)
++                else:
++                    require(identity(after)==identity(before) and after.st_size>before.st_size,
++                            'source changed during checkpoint')
++                raise GrowingSource('source grew during checkpoint')
++            return before
++        except (AssertionError,OSError) as error:
++            if active_budget is None:raise
++            self._observation_failure(error,'active-checkpoint',source,held,before,after,captured,b'',False)
+
+     def _stable_prefix(self, source, held):
+-        # Retrying a matched prefix is safe; corrupt bytes and non-growth never retry.
++        # One resolver budget across rechecks; outgoing _prefix never receives it.
++        budget=[8]
+         for _ in range(8):
+-            try:return self._prefix(source,held)
++            try:return self._prefix(source,held,budget)
+             except GrowingSource:pass
+         raise AssertionError('source growth exhausted checkpoint bound')
+
+@@ -202,50 +209,89 @@
+             require(snapshot(p.stat())==expected, 'archive integrity metadata changed; preserve capture')
+         require(snapshot(os.fstat(self.archive.fileno()))==self.metadata[self._path(self.state['segments'][-1])], 'archive descriptor changed')
+
++    def _captured(self, held):
++        if held['generation']<=len(self.state['segments']):
++            r=self.state['segments'][held['generation']-1]
++            return {'start':r['startOffset'],'end':held['offset'],'sha256':r['sha256']}
++        return {'start':held['offset'],'end':held['offset'],'sha256':hashlib.sha256().hexdigest()}
++
+     @phases.operation('source.resolve')
+-    def _append_growth(self, source, held, before, transition, data):
+-        # An append can publish advanced timestamps before its larger extent is visible.
+-        # Never accept stabilization alone: require the same append's later growth,
+-        # then re-read both the prior captured prefix and this pending read interval.
++    def _append_growth(self, source, held, before, transition, captured, pending, budget):
++        # Admit one append epoch, never same-size stabilization or a second epoch.
++        old=(before.st_mtime_ns,before.st_ctime_ns)
+         stamps=(transition.st_mtime_ns,transition.st_ctime_ns)
+-        require(stamps[0]>before.st_mtime_ns and stamps[1]>before.st_ctime_ns,
++        split=stamps[1]>old[0] and stamps[1]>=old[1] and stamps[0] in (old[0],stamps[1])
++        require((stamps[0]>old[0] and stamps[1]>old[1]) or
++                (split and ((stamps[0]==old[0] and stamps[1]>old[1]) or
++                            (old[0]<old[1] and stamps==(old[1],old[1])))),
+                 'non-advancing append timestamps')
+-        for _ in range(8):
+-            time.sleep(.001)
+-            observed=self._source_stat(source)
+-            require(identity(observed)==identity(before) and observed.st_size>=before.st_size
+-                    and (observed.st_mtime_ns,observed.st_ctime_ns)==stamps,
+-                    'append transition identity/extent/timestamps changed')
+-            require(self._locate(held)==self.log and identity(self._live_stat())==identity(before),
+-                    'rotation during append transition')
++        caught=stamps[0]!=old[0]
++        require(identity(before)==identity(transition)==(held['dev'],held['inode']) and
++                transition.st_size==before.st_size and
++                captured['start']<=captured['end']<=captured['end']+len(pending)<=before.st_size,
++                'invalid append transition identity/byte bounds')
++        def continuity(observed,minimum):
++            nonlocal caught
++            now=(observed.st_mtime_ns,observed.st_ctime_ns)
++            if split:
++                require(now[1]==stamps[1] and now[0] in ((stamps[1],) if caught else (old[0],stamps[1])),
++                        'append timestamp epoch changed or regressed')
++                caught=now[0]==stamps[1]
++            else:require(now==stamps,'append timestamp epoch changed')
++            require(identity(observed)==identity(before) and observed.st_nlink==1 and observed.st_size>=minimum,
++                    'append transition identity/extent changed')
++            # No pathname retry may multiply the bounded source observation budget.
++            matches=[]
++            for path in self.log.parent.glob(self.log.name+'*'):
++                try:
++                    if identity(path.stat())==identity(before):matches.append(path)
++                except FileNotFoundError:continue
++            require(matches==[self.log], 'rotation or missing/ambiguous active pathname during append transition')
++            with phases.measure(self.observer,'source.stat'):live=self.log.stat()
++            require(identity(live)==identity(before) and live.st_nlink==1 and live.st_size>=minimum,
++                    'live source identity/extent changed during append transition')
++            pair=(live.st_mtime_ns,live.st_ctime_ns)
++            allowed=(stamps,) if not split else ((stamps[1],stamps[1]),) if caught else ((old[0],stamps[1]),(stamps[1],stamps[1]))
++            require(pair in allowed,
++                    'live source timestamp epoch changed during append transition')
++        continuity(transition,before.st_size)
++        validated=False;minimum=before.st_size
++        while budget[0]:
++            budget[0]-=1;time.sleep(.001)
++            observed=self._source_stat(source);continuity(observed,minimum)
+             if observed.st_size==before.st_size:continue
+-            r=self.state['segments'][-1]
+-            prefix=os.pread(source.fileno(),before.st_size-r['startOffset'],r['startOffset'])
+-            require(len(prefix)==r['bytes']+len(data) and hashlib.sha256(prefix[:r['bytes']]).hexdigest()==r['sha256']
+-                    and prefix[r['bytes']:]==data,'append transition prefix/read interval changed')
+-            final=self._source_stat(source)
+-            require(identity(final)==identity(before) and final.st_size>=observed.st_size
+-                    and (final.st_mtime_ns,final.st_ctime_ns)==stamps,
+-                    'append transition changed during prefix validation')
+-            require(self._locate(held)==self.log and identity(self._live_stat())==identity(before),
+-                    'rotation during append transition validation')
+-            self._metadata()
+-            return final
+-        raise AssertionError('append timestamps changed without observed growth')
+-
+-    def _read_failure(self, reason, source, held, before, after, data):
+-        # Collector persists this structured exception in its private poll/receipt.
+-        def stat_fields(st):
+-            return dict(zip(('dev','inode','size','mtimeNs','ctimeNs'),snapshot(st)))
++            require(not split or caught,'growing append timestamps have not converged')
++            if validated:
++                if self.archive is not None:self._metadata()
++                else:self._archives()
++                return observed
++            prefix=os.pread(source.fileno(),captured['end']-captured['start'],captured['start'])
++            require(len(prefix)==captured['end']-captured['start'] and hashlib.sha256(prefix).hexdigest()==captured['sha256'],
++                    'append transition captured prefix changed')
++            require(os.pread(source.fileno(),len(pending),captured['end'])==pending,
++                    'append transition pending read interval changed')
++            minimum=observed.st_size;validated=True
++        raise AssertionError('append timestamps changed without bounded validated growth')
++
++    def _observation_failure(self, reason, stage, source, held, before, initial, captured, pending, published):
++        # Bounded metadata only, carried by the existing private poll and receipt writes.
++        def stat_fields(st):return dict(zip(('dev','inode','size','mtimeNs','ctimeNs'),snapshot(st)))
+         try:live=stat_fields(self.log.stat())
+-        except OSError as error:live={'error':str(error)}
+-        detail={'reason':str(reason),'generation':held['generation'],'offset':held['offset'],
+-                'requestedBytes':before.st_size-held['offset'],'readBytes':len(data),
+-                'before':stat_fields(before),'after':stat_fields(after),
+-                'currentDescriptor':stat_fields(self._source_stat(source)),'livePath':live}
+-        raise AssertionError('log changed during read: '+json.dumps(detail,sort_keys=True)) from reason
++        except OSError as error:live={'error':type(error).__name__}
++        try:final=stat_fields(self._source_stat(source))
++        except OSError as error:final={'error':type(error).__name__}
++        detail={'stage':stage,'reason':str(reason)[:512],'generation':held['generation'],'cursor':held['offset'],
++                'observedExtent':before.st_size,'capturedInterval':{k:captured[k] for k in ('start','end')},
++                'pendingInterval':{'start':captured['end'],'end':captured['end']+len(pending)},
++                'archivePublished':published,'manifestPublished':published,
++                'before':stat_fields(before),'initialObserved':stat_fields(initial),'finalDescriptor':final,'livePath':live,
++                'readBytes':len(pending)}
++        self.failure_detail=detail
++        label='log changed during read' if stage=='during-read' else 'source observation failed'
++        raise AssertionError(label+': '+json.dumps(detail,sort_keys=True)) from reason
+
+     def _append(self, source, held):
++        budget=[8];captured=self._captured(held)
+         before=self._source_stat(source)
+         require(identity(before)==(held['dev'],held['inode']) and before.st_size>=held['offset'], 'log truncated; preserve capture')
+         self.provisional_tail=None
+@@ -264,11 +310,11 @@
+                      and self._locate(held)==self.log.with_name(self.log.name+'.1')
+                      and identity(self._live_stat())!=identity(after))
+             if before.st_size==after.st_size and snapshot(before)!=snapshot(after) and not renamed:
+-                after=self._append_growth(source,held,before,after,data)
++                after=self._append_growth(source,held,before,after,captured,data,budget)
+             require(snapshot(before)==snapshot(after) or after.st_size>before.st_size or renamed,
+                     'source extent/metadata changed')
+-        except AssertionError as error:
+-            self._read_failure(error,source,held,before,initial_after,data)
++        except (AssertionError,OSError) as error:
++            self._observation_failure(error,'during-read',source,held,before,initial_after,captured,data,False)
+         if after.st_size>before.st_size:self.provisional_tail=snapshot(after)
+         # New bytes remain provisional until a stable full source-prefix checkpoint.
+         # Growth never proves the already captured prefix unchanged.
+@@ -285,11 +331,15 @@
+         self.metadata[self._path(r)]=snapshot(archive_after)
+         require(snapshot(self._path(r).stat())==snapshot(archive_after), 'archive path changed during append')
+         save(self.manifest,self.state,self.observer)
+-        observed=self._source_stat(source)
+-        require(identity(observed)==identity(after) and observed.st_size>=after.st_size, 'source truncated during append publication')
+-        if observed.st_size==after.st_size and snapshot(observed)!=snapshot(after):
+-            require(observed.st_mtime_ns==after.st_mtime_ns and self._locate(held)==self.log.with_name(self.log.name+'.1')
+-                    and identity(self._live_stat())!=identity(observed), 'unexplained source metadata during append publication')
++        observed=self._source_stat(source);initial_observed=observed;published=self._captured(held)
++        try:
++            require(identity(observed)==identity(after) and observed.st_size>=after.st_size, 'source truncated during append publication')
++            if observed.st_size==after.st_size and snapshot(observed)!=snapshot(after):
++                outgoing=(observed.st_mtime_ns==after.st_mtime_ns and self._locate(held)==self.log.with_name(self.log.name+'.1')
++                          and identity(self._live_stat())!=identity(observed))
++                if not outgoing:observed=self._append_growth(source,held,after,observed,published,b'',budget)
++        except (AssertionError,OSError) as error:
++            self._observation_failure(error,'post-publication',source,held,after,initial_observed,published,b'',True)
+         if observed.st_size>before.st_size:self.provisional_tail=snapshot(observed)
+         return after if renamed else before
+
+--- a/code/phase-check.py
++++ b/code/phase-check.py
+@@ -53,6 +53,35 @@
+     dest=Path(os.environ['PHASE_CHECK_PROOFS'])/(operation+'-'+effect+'-'+str(seed)+'-'+uuid.uuid4().hex);dest.mkdir(parents=True,mode=0o700)
+     (dest/'evidence.json').write_text(json.dumps({'rows':rows,'receipt':receipt},indent=2)+'\n')
+    return rows,receipt
++ def test_publication_failure_preserves_provisional_bytes_and_metadata(self):
++  with tempfile.TemporaryDirectory() as tmp:
++   root=Path(tmp);log=root/'source.log';log.write_bytes(b'')
++   cfg={'schema':2,'runId':'publication-case','clockOrigin':'linux-monotonic','socket':'prism-budget-capture-publication-case','environment':'synthetic','deadlineSeconds':2700,'pollSeconds':.01,'maxGapSeconds':2,'log':str(log)}
++   for k in ('manifest','control','receipt','heartbeat','polls','identities'):cfg[k]=str(root/(k+'.json'))
++   capture.atomic(root/'RUN.json',cfg);capture.atomic(root/'wrapper-ready.json',{});capture.atomic(root/'identities.json',{'wrapper':capture.process(os.getpid())})
++   real_start=logs.start;real_save=logs.save;fired=[]
++   def start(*args):
++    real_start(*args);log.write_bytes(b'published provisional bytes\n')
++   def save(manifest,state,observer=None):
++    real_save(manifest,state,observer)
++    if state['current']['offset'] and not fired:
++     fired.append(True);st=log.stat();os.utime(log,ns=(st.st_atime_ns,st.st_mtime_ns+1000000))
++   traps={s:signal.getsignal(s) for s in (signal.SIGTERM,signal.SIGINT,signal.SIGHUP)}
++   try:
++    with patch.object(logs,'start',start),patch.object(logs,'save',save):result=capture.run_collector(root/'RUN.json')
++   finally:
++    for s,h in traps.items():signal.signal(s,h)
++   receipt=json.loads((root/'collector-receipt.json').read_text());rows=[json.loads(x) for x in (root/'polls.json').read_text().splitlines()]
++   self.assertEqual(result,1);self.assertFalse(receipt['integrityComplete']);phases.validate_capture(rows,receipt)
++   self.assertEqual(rows[0]['bytes'],0);self.assertIs(rows[0].get('pollComplete'),False,'incomplete poll lacks honest completion marker')
++   detail=rows[0]['sourceObservationFailure'];self.assertEqual(detail,receipt['sourceObservationFailure'])
++   self.assertEqual(detail['stage'],'post-publication');self.assertTrue(detail['archivePublished']);self.assertTrue(detail['manifestPublished'])
++   state=json.loads((root/'manifest.json').read_text());raw=b''.join((root/r['path']).read_bytes() for r in state['segments'])
++   self.assertEqual(raw,b'published provisional bytes\n');self.assertEqual(state['current']['offset'],len(raw))
++   self.assertEqual(detail['capturedInterval'],{'start':0,'end':len(raw)});self.assertEqual(detail['pendingInterval'],{'start':len(raw),'end':len(raw)})
++   self.assertEqual(detail['observedExtent'],len(raw));self.assertIsNone(receipt['terminalCutoff'])
++   self.assertTrue(any(op['name']=='source.resolve' and op['failures']==1 for op in rows[0]['phases']['operations']))
++
+  def test_real_archive_fsync_cost_identified_after_gap(self):
+   rows,receipt=self.case()
+   self.assertIn('gap',receipt['error'])
+@@ -99,6 +128,16 @@
+    if kind=='heartbeat-clock':rr[0]['previousHeartbeat']['clockOrigin']='wrong'
+    with self.subTest(kind=kind),self.assertRaises((ValueError,KeyError)):phases.validate_capture(rr,rc)
+
++ def test_failed_or_missing_poll_completion_cannot_qualify(self):
++  rows,receipt=self.case(effect='normal')
++  for change in ('missing','integer','false','diagnostic'):
++   rr=copy.deepcopy(rows);rc=copy.deepcopy(receipt)
++   if change=='missing':rr[0].pop('pollComplete')
++   if change=='integer':rr[0]['pollComplete']=1
++   if change=='false':rr[0]['pollComplete']=False
++   if change=='diagnostic':rr[0]['sourceObservationFailure']={'stage':'post-publication'}
++   with self.subTest(change=change),self.assertRaises(ValueError):phases.validate_capture(rr,rc)
++
+  def test_collection_error_and_early_stop(self):
+   for effect in ('error','signal','stop'):
+    rows,receipt=self.case(effect=effect)
+--- a/code/phases.py
++++ b/code/phases.py
+@@ -72,6 +72,10 @@
+  for row in rows:
+   validate(row);require(all(not op['name'].startswith(('poll.','heartbeat.')) for op in row['phases']['operations']),'collection operation scope');key=(row['runId'],row['clockOrigin'],row['start']);require(key not in seen,'duplicate collection');seen.add(key)
+   require((row['runId'],row['clockOrigin'])==(receipt['runId'],receipt['clockOrigin']),'receipt identity')
++  require(type(row.get('pollComplete')) is bool,'missing poll completion status')
++  require(row['pollComplete'] or (row['bytes']==0 and bool(row.get('error'))),'incomplete poll reported as complete bytes')
++  detail=row.get('sourceObservationFailure')
++  require(detail is None or (type(detail) is dict and bool(row.get('error')) and not receipt['integrityComplete']),'source failure reported as success')
+   if row.get('previousIntervalPersistence') is not None:persists.append(row['previousIntervalPersistence'])
+   if row.get('previousHeartbeat') is not None:
+    h=row['previousHeartbeat'];require(number(h['end'])<=row['start'],'heartbeat outside carrier');heartbeats.append(h)

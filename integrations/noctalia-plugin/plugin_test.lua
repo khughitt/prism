@@ -15,6 +15,17 @@ local function equal(actual, expected, message)
   for key in pairs(actual) do assert(expected[key] ~= nil, message or "unexpected key") end
 end
 
+;(function()
+  local fixture = loadfile(here .. "test_encode.lua")
+  assert(fixture, "shared digest encoder fixture is missing")
+  local encode = fixture()
+  equal(encode({ z = 0.1, b = { z = false, a = 1 }, a = "quoted" }),
+    '{a="quoted",b={a=1,z=false},z=0.10000000000000001}', "digest keys sort recursively")
+  equal(encode({ a = "quoted", b = { a = 1, z = false }, z = 0.1 }),
+    '{a="quoted",b={a=1,z=false},z=0.10000000000000001}', "digest ignores insertion order")
+  equal(encode(1.0000000000000002), "1.0000000000000002", "digest preserves 17-digit number precision")
+end)()
+
 local function slider(range, step, ui)
   ui = ui or {}
   ui.control = "slider"
@@ -120,6 +131,28 @@ equal(Presentation.familyColors.post, "#f6ad55")
 equal(Presentation.familyColors.source, "#5b9cf6")
 equal(Presentation.familyColors.geometry, "#c78bfa")
 equal(Presentation.familyColors.light, "#f6e05e")
+;(function()
+  -- A card's light follows its bypass value between describes: rackState
+  -- recomputes it from the param tables the structure holds.
+  rackParams[7].value = true -- r.bypass.one
+  Presentation.rackState(rack)
+  equal(rack.cards[1].bypassed, true)
+  equal(rack.cards[2].silenced, true, "a card whose required device is bypassed is silenced")
+  equal(#rack.cards[2].attenuatedBy, 1)
+  equal(rack.cards[2].attenuatedBy[1].card == rack.cards[1], true)
+  rackParams[7].value = false
+  Presentation.rackState(rack)
+  equal(rack.cards[1].bypassed, false)
+  equal(rack.cards[2].silenced, false)
+  equal(#rack.cards[2].attenuatedBy, 0)
+
+  -- Slider metadata is worked out once per describe entry. A fresh entry with
+  -- other metadata is a fresh derivation, never the earlier one's.
+  equal(Presentation.formatValue(0.5, slider({ 0, 1 }, 0.01, { display = "percent" })), "50%")
+  equal(Presentation.formatValue(0.5, slider({ 0, 1 }, 0.01)), "0.5")
+  equal(Presentation.sliderTo(slider({ 0.1, 10 }, 0.01, { scale = "logarithmic" })), 1)
+  equal(Presentation.sliderTo(slider({ 0.1, 10 }, 0.01)), 10)
+end)()
 do
   local seen = {}
   for family, color in pairs(Presentation.familyColors) do
@@ -358,24 +391,78 @@ function host.describeOk()
   host.serial = host.serial + 1
   return { exitCode = 0, stdout = '{"serial":' .. host.serial .. '}' }
 end
+host.encode = dofile(here .. "test_encode.lua")
+
+-- The host decodes fresh tables on every describe; most tests hand back the one
+-- model they mutate, and the ones that need the host's behaviour set copies.
+function host.copy(value)
+  if type(value) ~= "table" then return value end
+  local copied = {}
+  for key, held in pairs(value) do copied[key] = host.copy(held) end
+  return copied
+end
+
 panel = {
   render = function(tree) rendered = tree; host.renders = host.renders + 1 end,
-  setNeedsFrameTick = function() end,
+  setNeedsFrameTick = function(on) host.frameTick = on end,
   setWantsSecondTicks = function() end,
 }
 local commands = {}
 local commandCallback
+-- The panel renders an accepted describe in the next frame tick, not in the
+-- describe's own callback. Most tests only care that the render lands, so the
+-- recorded callback runs that tick too; rawDescribed is the callback alone.
+function host.describeThenTick(callback)
+  rawDescribed = callback
+  return function(result)
+    callback(result)
+    if host.frameTick then onFrameTick(16) end
+  end
+end
 noctalia = {
   runAsync = function(cmd, callback)
     commands[#commands + 1] = cmd
-    if cmd:find("describe", 1, true) then described = callback else commandCallback = callback end
+    if cmd:find("describe", 1, true) then described = host.describeThenTick(callback) else commandCallback = callback end
     return true
   end,
-  json = { decode = function() host.decodes = host.decodes + 1; return model end },
+  json = {
+    decode = function()
+      host.decodes = host.decodes + 1
+      if not host.copies then return model end
+      host.lastDecoded = host.copy(model)
+      return host.lastDecoded
+    end,
+    encode = function(value) return host.encode(value) end,
+  },
 }
 package.loaded["./presentation.luau"] = Presentation
 package.loaded["./queue.luau"] = Queue
 package.loaded["./shell.luau"] = Shell
+package.loaded["./retain.luau"] = dofile(here .. "retain.luau")
+
+;(function()
+  -- Retain hands back the stored node while the signature holds, rebuilds when
+  -- it changes, and drops only the ids the structure no longer names.
+  local Retain = package.loaded["./retain.luau"]
+  local memo = Retain.new()
+  local builds = 0
+  local function build() builds = builds + 1; return { built = builds } end
+  local first = Retain.get(memo, "a", "s1", build)
+  equal(Retain.get(memo, "a", "s1", build) == first, true, "an unchanged signature returns the stored node")
+  equal(builds, 1)
+  equal(Retain.get(memo, "a", "s2", build) == first, false, "a changed signature rebuilds")
+  equal(builds, 2)
+  Retain.get(memo, "b", "s1", build)
+  memo.trace = {}
+  Retain.get(memo, "b", "s1", build)
+  Retain.get(memo, "b", "s9", build)
+  equal(memo.trace, { "b" }, "the trace names what was built, not what was reused")
+  Retain.keep(memo, { a = true })
+  equal(memo.entries.b, nil, "an id the structure dropped goes")
+  equal(memo.entries.a ~= nil, true, "an id the structure keeps stays")
+  Retain.clear(memo)
+  equal(next(memo.entries), nil)
+end)()
 dofile(here .. "panel.luau")
 
 onOpen({})
@@ -940,7 +1027,7 @@ end
 local writeCallback
 noctalia.runAsync = function(cmd, callback)
   commands[#commands + 1] = cmd
-  if cmd:find("describe", 1, true) then described = callback else writeCallback = callback end
+  if cmd:find("describe", 1, true) then described = host.describeThenTick(callback) else writeCallback, commandCallback = callback, callback end
   return true
 end
 
@@ -1856,6 +1943,7 @@ assert(not ok and tostring(message):find("mix row Blur cannot be hidden", 1, tru
 -- A malformed report is a broken contract, not a swatch.
 local badReport = gatedRing("noctalia", { value = 7, from = "x" })
 equal(panelError(badReport), "glass.ring.color has a malformed effective color")
+host.tintRack, host.gatedRing, host.expandBackdrop = tintRack, gatedRing, expandBackdrop
 end)()
 
 -- A full render costs 10-14 ms of the host's 25 ms per-callback CPU budget in
@@ -2158,4 +2246,369 @@ for _, button in ipairs(collect(rendered, "button")) do
 end
 assert(replace, "a taken name asks before replacing")
 equal(rendersOf(replace.props.onClick), 1, "replace renders once")
+end)()
+
+;(function()
+  -- A render reads the structure the accepted describe built; it does not
+  -- rebuild the rack or the sections.
+  renderModel(layeredModel())
+  local realRack, realSections = Presentation.rack, Presentation.sections
+  local rackCalls, sectionCalls = 0, 0
+  Presentation.rack = function(...) rackCalls = rackCalls + 1; return realRack(...) end
+  Presentation.sections = function(...) sectionCalls = sectionCalls + 1; return realSections(...) end
+  onKey("F1", true)
+  onKey("F1", true)
+  Presentation.rack, Presentation.sections = realRack, realSections
+  equal(rackCalls, 0, "a render reuses the accepted rack")
+  equal(sectionCalls, 0, "a render reuses the accepted sections")
+
+  -- Handlers in a tree drawn before a describe act on the model that describe
+  -- brought, never on the tables they were built with.
+  host.copies = true
+  local oldTree = renderModel(twoEdits())
+  local old = host.lastDecoded
+  described(host.describeOk())
+  local new = host.lastDecoded
+  assert(old ~= new, "fixture: the second describe decoded fresh tables")
+  local function param(m, key)
+    for _, candidate in ipairs(m.params) do if candidate.key == key then return candidate end end
+  end
+
+  local iorReset
+  for _, button in ipairs(collect(cellFor(oldTree, "glass.ior"), "button")) do
+    if button.props.glyph == "restore" then iorReset = button end
+  end
+  iorReset.props.onClick()
+  equal(commands[#commands], Shell.command({ "prism", "unset", "glass.ior" }))
+  equal(param(new, "glass.ior").edited, false, "the reset reverts the current model")
+  equal(param(old, "glass.ior").edited, true, "and leaves the drawn-from tables alone")
+
+  byKey(oldTree, "backdrop:light")[1].props.onClick()
+  equal(param(new, "glass.bypass.backdrop").value, true, "the light writes the current bypass")
+  equal(param(old, "glass.bypass.backdrop").value, false)
+
+  collect(oldTree, "toggle")[2].props.onChange(false) -- the Focus header toggle
+  equal(param(new, "glass.focusSplit").value, false, "a section toggle writes the current param")
+  equal(param(old, "glass.focusSplit").value, true)
+
+  -- Glass and Focus each hold one edit; the Focus rack comes after Glass, so
+  -- the last match is its revert.
+  local sectionRevert
+  for _, button in ipairs(collect(oldTree, "button")) do
+    if button.props.tooltip == "Revert section (1)" then sectionRevert = button end
+  end
+  sectionRevert.props.onClick()
+  equal(param(new, "glass.roughness").edited, false, "a section reset reverts the current params")
+  equal(param(old, "glass.roughness").edited, true)
+  host.copies = false
+end)()
+
+;(function()
+  -- The decode and validation spend much of the describe's callback, so its
+  -- render waits for the next frame tick and that tick's own budget.
+  renderModel(layeredModel())
+  host.renders = 0
+  update(); update()
+  rawDescribed(host.describeOk())
+  equal(host.renders, 0, "a changed describe does not render in its own callback")
+  equal(host.frameTick, true, "it asks for the next frame tick instead")
+  onFrameTick(16)
+  equal(host.renders, 1, "the next frame tick renders it once")
+  equal(host.frameTick, false, "with no drag and nothing pending the tick stops")
+  onFrameTick(16)
+  equal(host.renders, 1, "a tick with nothing pending renders nothing")
+
+  update(); update()
+  rawDescribed({ exitCode = 1, stdout = "", stderr = "boom" })
+  equal(host.renders, 1, "an error describe also waits for the tick")
+  onFrameTick(16)
+  equal(collect(rendered, "label")[1].props.text, "boom")
+
+  -- Closing with a render pending leaves no tick behind; reopening renders once.
+  renderModel(layeredModel())
+  update(); update()
+  rawDescribed(host.describeOk())
+  equal(host.frameTick, true)
+  onClose()
+  equal(host.frameTick, false, "a closed panel keeps no tick for a pending render")
+  host.renders = 0
+  onOpen({})
+  equal(host.renders, 1, "reopening renders the accepted model once")
+
+  -- A describe that lands mid-drag is stale and held back; the release renders
+  -- once and nothing is left ticking.
+  renderModel(layeredModel())
+  local gaps = byKey(rendered, "compositor.gaps:slider")[1]
+  gaps.props.onChange(gaps.props.value + 5)
+  equal(host.frameTick, true, "a drag ticks")
+  rawDescribed(host.describeOk())
+  host.renders = 0
+  gaps.props.onDragEnd()
+  equal(host.renders, 1, "the release renders once")
+  equal(host.frameTick, false, "and nothing is left pending")
+
+  -- A control the last describe removed acts on nothing, even before that
+  -- describe's render replaces it.
+  local staleTree = renderModel(layeredModel())
+  local staleGaps = byKey(staleTree, "compositor.gaps:slider")[1]
+  local without = layeredModel()
+  table.remove(without.params, 2) -- compositor.gaps
+  model = without
+  update(); update()
+  rawDescribed(host.describeOk())
+  local before = #commands
+  staleGaps.props.onChange(staleGaps.props.value + 5)
+  staleGaps.props.onDragEnd()
+  equal(#commands, before, "a removed control writes nothing")
+  equal(host.frameTick, true, "only the describe's own render is waiting")
+
+  -- So does the reset of a section the last describe removed.
+  local sectionTree = renderModel(twoEdits())
+  local glassRevert
+  for _, button in ipairs(collect(sectionTree, "button")) do
+    if button.props.tooltip == "Revert section (1)" then glassRevert = button; break end
+  end
+  local withoutGlass = twoEdits()
+  for index = #withoutGlass.params, 1, -1 do
+    if withoutGlass.params[index].ui.group == "Glass" then table.remove(withoutGlass.params, index) end
+  end
+  model = withoutGlass
+  update(); update()
+  rawDescribed(host.describeOk())
+  local beforeReset = #commands
+  glassRevert.props.onClick()
+  equal(#commands, beforeReset, "a removed section's reset writes nothing")
+
+  -- The keyboard walk holds the last render's tables. A nudge between a describe
+  -- and its render steps from the value that describe brought.
+  renderModel(layeredModel())
+  onKey("j", true); onKey("j", true) -- glass.ior, drawn at 1.5
+  local moved = layeredModel()
+  moved.params[3].value = 1.8
+  model = moved
+  update(); update()
+  rawDescribed(host.describeOk())
+  onKey("l", true)
+  equal(commands[#commands], Shell.command(Queue.argvFor({ verb = "set", key = "glass.ior", value = 1.81 })),
+    "the nudge steps from the accepted 1.8, not the drawn 1.5")
+
+  -- Keep from a tree drawn before a describe clears the edits the model now holds.
+  local keepTree = renderModel(twoEdits())
+  local oldKeep = glyphButton(keepTree, "bookmark")
+  model = twoEdits()
+  update(); update()
+  rawDescribed(host.describeOk())
+  oldKeep.props.onClick()
+  assert(labelSet(rendered)["No edits"], "Keep clears the edits of the model now held")
+end)()
+
+;(function()
+  -- An outstanding describe may finish after close. Keep the accepted model
+  -- for reopen without reviving the closed panel's frame ticks.
+  model = layeredModel()
+  model.params[3].value = 1.8
+  dofile(here .. "panel.luau")
+  onOpen({})
+  onClose()
+  host.renders = 0
+  rawDescribed(host.describeOk())
+  equal(host.frameTick, false, "a late successful describe keeps closed panel ticks stopped")
+  equal(host.renders, 0, "a late successful describe does not draw the closed panel")
+  onOpen({})
+  equal(host.renders, 1, "reopen draws the model accepted after close once")
+  equal(byKey(rendered, "glass.ior:slider")[1].props.value, 1.8,
+    "reopen uses the model accepted after close")
+  equal(host.frameTick, false, "reopen consumes the late describe's pending render")
+
+  renderModel(layeredModel())
+  update(); update()
+  onClose()
+  host.renders = 0
+  rawDescribed({ exitCode = 1, stdout = "", stderr = "late failure" })
+  equal(host.frameTick, false, "a late failed describe keeps closed panel ticks stopped")
+  equal(host.renders, 0, "a late failed describe does not draw the closed panel")
+  onOpen({})
+  equal(host.renders, 1, "reopen after a late failure draws the held model once")
+  equal(byKey(rendered, "glass.ior:slider")[1].props.value, 1.5,
+    "reopen after a late failure keeps the accepted model")
+  equal(collect(rendered, "label")[1].props.text, nil,
+    "reopen clears the late error as a fresh gesture")
+  equal(host.frameTick, false, "reopen after a late failure leaves no pending tick")
+end)()
+
+;(function()
+  local Retain = package.loaded["./retain.luau"]
+
+  -- Deep equality, ignoring which function a handler is: a retained node's
+  -- closures come from the render that built it.
+  local function sameTree(a, b, path)
+    if type(a) == "function" or type(b) == "function" then
+      assert(type(a) == type(b), path .. ": a handler on one side only")
+      return
+    end
+    if type(a) ~= "table" or type(b) ~= "table" then
+      assert(a == b, path .. ": retained " .. tostring(a) .. ", fresh " .. tostring(b))
+      return
+    end
+    for key, value in pairs(a) do sameTree(value, b[key], path .. "." .. tostring(key)) end
+    for key in pairs(b) do assert(a[key] ~= nil, path .. "." .. tostring(key) .. " only in the fresh tree") end
+  end
+
+  -- The tree on screen must equal what an empty memo would draw. Help on and
+  -- off is a plain re-render.
+  local function retainedMatchesFresh(label)
+    local retainedTree = rendered
+    Retain.clear(retainedMemo())
+    onKey("F1", true)
+    onKey("F1", true)
+    sameTree(retainedTree, rendered, label)
+  end
+
+  local function param(m, key)
+    for _, candidate in ipairs(m.params) do if candidate.key == key then return candidate end end
+  end
+  local function expandAll()
+    for _, button in ipairs(collect(rendered, "button")) do
+      if button.props.tooltip == "Show details" then button.props.onClick() end
+    end
+  end
+
+  -- The first button a predicate picks, clicked, then the check.
+  local function clickFirst(predicate, label)
+    for _, button in ipairs(collect(rendered, "button")) do
+      if predicate(button.props) then
+        button.props.onClick()
+        retainedMatchesFresh(label)
+        return
+      end
+    end
+    error("fixture: no button for " .. label)
+  end
+
+  -- Gestures, each followed by the check.
+  host.copies = true
+  renderModel(host.tintRack("noctalia"))
+  expandAll()
+  retainedMatchesFresh("expanded rack")
+  local mix = byKey(rendered, "glass.inactive.roughness:slider")[1]
+  mix.props.onChange(mix.props.value + 0.1)
+  onFrameTick(16)
+  retainedMatchesFresh("a drag's frame render")
+  mix.props.onDragEnd()
+  retainedMatchesFresh("a release")
+  collect(cellFor(rendered, "glass.inactive.roughness"), "button")[1].props.onClick() -- its reset
+  retainedMatchesFresh("a revert")
+  collect(rendered, "toggle")[2].props.onChange(false) -- the Focus header toggle
+  retainedMatchesFresh("a section toggle")
+  collect(cellFor(rendered, "glass.tintSource"), "select")[1].props.onChange(0)
+  retainedMatchesFresh("a select that closes one gate and opens another")
+  clickFirst(function(p) return tostring(p.tooltip):find("^Revert section") ~= nil end, "a section revert")
+  clickFirst(function(p) return p.glyph == "equal" and p.opacity == 1.0 end, "a mirror")
+  clickFirst(function(p) return tostring(p.tooltip):find("^Neutralize") ~= nil end, "a neutralize")
+  onKey("j", true); onKey("j", true)
+  retainedMatchesFresh("focus moving")
+  for _, button in ipairs(collect(rendered, "button")) do
+    if button.props.tooltip == "Hide details" then button.props.onClick(); break end
+  end
+  retainedMatchesFresh("a collapsed card")
+
+  -- A color write, through the host's picker.
+  model = host.gatedRing("manual", nil)
+  described(host.describeOk())
+  local realPicker = noctalia.openColorPicker
+  noctalia.openColorPicker = function(_, done) done("#123456"); return true end
+  glyphButton(rendered, "palette").props.onClick()
+  noctalia.openColorPicker = realPicker
+  retainedMatchesFresh("a color write")
+
+  -- Describes: one value, then a different structure.
+  param(model, "glass.ior").value = 1.7
+  described(host.describeOk())
+  retainedMatchesFresh("a describe that changes one value")
+  model = layeredModel()
+  described(host.describeOk())
+  retainedMatchesFresh("a describe with another structure")
+
+  -- Describes that change only metadata, every value unchanged.
+  model = host.tintRack("noctalia")
+  described(host.describeOk())
+  expandAll()
+  local metadata = {
+    { "a slider's range", function(m) param(m, "glass.ior").range = { 1, 3 } end },
+    { "a slider's step", function(m) param(m, "glass.ior").ui.step = 0.1 end },
+    { "a slider's display", function(m) param(m, "glass.ior").ui.display = "percent" end },
+    { "a slider's scale", function(m) param(m, "glass.ior").ui.scale = "logarithmic" end },
+    { "a slider's unit", function(m) param(m, "compositor.gaps").ui.unit = "px" end },
+    { "a select's values", function(m) param(m, "glass.tintSource").values = { "familiar", "noctalia", "manual", "mood" } end },
+    { "a label", function(m) param(m, "glass.ior").ui.label = "Index" end },
+    { "a description", function(m) param(m, "glass.ior").description = "How far light bends" end },
+    { "a device's label", function(m) m.rack.devices[1].label = "Back" end },
+    { "a device's family", function(m) m.rack.devices[1].family = "transmission" end },
+  }
+  for _, case in ipairs(metadata) do
+    case[2](model)
+    described(host.describeOk())
+    retainedMatchesFresh(case[1])
+  end
+
+  -- An effective color's source shows in the lock beside its select.
+  model = host.gatedRing("noctalia", { value = "#112233", from = "noctalia" })
+  described(host.describeOk())
+  model = host.gatedRing("noctalia", { value = "#112233", from = "familiar" })
+  described(host.describeOk())
+  retainedMatchesFresh("an effective color's from")
+
+  -- A device's interactions name the card that flattens it. The fixture rack
+  -- has one device, so it names itself.
+  model = layeredModel()
+  param(model, "glass.bypass.backdrop").value = true
+  described(host.describeOk())
+  model.rack.devices[1].interactions = { { kind = "attenuates", device = "backdrop", why = "self" } }
+  described(host.describeOk())
+  retainedMatchesFresh("a device's interactions")
+
+  -- A commit and a profile pick.
+  renderModel(twoEdits())
+  glyphButton(rendered, "bookmark").props.onClick()
+  retainedMatchesFresh("a commit")
+  collect(rendered, "select")[1].props.onChange(1) -- the profile selector: dawn
+  retainedMatchesFresh("a profile pick")
+
+  -- Two values that differ only past the fifteenth digit never share a signature.
+  param(model, "glass.roughness").value = 0.1 + 0.2
+  described(host.describeOk())
+  param(model, "glass.roughness").value = 0.3
+  described(host.describeOk())
+  retainedMatchesFresh("a value that differs past the fifteenth digit")
+  host.copies = false
+
+  -- Retention reach: an unchanged render builds nothing; a drag builds only its
+  -- path; a parent's rebuild keeps every sibling it reused.
+  renderModel(layeredModel())
+  expandAll()
+  local memo = retainedMemo()
+  memo.trace = {}
+  onKey("F1", true); onKey("F1", true)
+  equal(memo.trace, {}, "an unchanged render builds nothing")
+  local unfocused = byKey(rendered, "glass.inactive.roughness:slider")[1]
+  unfocused.props.onChange(unfocused.props.value + 0.1)
+  onFrameTick(16)
+  local built = {}
+  for _, id in ipairs(memo.trace) do built[id] = true end
+  equal(built, { ["c:glass.inactive.roughness"] = true, ["h:backdrop"] = true, ["d:backdrop"] = true, ["s:Focus"] = true },
+    "a drag rebuilds its cell, its card head, its card, and the header whose edit count moved")
+  memo.trace = {}
+  onKey("F1", true); onKey("F1", true)
+  equal(memo.trace, {}, "the render after the drag reuses every sibling the card kept")
+  equal(memo.entries["r:glass.bypass.backdrop"] ~= nil, true, "the bypass row inside the card is still cached")
+  memo.trace = nil
+  unfocused.props.onDragEnd()
+
+  -- The keyboard walk survives a render where every unit was a hit.
+  renderModel(layeredModel())
+  onKey("F1", true); onKey("F1", true)
+  onKey("j", true)
+  equal(cellFor(rendered, "compositor.gaps").props.fill, "primary/0.12", "j focuses the first slider")
+  onKey("j", true)
+  equal(cellFor(rendered, "glass.ior").props.fill, "primary/0.12", "and the next")
 end)()

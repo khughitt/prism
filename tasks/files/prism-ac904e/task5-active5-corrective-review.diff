@@ -1,0 +1,206 @@
+--- a/code/README.md
++++ b/code/README.md
+@@ -110,7 +110,10 @@
+ across an active checkpoint's retries. The existing both-advanced fixed timestamp
+ pair remains valid. The additional split sequence permits one ctime-first epoch,
+ then exactly one mtime catch-up to that epoch; larger size under the converged
+-pair remains mandatory. Stable timestamps alone never establish an append.
++pair remains mandatory. Descriptor and unique live-path observations share the
++same progression: once either observes convergence, neither may regress. Growth
++still requires the descriptor itself to have converged; a later path observation
++cannot substitute for it. Stable timestamps alone never establish an append.
+
+ The resolver validates the entire captured interval by hash and pending read bytes
+ by exact comparison. Observed source extent is distinct from captured cursor:
+@@ -129,4 +132,7 @@
+ pollComplete reports whether its poll returned. bytes counts completed polls;
+ an incomplete poll can have already published provisional bytes, exposed by the
+ failure record. Existing poll/receipt writes carry the bounded details; no new
+-per-poll durable write is introduced. All work remains inside the actual guards.
++per-poll durable write is introduced. The validator checks both row and receipt
++diagnostics: any non-null detail requires a recognized stage, boolean publication
++flags, a nonempty error string and incomplete integrity. Null or absent details
++remain valid on success. All work remains inside the actual guards.
+--- a/code/active-append-check.py
++++ b/code/active-append-check.py
+@@ -46,9 +46,12 @@
+                 elif bad=='second-epoch':seq[trigger+1]=stat(grown,st_mtime_ns=epoch+1,st_ctime_ns=epoch+1)
+                 elif bad=='mtime-value':seq[trigger+1]=stat(grown,st_mtime_ns=epoch+1)
+                 elif bad=='mtime-regression':seq=seq[:trigger+1]+[caught,split,grown]
++                elif bad in ('live-path-regression','path-catchup-descriptor-regression'):
++                    seq=seq[:trigger+1]+[split,grown,grown]
++                elif bad=='descriptor-catchup-path-regression':seq=seq[:trigger+1]+[caught,grown,grown]
+                 elif bad=='identity':seq[trigger+1]=stat(grown,st_ino=grown.st_ino+1)
+                 elif bad=='truncation':seq[trigger+1]=stat(grown,st_size=old.st_size-1)
+-                elif bad=='growth-before-catchup':seq=seq[:trigger+1]+[stat(grown,st_mtime_ns=old.st_mtime_ns)]
++                elif bad in ('growth-before-catchup','growth-before-path-catchup'):seq=seq[:trigger+1]+[stat(grown,st_mtime_ns=old.st_mtime_ns)]
+                 elif bad=='second-after-growth':seq=seq[:trigger+1]+[grown,stat(grown,st_mtime_ns=epoch+1,st_ctime_ns=epoch+1)]
+                 if bad=='checkpoint-reread-mutation':
+                     resolve=c._append_growth
+@@ -57,7 +60,18 @@
+                         with p.open('r+b',buffering=0) as f:f.seek(8);f.write(b'X')
+                         return value
+                     c._append_growth=mutate_after_resolution
+-                real=c._source_stat;calls=[];fired=False
++                real=c._source_stat;real_path_stat=Path.stat;calls=[];fired=False
++                live_sequence={
++                    'live-path-regression':[caught,split,grown,grown],
++                    'path-catchup-descriptor-regression':[caught,caught,grown,grown],
++                    'descriptor-catchup-path-regression':[split,split,grown,grown],
++                    'growth-before-path-catchup':[split,grown,grown],
++                }.get(bad)
++                def path_stat(path,*args,**kwargs):
++                    index=len(calls)-trigger-1
++                    if path==p and live_sequence is not None and index>=0:
++                        return live_sequence[min(index,len(live_sequence)-1)]
++                    return real_path_stat(path,*args,**kwargs)
+                 def observe(source):
+                     nonlocal fired
+                     index=len(calls)
+@@ -77,8 +91,9 @@
+                 c._source_stat=observe
+                 began=time.monotonic();error=None
+                 try:
+-                    if stage in ('read','publication','prior-growth'):c.poll()
+-                    else:c.checkpoint(stage)
++                    with patch.object(Path,'stat',path_stat):
++                        if stage in ('read','publication','prior-growth'):c.poll()
++                        else:c.checkpoint(stage)
+                 except AssertionError as exc:error=exc
+                 elapsed=time.monotonic()-began
+                 expected=prefix+new
+@@ -92,6 +107,7 @@
+                 if bad:
+                     self.assertIsNotNone(error,(stage,sequence,bad))
+                     self.assertTrue(c.failed);self.assertFalse(c.integrity_complete);self.assertFalse(saved['integrityComplete'])
++                    self.assertNotIn('terminalCutoff',saved)
+                     if bad!='archive-mutation':
+                         self.assertEqual(archived,expected if stage=='publication' else prefix)
+                     if stage!='publication':self.assertEqual(manifest.read_bytes(),old_saved)
+@@ -138,6 +154,11 @@
+             if stage=='ready':self.exercise(stage,bad='checkpoint-reread-mutation')
+             if stage in ('read','publication'):
+                 with self.subTest(stage=stage,bad='pending-mutation'):self.exercise(stage,bad='pending-mutation')
++    def test_path_and_descriptor_convergence_never_regresses(self):
++        for stage in ('read','publication','ready'):
++            for bad in ('live-path-regression','path-catchup-descriptor-regression','descriptor-catchup-path-regression','growth-before-path-catchup'):
++                with self.subTest(stage=stage,bad=bad):self.exercise(stage,bad=bad)
++
+     def test_finish_transition_never_certifies_unread_growth(self):
+         for sequence in ('both','split','intermediate'):
+             with self.subTest(sequence=sequence):
+--- a/code/logs.py
++++ b/code/logs.py
+@@ -230,7 +230,7 @@
+                 transition.st_size==before.st_size and
+                 captured['start']<=captured['end']<=captured['end']+len(pending)<=before.st_size,
+                 'invalid append transition identity/byte bounds')
+-        def continuity(observed,minimum):
++        def timestamps(observed):
+             nonlocal caught
+             now=(observed.st_mtime_ns,observed.st_ctime_ns)
+             if split:
+@@ -238,6 +238,8 @@
+                         'append timestamp epoch changed or regressed')
+                 caught=now[0]==stamps[1]
+             else:require(now==stamps,'append timestamp epoch changed')
++        def continuity(observed,minimum):
++            timestamps(observed)
+             require(identity(observed)==identity(before) and observed.st_nlink==1 and observed.st_size>=minimum,
+                     'append transition identity/extent changed')
+             # No pathname retry may multiply the bounded source observation budget.
+@@ -250,17 +252,14 @@
+             with phases.measure(self.observer,'source.stat'):live=self.log.stat()
+             require(identity(live)==identity(before) and live.st_nlink==1 and live.st_size>=minimum,
+                     'live source identity/extent changed during append transition')
+-            pair=(live.st_mtime_ns,live.st_ctime_ns)
+-            allowed=(stamps,) if not split else ((stamps[1],stamps[1]),) if caught else ((old[0],stamps[1]),(stamps[1],stamps[1]))
+-            require(pair in allowed,
+-                    'live source timestamp epoch changed during append transition')
++            timestamps(live)
+         continuity(transition,before.st_size)
+         validated=False;minimum=before.st_size
+         while budget[0]:
+             budget[0]-=1;time.sleep(.001)
+             observed=self._source_stat(source);continuity(observed,minimum)
+             if observed.st_size==before.st_size:continue
+-            require(not split or caught,'growing append timestamps have not converged')
++            require(not split or observed.st_mtime_ns==stamps[1],'growing append timestamps have not converged')
+             if validated:
+                 if self.archive is not None:self._metadata()
+                 else:self._archives()
+--- a/code/phase-check.py
++++ b/code/phase-check.py
+@@ -81,6 +81,20 @@
+    self.assertEqual(detail['capturedInterval'],{'start':0,'end':len(raw)});self.assertEqual(detail['pendingInterval'],{'start':len(raw),'end':len(raw)})
+    self.assertEqual(detail['observedExtent'],len(raw));self.assertIsNone(receipt['terminalCutoff'])
+    self.assertTrue(any(op['name']=='source.resolve' and op['failures']==1 for op in rows[0]['phases']['operations']))
++   # Receipt validation must stand on its own even without a row diagnostic.
++   rr=copy.deepcopy(rows)
++   for row in rr:row.pop('sourceObservationFailure',None)
++   phases.validate_capture(rr,receipt)
++   for change in ('missing-error','error-type','empty-detail','detail-type','stage','publication-type'):
++    rc=copy.deepcopy(receipt)
++    if change=='missing-error':rc['error']=None
++    if change=='error-type':rc['error']=True
++    if change=='empty-detail':rc['sourceObservationFailure']={}
++    if change=='detail-type':rc['sourceObservationFailure']='failed'
++    if change=='stage':rc['sourceObservationFailure']['stage']='unknown'
++    if change=='publication-type':rc['sourceObservationFailure']['manifestPublished']=1
++    with self.subTest(change=change),self.assertRaises(ValueError):phases.validate_capture(rr,rc)
++
+
+  def test_real_archive_fsync_cost_identified_after_gap(self):
+   rows,receipt=self.case()
+@@ -138,6 +152,22 @@
+    if change=='diagnostic':rr[0]['sourceObservationFailure']={'stage':'post-publication'}
+    with self.subTest(change=change),self.assertRaises(ValueError):phases.validate_capture(rr,rc)
+
++ def test_receipt_only_source_failure_cannot_qualify(self):
++  saved=os.environ.get('PHASE_SAVED_SMOKE')
++  if saved:
++   root=Path(saved);rows=[json.loads(x) for x in (root/'polls.jsonl').read_text().splitlines()];receipt=json.loads((root/'receipt.json').read_text())
++  else:rows,receipt=self.case(effect='normal')
++  self.assertTrue(receipt['integrityComplete']);self.assertTrue(all(row.get('sourceObservationFailure') is None for row in rows))
++  phases.validate_capture(rows,receipt)
++  for detail in ({'stage':'post-publication','manifestPublished':True},{},True,[], 'failed'):
++   rc=copy.deepcopy(receipt);rc['sourceObservationFailure']=detail
++   with self.subTest(detail=detail),self.assertRaises(ValueError):phases.validate_capture(rows,rc)
++  for absent in (False,True):
++   rc=copy.deepcopy(receipt)
++   if absent:rc.pop('sourceObservationFailure',None)
++   else:rc['sourceObservationFailure']=None
++   phases.validate_capture(rows,rc)
++
+  def test_collection_error_and_early_stop(self):
+   for effect in ('error','signal','stop'):
+    rows,receipt=self.case(effect=effect)
+--- a/code/phases.py
++++ b/code/phases.py
+@@ -64,18 +64,24 @@
+   require(total<=(b-a)*op['count']+1e-6,'maximum below mean')
+  return True
+
++def validate_source_failure(detail,error,complete):
++ if detail is None:return
++ require(type(detail) is dict and detail.get('stage') in ('during-read','post-publication','active-checkpoint'), 'source failure shape')
++ require(all(type(detail.get(k)) is bool for k in ('archivePublished','manifestPublished')), 'source failure publication status')
++ require(type(error) is str and bool(error) and complete is False, 'source failure reported as success')
++
+ def validate_capture(rows,receipt):
+  """New-source evidence only; callers must use old frozen code for old captures."""
+  require(receipt.get('phaseSchema')==1 and type(receipt.get('phaseSchema')) is int,'missing phase contract')
+  require(bool(rows),'missing collection rows')
++ validate_source_failure(receipt.get('sourceObservationFailure'),receipt.get('error'),receipt['integrityComplete'])
+  seen=set();heartbeats=[];persists=[]
+  for row in rows:
+   validate(row);require(all(not op['name'].startswith(('poll.','heartbeat.')) for op in row['phases']['operations']),'collection operation scope');key=(row['runId'],row['clockOrigin'],row['start']);require(key not in seen,'duplicate collection');seen.add(key)
+   require((row['runId'],row['clockOrigin'])==(receipt['runId'],receipt['clockOrigin']),'receipt identity')
+   require(type(row.get('pollComplete')) is bool,'missing poll completion status')
+   require(row['pollComplete'] or (row['bytes']==0 and bool(row.get('error'))),'incomplete poll reported as complete bytes')
+-  detail=row.get('sourceObservationFailure')
+-  require(detail is None or (type(detail) is dict and bool(row.get('error')) and not receipt['integrityComplete']),'source failure reported as success')
++  validate_source_failure(row.get('sourceObservationFailure'),row.get('error'),receipt['integrityComplete'])
+   if row.get('previousIntervalPersistence') is not None:persists.append(row['previousIntervalPersistence'])
+   if row.get('previousHeartbeat') is not None:
+    h=row['previousHeartbeat'];require(number(h['end'])<=row['start'],'heartbeat outside carrier');heartbeats.append(h)

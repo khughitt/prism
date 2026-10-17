@@ -1,0 +1,145 @@
+---
+id: prism-177cca
+title: Build and validate the matched probes and verdict
+status: done
+priority: 1
+size: m
+complexity: high
+process: direct
+owner: fix/panel-render-budget
+created: 2026-10-11T18:13:25Z
+updated: 2026-10-11T21:16:12Z
+started: 2026-10-11T18:42:57Z
+completed: 2026-10-11T21:13:23Z
+depends: [prism-7d38d8]
+parent: prism-f15cbf
+tags: []
+agent: codex
+spec: docs/specs/2026-10-10-panel-render-budget-design.md
+plan: docs/plans/2026-10-11-panel-budget-tokens-and-launch.md
+step: "Task 2: Build and validate the matched probes and verdict"
+---
+
+Build frozen baseline/candidate scratch copies with matching minimal instrumentation, production-equivalent measured trees, post-launch/frame controls, fresh-runtime identities, calibrated classification/verdict parser and pilot timing. No live desktop or pointer mutations.
+
+## Notes
+
+- 2026-10-11T18:42:57Z (fix/panel-render-budget): started
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T19:02:39Z (fix/panel-render-budget): Calibration green for both frozen variants: five fresh cold decodes/accepts and 142 rebuilt units; frame/launch/control ordering, completion/interference, retained trees and numeric/parser/time boundaries. No host/store/desktop/pointer mutation; scratch artifacts pending attachments and final gates.
+- 2026-10-11T19:27:14Z (fix/panel-render-budget): attached: task2-readiness.tar.gz (324466 bytes): Portable matched-probe readiness: scripts, real fixture, frozen source copies, identical transform/diffs, final RED/GREEN/lint/repository logs and fake parser/verdict. No live timing acceptance.
+- 2026-10-11T19:27:14Z (fix/panel-render-budget): attached: build.py (9204 bytes): Exact-commit scratch builder; colocated probe.lua and tail.lua provide identical instrumentation.
+- 2026-10-11T19:27:14Z (fix/panel-render-budget): attached: probe.lua (3472 bytes): Common private timing/input/observer prefix; otherwise-idle bounded flush.
+- 2026-10-11T19:27:14Z (fix/panel-render-budget): attached: tail.lua (9443 bytes): Common cold/pair state machine and native callback wrappers; frame cadence preserved.
+- 2026-10-11T19:27:14Z (fix/panel-render-budget): attached: self-check.lua (19090 bytes): Portable fake-host calibration; fresh cold142-unit rebuilds, pair/control/interference, production trees, raw native frames and bounded flush.
+- 2026-10-11T19:27:14Z (fix/panel-render-budget): attached: analyze.py (12980 bytes): Normalized parser, numeric verdict, actual-id paired subtraction and single reusable --pilot estimator.
+- 2026-10-11T19:27:14Z (fix/panel-render-budget): attached: analysis_check.py (9391 bytes): Complete numeric, identity, pair, rotated-log and pilot-time boundary fixtures.
+- 2026-10-11T19:27:14Z (fix/panel-render-budget): attached: integrity-check.py (2500 bytes): Independent frozen six-blob/source/copy/anchor/side-effect checks.
+- 2026-10-11T19:27:14Z (fix/panel-render-budget): attached: manifest.json (2158 bytes): Frozen identities, six source hashes and identical normalized instrumentation SHA256.
+- 2026-10-11T19:27:14Z (fix/panel-render-budget): attached: README.md (6497 bytes): Portable readiness commands and protocol; controller owns fresh live permission and measured pilot timestamps.
+- 2026-10-11T19:27:14Z (fix/panel-render-budget): attached: task-2-report.md (11715 bytes): Full implementer report: exact commands/results, RED/GREEN, source identities, cadence ruling and explicit limits.
+- 2026-10-11T19:31:47Z (fix/panel-render-budget): Final gates: just test-fast 574/574 plus plugin Lua assertions; offline lint 0 errors/0 warnings both copies; scratch cold/pair/numeric/parser/estimator/native-cadence fixtures green; just check/tasks check 0 errors/0 warnings. Bounded idle flush preserves active/nondirty drag sampling and exact next-frame work. Conservative every-second-tick interference may reduce live yield; controller to assess in independent review. No checks/processes running.
+- 2026-10-11T19:32:22Z (fix/panel-render-budget): detached: task-2-report.md: Include disclosed conservative second-tick interference concern in final readiness report.
+- 2026-10-11T19:32:22Z (fix/panel-render-budget): attached: task-2-report.md (12175 bytes): Final full implementer report with exact checks, separate cadence RED/GREEN, raw queued-frame tests, and conservative tick interference concern.
+- 2026-10-11T19:32:22Z (fix/panel-render-budget): detached: task2-readiness.tar.gz: Refresh readiness archive with final gate logs and disclosed review concern.
+- 2026-10-11T19:32:22Z (fix/panel-render-budget): attached: task2-readiness.tar.gz (324776 bytes): Final portable readiness archive: full source/identity/transform/scripts/fixtures, calibration and final gate evidence; conservative tick interference review concern; no live acceptance.
+- 2026-10-11T19:33:13Z (fix/panel-render-budget): done
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T19:33:13Z (fix/panel-render-budget): Validated and preserved frozen matched-probe protocol, cold/pair/native-frame calibration, parser/numeric/pilot-time boundaries and offline lint; no live timing acceptance; conservative second-tick interference remains for controller review.
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T19:34:33Z (fix/panel-render-budget): detached: manifest.json: Commit gate prohibits host storage layout in readable provenance; exact runtime manifest remains preserved in archive.
+- 2026-10-11T19:34:33Z (fix/panel-render-budget): attached: manifest.json (2116 bytes): Portable readable manifest with worktree-relative CLI display; exact runtime manifest and argv remain unchanged in archive.
+- 2026-10-11T19:36:37Z (fix/panel-render-budget): detached: task-2-report.md: Record standalone display normalization after machine-layout commit gate.
+- 2026-10-11T19:36:37Z (fix/panel-render-budget): attached: task-2-report.md (12780 bytes): Final report with exact calibration/gates, cadence evidence, conservative tick concern and portable manifest display normalization.
+- 2026-10-11T19:36:37Z (fix/panel-render-budget): detached: task2-readiness.tar.gz: Preserve final report and separate portable manifest alongside unchanged exact runtime provenance.
+- 2026-10-11T19:36:37Z (fix/panel-render-budget): attached: task2-readiness.tar.gz (325833 bytes): Final readiness archive with unchanged exact runtime source/identity/argv and separate portable display manifest; calibration, gate logs and report.
+- 2026-10-11T19:36:37Z (fix/panel-render-budget): Evidence commit gate required worktree-relative CLI display in standalone manifest; exact runtime identity/probe argv retained unchanged in archive. No hook bypass; feedback ops-4e97bf filed for portable-representation guidance, maintainer triages.
+- 2026-10-11T19:42:41Z (fix/panel-render-budget): Controller inspected disclosed tick concern: unconditional secondTick interference sets whole finite-sequence failure, so regular no-refresh ticks can abort collection rather than merely exclude a pair. Resume original implementer before review: preserve update cadence, distinguish harmless/unchanged work, settle normal refresh between trials, test full timed sequence with periodic callbacks. Real pair/input interference still invalidates.
+- 2026-10-11T19:44:39Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T20:05:04Z (fix/panel-render-budget): detached: build.py: Periodic correction: foreign launch marks pair-only interference.
+- 2026-10-11T20:05:04Z (fix/panel-render-budget): attached: build.py (9309 bytes): Corrected identical builder; preserves normal work and records real foreign-launch interference.
+- 2026-10-11T20:05:04Z (fix/panel-render-budget): detached: probe.lua: Periodic correction: distinguish pair interference from sequence input changes.
+- 2026-10-11T20:05:04Z (fix/panel-render-budget): attached: probe.lua (3591 bytes): Corrected private probe prefix; raw pair reasons, actual-input sequence failure and bounded idle flush.
+- 2026-10-11T20:05:04Z (fix/panel-render-budget): detached: tail.lua: Periodic correction: harmless updates and unchanged busy refresh settle instead of aborting.
+- 2026-10-11T20:05:04Z (fix/panel-render-budget): attached: tail.lua (10052 bytes): Corrected sequence waits through original normal refresh/completion/timeout; actual changes stop; native cadence preserved.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): detached: self-check.lua: Add approved regular-update/unchanged-refresh end-to-end correction fixture.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): attached: self-check.lua (25962 bytes): Periodic RED/GREEN and clean/contaminated finite timelines; original cold/raw-frame/100ms sampling assertions retained.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): detached: manifest.json: Refresh identical instrumentation hash after periodic correction; keep CLI display portable.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): attached: manifest.json (2116 bytes): Corrected frozen-source/common-instrumentation manifest, with portable CLI display; exact runtime provenance remains in archive.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): detached: README.md: Document periodic settlement and focused correction command.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): attached: README.md (7277 bytes): Portable corrected readiness commands and normal update/refresh settlement behavior.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): detached: task-2-report.md: Append full periodic correction RED/GREEN, parser integration and unchanged native-cadence evidence.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): attached: task-2-report.md (18126 bytes): Full report with resolved periodic-sequence abort, exact commands/results, new hash and no running checks.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): detached: task2-readiness.tar.gz: Preserve corrected sources, periodic logs/verdicts and final report.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): attached: task2-readiness.tar.gz (409267 bytes): Corrected complete readiness archive: normal periodic settlement, raw contaminated-pair exclusions, exact source/identity/diffs and all evidence.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): Periodic correction RED→GREEN: odd updates no longer invalidate/abort;11 normal even refresh/unchanged settlements between10 trials reach done per variant; foreign refresh during pair preserved as9 valid/1 excluded; changed/error/timeout stop with original deferred frame. Existing cold142-unit/raw-frame/100ms checks, lint0/0,574 tests and just check pass. No processes/checks active.
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): done
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T20:05:05Z (fix/panel-render-budget): Corrected normal periodic update/unchanged refresh settlement without postponing frame/sample work; preserved raw contaminated-pair exclusions and validated full fake timelines, lint and repository gates; no live acceptance.
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T20:17:33Z (fix/panel-render-budget): review: impl round 1 — verdict: revise; findings: Important 2; reviewer: codex/gpt-6.1-sol
+- 2026-10-11T20:21:11Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T20:21:11Z (fix/panel-render-budget): review: impl round 1 — verdict: revise; findings: Important 2; reviewer: codex/gpt-6.1-sol
+- 2026-10-11T20:31:13Z (fix/panel-render-budget): detached: analyze.py: Review round1 I1/I2: require complete callback endpoints and origin-local completion ordering.
+- 2026-10-11T20:31:13Z (fix/panel-render-budget): attached: analyze.py (14499 bytes): Review-fixed parser: callback ends indexed across all events; incomplete/misordered pairs excluded.
+- 2026-10-11T20:31:13Z (fix/panel-render-budget): detached: analysis_check.py: Correct synthetic callback/completion timelines and add focused I1/I2 truncation/order fixtures.
+- 2026-10-11T20:31:13Z (fix/panel-render-budget): attached: analysis_check.py (14171 bytes): Focused I1/I2 RED/GREEN, early/late contradictions, terminal callback ends and saved periodic log assertions.
+- 2026-10-11T20:31:13Z (fix/panel-render-budget): detached: task-2-report.md: Append independent review fix round1 exact scope, commands and RED/GREEN results.
+- 2026-10-11T20:31:13Z (fix/panel-render-budget): attached: task-2-report.md (22497 bytes): Full report with independent-review I1/I2 fixes; parser-only validation and no running checks.
+- 2026-10-11T20:31:13Z (fix/panel-render-budget): detached: task2-readiness.tar.gz: Preserve review-fixed parser/fixtures and focused RED/GREEN logs with unchanged probe provenance.
+- 2026-10-11T20:31:14Z (fix/panel-render-budget): attached: task2-readiness.tar.gz (454409 bytes): Review-fixed complete archive: I1 endpoints/I2 temporal state, saved-log mutation proofs, unchanged probe/source identities.
+- 2026-10-11T20:31:14Z (fix/panel-render-budget): Impl review fix round1: I1 complete callback endpoints across activation/callback ids, including pairId=false terminal ends; I2 origin-local immediate/frame/completion order. Focused synthetic and saved-log RED→GREEN; clean20 valid/0 excluded, contaminated18 valid/2 excluded; gates0 errors/warnings; probe untouched, no lint/suite repetition or running checks.
+- 2026-10-11T20:31:14Z (fix/panel-render-budget): done
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T20:31:14Z (fix/panel-render-budget): Fixed Important I1/I2: incomplete callback spans and contradictory completion timelines cannot become primary launch evidence; focused fixtures/saved logs and required gates pass; no live acceptance.
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T20:36:53Z (fix/panel-render-budget): review: impl round 2 — verdict: accept; findings: none; reviewer: codex/gpt-6.1-sol
+- 2026-10-11T20:39:38Z (fix/panel-render-budget): review: impl round 3 — verdict: revise; findings: Important 1; reviewer: codex
+- 2026-10-11T20:39:38Z (fix/panel-render-budget): Task3 preflight found missing observable live gates: initial pending render/pair and readiness/drain queue/describe/drag/refresh/render/pair/sequence/buffer/expanded-id state. Internal diagnosticStart assertions and sequenceDone cannot independently verify each required activation/swap. Scoped scratch-only fix and fresh re-review before host permission.
+- 2026-10-11T20:42:19Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T21:02:47Z (fix/panel-render-budget): detached: probe.lua: Round2 live gate: observer-only ready/drain snapshots and exact settled flags.
+- 2026-10-11T21:02:47Z (fix/panel-render-budget): attached: probe.lua (6911 bytes): Observer-only ready/drain state, expanded ids/profile, bounded finite buffer and explicit overhead.
+- 2026-10-11T21:02:47Z (fix/panel-render-budget): detached: tail.lua: Round2 startup render/pair flags and authorized pre-target observer boundary.
+- 2026-10-11T21:02:47Z (fix/panel-render-budget): attached: tail.lua (10541 bytes): Startup render/pair freshness and requested readiness observer; normal and next-frame precedence unchanged.
+- 2026-10-11T21:02:47Z (fix/panel-render-budget): detached: self-check.lua: Round2 focused readiness/drain/busy/precedence/contiguous-record assertions.
+- 2026-10-11T21:02:47Z (fix/panel-render-budget): attached: self-check.lua (33820 bytes): Readiness RED/GREEN, exact drain flags, active/queued refusals, ids/profile, finite chunks and original cadence/periodic tests.
+- 2026-10-11T21:02:47Z (fix/panel-render-budget): detached: analyze.py: Require missing startup render/pair freshness fields.
+- 2026-10-11T21:02:47Z (fix/panel-render-budget): attached: analyze.py (14663 bytes): Parser startup render/pair freshness; metadata snapshots excluded from target classes; I1/I2 preserved.
+- 2026-10-11T21:02:47Z (fix/panel-render-budget): detached: analysis_check.py: Align synthetic activation fixture with required startup flags.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): attached: analysis_check.py (14220 bytes): Updated fresh activation fixture; numeric/parser/I1/I2/saved-log boundaries retained.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): detached: manifest.json: Updated identical snapshot instrumentation hash; portable CLI display.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): attached: manifest.json (2116 bytes): Round2 frozen-source/common-instrumentation identity; exact runtime CLI preserved in archive.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): detached: README.md: Document explicit ready/drain schema and observer administrative boundary.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): attached: README.md (9174 bytes): Ready/drain fields, eligibility, observer scope/cost, exact profile absence and focused command.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): detached: task-2-report.md: Append full round2 readiness gap fix and covering results.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): attached: task-2-report.md (28781 bytes): Round2 report with ruling, RED/GREEN, native precedence, exact schema, regenerated identities and no running checks.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): detached: task2-readiness.tar.gz: Preserve amended reviewed-schema copies and all readiness/drain evidence.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): attached: task2-readiness.tar.gz (506594 bytes): Round2 complete ready/drain archive; exact runtime copies/identity/diffs, focused calibration and gate logs.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): Fix round2 readiness observability RED→GREEN: initial render/pair flags, dedicated pre-target ready metadata and fresh final idle-drain state with queue/describe/drag/render/refresh/pair/sequence/buffer/expanded ids/profile. Busy states ineligible; no self-buffer/drop; native/cold/100ms/periodic and parser/numeric/I1/I2 checks pass, identity/diff/integrity/lint0/0/gates pass; no suite/live action or running checks.
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): done
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T21:02:48Z (fix/panel-render-budget): Added explicit fresh startup, ready and eligible settled-drain evidence outside target timing; busy states refused; regenerated matched copies and focused calibration/identity/lint/gates pass; no live acceptance.
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T21:07:45Z (fix/panel-render-budget): review: impl round 4 — verdict: revise; findings: Important 1; reviewer: codex/gpt-6.1-sol
+- 2026-10-11T21:07:45Z (fix/panel-render-budget): Scoped readiness re-review: startup/drain addressed, but ordinary describe accepted immediately before sampling click leaves renderPending=true, readiness defers then sequence coldSetup skips ordinary render. Both variants ready0/decode+1/render+0. Fix ordinary pending-frame priority while readiness requested, then fresh scoped re-review; no host use.
+- 2026-10-11T21:08:33Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): detached: tail.lua: Round3: pending ordinary frame before click must complete before ready/sequence.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): attached: tail.lua (10830 bytes): Minimal requested-readiness barrier: original ordinary frame/class once, return, request retained; sequence only after observer.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): detached: self-check.lua: Add exact accepted-before-click pending render RED/GREEN both variants.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): attached: self-check.lua (35547 bytes): Pending-before-click fixture with exact ordinary/ready/cold ordering and existing native cadence/calibration.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): detached: manifest.json: Round3 minimal tail guard changes identical instrumentation hash.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): attached: manifest.json (2116 bytes): Round3 exact frozen-source/common-instrumentation hash; portable CLI display, exact runtime provenance in archive.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): detached: task-2-report.md: Append complete round3 scoped readiness-ordering correction and evidence.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): attached: task-2-report.md (32410 bytes): Round3 report: exact before-click RED/GREEN, covering logs, regenerated identities, no running checks.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): detached: task2-readiness.tar.gz: Preserve amended minimal barrier copies and all covering evidence.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): attached: task2-readiness.tar.gz (510207 bytes): Round3 complete readiness archive: before-click barrier fix, exact runtime copies/identity/diffs and RED/GREEN/calibration/gate logs.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): Fix round3 RED→GREEN: accepted ordinary describe pending before click now renders once in original class with no cold decode and readiness request intact; ready observer precedes cold setup→next actual frame. Both variants and covering readiness/frame/100ms/cold/periodic/parser/integrity/lint0/0/gates pass. No prefix/API/UI/prod/host changes, suite repeats or running checks.
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): done
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T21:13:23Z (fix/panel-render-budget): Fixed pending ordinary frame bypass of readiness before first cold sample; exact deferred/ready/setup/frame order and existing focused calibration/identity/lint/gates pass both variants; no live acceptance.
+  provenance: {"harness_session":"codex:01a12c45-d970-7b92-a7d2-5bb1666e8ea7","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-11T21:16:12Z (fix/panel-render-budget): review: impl round 5 — verdict: accept; findings: none; reviewer: codex/gpt-6.1-sol

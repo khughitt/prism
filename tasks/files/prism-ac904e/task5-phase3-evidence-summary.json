@@ -1,0 +1,517 @@
+{
+  "allGone": true,
+  "cases": {
+    "emergency-final": {
+      "collection": 2,
+      "complete": false,
+      "exitReason": "signal",
+      "heartbeat": 3,
+      "maxPhaseSummaryBytes": 1872,
+      "maxPollRowBytes": 4423,
+      "operations": {
+        "archive.metadata": {
+          "count": 2,
+          "failures": 0,
+          "maxSeconds": 0.00015513296239078045,
+          "maxThreadCpuSeconds": 0.00015291699999999547,
+          "totalSeconds": 0.00023742893245071173
+        },
+        "heartbeat.flush": {
+          "count": 3,
+          "failures": 0,
+          "maxSeconds": 4.7389999963343143e-05,
+          "maxThreadCpuSeconds": 4.693799999999637e-05,
+          "totalSeconds": 0.00012759101809933782
+        },
+        "heartbeat.fsync": {
+          "count": 3,
+          "failures": 0,
+          "maxSeconds": 0.0036581959575414658,
+          "maxThreadCpuSeconds": 5.8818000000002146e-05,
+          "totalSeconds": 0.010696451005060226
+        },
+        "heartbeat.publish": {
+          "count": 3,
+          "failures": 0,
+          "maxSeconds": 0.004181394993793219,
+          "maxThreadCpuSeconds": 0.000713817999999998,
+          "totalSeconds": 0.01221180596621707
+        },
+        "manifest.flush": {
+          "count": 2,
+          "failures": 0,
+          "maxSeconds": 3.638898488134146e-05,
+          "maxThreadCpuSeconds": 3.617800000000476e-05,
+          "totalSeconds": 6.507296347990632e-05
+        },
+        "manifest.fsync": {
+          "count": 2,
+          "failures": 0,
+          "maxSeconds": 0.003876598959323019,
+          "maxThreadCpuSeconds": 0.00010741200000000117,
+          "totalSeconds": 0.007365734956692904
+        },
+        "manifest.publish": {
+          "count": 2,
+          "failures": 0,
+          "maxSeconds": 0.004236759035848081,
+          "maxThreadCpuSeconds": 0.0004422200000000001,
+          "totalSeconds": 0.007971609011292458
+        },
+        "poll.flush": {
+          "count": 2,
+          "failures": 0,
+          "maxSeconds": 3.61480051651597e-05,
+          "maxThreadCpuSeconds": 3.620800000000285e-05,
+          "totalSeconds": 6.75779883749783e-05
+        },
+        "poll.fsync": {
+          "count": 2,
+          "failures": 0,
+          "maxSeconds": 0.003468587005045265,
+          "maxThreadCpuSeconds": 5.592600000000475e-05,
+          "totalSeconds": 0.006924619956407696
+        },
+        "poll.write": {
+          "count": 2,
+          "failures": 0,
+          "maxSeconds": 0.00016727601177990437,
+          "maxThreadCpuSeconds": 0.00016739400000000126,
+          "totalSeconds": 0.000303142995107919
+        },
+        "source.locate": {
+          "count": 2,
+          "failures": 0,
+          "maxSeconds": 0.00013033603318035603,
+          "maxThreadCpuSeconds": 0.00013097499999999845,
+          "totalSeconds": 0.00024817901430651546
+        },
+        "source.read": {
+          "count": 2,
+          "failures": 0,
+          "maxSeconds": 3.3563002943992615e-05,
+          "maxThreadCpuSeconds": 9.037000000003403e-06,
+          "totalSeconds": 4.156801151111722e-05
+        },
+        "source.stat": {
+          "count": 10,
+          "failures": 0,
+          "maxSeconds": 1.2953998520970345e-05,
+          "maxThreadCpuSeconds": 1.298500000000008e-05,
+          "totalSeconds": 8.664303459227085e-05
+        }
+      },
+      "persistence": 2
+    },
+    "native-pilot-final/run": {
+      "bytes": 17698615,
+      "collection": 236,
+      "complete": true,
+      "exitReason": "finish",
+      "heartbeat": 234,
+      "maxPhaseSummaryBytes": 3187,
+      "maxPollRowBytes": 5803,
+      "nativeProof": {
+        "floorBytesPerSecond": 682491.0,
+        "framePeriodSeconds": 0.016,
+        "guardBytesPerSecond": 1425679.0,
+        "maxFrameGapSeconds": 0.025098866957705468,
+        "meanFrameGapSeconds": 0.0170549498880333,
+        "nativeWorkloadPeakBytesPerSecond": 669119,
+        "peakBytesPerSecond": 1092466,
+        "runtimeSeconds": 26.511890328023583,
+        "ticks": 1555
+      },
+      "operations": {
+        "archive.flush": {
+          "count": 220,
+          "failures": 0,
+          "maxSeconds": 0.00016157497884705663,
+          "maxThreadCpuSeconds": 0.00016236400000002593,
+          "totalSeconds": 0.016523013589903712
+        },
+        "archive.fsync": {
+          "count": 220,
+          "failures": 0,
+          "maxSeconds": 0.011827395006548613,
+          "maxThreadCpuSeconds": 0.00014136500000005991,
+          "totalSeconds": 0.8556026922306046
+        },
+        "archive.metadata": {
+          "count": 291,
+          "failures": 0,
+          "maxSeconds": 0.0007831500261090696,
+          "maxThreadCpuSeconds": 0.0003796810000000206,
+          "totalSeconds": 0.07576294586760923
+        },
+        "archive.validate": {
+          "count": 70,
+          "failures": 0,
+          "maxSeconds": 0.002337698999326676,
+          "maxThreadCpuSeconds": 0.0023038400000000014,
+          "totalSeconds": 0.06058612995548174
+        },
+        "archive.write": {
+          "count": 220,
+          "failures": 0,
+          "maxSeconds": 0.00021112902322784066,
+          "maxThreadCpuSeconds": 0.00021198699999999682,
+          "totalSeconds": 0.006866465148050338
+        },
+        "heartbeat.flush": {
+          "count": 234,
+          "failures": 0,
+          "maxSeconds": 0.00011621002340689301,
+          "maxThreadCpuSeconds": 0.00010169999999998236,
+          "totalSeconds": 0.011325050378218293
+        },
+        "heartbeat.fsync": {
+          "count": 234,
+          "failures": 0,
+          "maxSeconds": 0.006911423988640308,
+          "maxThreadCpuSeconds": 5.122699999998703e-05,
+          "totalSeconds": 0.873866845970042
+        },
+        "heartbeat.publish": {
+          "count": 234,
+          "failures": 0,
+          "maxSeconds": 0.007428832002915442,
+          "maxThreadCpuSeconds": 0.0005498130000000101,
+          "totalSeconds": 1.009822542371694
+        },
+        "manifest.flush": {
+          "count": 289,
+          "failures": 0,
+          "maxSeconds": 7.814698619768023e-05,
+          "maxThreadCpuSeconds": 7.588199999999934e-05,
+          "totalSeconds": 0.012146707682404667
+        },
+        "manifest.fsync": {
+          "count": 289,
+          "failures": 0,
+          "maxSeconds": 0.008415407035499811,
+          "maxThreadCpuSeconds": 0.00012780000000001124,
+          "totalSeconds": 1.0726285525597632
+        },
+        "manifest.publish": {
+          "count": 289,
+          "failures": 0,
+          "maxSeconds": 0.009147491015028208,
+          "maxThreadCpuSeconds": 0.000818684000000014,
+          "totalSeconds": 1.1930265027913265
+        },
+        "poll.flush": {
+          "count": 236,
+          "failures": 0,
+          "maxSeconds": 8.32880032248795e-05,
+          "maxThreadCpuSeconds": 8.339700000001282e-05,
+          "totalSeconds": 0.00915191788226366
+        },
+        "poll.fsync": {
+          "count": 236,
+          "failures": 0,
+          "maxSeconds": 0.006780096970032901,
+          "maxThreadCpuSeconds": 0.00010764900000000133,
+          "totalSeconds": 0.8896719454787672
+        },
+        "poll.write": {
+          "count": 236,
+          "failures": 0,
+          "maxSeconds": 0.0006896739942021668,
+          "maxThreadCpuSeconds": 0.0006900739999999989,
+          "totalSeconds": 0.05135210923617706
+        },
+        "source.locate": {
+          "count": 290,
+          "failures": 0,
+          "maxSeconds": 0.0007702260045334697,
+          "maxThreadCpuSeconds": 0.0007536529999999653,
+          "totalSeconds": 0.07766709197312593
+        },
+        "source.prefix": {
+          "count": 36,
+          "failures": 0,
+          "maxSeconds": 0.0025446699582971632,
+          "maxThreadCpuSeconds": 0.002519542999999999,
+          "totalSeconds": 0.02573982602916658
+        },
+        "source.read": {
+          "count": 253,
+          "failures": 0,
+          "maxSeconds": 0.00022838101722300053,
+          "maxThreadCpuSeconds": 0.00021176699999999465,
+          "totalSeconds": 0.011070809967350215
+        },
+        "source.stat": {
+          "count": 1376,
+          "failures": 0,
+          "maxSeconds": 3.689998993650079e-05,
+          "maxThreadCpuSeconds": 2.2161999999992243e-05,
+          "totalSeconds": 0.013690396212041378
+        }
+      },
+      "persistence": 236,
+      "polls": {
+        "collectionCount": 236,
+        "maxGapSeconds": 0.1443948710220866,
+        "maxWorkPersistenceSeconds": 0.03991269203834236,
+        "persistenceCount": 236
+      },
+      "sha256": "d3075786ee9bc50fb7b10d3b83dde93eadf9701a9ac90a9ae3af02c358f47637"
+    },
+    "normal-final": {
+      "bytes": 2963994,
+      "collection": 54,
+      "complete": true,
+      "exitReason": "finish",
+      "heartbeat": 52,
+      "maxPhaseSummaryBytes": 3183,
+      "maxPollRowBytes": 5748,
+      "normalSmoke": {
+        "blocks": 20,
+        "peakBytesPerSecond": 687128,
+        "producerSeconds": 5.648476728005335,
+        "protocolRecords": 815,
+        "protocolSha256": "1b641f9317ffbcaddf257e290bcb42afa13262fba5612662237f66f839993856"
+      },
+      "operations": {
+        "archive.flush": {
+          "count": 47,
+          "failures": 0,
+          "maxSeconds": 0.00016920000780373812,
+          "maxThreadCpuSeconds": 0.0001694369999999945,
+          "totalSeconds": 0.004424604296218604
+        },
+        "archive.fsync": {
+          "count": 47,
+          "failures": 0,
+          "maxSeconds": 0.007030350971035659,
+          "maxThreadCpuSeconds": 0.0001934130000000034,
+          "totalSeconds": 0.22145730996271595
+        },
+        "archive.metadata": {
+          "count": 64,
+          "failures": 0,
+          "maxSeconds": 0.000326948007568717,
+          "maxThreadCpuSeconds": 0.000309189999999987,
+          "totalSeconds": 0.011484442162327468
+        },
+        "archive.validate": {
+          "count": 10,
+          "failures": 0,
+          "maxSeconds": 0.001870516047347337,
+          "maxThreadCpuSeconds": 0.0018547780000000014,
+          "totalSeconds": 0.010675671102944762
+        },
+        "archive.write": {
+          "count": 47,
+          "failures": 0,
+          "maxSeconds": 0.00014744896907359362,
+          "maxThreadCpuSeconds": 0.00014785700000000124,
+          "totalSeconds": 0.0011310019181109965
+        },
+        "heartbeat.flush": {
+          "count": 52,
+          "failures": 0,
+          "maxSeconds": 9.941798634827137e-05,
+          "maxThreadCpuSeconds": 9.816399999999781e-05,
+          "totalSeconds": 0.0032089341548271477
+        },
+        "heartbeat.fsync": {
+          "count": 52,
+          "failures": 0,
+          "maxSeconds": 0.006580279965419322,
+          "maxThreadCpuSeconds": 0.0001244829999999808,
+          "totalSeconds": 0.25858658202923834
+        },
+        "heartbeat.publish": {
+          "count": 52,
+          "failures": 0,
+          "maxSeconds": 0.0072468199650757015,
+          "maxThreadCpuSeconds": 0.0007866049999999958,
+          "totalSeconds": 0.2970700940932147
+        },
+        "manifest.flush": {
+          "count": 62,
+          "failures": 0,
+          "maxSeconds": 0.00010210304753854871,
+          "maxThreadCpuSeconds": 0.00010148999999999575,
+          "totalSeconds": 0.0029997083474881947
+        },
+        "manifest.fsync": {
+          "count": 62,
+          "failures": 0,
+          "maxSeconds": 0.006605608039535582,
+          "maxThreadCpuSeconds": 0.00010304499999999606,
+          "totalSeconds": 0.3119423072785139
+        },
+        "manifest.publish": {
+          "count": 62,
+          "failures": 0,
+          "maxSeconds": 0.007147722993977368,
+          "maxThreadCpuSeconds": 0.0006588460000000185,
+          "totalSeconds": 0.3417052253498696
+        },
+        "poll.flush": {
+          "count": 54,
+          "failures": 0,
+          "maxSeconds": 7.730600191280246e-05,
+          "maxThreadCpuSeconds": 7.75560000000064e-05,
+          "totalSeconds": 0.002516675740480423
+        },
+        "poll.fsync": {
+          "count": 54,
+          "failures": 0,
+          "maxSeconds": 0.010460055025760084,
+          "maxThreadCpuSeconds": 0.00013981199999998917,
+          "totalSeconds": 0.28030618093907833
+        },
+        "poll.write": {
+          "count": 54,
+          "failures": 0,
+          "maxSeconds": 0.0007391480030491948,
+          "maxThreadCpuSeconds": 0.0007310000000000094,
+          "totalSeconds": 0.01415746595012024
+        },
+        "source.locate": {
+          "count": 62,
+          "failures": 0,
+          "maxSeconds": 0.0003618840128183365,
+          "maxThreadCpuSeconds": 0.0003551360000000059,
+          "totalSeconds": 0.011218035127967596
+        },
+        "source.prefix": {
+          "count": 6,
+          "failures": 0,
+          "maxSeconds": 0.0023704220075160265,
+          "maxThreadCpuSeconds": 0.002349696999999998,
+          "totalSeconds": 0.006160256045404822
+        },
+        "source.read": {
+          "count": 56,
+          "failures": 0,
+          "maxSeconds": 0.00022896198788657784,
+          "maxThreadCpuSeconds": 0.00022995099999999213,
+          "totalSeconds": 0.0031578188063576818
+        },
+        "source.stat": {
+          "count": 300,
+          "failures": 0,
+          "maxSeconds": 5.538499681279063e-05,
+          "maxThreadCpuSeconds": 5.271799999999327e-05,
+          "totalSeconds": 0.003515717515256256
+        }
+      },
+      "persistence": 54,
+      "polls": {
+        "collectionCount": 54,
+        "maxGapSeconds": 0.15472199697978795,
+        "maxWorkPersistenceSeconds": 0.04747172398492694,
+        "persistenceCount": 54
+      },
+      "sha256": "167604e313c4dbc802d46745e0b44873d9fe58ce82d99bc8373ddb6fde37a2eb"
+    }
+  },
+  "checks": [
+    {
+      "arguments": [],
+      "exit": 0,
+      "script": "phase-check.py",
+      "seconds": 0.7773669790476561
+    },
+    {
+      "arguments": [],
+      "exit": 0,
+      "script": "capture-check.py",
+      "seconds": 3.622049214958679
+    },
+    {
+      "arguments": [],
+      "exit": 0,
+      "script": "broad-log-check.py",
+      "seconds": 0.44533380499342456
+    },
+    {
+      "arguments": [],
+      "exit": 0,
+      "script": "broad-cooperative-check.py",
+      "seconds": 0.3355798710254021
+    },
+    {
+      "arguments": [],
+      "exit": 0,
+      "script": "broad-cooperative-control-check.py",
+      "seconds": 0.247566229023505
+    },
+    {
+      "arguments": [
+        "coverage"
+      ],
+      "exit": 0,
+      "script": "broad-persistence-check.py",
+      "seconds": 0.15768072998616844
+    },
+    {
+      "arguments": [
+        "slow"
+      ],
+      "exit": 0,
+      "script": "broad-persistence-check.py",
+      "seconds": 0.13606434996472672
+    },
+    {
+      "arguments": [
+        "terminal"
+      ],
+      "exit": 0,
+      "script": "broad-persistence-check.py",
+      "seconds": 0.15257462405133992
+    },
+    {
+      "arguments": [],
+      "exit": 0,
+      "script": "rehearsal-check.py",
+      "seconds": 1.7524887459585443
+    }
+  ],
+  "codeDigest": "6fda210aabe48c829d2ba86035edd9a23271d63d994458ee1f1a419a32cf86e0",
+  "diagnosticPurpose": "phase observability only; no latency remedy/long-run claim",
+  "fileCount": 53,
+  "freshManifest": {
+    "codeDigest": "6fda210aabe48c829d2ba86035edd9a23271d63d994458ee1f1a419a32cf86e0",
+    "duration": 2400,
+    "nonce": "rehearsal-dfd79ab3f00343a2b7edf40ff6d2b7f9",
+    "started": false,
+    "watchdog": 2700
+  },
+  "observerCost": {
+    "fixedNameBound": 19,
+    "iterations": 1000,
+    "kind": "memory-only recorder and JSON observer cost; no durability/qualification claim",
+    "maxSummaryBytes": 5061,
+    "operationsPerIteration": 19,
+    "recorderMaxSeconds": 0.00017648201901465654,
+    "recorderMedianSeconds": 8.73844837769866e-05,
+    "serializationMaxSeconds": 0.00020851200679317117,
+    "serializationMedianSeconds": 9.134202264249325e-05,
+    "validationByteBound": 16384
+  },
+  "recordedIdentities": 13,
+  "smokes": [
+    {
+      "exit": 0,
+      "script": "rehearsal-smoke.py",
+      "seconds": 7.615362634998746
+    },
+    {
+      "exit": 0,
+      "script": "rehearsal-smoke.py",
+      "seconds": 1.3867881399928592
+    },
+    {
+      "exit": 0,
+      "script": "broad-independent-check.py",
+      "seconds": 30.167193651024718
+    }
+  ]
+}

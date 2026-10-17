@@ -1,0 +1,87 @@
+--- a/capture.py
++++ b/capture.py
+@@ -275,8 +275,11 @@
+         atomic(Path(cfg['receipt']),final)
+     return 0 if complete else 1
+
+
+ if __name__=='__main__':
+     mode,path=sys.argv[1],Path(sys.argv[2]).resolve()
++    if mode=='run':
++        import phase_probe
++        phase_probe.install(sys.modules[__name__],path.parent,'collector')
+     logs.require(mode in ('run','supervise','launch'),'use run, supervise or launch RUN.json')
+     sys.exit({'run':run_collector,'supervise':supervise,'launch':launch}[mode](path))
+--- /dev/null
++++ b/phase_probe.py
+@@ -0,0 +1,55 @@
++"""Diagnostic-only in-memory phase telemetry. Never qualification or target callbacks."""
++import os,time,json,atexit,resource
++from pathlib import Path
++
++def install(module,root,actor):
++ events=[];stack=[];realopen=Path.open;realfsync=os.fsync
++ def role(path):
++  name=Path(path).name
++  if name.startswith('segment-'):return 'archive'
++  if name.startswith('host.log'):return 'source'
++  return name
++ def fdrole(fd):
++  try:return role(os.readlink('/proc/self/fd/'+str(fd)))
++  except OSError:return 'unknown-fd'
++ def traced(label,fn,*args,**kwargs):
++  index=len(events);events.append(None);parent=stack[-1] if stack else None;stack.append(index)
++  before=resource.getrusage(resource.RUSAGE_THREAD);cpu=time.thread_time();begin=time.monotonic();error=None
++  try:return fn(*args,**kwargs)
++  except BaseException as e:error=type(e).__name__;raise
++  finally:
++   end=time.monotonic();cpuend=time.thread_time();after=resource.getrusage(resource.RUSAGE_THREAD);stack.pop()
++   events[index]={'id':index,'parent':parent,'phase':label,'start':begin,'end':end,'threadCpuSeconds':cpuend-cpu,'voluntarySwitches':after.ru_nvcsw-before.ru_nvcsw,'involuntarySwitches':after.ru_nivcsw-before.ru_nivcsw,'error':error}
++ class File:
++  def __init__(self,f,label):self.f=f;self.label=label
++  def __getattr__(self,k):return getattr(self.f,k)
++  def __enter__(self):return self
++  def __exit__(self,*args):return self.f.__exit__(*args)
++  def __iter__(self):return iter(self.f)
++  def read(self,*a,**kw):return traced('file.read/'+self.label,self.f.read,*a,**kw)
++  def write(self,*a,**kw):return traced('file.write/'+self.label,self.f.write,*a,**kw)
++  def flush(self,*a,**kw):return traced('file.flush/'+self.label,self.f.flush,*a,**kw)
++  def seek(self,*a,**kw):return traced('file.seek/'+self.label,self.f.seek,*a,**kw)
++ def opened(path,*a,**kw):return File(traced('file.open/'+role(path),realopen,path,*a,**kw),role(path))
++ Path.open=opened
++ for name in ('stat','replace'):
++  method=getattr(Path,name)
++  def wrap(path,*a,_method=method,_name=name,**kw):return traced('path.'+_name+'/'+role(path),_method,path,*a,**kw)
++  setattr(Path,name,wrap)
++ for name in ('fsync','fstat','pread'):
++  method=getattr(os,name)
++  def wrap(fd,*a,_method=method,_name=name,**kw):return traced('syscall.'+_name+'/'+fdrole(fd),_method,fd,*a,**kw)
++  setattr(os,name,wrap)
++ if module is not None:
++  atomic=module.atomic
++  module.atomic=lambda path,*a,**kw:traced('atomic/'+role(path),atomic,path,*a,**kw)
++  logs=module.logs;save=logs.save
++  logs.save=lambda *a,**kw:traced('manifest.save',save,*a,**kw)
++  for name in ('poll','_metadata','_locate','_append','_append_growth','_prefix','_archive','checkpoint'):
++   method=getattr(logs.Capture,name)
++   def wrap(self,*a,_method=method,_name=name,**kw):return traced('capture.'+_name,_method,self,*a,**kw)
++   setattr(logs.Capture,name,wrap)
++ def dump():
++  with realopen(root/('diagnostic-'+actor+'-phases.json'),'x') as out:
++   json.dump({'diagnosticOnly':True,'pid':os.getpid(),'actor':actor,'events':events},out);out.write('\n');out.flush();realfsync(out.fileno())
++ atexit.register(dump)
+--- a/rehearse.py
++++ b/rehearse.py
+@@ -396,7 +396,11 @@
+     if a.mode=='prepare':result=prepare(root,a.smoke_seconds,a.native_smoke)
+     elif a.mode=='start':result=start(root,a.nonce)
+     elif a.mode=='verify':result=verify(root,a.turn_proof)
+     elif a.mode=='read-evidence':result=evidence_read(verify_inputs(root)|c.load(root/'start.json'),a.receipt,a.rollout,a.nonce)
+     else:return produce(root)
+     print(json.dumps(result));return 0
+-if __name__=='__main__':sys.exit(main())
++if __name__=='__main__':
++    if sys.argv[1]=='produce':
++        import phase_probe
++        phase_probe.install(None,Path(sys.argv[2]),'producer')
++    sys.exit(main())

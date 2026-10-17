@@ -70,13 +70,25 @@ result is stale and replayed only after the drag and write queue are idle.
 While the panel is open it asks the host for second ticks and re-reads describe
 every two seconds through the same stale-and-replay path, so a wallpaper
 rotation reaches the header, the edits row, and every provenance marker within
-a period. A full render costs 10-14 ms of the host's 25 ms per-callback CPU
-budget in the running shell (most of it host-side: the interrupt that meters
-the budget reads the thread CPU clock on every Luau call), and three overruns
-in a row disable the panel until reload. So no callback renders twice:
-`refresh` never renders, and its callers render once. A describe whose output
-is byte-identical to the one on screen, with no write enqueued since and no
-error showing, is not decoded or rendered, which keeps the idle re-read free. Each rendered Keep, Save As, Clear, Rename, and Delete action captures
+a period. The host meters 25 ms of thread CPU per callback, reading the thread clock on
+every Luau call and loop back-edge, and three overruns in a row (or five in a
+minute) disable the panel until reload. So the panel never rebuilds what has
+not changed: each control cell, row, card, and section header is retained
+under a signature made of describe's digest of its entries (the entry as
+decoded, re-encoded) and the few fields the panel changes between describes
+(value, edited, gate, keyboard focus, expansion, bypass state, counts). A
+builder reads nothing outside its signature. Handlers capture keys and device
+ids, never model tables, and look up the current object when they run.
+Retained entries are dropped only when a describe drops their ids. An accepted
+describe is decoded and validated in its own callback and rendered in the next
+frame tick; `refresh` never renders. A describe whose output is byte-identical
+to the one on screen, with no write enqueued since and no error showing, is not
+decoded or rendered, which keeps the idle re-read free. `contract.test.mjs`
+pins the render cost in Lua calls on real describe output, with every card
+expanded. In the running shell (2026-10-17, every card expanded) a drag frame
+costs about 8 ms, a release 18 ms, and a cold rebuild 16 ms median and 24 ms at
+worst: retained renders still compute every signature they compare, so the
+cold path has little headroom. Each rendered Keep, Save As, Clear, Rename, and Delete action captures
 both selected slots before optimistic model changes. The queue sends
 `--expect-look <default|profile:name> --expect-wallpaper <none|id:id>`; a stale
 action is refused under the store lock and appears in the banner. Selection

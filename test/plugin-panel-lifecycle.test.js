@@ -10,6 +10,8 @@ test('slider reconciliation leaves no drag while later real changes still work',
 local pluginDir = arg[1]
 local hostEpsilon = 0.0001
 
+local canonical = dofile(pluginDir .. "test_encode.lua")
+
 local function newHost()
   local host = {
     calls = {},
@@ -117,7 +119,7 @@ local function newHost()
 
   local noctalia = {
     state = {get = function() return nil end},
-    json = {decode = function() return model end},
+    json = {decode = function() return model end, encode = canonical},
     focusedOutputName = function() return "DP-1" end,
   }
   function noctalia.runAsync(command, callback)
@@ -139,6 +141,9 @@ local function newHost()
       timedOut = false, exitCode = failure and 1 or 0, stdout = "{}", stderr = failure or "",
       stdoutTruncated = false, stderrTruncated = false,
     })
+    -- An accepted describe renders in the next frame tick, which the host runs
+    -- next; the reconciliation checks below read the tree that tick draws.
+    if host.frameTicks then env.onFrameTick(16) end
   end
   function host.open()
     env.onOpen({})

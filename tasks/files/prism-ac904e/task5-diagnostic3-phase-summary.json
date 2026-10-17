@@ -1,0 +1,503 @@
+{
+  "diagnosticOnly": true,
+  "historicalCause": "unresolved: original run lacks internal phase telemetry",
+  "probes": {
+    "first-3s": {
+      "phaseMetrics": {
+        "collector/syscall.fsync/manifest.json": {
+          "count": 1,
+          "medianSeconds": 0.00402281602146104,
+          "p95Seconds": 0.00402281602146104,
+          "maxSeconds": 0.00402281602146104,
+          "maxThreadCpuSeconds": 5.497299999999983e-05,
+          "maxVoluntarySwitches": 2,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/syscall.fstat/source": {
+          "count": 236,
+          "medianSeconds": 3.3570104278624058e-06,
+          "p95Seconds": 5.8820005506277084e-06,
+          "maxSeconds": 1.670198980718851e-05,
+          "maxThreadCpuSeconds": 1.8525000000005343e-05,
+          "maxVoluntarySwitches": 0,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/capture._prefix": {
+          "count": 9,
+          "medianSeconds": 0.0007550540030933917,
+          "p95Seconds": 0.0015565960202366114,
+          "maxSeconds": 0.0015565960202366114,
+          "maxThreadCpuSeconds": 0.0015452180000000149,
+          "maxVoluntarySwitches": 0,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/manifest.save": {
+          "count": 76,
+          "medianSeconds": 0.004725552018499002,
+          "p95Seconds": 0.006999763019848615,
+          "maxSeconds": 0.007200448017101735,
+          "maxThreadCpuSeconds": 0.0005050070000000018,
+          "maxVoluntarySwitches": 3,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/syscall.fsync/manifest.tmp": {
+          "count": 76,
+          "medianSeconds": 0.004273194499546662,
+          "p95Seconds": 0.006507179990876466,
+          "maxSeconds": 0.006754944042768329,
+          "maxThreadCpuSeconds": 5.052600000002294e-05,
+          "maxVoluntarySwitches": 3,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/atomic/heartbeat.json": {
+          "count": 63,
+          "medianSeconds": 0.005896806018427014,
+          "p95Seconds": 0.007311336055863649,
+          "maxSeconds": 0.018586335994768888,
+          "maxThreadCpuSeconds": 0.0018950340000000176,
+          "maxVoluntarySwitches": 3,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/syscall.fsync/heartbeat.tmp": {
+          "count": 63,
+          "medianSeconds": 0.0038740270538255572,
+          "p95Seconds": 0.005771521013230085,
+          "maxSeconds": 0.0167268329532817,
+          "maxThreadCpuSeconds": 6.48630000000261e-05,
+          "maxVoluntarySwitches": 3,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/capture.poll": {
+          "count": 64,
+          "medianSeconds": 0.010557441506534815,
+          "p95Seconds": 0.015031846996862441,
+          "maxSeconds": 0.03655771096237004,
+          "maxThreadCpuSeconds": 0.0068847509999999945,
+          "maxVoluntarySwitches": 15,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/capture._metadata": {
+          "count": 77,
+          "medianSeconds": 0.00021451199427247047,
+          "p95Seconds": 0.0003310799947939813,
+          "maxSeconds": 0.0005352430162020028,
+          "maxThreadCpuSeconds": 0.0005250349999999793,
+          "maxVoluntarySwitches": 0,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/file.read/source": {
+          "count": 75,
+          "medianSeconds": 2.290296833962202e-05,
+          "p95Seconds": 0.00011806102702394128,
+          "maxSeconds": 0.0006531840190291405,
+          "maxThreadCpuSeconds": 0.0006457799999999986,
+          "maxVoluntarySwitches": 0,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/syscall.fsync/polls.jsonl": {
+          "count": 64,
+          "medianSeconds": 0.003821883990895003,
+          "p95Seconds": 0.0067711640149354935,
+          "maxSeconds": 0.009160500019788742,
+          "maxThreadCpuSeconds": 5.7608000000014536e-05,
+          "maxVoluntarySwitches": 4,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/syscall.fsync/archive": {
+          "count": 57,
+          "medianSeconds": 0.004117973032407463,
+          "p95Seconds": 0.006749773980118334,
+          "maxSeconds": 0.0073648259858600795,
+          "maxThreadCpuSeconds": 0.00014030400000000776,
+          "maxVoluntarySwitches": 4,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/capture.checkpoint": {
+          "count": 5,
+          "medianSeconds": 0.0072369269910268486,
+          "p95Seconds": 0.02282130002276972,
+          "maxSeconds": 0.02282130002276972,
+          "maxThreadCpuSeconds": 0.010460884000000004,
+          "maxVoluntarySwitches": 6,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/syscall.fsync/collector-receipt.tmp": {
+          "count": 1,
+          "medianSeconds": 0.003506629029288888,
+          "p95Seconds": 0.003506629029288888,
+          "maxSeconds": 0.003506629029288888,
+          "maxThreadCpuSeconds": 5.565500000004331e-05,
+          "maxVoluntarySwitches": 2,
+          "maxInvoluntarySwitches": 0
+        },
+        "producer/syscall.fsync/producer-start.json": {
+          "count": 1,
+          "medianSeconds": 0.0038249249919317663,
+          "p95Seconds": 0.0038249249919317663,
+          "maxSeconds": 0.0038249249919317663,
+          "maxThreadCpuSeconds": 6.553299999999262e-05,
+          "maxVoluntarySwitches": 2,
+          "maxInvoluntarySwitches": 0
+        },
+        "producer/syscall.fsync/source": {
+          "count": 845,
+          "medianSeconds": 0.0035515130148269236,
+          "p95Seconds": 0.006632042990531772,
+          "maxSeconds": 0.0176061509991996,
+          "maxThreadCpuSeconds": 7.855800000000634e-05,
+          "maxVoluntarySwitches": 4,
+          "maxInvoluntarySwitches": 0
+        },
+        "producer/syscall.fsync/producer-receipt.json": {
+          "count": 1,
+          "medianSeconds": 0.003993069054558873,
+          "p95Seconds": 0.003993069054558873,
+          "maxSeconds": 0.003993069054558873,
+          "maxThreadCpuSeconds": 6.283899999998122e-05,
+          "maxVoluntarySwitches": 2,
+          "maxInvoluntarySwitches": 0
+        }
+      },
+      "retryCount": 0,
+      "slowSyncEvidence": [
+        {
+          "actor": "collector",
+          "phase": "syscall.fsync/heartbeat.tmp",
+          "seconds": 0.0167268329532817,
+          "threadCpuSeconds": 6.48630000000261e-05,
+          "voluntarySwitches": 3,
+          "involuntarySwitches": 0
+        },
+        {
+          "actor": "collector",
+          "phase": "syscall.fsync/polls.jsonl",
+          "seconds": 0.009160500019788742,
+          "threadCpuSeconds": 5.7608000000014536e-05,
+          "voluntarySwitches": 4,
+          "involuntarySwitches": 0
+        },
+        {
+          "actor": "collector",
+          "phase": "syscall.fsync/polls.jsonl",
+          "seconds": 0.008391559007577598,
+          "threadCpuSeconds": 3.416400000000319e-05,
+          "voluntarySwitches": 3,
+          "involuntarySwitches": 0
+        },
+        {
+          "actor": "producer",
+          "phase": "syscall.fsync/source",
+          "seconds": 0.0176061509991996,
+          "threadCpuSeconds": 7.855800000000634e-05,
+          "voluntarySwitches": 4,
+          "involuntarySwitches": 0
+        },
+        {
+          "actor": "producer",
+          "phase": "syscall.fsync/source",
+          "seconds": 0.015152434003539383,
+          "threadCpuSeconds": 8.586199999999211e-05,
+          "voluntarySwitches": 3,
+          "involuntarySwitches": 0
+        },
+        {
+          "actor": "producer",
+          "phase": "syscall.fsync/source",
+          "seconds": 0.014137042046058923,
+          "threadCpuSeconds": 7.967899999999917e-05,
+          "voluntarySwitches": 3,
+          "involuntarySwitches": 0
+        }
+      ],
+      "runSummary": {
+        "totalHarnessSeconds": 9.10297696996713,
+        "producerSeconds": 6.759031611960381,
+        "bytes": 3646485,
+        "peakBytesPerSecond": 693180,
+        "polls": {
+          "collectionCount": 64,
+          "maxGapSeconds": 0.158573193999473,
+          "maxWorkPersistenceSeconds": 0.05093629495240748,
+          "persistenceCount": 64
+        },
+        "guardSeconds": 0.36774617568190315,
+        "phaseEventCounts": {
+          "collector": 14006,
+          "producer": 5295
+        },
+        "globalDeviceDelta": {
+          "completedReads": 94,
+          "readSectors512B": 784,
+          "readMilliseconds": 27,
+          "completedWrites": 3478,
+          "writeSectors512B": 104184,
+          "writeMilliseconds": 4383,
+          "ioMilliseconds": 3900,
+          "weightedIoMilliseconds": 7222,
+          "completedFlushes": 1133,
+          "flushMilliseconds": 2813
+        },
+        "ownedChildIdentityCount": 4,
+        "allGone": true
+      }
+    },
+    "history21-8s": {
+      "phaseMetrics": {
+        "collector/syscall.fstat/source": {
+          "count": 276,
+          "medianSeconds": 3.4859986044466496e-06,
+          "p95Seconds": 6.743008270859718e-06,
+          "maxSeconds": 2.360501093789935e-05,
+          "maxThreadCpuSeconds": 1.2363000000015223e-05,
+          "maxVoluntarySwitches": 0,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/capture._prefix": {
+          "count": 13,
+          "medianSeconds": 0.0006820390117354691,
+          "p95Seconds": 0.002522950991988182,
+          "maxSeconds": 0.002522950991988182,
+          "maxThreadCpuSeconds": 0.00242424799999999,
+          "maxVoluntarySwitches": 0,
+          "maxInvoluntarySwitches": 1
+        },
+        "collector/file.read/source": {
+          "count": 86,
+          "medianSeconds": 2.6085006538778543e-05,
+          "p95Seconds": 0.00021705601830035448,
+          "maxSeconds": 0.001176516991108656,
+          "maxThreadCpuSeconds": 0.0011575510000000067,
+          "maxVoluntarySwitches": 0,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/capture.poll": {
+          "count": 67,
+          "medianSeconds": 0.010269001999404281,
+          "p95Seconds": 0.023534966981969774,
+          "maxSeconds": 0.030063676997087896,
+          "maxThreadCpuSeconds": 0.010494368000000032,
+          "maxVoluntarySwitches": 12,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/capture._metadata": {
+          "count": 85,
+          "medianSeconds": 0.001018393028061837,
+          "p95Seconds": 0.001344069023616612,
+          "maxSeconds": 0.0016196870128624141,
+          "maxThreadCpuSeconds": 0.0015997909999999893,
+          "maxVoluntarySwitches": 0,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/manifest.save": {
+          "count": 85,
+          "medianSeconds": 0.003989393007941544,
+          "p95Seconds": 0.0065776080009527504,
+          "maxSeconds": 0.01934782596072182,
+          "maxThreadCpuSeconds": 0.0005443810000000382,
+          "maxVoluntarySwitches": 2,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/syscall.fsync/manifest.tmp": {
+          "count": 85,
+          "medianSeconds": 0.003448526025749743,
+          "p95Seconds": 0.0060645450139418244,
+          "maxSeconds": 0.018868728016968817,
+          "maxThreadCpuSeconds": 6.680500000000311e-05,
+          "maxVoluntarySwitches": 2,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/syscall.fsync/polls.jsonl": {
+          "count": 67,
+          "medianSeconds": 0.003392917977180332,
+          "p95Seconds": 0.004144579987041652,
+          "maxSeconds": 0.007252285024151206,
+          "maxThreadCpuSeconds": 3.656799999998683e-05,
+          "maxVoluntarySwitches": 3,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/atomic/heartbeat.json": {
+          "count": 67,
+          "medianSeconds": 0.003970135992858559,
+          "p95Seconds": 0.004803344025276601,
+          "maxSeconds": 0.007015297014731914,
+          "maxThreadCpuSeconds": 0.0005652399999999669,
+          "maxVoluntarySwitches": 3,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/syscall.fsync/heartbeat.tmp": {
+          "count": 67,
+          "medianSeconds": 0.0034165559918619692,
+          "p95Seconds": 0.004176451009698212,
+          "maxSeconds": 0.006502503005322069,
+          "maxThreadCpuSeconds": 6.30189999999975e-05,
+          "maxVoluntarySwitches": 3,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/syscall.fsync/archive": {
+          "count": 67,
+          "medianSeconds": 0.0037733979988843203,
+          "p95Seconds": 0.004238130000885576,
+          "maxSeconds": 0.0061744769918732345,
+          "maxThreadCpuSeconds": 9.7903999999982e-05,
+          "maxVoluntarySwitches": 3,
+          "maxInvoluntarySwitches": 0
+        },
+        "collector/capture.checkpoint": {
+          "count": 6,
+          "medianSeconds": 0.006802590505685657,
+          "p95Seconds": 0.02240641397656873,
+          "maxSeconds": 0.02240641397656873,
+          "maxThreadCpuSeconds": 0.0035667080000000295,
+          "maxVoluntarySwitches": 2,
+          "maxInvoluntarySwitches": 0
+        },
+        "writer/syscall.fsync/source": {
+          "count": 80,
+          "medianSeconds": 0.003945725504308939,
+          "p95Seconds": 0.005509449983946979,
+          "maxSeconds": 0.006089381000492722,
+          "maxThreadCpuSeconds": 0.0001031130000000019,
+          "maxVoluntarySwitches": 4,
+          "maxInvoluntarySwitches": 0
+        }
+      },
+      "retryCount": 0,
+      "slowSyncEvidence": [
+        {
+          "actor": "collector",
+          "phase": "syscall.fsync/manifest.tmp",
+          "seconds": 0.018868728016968817,
+          "threadCpuSeconds": 6.680500000000311e-05,
+          "voluntarySwitches": 2,
+          "involuntarySwitches": 0
+        },
+        {
+          "actor": "collector",
+          "phase": "syscall.fsync/polls.jsonl",
+          "seconds": 0.007252285024151206,
+          "threadCpuSeconds": 3.656799999998683e-05,
+          "voluntarySwitches": 3,
+          "involuntarySwitches": 0
+        },
+        {
+          "actor": "collector",
+          "phase": "syscall.fsync/manifest.tmp",
+          "seconds": 0.0067709789727814496,
+          "threadCpuSeconds": 6.636500000001266e-05,
+          "voluntarySwitches": 3,
+          "involuntarySwitches": 0
+        },
+        {
+          "actor": "writer",
+          "phase": "syscall.fsync/source",
+          "seconds": 0.006089381000492722,
+          "threadCpuSeconds": 0.0001031130000000019,
+          "voluntarySwitches": 4,
+          "involuntarySwitches": 0
+        },
+        {
+          "actor": "writer",
+          "phase": "syscall.fsync/source",
+          "seconds": 0.005723790032789111,
+          "threadCpuSeconds": 6.87980000000088e-05,
+          "voluntarySwitches": 4,
+          "involuntarySwitches": 0
+        },
+        {
+          "actor": "writer",
+          "phase": "syscall.fsync/source",
+          "seconds": 0.005551400012336671,
+          "threadCpuSeconds": 0.00010670099999999377,
+          "voluntarySwitches": 4,
+          "involuntarySwitches": 0
+        }
+      ],
+      "runSummary": {
+        "seconds": 8.098429029982071,
+        "cycles": 67,
+        "writerWrites": 80,
+        "writerBytes": 5460000,
+        "peakBytesPerSecond": 682500,
+        "peakDerivation": "fixed68250B writer; start of last file.write/source preceding each fsync/source, rolling1s",
+        "maxStartGapSeconds": 0.1569602590170689,
+        "maxWorkSeconds": 0.048299456015229225,
+        "maxWorkPersistenceSeconds": 0.05219227401539683,
+        "collectorMaxRunQueueDelayPerSampleSeconds": 5.4402e-05,
+        "globalDeviceDelta": {
+          "completedReads": 0,
+          "readSectors512B": 0,
+          "readMilliseconds": 0,
+          "completedWrites": 1474,
+          "writeSectors512B": 138816,
+          "writeMilliseconds": 2397,
+          "ioMilliseconds": 1301,
+          "weightedIoMilliseconds": 3313,
+          "completedFlushes": 372,
+          "flushMilliseconds": 917
+        },
+        "phaseEventCounts": {
+          "collector": 6280,
+          "writer": 338
+        },
+        "ownedChildIdentityCount": 1,
+        "allGone": true
+      }
+    }
+  },
+  "currentHostObservations": {
+    "maxActorRunQueueDelayPerSampleSeconds": {
+      "server": 0,
+      "wrapper": 1.4187e-05,
+      "collector": 9.1311e-05,
+      "producer": 9.3194e-05
+    },
+    "sampledSeconds": 7.744267760019284,
+    "globalIoPressureDeltaMicroseconds": {
+      "some": 1428049,
+      "full": 1409876
+    },
+    "loadAverageBefore": [
+      2.7,
+      2.87,
+      2.98
+    ],
+    "cpuCount": 32,
+    "filesystem": "ext4",
+    "mountOptions": "rw,noatime",
+    "scheduler": "none",
+    "writeCache": "write back",
+    "rotational": false,
+    "limitation": "Current read-only samples; no historical device attribution or external process cause inferred."
+  },
+  "historicalWriter": {
+    "spans": 316,
+    "medianSeconds": 0.004042147513246164,
+    "maxSeconds": 0.28074981999816373,
+    "last5Seconds": [
+      0.0035733969998545945,
+      0.15892509801778942,
+      0.28074981999816373,
+      0.23786825098795816,
+      0.045201754954177886
+    ]
+  },
+  "historicalCollector": {
+    "allActorsGone": true,
+    "capturedBytes": 21293721,
+    "collectorSeconds": 32.00714442599565,
+    "configuredMaxGapSeconds": 0.36774617568190315,
+    "error": "poll gap breached during collection/checkpoint work",
+    "errorCount": "unknown/incomplete",
+    "faultCollectionSeconds": 0.3724374869489111,
+    "faultCombinedSeconds": 0.6416189399897121,
+    "faultPersistenceSeconds": 0.269181453040801,
+    "nativeWorkloadRan": false,
+    "outcome": "failed/incomplete",
+    "polls": 270,
+    "producerBytes": 21566721,
+    "producerSeconds": 32.2755180390086,
+    "segments": 21,
+    "socketGone": true,
+    "uncollectedBytes": 273000
+  }
+}

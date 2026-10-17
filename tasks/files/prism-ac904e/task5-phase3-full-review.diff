@@ -1,0 +1,1513 @@
+--- a/README.md
++++ b/README.md
+@@ -91,3 +91,16 @@
+ rows remain historical and gain no invented persistence endpoints. Actual collection
+ starts are guarded after intervening persistence, before replacing the prior anchor;
+ terminal persistence is also guarded before successful completion.
++
++
++### Phase evidence contract (new captures)
++
++`phaseSchema: 1` on collector receipts requires bounded `phases` summaries on every collection/persistence observation. Each fixed operation has count, total wall/thread CPU, failure count and actual maximum start/end/thread CPU/failure. Nested names (for example manifest publication and its fsync) overlap; their totals must never be added. No per-file paths or values enter phase labels. `phases.validate_capture` checks current-version records; old captures retain their frozen readers and unknown internal phases.
++
++Each collection window owns completed source/stat/read/prefix, archive validation/write/flush/fsync and manifest publication/flush/fsync operations. Cooperative checkpoint service closes a window only between leaf operations; there is no spanning checkpoint phase. Counts/maximums reflect only that window. The existing previousIntervalPersistence and lastIntervalPersistence carry poll serialization/write/flush/fsync after it completes, including failure. Its error propagates and guards still include actual persistence cost.
++
++Runtime heartbeats occur outside collection. A completed heartbeat observation carries actual start/end, run/clock and precedingPollStart (null plus startup=true for the initial heartbeat). Contiguous heartbeat sequence/count binds complete carrier coverage. The next collection row consumes previousHeartbeat once; the receipt carries only a still-unconsumed lastHeartbeat. The heartbeat file never claims its own future fsync. Startup manifest/collector initialization and final receipt/final heartbeat durability are not phase measured; no endpoint is invented for those writes. After emergency child reaping, the wrapper can reread an actual collector receipt bound to schema/run/clock/owned identity; its own signal/failure outcome stays authoritative. If a failure prevents the existing evidence write, telemetry can be incomplete, never a successful certificate.
++
++Overlap expands heartbeat and persistence carriers uniquely, rejecting repeated complete pairs and duplicate heartbeat identities. Only containing operation intervals enter overlap; nested phase summaries do not inflate it or alter target samples. Current rehearsal verification and independent native proof require strict phase validation before acceptance.
++
++There are19 fixed names, at most19 summaries per observation, and a16KiB phase-summary validation bound. Runtime memory is one fixed-name recorder per active window plus completed carriers, independent of archive history. No new durable file or fsync is added. Phase bookkeeping, JSON serialization and extra bytes remain inside the existing actual time guards. Observer overhead is measured in preparation; this is observability, not a remedy for historical latency or evidence of long-run reliability.
+--- a/broad-independent-check.py
++++ b/broad-independent-check.py
+@@ -1,7 +1,7 @@
+ """Paced actual generated fake-host, independent writer, named collector. Never live."""
+ import os,sys,time,json,subprocess,selectors,signal,hashlib,math
+ from pathlib import Path
+-import controller as c, capture as cap
++import controller as c, capture as cap, phases
+ ROOT=Path(__file__).parent
+ OUT=Path(sys.argv[1]);MODEL=Path(sys.argv[2]);CLI=sys.argv[3];mode=sys.argv[4];variant=sys.argv[5] if len(sys.argv)>5 else 'baseline'
+ os.umask(0o077);OUT.mkdir(mode=0o700)
+@@ -100,7 +100,9 @@
+   assert sorted(e['recordId'] for e in events)==list(range(1,len(events)+1))
+   c.immutable(root/'context.json',context);c.immutable(root/'normalized.json',normal);c.immutable(root/'audit.json',audit)
+  polls=[json.loads(line) for line in (root/'polls.json').read_text().splitlines()]
+- if mode!='stop':c.immutable(root/'overlap.json',c.analyze.overlap_report(normal,polls+[receipt['lastIntervalPersistence']]))
++ if mode!='stop':
++  phases.validate_capture(polls,receipt)
++  c.immutable(root/'overlap.json',c.analyze.overlap_report(normal,polls+[receipt['lastIntervalPersistence']]+([receipt['lastHeartbeat']] if receipt['lastHeartbeat'] else [])))
+  # Prospective 1-second peak and complete-workload mean, never offline Lua replay speed.
+  peak=max(sum(x['bytes'] for x in spans if s['start']<=x['start']<s['start']+1) for s in spans)
+  native=[x for x in spans if x['kind']=='probe'];native_peak=max(sum(x['bytes'] for x in native if s['start']<=x['start']<s['start']+1) for s in native)
+--- a/broad-log-check.py
++++ b/broad-log-check.py
+@@ -1,5 +1,6 @@
+ """Real-file race schedules; injections select an interleaving, never replace file data."""
+-import importlib.util,os,tempfile,sys,json,threading
++import importlib.util,os,tempfile,sys,json,threading,types,time
++from unittest.mock import patch
+ from pathlib import Path
+ code=Path(os.environ.get('BROAD_CODE',Path(__file__).parent))
+ s=importlib.util.spec_from_file_location('logs',code/'logs.py');logs=importlib.util.module_from_spec(s);s.loader.exec_module(logs)
+@@ -62,6 +63,61 @@
+     c.source=AfterRead(c.source,rotate);c.poll()
+     assert b''.join(p.read_bytes() for p in c.paths())==b'abc\nDnew\n'
+     assert c.checkpoint('finish')['integrityComplete']
++   elif name.startswith('metadata-'):
++    # Replay the real ext4 observation: updated timestamps can precede size growth.
++    # Only one fstat extent is delayed; every source/prefix byte uses actual file I/O.
++    padding=b'P'*(1024*1024-9) if name=='metadata-growth-capacity' else b''
++    if padding:append(padding);c.poll()
++    append(b'D');initial=os.fstat(c.source.fileno());real=os.fstat;calls=[];fired=[False]
++    evidence={p.name:p.read_bytes() for p in root.iterdir() if p.name.startswith(('manifest','segment'))}
++    def action():
++     fired[0]=True
++     if name=='metadata-no-growth':os.utime(log,ns=(initial.st_atime_ns,initial.st_mtime_ns+1000000))
++     elif name=='metadata-truncate':log.write_bytes(b'')
++     else:
++      if name=='metadata-rewrite-append':
++       with log.open('r+b',buffering=0) as f:f.write(b'xyz')
++      if name=='metadata-new-read-mutation':
++       with log.open('r+b',buffering=0) as f:f.seek(4);f.write(b'E')
++      if name=='metadata-regrowth':log.write_bytes(b'BAD')
++      append(b'TAIL')
++    c.source=AfterRead(c.source,action)
++    if name=='metadata-short-read':
++     read=c.source.read;c.source.read=lambda *args:read(*args)[:-1]
++    def stat(fd):
++     now=real(fd)
++     if fd==c.source.fileno():
++      if len(calls)==1 and name!='metadata-truncate':
++       values={k:getattr(now,k) for k in dir(now) if k.startswith('st_')};values['st_size']=initial.st_size;now=types.SimpleNamespace(**values)
++      elif len(calls)==2:
++       if name=='metadata-identity':
++        values={k:getattr(now,k) for k in dir(now) if k.startswith('st_')};values['st_ino']+=1;now=types.SimpleNamespace(**values)
++       elif name=='metadata-second-change':os.utime(log,ns=(now.st_atime_ns,now.st_mtime_ns+1000000));now=real(fd)
++       elif name=='metadata-second-rotation':log.rename(root/'host.log.2');log.write_bytes(b'new')
++       elif name=='metadata-archive-mutation':c.paths()[0].write_bytes(b'bad!')
++      calls.append(logs.snapshot(now))
++     return now
++    rejected=False;began=time.monotonic()
++    with patch.object(os,'fstat',stat):
++     try:c.poll()
++     except AssertionError as e:
++      rejected=True
++      if name in ('metadata-growth','metadata-growth-capacity'):raise
++      assert 'log changed during read' in str(e),str(e)
++      diagnostic=json.loads(str(e).split(': ',1)[1]);assert diagnostic['before'] and diagnostic['after'] and diagnostic['readBytes']==(0 if name=='metadata-short-read' else 1) and diagnostic['currentDescriptor']
++    assert fired[0]
++    if name=='metadata-no-growth':assert len(calls)==11,'transition must stop after eight observations plus diagnostic'
++    if name in ('metadata-growth','metadata-growth-capacity'):
++     duration=time.monotonic()-began
++     if padding:
++      assert duration<.36774617568190315,'transition exceeds accepted work/gap bound'
++      print('TRANSITION_METRIC',json.dumps({'sourceBytes':log.stat().st_size,'pollSeconds':duration}))
++     assert not rejected;c.poll();assert b''.join(p.read_bytes() for p in c.paths())==b'abc\n'+padding+b'DTAIL'
++     assert c.checkpoint('finish')['integrityComplete']
++    else:
++     assert rejected,'unsafe metadata transition accepted '+name
++     assert c.failed and not c.integrity_complete
++     if name!='metadata-archive-mutation':assert evidence=={p.name:p.read_bytes() for p in root.iterdir() if p.name.startswith(('manifest','segment'))},'refusal published evidence'
+    elif name=='read-growth':
+     append(b'1234567');c.source=AfterRead(c.source,lambda:append(b'D'))
+     c.poll();assert c.state['current']['offset']==11
+@@ -82,4 +138,4 @@
+   finally:c.close()
+  print('PASS',name)
+ if __name__=='__main__':
+- for name in sys.argv[1:] or ['observed-growth-rotation','rotation-create-gap','rotation-after-append','rotation-during-read','finish-append','finish-error','finish-mutation','read-growth','checkpoint-growth','growth-mutation','regrowth','archive-corrupt']:case(name)
++ for name in sys.argv[1:] or ['metadata-growth','metadata-growth-capacity','metadata-short-read','metadata-no-growth','metadata-rewrite-append','metadata-new-read-mutation','metadata-regrowth','metadata-truncate','metadata-identity','metadata-second-change','metadata-second-rotation','metadata-archive-mutation','observed-growth-rotation','rotation-create-gap','rotation-after-append','rotation-during-read','finish-append','finish-error','finish-mutation','read-growth','checkpoint-growth','growth-mutation','regrowth','archive-corrupt']:case(name)
+--- a/broad-persistence-check.py
++++ b/broad-persistence-check.py
+@@ -43,6 +43,7 @@
+   for row in other:
+    row['clockOrigin']='other-clock'
+    if row.get('previousIntervalPersistence'):row['previousIntervalPersistence']['clockOrigin']='other-clock'
++   if row.get('previousHeartbeat'):row['previousHeartbeat']['clockOrigin']='other-clock'
+   sample2=sample|{'clockOrigin':'other-clock','variant':'candidate'}
+   assert analyze.overlap_report(normal|{'events':[sample,sample2],'samples':[sample,sample2]},rows+other[:-1]+[all_rows[-1],other[-1]])['overlapCount']==2
+   zero=copy.deepcopy(all_rows);origin=zero[0]['start']
+@@ -50,6 +51,8 @@
+    row['start']-=origin;row['end']-=origin
+    if 'persistedObservationStart' in row:row['persistedObservationStart']-=origin
+    if row.get('previousIntervalPersistence'):shift(row['previousIntervalPersistence'])
++   if row.get('previousHeartbeat'):shift(row['previousHeartbeat'])
++   if row.get('precedingPollStart') is not None:row['precedingPollStart']-=origin
+   for row in zero:shift(row)
+   zero[1]['previousIntervalPersistence']['persistedObservationStart']=False
+   try:analyze.overlap_report(normal,zero)
+--- a/capture.py
++++ b/capture.py
+@@ -9,13 +9,17 @@
+ import time
+ from pathlib import Path
+ import logs
+-
+-
+-def atomic(path, data):
++import phases
++
++
++def atomic(path, data, observer=None):
+     temp=path.with_suffix('.tmp')
+-    with temp.open('w') as f:
+-        json.dump(data,f,indent=2);f.write('\n');f.flush();os.fsync(f.fileno())
+-    temp.replace(path)
++    with phases.measure(observer,'heartbeat.publish'):
++        with temp.open('w') as f:
++            json.dump(data,f,indent=2);f.write('\n')
++            with phases.measure(observer,'heartbeat.flush'):f.flush()
++            with phases.measure(observer,'heartbeat.fsync'):os.fsync(f.fileno())
++        temp.replace(path)
+
+
+ def process(pid):
+@@ -51,6 +55,8 @@
+         p=Path(run[k]);logs.require(p.is_absolute() and p.parent.resolve()==path.parent.resolve(),'run output must be private within RUN directory: '+k)
+     logs.require(len({run[k] for k in ('manifest','control','receipt','heartbeat','polls','identities')})==6,'run output paths collide')
+     logs.require(Path(run['log']).is_absolute(),'log path must be explicit')
++    if 'rehearsal' in run:
++        logs.require(run['environment']=='synthetic' and Path(run['rehearsal'])==path.parent/'run.json','rehearsal is synthetic-only and run-local')
+     return run
+
+
+@@ -66,14 +72,25 @@
+
+
+ def run_collector(path):
+-    cfg=config(path);root=path.parent;started=None;c=None;last_end=None;last_start=None;last_sequence=0;last_persistence=None;reason='unexpected';complete=False;error=None
++    cfg=config(path);root=path.parent;started=None;c=None;last_end=None;last_start=None;last_sequence=0;last_persistence=None;last_heartbeat=None;heartbeat_count=0;reason='unexpected';complete=False;error=None
+     install_traps()
+     me=process(os.getpid())
+     def status():
+         identities=json.loads(Path(cfg['identities']).read_text())
+         return {'schema':2,'runId':cfg['runId'],'clockOrigin':cfg['clockOrigin'],'collectorStarted':started,
+-                'lastPollStart':last_start,'lastPollEnd':last_end,'lastIntervalPersistence':last_persistence,'generations':len(c.state['segments']) if c else 0,
++                'lastPollStart':last_start,'lastPollEnd':last_end,'lastIntervalPersistence':last_persistence,'phaseSchema':1,'lastHeartbeat':last_heartbeat,'heartbeatCount':heartbeat_count,'generations':len(c.state['segments']) if c else 0,
+                 'terminalCutoff':c.state.get('terminalCutoff') if c and complete else None,'lastSequence':last_sequence,'exitReason':reason,'integrityComplete':complete,'processes':dict(identities,collector=me),'error':error}
++    def heartbeat():
++        nonlocal last_heartbeat,heartbeat_count
++        observer=phases.Recorder();begin=time.monotonic();failure=None
++        # A heartbeat file never claims its own still-in-flight persistence completed.
++        try:atomic(Path(cfg['heartbeat']),status(),observer)
++        except BaseException as exc:failure=str(exc);raise
++        finally:
++            heartbeat_count+=1
++            last_heartbeat={'runId':cfg['runId'],'clockOrigin':cfg['clockOrigin'],'start':begin,'end':time.monotonic(),
++                'bytes':0,'checkpoint':False,'error':failure,'observation':'heartbeat','precedingPollStart':last_start,
++                'startup':last_start is None,'sequence':heartbeat_count,'phases':observer.snapshot()}
+     try:
+         # Options and wrapper identity must exist before the collector owns the log.
+         gate=root/'wrapper-ready.json';wait_start=time.monotonic()
+@@ -81,28 +98,35 @@
+             logs.require(time.monotonic()-wait_start<10,'wrapper startup timeout');time.sleep(.01)
+         logs.require(not Path(cfg['manifest']).exists(),'activation cannot resume a prior manifest')
+         logs.start(Path(cfg['log']),Path(cfg['manifest']));c=logs.Capture(Path(cfg['manifest']))
+-        started=time.monotonic();reason='running';atomic(Path(cfg['heartbeat']),status())
++        started=time.monotonic();reason='running';heartbeat()
+         control_version=None
+         with Path(cfg['polls']).open('x') as intervals:
+             def interval(checkpoint=False):
+-                nonlocal last_start,last_end,last_sequence,control_version,last_persistence
++                nonlocal last_start,last_end,last_sequence,control_version,last_persistence,last_heartbeat
+                 begin=None;count=0;effective_checkpoint=checkpoint
+                 def close_interval(failure=None):
+-                    nonlocal last_end,begin,last_persistence
++                    nonlocal last_end,begin,last_persistence,last_heartbeat
+                     if begin is None:return
+                     last_end=time.monotonic()
+                     row={'runId':cfg['runId'],'start':begin,'end':last_end,'clockOrigin':cfg['clockOrigin'],'bytes':count,'checkpoint':effective_checkpoint,'error':failure,
+-                         'observation':'collection','previousIntervalPersistence':last_persistence}
+-                    begin=None
+-                    intervals.write(json.dumps(row)+'\n');intervals.flush();os.fsync(intervals.fileno())
+-                    last_persistence={'runId':cfg['runId'],'clockOrigin':cfg['clockOrigin'],'start':last_end,'end':time.monotonic(),
+-                        'bytes':0,'checkpoint':effective_checkpoint,'error':failure,'observation':'persistence','persistedObservationStart':row['start']}
++                         'observation':'collection','previousIntervalPersistence':last_persistence,'previousHeartbeat':last_heartbeat,'phases':c.observer.snapshot()}
++                    begin=None;last_heartbeat=None;c.observer=None
++                    observer=phases.Recorder();persistence_error=failure
++                    try:
++                        with observer.measure('poll.write'):intervals.write(json.dumps(row)+'\n')
++                        with observer.measure('poll.flush'):intervals.flush()
++                        with observer.measure('poll.fsync'):os.fsync(intervals.fileno())
++                    except BaseException as exc:persistence_error=str(exc);raise
++                    finally:
++                        last_persistence={'runId':cfg['runId'],'clockOrigin':cfg['clockOrigin'],'start':last_end,'end':time.monotonic(),
++                            'bytes':0,'checkpoint':effective_checkpoint,'error':persistence_error,'observation':'persistence',
++                            'persistedObservationStart':row['start'],'phases':observer.snapshot()}
+                 def guard(now=None):
+                     logs.require(not expired(cfg['deadlineSeconds'],started),'collector deadline expired during work')
+                     logs.require(last_start is None or (time.monotonic() if now is None else now)-last_start<=cfg['maxGapSeconds'],'poll gap breached during collection/checkpoint work')
+                 def collect():
+                     nonlocal begin,count,last_start,effective_checkpoint
+-                    guard();close_interval();actual_start=time.monotonic();guard(actual_start);begin=actual_start;last_start=actual_start
++                    guard();close_interval();actual_start=time.monotonic();guard(actual_start);begin=actual_start;last_start=actual_start;c.observer=phases.Recorder()
+                     before=sum(r['bytes'] for r in c.state['segments']);generations=len(c.state['segments']);c.poll();count=sum(r['bytes'] for r in c.state['segments'])-before
+                     if not effective_checkpoint and len(c.state['segments'])!=generations:effective_checkpoint='rotation'
+                     guard()
+@@ -126,7 +150,7 @@
+                 except BaseException as e:close_interval(str(e));raise
+                 finally:close_interval()
+             while True:
+-                interval();atomic(Path(cfg['heartbeat']),status())
++                interval();heartbeat()
+                 control=Path(cfg['control'])
+                 if control.exists():
+                     version=logs.snapshot(control.stat())
+@@ -138,7 +162,7 @@
+                         if action=='stop':reason='stop';break
+                         interval('ready' if action=='ready' else 'finish')
+                         if action=='finish':complete=True;reason='finish';break
+-                        atomic(Path(cfg['heartbeat']),status())
++                        heartbeat()
+                 time.sleep(cfg['pollSeconds'])
+     except Stopped:reason='stop'
+     except Interrupted as e:reason='signal';error=str(e)
+@@ -186,8 +210,18 @@
+     return 0
+
+
++def collector_receipt(path,cfg,identities):
++    value=json.loads(path.read_text())
++    logs.require(type(value) is dict and type(value.get('schema')) is int and value['schema']==2
++        and value.get('runId')==cfg['runId'] and value.get('clockOrigin')==cfg['clockOrigin']
++        and type(value.get('integrityComplete')) is bool and type(value.get('processes')) is dict
++        and type(value.get('phaseSchema')) is int and value['phaseSchema']==1
++        and value['processes'].get('collector')==identities['collector'], 'collector receipt identity/schema mismatch')
++    return value
++
++
+ def supervise(path):
+-    cfg=config(path);root=path.parent;identities={'wrapper':process(os.getpid())};reason='unexpected';error=None;started=None;receipt=None;child=None
++    cfg=config(path);root=path.parent;identities={'wrapper':process(os.getpid())};reason='unexpected';error=None;started=None;receipt=None;child=None;producer=None;rehearsal=None;producer_checked=False;ready_sent=False;finish_sent=False
+     os.umask(0o077);install_traps()
+     try:
+         gate=root/'wrapper-ready.json';startup=time.monotonic()
+@@ -205,6 +239,32 @@
+                 heartbeat=json.loads(hb.read_text());started=heartbeat['collectorStarted']
+             if started is None:logs.require(time.monotonic()-startup<10,'collector startup timeout')
+             else:logs.require(not expired(cfg['deadlineSeconds'],started),'wrapper deadline expired')
++            if 'rehearsal' in cfg and started is not None:
++                if rehearsal is None:
++                    import rehearse
++                    rehearsal=rehearse
++                    rehearsal.verify_inputs(root)
++                deadline=rehearsal.c.load(root/'start.json')['watchdogMonotonic']
++                logs.require(time.monotonic()<deadline,'rehearsal watchdog deadline expired')
++                if producer is None:
++                    # Publish ownership before a pending signal may transfer into finally.
++                    blocked={signal.SIGTERM,signal.SIGINT,signal.SIGHUP}
++                    prior=signal.pthread_sigmask(signal.SIG_BLOCK,blocked)
++                    try:
++                        with (root/'producer-output.log').open('x') as output:
++                            producer=subprocess.Popen([sys.executable,str(Path(__file__).with_name('rehearse.py')),'produce',str(root)],stdout=output,stderr=subprocess.STDOUT,preexec_fn=lambda:signal.pthread_sigmask(signal.SIG_SETMASK,prior))
++                        identities['producer']=process(producer.pid);atomic(Path(cfg['identities']),identities)
++                    finally:signal.pthread_sigmask(signal.SIG_SETMASK,prior)
++                if (root/'native-identity.json').exists() and 'native' not in identities:
++                    identities['native']=rehearsal.c.load(root/'native-identity.json');atomic(Path(cfg['identities']),identities)
++                if producer.poll() is not None and not finish_sent:
++                    logs.require(producer.returncode==0,'synthetic producer exited prematurely')
++                    if not ready_sent:
++                        atomic(Path(cfg['control']),{'sequence':1,'command':'ready'});ready_sent=True
++                    elif heartbeat['lastSequence']==1:
++                        rehearsal.before_finish(root);producer_checked=True
++                        logs.require(time.monotonic()<deadline,'rehearsal deadline during final validation')
++                        atomic(Path(cfg['control']),{'sequence':2,'command':'finish'});finish_sent=True
+             cr=root/'collector-receipt.json'
+             if cr.exists():receipt=json.loads(cr.read_text());reason=receipt['exitReason'];break
+             logs.require(same_process(identities['server']) and child.poll() is None,'named server or collector exited unexpectedly')
+@@ -214,6 +274,18 @@
+     finally:
+         # EXIT/finally and signal traps reap only PID+start identities owned by this run.
+         for sig in (signal.SIGTERM,signal.SIGINT,signal.SIGHUP):signal.signal(sig,signal.SIG_IGN)
++        if producer:
++            if producer.poll() is None:producer.terminate()
++            try:producer.wait(timeout=2)
++            except subprocess.TimeoutExpired:
++                if 'producer' in identities and same_process(identities['producer']):producer.kill()
++                producer.wait(timeout=2)
++        if 'rehearsal' in cfg and (root/'native-identity.json').exists():
++            identities['native']=json.loads((root/'native-identity.json').read_text())
++            terminate(identities['native']);until=time.monotonic()+2
++            while same_process(identities['native']) and time.monotonic()<until:time.sleep(.01)
++            if same_process(identities['native']):os.kill(identities['native']['pid'],signal.SIGKILL)
++            atomic(Path(cfg['identities']),identities)
+         if child:
+             if receipt and receipt.get('exitReason')=='finish' and receipt.get('integrityComplete') is True and reason=='finish':
+                 try:child.wait(timeout=2)
+@@ -223,7 +295,15 @@
+             except subprocess.TimeoutExpired:
+                 if same_process(identities['collector']):os.kill(child.pid,signal.SIGKILL)
+                 child.wait(timeout=2)
++        # Reaping may complete a collector receipt after the supervisor's last poll.
++        # Preserve that actual evidence; the wrapper's signal/failure still owns outcome.
++        if receipt is None and (root/'collector-receipt.json').exists():
++            try:receipt=collector_receipt(root/'collector-receipt.json',cfg,identities)
++            except (OSError,ValueError,AssertionError,KeyError,TypeError) as exc:
++                error=error or str(exc)
++                if reason!='signal':reason='failure'
+         complete=receipt is not None and receipt['integrityComplete'] is True and reason=='finish' and error is None and child.returncode==0
++        if 'rehearsal' in cfg:complete=complete and producer_checked and producer is not None and producer.returncode==0
+         final=dict(receipt or {'schema':2,'runId':cfg['runId'],'collectorStarted':started,'clockOrigin':cfg['clockOrigin'],'lastPollStart':None,'lastPollEnd':None,'generations':0})
+         if Path(cfg['heartbeat']).exists():
+             heartbeat=json.loads(Path(cfg['heartbeat']).read_text())
+--- a/controller.py
++++ b/controller.py
+@@ -488,7 +488,7 @@
+     evidence,launch=stage_evidence(normalized,identities,receipts,restoration,clock,observations,stage1)
+     blocks=analyze.target_blocks(normalized);verdict=analyze.decide(blocks['stage'],[blocks['blocks'].get(b,{}) for b in ('1','2')],evidence,launch)
+     if any(i['environment']!='live' for i in identities):verdict['accepted']=False
+-    polls=observations['polls']+[r['lastIntervalPersistence'] for r in receipts if r.get('lastIntervalPersistence') is not None]
++    polls=observations['polls']+[r['lastIntervalPersistence'] for r in receipts if r.get('lastIntervalPersistence') is not None]+[r['lastHeartbeat'] for r in receipts if r.get('lastHeartbeat') is not None]
+     return {'verdict':verdict,'evidence':evidence,'launch':analyze.pairs(normalized),'overlap':analyze.overlap_report(normalized,polls)}
+
+ def capture_limits(capacity_bytes,burst_bytes,burst_seconds):
+--- a/frozen-task2/analyze.py
++++ b/frozen-task2/analyze.py
+@@ -607,13 +607,19 @@
+     origins={e['clockOrigin'] for e in normalized['events']}
+     run_ids={e['runId'] for e in normalized['events']}
+     if not all(c['originVerified'] for c in normalized['certificates']):raise ValueError('unverified clock origin')
+-    checked=[];pending={};expanded=[]
++    checked=[];pending={};expanded=[];completed={};seen=set();first_collection={}
+     for obs in observations:
+         if isinstance(obs,dict) and obs.get('previousIntervalPersistence') is not None:
+             previous=obs['previousIntervalPersistence']
+             if not isinstance(previous,dict) or previous.get('observation')!='persistence' or 'previousIntervalPersistence' in previous:raise ValueError('invalid previous interval persistence')
+             if previous.get('runId')!=obs.get('runId') or previous.get('clockOrigin')!=obs.get('clockOrigin') or number(previous.get('end'),'persistence end')>number(obs.get('start'),'collection start'):raise ValueError('persistence outside next collection boundary')
+             expanded.append(previous)
++        if isinstance(obs,dict) and obs.get('previousHeartbeat') is not None:
++            h=obs['previousHeartbeat']
++            if not isinstance(h,dict) or h.get('observation')!='heartbeat' or 'previousHeartbeat' in h:raise ValueError('invalid previous heartbeat')
++            if h.get('runId')!=obs.get('runId') or h.get('clockOrigin')!=obs.get('clockOrigin') or number(h.get('end'),'heartbeat end')>number(obs.get('start'),'collection start'):raise ValueError('heartbeat outside next collection boundary')
++            expanded.append(h)
++        if isinstance(obs,dict) and obs.get('observation')=='collection':first_collection.setdefault((obs.get('runId'),obs.get('clockOrigin')),obs.get('start'))
+         expanded.append(obs)
+     for obs in expanded:
+         if not isinstance(obs,dict) or any(key not in obs for key in ('runId','start','end','clockOrigin','bytes','checkpoint','error')):raise ValueError('invalid observation')
+@@ -625,15 +631,26 @@
+         if end<start:raise ValueError('reversed observation')
+         integer(obs.get('bytes'),'observation bytes')
+         observation=obs.get('observation')
+-        if observation not in (None,'collection','persistence'):raise ValueError('unknown collector observation')
++        if observation not in (None,'collection','persistence','heartbeat'):raise ValueError('unknown collector observation')
+         observer_key=(obs['runId'],obs['clockOrigin'])
++        if observation is not None:
++            key=(*observer_key,observation,start)
++            if key in seen:raise ValueError('duplicate completed observation')
++            seen.add(key)
+         if observation=='collection':
+             if observer_key in pending:raise ValueError('unobserved interval persistence')
+             pending[observer_key]=obs
+         elif observation=='persistence':
+             previous=pending.pop(observer_key,None)
+             if previous is None or number(obs.get('persistedObservationStart'),'persisted observation start')!=previous['start'] or start!=previous['end'] or obs['bytes']!=0 or obs['checkpoint']!=previous['checkpoint'] or obs['clockOrigin']!=previous['clockOrigin']:raise ValueError('persistence does not bind previous interval')
+-        checked.append(obs|{'durationSeconds':end-start,'kind':'persistence' if observation=='persistence' else 'poll' if obs['checkpoint'] is False else 'checkpoint'})
++            completed[(*observer_key,previous['start'])]=end
++        elif observation=='heartbeat':
++            anchor=obs.get('precedingPollStart')
++            if obs['bytes']!=0 or obs['checkpoint'] is not False or type(obs.get('startup')) is not bool:raise ValueError('invalid heartbeat metadata')
++            if anchor is None:
++                if obs['startup'] is not True or observer_key not in first_collection or end>number(first_collection[observer_key],'first collection'):raise ValueError('invalid startup heartbeat')
++            elif obs['startup'] is not False or completed.get((*observer_key,number(anchor,'preceding poll start')),float('inf'))>start:raise ValueError('heartbeat does not bind completed persistence')
++        checked.append(obs|{'durationSeconds':end-start,'kind':observation if observation in ('persistence','heartbeat') else 'poll' if obs['checkpoint'] is False else 'checkpoint'})
+     if pending:raise ValueError('terminal interval persistence observation missing')
+     selected=[e for e in normalized['samples'] if e['scope']=='callback' and e['class'] in CLASSES]
+     full=[];groups=defaultdict(list)
+@@ -644,7 +661,7 @@
+         groups[(event['block'],event['variant'],event['class'])].append(row)
+     return dict(overlapCount=sum(e['overlapCount'] for e in full),samples=full,observations=checked,
+         groups=[dict(block=k[0],variant=k[1],targetClass=k[2],samples=v,timingMs=distribution([e['elapsedMs'] for e in v]),overlapCount=sum(e['overlapCount'] for e in v)) for k,v in sorted(groups.items())],
+-        persistenceDurationsSeconds=distribution([o['durationSeconds'] for o in checked if o['kind']=='persistence']),pollDurationsSeconds=distribution([o['durationSeconds'] for o in checked if o['kind']=='poll']),pollBytes=distribution([o['bytes'] for o in checked if o['kind']=='poll']),checkpointDurationsSeconds=distribution([o['durationSeconds'] for o in checked if o['kind']=='checkpoint']),exclusions=normalized['exclusions'])
++        heartbeatDurationsSeconds=distribution([o['durationSeconds'] for o in checked if o['kind']=='heartbeat']),persistenceDurationsSeconds=distribution([o['durationSeconds'] for o in checked if o['kind']=='persistence']),pollDurationsSeconds=distribution([o['durationSeconds'] for o in checked if o['kind']=='poll']),pollBytes=distribution([o['bytes'] for o in checked if o['kind']=='poll']),checkpointDurationsSeconds=distribution([o['durationSeconds'] for o in checked if o['kind']=='checkpoint']),exclusions=normalized['exclusions'])
+
+ def main():
+     p=argparse.ArgumentParser()
+--- a/logs.py
++++ b/logs.py
+@@ -4,6 +4,7 @@
+ import os
+ import sys
+ import time
++import phases
+ from pathlib import Path
+
+
+@@ -11,11 +12,14 @@
+     if not ok: raise AssertionError(message)
+
+
+-def save(manifest, state):
++def save(manifest, state, observer=None):
+     temp = manifest.with_suffix('.tmp')
+-    with temp.open('w') as f:
+-        f.write(json.dumps(state, indent=2)); f.write('\n'); f.flush(); os.fsync(f.fileno())
+-    temp.replace(manifest)
++    with phases.measure(observer,'manifest.publish'):
++        with temp.open('w') as f:
++            f.write(json.dumps(state, indent=2)); f.write('\n')
++            with phases.measure(observer,'manifest.flush'):f.flush()
++            with phases.measure(observer,'manifest.fsync'):os.fsync(f.fileno())
++        temp.replace(manifest)
+
+
+ def start(log, manifest):
+@@ -39,6 +43,7 @@
+
+ class Capture:
+     def __init__(self, manifest):
++        self.observer = None
+         self.manifest = Path(manifest)
+         self.state = json.loads(self.manifest.read_text())
+         self.log = Path(self.state['log'])
+@@ -76,6 +81,7 @@
+     def _path(self, r): return self.manifest.parent/r['path']
+     def paths(self): return [self._path(r) for r in self.state['segments']]
+
++    @phases.operation('archive.validate')
+     def _archive(self, r):
+         p = self._path(r)
+         require(p.is_file(), 'archive missing; preserve capture')
+@@ -106,18 +112,20 @@
+         missing=None
+         for attempt in range(8):
+             try:
+-                live=self.log.stat()
+-                if missing is not None:require(snapshot(os.fstat(self.source.fileno()))==missing, 'outgoing changed during absent live path')
++
++                with phases.measure(self.observer,'source.stat'):live=self.log.stat()
++                if missing is not None:require(snapshot(self._source_stat(self.source))==missing, 'outgoing changed during absent live path')
+                 return live
+             except FileNotFoundError:
+                 held=self.state['current'];p=self._locate(held)
+                 require(p==self.log.with_name(self.log.name+'.1'), 'absent live path without unique outgoing occurrence')
+-                now=snapshot(os.fstat(self.source.fileno()))
++                now=snapshot(self._source_stat(self.source))
+                 require(now==snapshot(p.stat()) and (missing is None or now==missing), 'outgoing changed during absent live path')
+                 missing=now
+                 if attempt==7:raise
+                 time.sleep(.001)
+
++    @phases.operation('source.locate')
+     def _locate(self, held):
+         missing=None
+         for attempt in range(8):
+@@ -134,12 +142,15 @@
+             # A directory enumeration can straddle rename. Retry only a still-linked,
+             # stable held descriptor; a lost/overwritten occurrence never qualifies.
+             require(self.source is not None, 'saved log inode missing or ambiguous; preserve capture')
+-            stat=os.fstat(self.source.fileno());now=snapshot(stat)
++            stat=self._source_stat(self.source);now=snapshot(stat)
+             require(identity(stat)==(held['dev'],held['inode']) and stat.st_nlink==1 and (missing is None or now==missing),
+                     'saved log inode missing or ambiguous; preserve capture')
+             missing=now
+             require(attempt<7, 'saved log inode missing or ambiguous; preserve capture')
+             time.sleep(.001)
++
++    @phases.operation('source.stat')
++    def _source_stat(self, source):return os.fstat(source.fileno())
+
+     def _source(self, held):
+         p=self._locate(held); f=p.open('rb')
+@@ -148,14 +159,15 @@
+             return f
+         except BaseException: f.close(); raise
+
++    @phases.operation('source.prefix')
+     def _prefix(self, source, held):
+-        before=os.fstat(source.fileno())
++        before=self._source_stat(source)
+         require(identity(before)==(held['dev'],held['inode']) and before.st_size>=held['offset'], 'log truncated; preserve capture')
+         if held['generation'] <= len(self.state['segments']):
+             r=self.state['segments'][held['generation']-1]
+             source.seek(r['startOffset']);data=source.read(r['bytes'])
+             require(len(data)==r['bytes'] and hashlib.sha256(data).hexdigest()==r['sha256'], 'log prefix changed; preserve capture')
+-        after=os.fstat(source.fileno())
++        after=self._source_stat(source)
+         if snapshot(before)!=snapshot(after):
+             require(identity(after)==identity(before) and after.st_size>before.st_size,
+                     'source changed during checkpoint')
+@@ -181,44 +193,99 @@
+                'startOffset':held['offset'],'endOffset':held['offset'],'bytes':0,'sha256':self.hasher.hexdigest()}
+             self.archive=self._path(r).open('xb');segments.append(r)
+             self.metadata[self._path(r)]=snapshot(os.fstat(self.archive.fileno()))
+-            save(self.manifest,self.state)
+-
++            save(self.manifest,self.state,self.observer)
++
++    @phases.operation('archive.metadata')
+     def _metadata(self):
+         for p,expected in self.metadata.items():
+             require(p.is_file(), 'archive missing; preserve capture')
+             require(snapshot(p.stat())==expected, 'archive integrity metadata changed; preserve capture')
+         require(snapshot(os.fstat(self.archive.fileno()))==self.metadata[self._path(self.state['segments'][-1])], 'archive descriptor changed')
+
++    @phases.operation('source.resolve')
++    def _append_growth(self, source, held, before, transition, data):
++        # An append can publish advanced timestamps before its larger extent is visible.
++        # Never accept stabilization alone: require the same append's later growth,
++        # then re-read both the prior captured prefix and this pending read interval.
++        stamps=(transition.st_mtime_ns,transition.st_ctime_ns)
++        require(stamps[0]>before.st_mtime_ns and stamps[1]>before.st_ctime_ns,
++                'non-advancing append timestamps')
++        for _ in range(8):
++            time.sleep(.001)
++            observed=self._source_stat(source)
++            require(identity(observed)==identity(before) and observed.st_size>=before.st_size
++                    and (observed.st_mtime_ns,observed.st_ctime_ns)==stamps,
++                    'append transition identity/extent/timestamps changed')
++            require(self._locate(held)==self.log and identity(self._live_stat())==identity(before),
++                    'rotation during append transition')
++            if observed.st_size==before.st_size:continue
++            r=self.state['segments'][-1]
++            prefix=os.pread(source.fileno(),before.st_size-r['startOffset'],r['startOffset'])
++            require(len(prefix)==r['bytes']+len(data) and hashlib.sha256(prefix[:r['bytes']]).hexdigest()==r['sha256']
++                    and prefix[r['bytes']:]==data,'append transition prefix/read interval changed')
++            final=self._source_stat(source)
++            require(identity(final)==identity(before) and final.st_size>=observed.st_size
++                    and (final.st_mtime_ns,final.st_ctime_ns)==stamps,
++                    'append transition changed during prefix validation')
++            require(self._locate(held)==self.log and identity(self._live_stat())==identity(before),
++                    'rotation during append transition validation')
++            self._metadata()
++            return final
++        raise AssertionError('append timestamps changed without observed growth')
++
++    def _read_failure(self, reason, source, held, before, after, data):
++        # Collector persists this structured exception in its private poll/receipt.
++        def stat_fields(st):
++            return dict(zip(('dev','inode','size','mtimeNs','ctimeNs'),snapshot(st)))
++        try:live=stat_fields(self.log.stat())
++        except OSError as error:live={'error':str(error)}
++        detail={'reason':str(reason),'generation':held['generation'],'offset':held['offset'],
++                'requestedBytes':before.st_size-held['offset'],'readBytes':len(data),
++                'before':stat_fields(before),'after':stat_fields(after),
++                'currentDescriptor':stat_fields(self._source_stat(source)),'livePath':live}
++        raise AssertionError('log changed during read: '+json.dumps(detail,sort_keys=True)) from reason
++
+     def _append(self, source, held):
+-        before=os.fstat(source.fileno())
++        before=self._source_stat(source)
+         require(identity(before)==(held['dev'],held['inode']) and before.st_size>=held['offset'], 'log truncated; preserve capture')
+         self.provisional_tail=None
+         archive_before=os.fstat(self.archive.fileno())
+         require(snapshot(archive_before)==self.metadata[self._path(self.state['segments'][-1])], 'archive metadata changed before append')
+-        source.seek(held['offset']);data=source.read(before.st_size-held['offset'])
++        with phases.measure(self.observer,'source.read'):
++            source.seek(held['offset']);data=source.read(before.st_size-held['offset'])
+         require(snapshot(archive_before)==snapshot(os.fstat(self.archive.fileno())), 'archive changed during source read')
+-        after=os.fstat(source.fileno())
+-        renamed=(identity(before)==identity(after) and before.st_size==after.st_size
+-                 and before.st_mtime_ns==after.st_mtime_ns and snapshot(before)!=snapshot(after)
+-                 and self._locate(held)==self.log.with_name(self.log.name+'.1')
+-                 and identity(self._live_stat())!=identity(after))
+-        require(len(data)==before.st_size-held['offset'] and identity(before)==identity(after)
+-                and (snapshot(before)==snapshot(after) or after.st_size>before.st_size or renamed), 'log changed during read')
++        after=self._source_stat(source)
++        initial_after=after
++        try:
++            require(len(data)==before.st_size-held['offset'] and identity(before)==identity(after),
++                    'read length or source identity mismatch')
++            renamed=(before.st_size==after.st_size and before.st_mtime_ns==after.st_mtime_ns
++                     and snapshot(before)!=snapshot(after)
++                     and self._locate(held)==self.log.with_name(self.log.name+'.1')
++                     and identity(self._live_stat())!=identity(after))
++            if before.st_size==after.st_size and snapshot(before)!=snapshot(after) and not renamed:
++                after=self._append_growth(source,held,before,after,data)
++            require(snapshot(before)==snapshot(after) or after.st_size>before.st_size or renamed,
++                    'source extent/metadata changed')
++        except AssertionError as error:
++            self._read_failure(error,source,held,before,initial_after,data)
+         if after.st_size>before.st_size:self.provisional_tail=snapshot(after)
+         # New bytes remain provisional until a stable full source-prefix checkpoint.
+         # Growth never proves the already captured prefix unchanged.
+         r=self.state['segments'][-1]
+         require(archive_before.st_size==r['bytes'], 'interrupted archive append')
+         if data:
+-            require(self.archive.write(data)==len(data), 'short archive append');self.archive.flush();os.fsync(self.archive.fileno())
++            with phases.measure(self.observer,'archive.write'):require(self.archive.write(data)==len(data), 'short archive append')
++            with phases.measure(self.observer,'archive.flush'):self.archive.flush()
++            with phases.measure(self.observer,'archive.fsync'):os.fsync(self.archive.fileno())
+         archive_after=os.fstat(self.archive.fileno())
+         require(identity(archive_before)==identity(archive_after) and archive_after.st_size==r['bytes']+len(data), 'archive changed during append')
+         self.hasher.update(data);held['offset']+=len(data)
+         r.update(bytes=r['bytes']+len(data),endOffset=held['offset'],sha256=self.hasher.hexdigest())
+         self.metadata[self._path(r)]=snapshot(archive_after)
+         require(snapshot(self._path(r).stat())==snapshot(archive_after), 'archive path changed during append')
+-        save(self.manifest,self.state)
+-        observed=os.fstat(source.fileno())
++        save(self.manifest,self.state,self.observer)
++        observed=self._source_stat(source)
+         require(identity(observed)==identity(after) and observed.st_size>=after.st_size, 'source truncated during append publication')
+         if observed.st_size==after.st_size and snapshot(observed)!=snapshot(after):
+             require(observed.st_mtime_ns==after.st_mtime_ns and self._locate(held)==self.log.with_name(self.log.name+'.1')
+@@ -237,7 +304,7 @@
+                 old=self._locate(held)
+                 require(old==self.log.with_name(self.log.name+'.1'), 'rotation ambiguous during poll')
+                 # A verified rename changes ctime; size/mtime and consumed range must not change.
+-                relocated=snapshot(os.fstat(self.source.fileno()))
++                relocated=snapshot(self._source_stat(self.source))
+                 observed=self.provisional_tail
+                 if observed is not None:
+                     require(relocated==snapshot(old.stat()) and observed[:4]==relocated[:4], 'unobserved outgoing growth before seal')
+@@ -250,13 +317,13 @@
+                         'outgoing source changed after capture; preserve evidence')
+                 outgoing=relocated
+                 # Keep the snapshot tied to consumed bytes, never absorb a later outgoing write.
+-                require(outgoing[2]==held['offset'] and snapshot(os.fstat(self.source.fileno()))==outgoing,
++                require(outgoing[2]==held['offset'] and snapshot(self._source_stat(self.source))==outgoing,
+                         'outgoing source changed after capture; preserve evidence')
+                 require(snapshot(self._prefix(self.source,held))==outgoing,
+                         'outgoing source changed during seal validation; preserve evidence')
+                 self._archive(self.state['segments'][-1])
+                 self._metadata()
+-                require(snapshot(os.fstat(self.source.fileno()))==snapshot(old.stat())==outgoing,
++                require(snapshot(self._source_stat(self.source))==snapshot(old.stat())==outgoing,
+                         'outgoing source changed during seal validation; preserve evidence')
+                 outgoing_source=self.source;self.archive.close()
+                 try:
+@@ -289,7 +356,7 @@
+             require(identity(self._live_stat())==identity(before), 'rotation during checkpoint')
+             self._metadata()
+             if reason=='finish':
+-                require(snapshot(os.fstat(self.source.fileno()))==snapshot(self._live_stat())==snapshot(before),
++                require(snapshot(self._source_stat(self.source))==snapshot(self._live_stat())==snapshot(before),
+                         'source changed at terminal cutoff; preserve evidence')
+                 self.state['terminalCutoff']={'generation':held['generation'],'dev':held['dev'],'inode':held['inode'],
+                     'endOffset':held['offset'],'sourceSize':before.st_size,'sourceMtimeNs':before.st_mtime_ns,
+@@ -298,7 +365,7 @@
+             self.integrity_complete=reason=='finish'
+             self.state['integrityComplete']=False
+             self.state['lastCheckpoint']=reason
+-            save(self.manifest,self.state)
++            save(self.manifest,self.state,self.observer)
+             return {'integrityComplete':self.integrity_complete,'generations':len(self.state['segments']),'reason':reason,'terminalCutoff':self.state.get('terminalCutoff')}
+         except BaseException:
+             self.failed=True;self.integrity_complete=False;raise
+--- a/phase-check.py
++++ b/phase-check.py
+@@ -0,0 +1,138 @@
++"""Saved evidence must identify real blocking work, not just report a generic gap."""
++import copy,json,os,signal,tempfile,time,unittest,uuid
++os.umask(0o077)
++from pathlib import Path
++from unittest.mock import patch
++import capture,logs,phases,controller
++
++class PhaseCheck(unittest.TestCase):
++ def case(self,operation='archive',effect='slow',seed=False):
++  with tempfile.TemporaryDirectory() as tmp:
++   root=Path(tmp);log=root/'source.log';log.write_bytes(b'')
++   cfg={'schema':2,'runId':'phase-case','clockOrigin':'linux-monotonic','socket':'prism-budget-capture-phase-case','environment':'synthetic','deadlineSeconds':2700,'pollSeconds':.01,'maxGapSeconds':.05 if effect=='slow' else 2,'log':str(log)}
++   for k in ('manifest','control','receipt','heartbeat','polls','identities'):cfg[k]=str(root/(k+'.json'))
++   capture.atomic(root/'RUN.json',cfg);capture.atomic(root/'wrapper-ready.json',{});capture.atomic(root/'identities.json',{'wrapper':capture.process(os.getpid())});capture.atomic(root/'control.json',{'sequence':1,'command':'stop' if effect=='stop' else 'finish'})
++   real_start=logs.start;real_sync=os.fsync;real_hash=logs.hashlib.sha256;real_checkpoint=logs.Capture.checkpoint;fired=[];active=[False];matches=[0]
++   def start(*args):
++    real_start(*args)
++    if seed:
++     owner=logs.Capture(root/'manifest.json')
++     try:
++      for i in range(4):
++       log.write_bytes(b'captured\n');owner.poll()
++       if i<3:log.replace(root/'source.log.1');log.write_bytes(b'')
++     finally:owner.close()
++    else:
++     with log.open('ab') as f:f.write(b'captured\n')
++   def sync(fd):
++    name=Path(os.readlink(f'/proc/self/fd/{fd}')).name
++    match=name.endswith('.raw') if operation=='archive' else name==operation+'.json' if operation=='polls' else name==operation+'.tmp'
++    if match:matches[0]+=1
++    if match and not fired and (operation!='heartbeat' or matches[0]==2):
++     fired.append(True)
++     if effect=='slow':time.sleep(.08)
++     real_sync(fd)
++     if effect=='error':raise OSError('controlled fsync failure')
++     if effect=='signal':raise capture.Interrupted('SIGTERM')
++    else:real_sync(fd)
++   def checkpoint(owner,*args,**kwargs):
++    active[0]=True
++    try:return real_checkpoint(owner,*args,**kwargs)
++    finally:active[0]=False
++   def hashed(*args,**kwargs):
++    if seed and active[0]:time.sleep(.015)
++    return real_hash(*args,**kwargs)
++   traps={s:signal.getsignal(s) for s in (signal.SIGTERM,signal.SIGINT,signal.SIGHUP)}
++   try:
++    with patch.object(logs,'start',start),patch.object(os,'fsync',sync),patch.object(logs.Capture,'checkpoint',checkpoint),patch.object(logs.hashlib,'sha256',hashed):result=capture.run_collector(root/'RUN.json')
++   finally:
++    for s,h in traps.items():signal.signal(s,h)
++   receipt=json.loads((root/'collector-receipt.json').read_text());rows=[json.loads(x) for x in (root/'polls.json').read_text().splitlines()]
++   self.assertTrue(fired or seed);self.assertEqual(result,0 if effect=='normal' else 1);self.assertEqual(receipt['integrityComplete'],effect=='normal')
++   if os.environ.get('PHASE_CHECK_PROOFS'):
++    dest=Path(os.environ['PHASE_CHECK_PROOFS'])/(operation+'-'+effect+'-'+str(seed)+'-'+uuid.uuid4().hex);dest.mkdir(parents=True,mode=0o700)
++    (dest/'evidence.json').write_text(json.dumps({'rows':rows,'receipt':receipt},indent=2)+'\n')
++   return rows,receipt
++ def test_real_archive_fsync_cost_identified_after_gap(self):
++  rows,receipt=self.case()
++  self.assertIn('gap',receipt['error'])
++  found=[op for row in rows for op in row.get('phases',{}).get('operations',[]) if op['name']=='archive.fsync' and op['max']['end']-op['max']['start']>=.08]
++  self.assertTrue(found,'saved evidence cannot identify the actual slow archive fsync')
++
++ def test_persistence_cost_failure_and_signal_are_carried(self):
++  for effect in ('slow','error','signal'):
++   with self.subTest(effect=effect):
++    rows,receipt=self.case('polls',effect)
++    p=receipt['lastIntervalPersistence'];self.assertEqual(p['persistedObservationStart'],rows[-1]['start'])
++    phases.validate(p)
++    op=next(x for x in p['phases']['operations'] if x['name']=='poll.fsync')
++    self.assertEqual(op['failures'],int(effect!='slow'))
++    if effect=='slow':self.assertGreaterEqual(op['max']['end']-op['max']['start'],.08)
++    else:self.assertIn('SIGTERM' if effect=='signal' else 'controlled fsync failure',receipt['error'])
++ def test_heartbeat_overlap_and_complete_duplicate_pair_refuse(self):
++  rows,receipt=self.case(effect='normal');phases.validate_capture(rows,receipt)
++  h=next(row['previousHeartbeat'] for row in rows if row.get('previousHeartbeat'))
++  sample={'runId':'phase-case','clockOrigin':'linux-monotonic','block':'1','variant':'baseline','class':'coldRender','scope':'callback','startTimestamp':h['start'],'endTimestamp':h['end'],'elapsedMs':(h['end']-h['start'])*1000,'timestamp':h['end']}
++  normal={'events':[sample],'samples':[sample],'certificates':[{'originVerified':True}],'exclusions':[]}
++  observations=rows+[receipt['lastIntervalPersistence']]+([receipt['lastHeartbeat']] if receipt['lastHeartbeat'] else [])
++  result=controller.analyze.overlap_report(normal,observations)
++  self.assertEqual(result['overlapCount'],1);self.assertEqual(result['observations'][result['samples'][0]['overlapObservationIndices'][0]]['kind'],'heartbeat')
++  with self.assertRaises(ValueError):controller.analyze.overlap_report(normal,observations+observations)
++ def test_strict_phase_and_carrier_validation(self):
++  rows,receipt=self.case(effect='normal');phases.validate_capture(rows,receipt)
++  for kind in ('nan','bool','negative','outside','duplicate','unknown','cpu','count','correlation','duplicate-row','missing-schema','missing-heartbeat','duplicate-heartbeat','heartbeat-bool','heartbeat-clock'):
++   rr=copy.deepcopy(rows);rc=copy.deepcopy(receipt);op=next(x for row in rr for x in row['phases']['operations'])
++   if kind=='nan':op['max']['end']=float('nan')
++   if kind=='bool':op['max']['start']=True
++   if kind=='negative':op['totalSeconds']=-1
++   if kind=='outside':op['max']['end']+=100
++   if kind=='duplicate':rr[0]['phases']['operations'].append(copy.deepcopy(rr[0]['phases']['operations'][0]))
++   if kind=='unknown':op['name']='owner-value'
++   if kind=='cpu':op['max']['threadCpuSeconds']=100
++   if kind=='count':op['count']=True
++   if kind=='correlation':rc['lastIntervalPersistence']['persistedObservationStart']+=.01
++   if kind=='duplicate-row':rr.append(copy.deepcopy(rr[-1]))
++   if kind=='missing-schema':rc.pop('phaseSchema')
++   if kind=='missing-heartbeat':rr[0]['previousHeartbeat']=None
++   if kind=='duplicate-heartbeat':rc['lastHeartbeat']=copy.deepcopy(rr[0]['previousHeartbeat'])
++   if kind=='heartbeat-bool':rr[0]['previousHeartbeat']['sequence']=True
++   if kind=='heartbeat-clock':rr[0]['previousHeartbeat']['clockOrigin']='wrong'
++   with self.subTest(kind=kind),self.assertRaises((ValueError,KeyError)):phases.validate_capture(rr,rc)
++
++ def test_collection_error_and_early_stop(self):
++  for effect in ('error','signal','stop'):
++   rows,receipt=self.case(effect=effect)
++   phases.validate_capture(rows,receipt)
++   self.assertEqual(receipt['exitReason'],{'error':'failure','signal':'signal','stop':'stop'}[effect])
++   op=next(x for x in rows[0]['phases']['operations'] if x['name']=='archive.fsync')
++   self.assertEqual(op['failures'],int(effect!='stop'))
++ def test_runtime_heartbeat_failure_keeps_actual_completed_span(self):
++  rows,receipt=self.case('heartbeat','error')
++  phases.validate_capture(rows,receipt)
++  h=receipt['lastHeartbeat'];self.assertFalse(h['startup']);self.assertEqual(h['precedingPollStart'],rows[-1]['start'])
++  op=next(x for x in h['phases']['operations'] if x['name']=='heartbeat.fsync');self.assertEqual(op['failures'],1)
++ def test_cooperative_checkpoint_operations_belong_to_actual_windows(self):
++  rows,receipt=self.case(effect='normal',seed=True)
++  phases.validate_capture(rows,receipt)
++  windows=[row for row in rows if row['checkpoint']=='finish']
++  self.assertGreater(len(windows),2)
++  operations=[op for row in windows for op in row['phases']['operations'] if op['name']=='archive.validate']
++  self.assertEqual(sum(op['count'] for op in operations),4)
++  self.assertTrue(all(op['max']['end']-op['max']['start']>=.015 for op in operations))
++ def test_complete_pair_duplicate_refuses_without_heartbeat(self):
++  row={'runId':'r','clockOrigin':'c','start':1.,'end':1.1,'bytes':1,'checkpoint':False,'error':None,'observation':'collection'}
++  persist=row|{'start':1.1,'end':1.2,'bytes':0,'observation':'persistence','persistedObservationStart':1.}
++  normal={'events':[{'runId':'r','clockOrigin':'c'}],'samples':[],'certificates':[{'originVerified':True}],'exclusions':[]}
++  controller.analyze.overlap_report(normal,[row,persist])
++  with self.assertRaises(ValueError):controller.analyze.overlap_report(normal,[row,persist,row,persist])
++
++ def test_reaped_receipt_bound_to_owned_collector(self):
++  rows,receipt=self.case(effect='normal');identity=receipt['processes']['collector']
++  with tempfile.TemporaryDirectory() as tmp:
++   p=Path(tmp)/'receipt.json';cfg={'runId':'phase-case','clockOrigin':'linux-monotonic'};ids={'collector':identity}
++   p.write_text(json.dumps(receipt));self.assertEqual(capture.collector_receipt(p,cfg,ids),receipt)
++   for key,value in (('schema',True),('runId','other'),('clockOrigin','other'),('processes',{'collector':identity|{'startTicks':identity['startTicks']+1}}),('integrityComplete',1),('processes',None),('phaseSchema',True)):
++    p.write_text(json.dumps(receipt|{key:value}))
++    with self.subTest(key=key),self.assertRaises(AssertionError):capture.collector_receipt(p,cfg,ids)
++
++if __name__=='__main__':unittest.main(verbosity=2)
+--- a/phases.py
++++ b/phases.py
+@@ -0,0 +1,94 @@
++"""Bounded operation summaries; nested operation durations are not additive."""
++import contextlib,functools,math,time
++
++NAMES=frozenset(('source.stat','source.locate','source.read','source.prefix','source.resolve',
++ 'archive.metadata','archive.validate','archive.write','archive.flush','archive.fsync',
++ 'manifest.publish','manifest.flush','manifest.fsync','heartbeat.publish','heartbeat.flush',
++ 'heartbeat.fsync','poll.write','poll.flush','poll.fsync'))
++MAX_BYTES=16384
++
++def require(ok,message):
++ if not ok:raise ValueError('phase evidence: '+message)
++
++class Recorder:
++ def __init__(self):self.operations={}
++ @contextlib.contextmanager
++ def measure(self,name):
++  require(name in NAMES,'unknown operation');start=time.monotonic();cpu=time.thread_time();failed=True
++  try:
++   yield
++   failed=False
++  finally:
++   end=time.monotonic();used=time.thread_time()-cpu;elapsed=end-start
++   op=self.operations.setdefault(name,{'name':name,'count':0,'totalSeconds':0.,'totalThreadCpuSeconds':0.,'failures':0,'max':None})
++   op['count']+=1;op['totalSeconds']+=elapsed;op['totalThreadCpuSeconds']+=used;op['failures']+=int(failed)
++   if op['max'] is None or elapsed>op['max']['end']-op['max']['start']:
++    op['max']={'start':start,'end':end,'threadCpuSeconds':used,'failed':failed}
++ def snapshot(self):return {'schema':1,'operations':[dict(op,max=dict(op['max'])) for _,op in sorted(self.operations.items())]}
++
++def measure(observer,name):return observer.measure(name) if observer is not None else contextlib.nullcontext()
++
++def operation(name):
++ def decorate(fn):
++  @functools.wraps(fn)
++  def wrapped(self,*args,**kwargs):
++   with measure(self.observer,name):return fn(self,*args,**kwargs)
++  return wrapped
++ return decorate
++
++def number(value):
++ require(type(value) in (int,float) and math.isfinite(value) and value>=0,'invalid finite number')
++ return value
++
++def validate(row):
++ """Validate one summary against its containing actual observation interval."""
++ import json
++ require(type(row) is dict,'invalid observation')
++ start=number(row['start']);end=number(row['end']);require(end>=start,'reversed observation')
++ require(type(row['runId']) is str and bool(row['runId']) and type(row['clockOrigin']) is str and bool(row['clockOrigin']),'identity')
++ require(row.get('error') is None or type(row['error']) is str,'error type')
++ data=row['phases'];require(type(data) is dict and set(data)=={'schema','operations'} and type(data['schema']) is int and data['schema']==1,'schema')
++ ops=data['operations'];require(type(ops) is list and len(ops)<=len(NAMES),'operation bound')
++ require(len(json.dumps(data))<=MAX_BYTES,'serialized bound');seen=set()
++ for op in ops:
++  require(type(op) is dict and set(op)=={'name','count','totalSeconds','totalThreadCpuSeconds','failures','max'},'operation shape')
++  name=op['name'];require(type(name) is str and name in NAMES and name not in seen,'unknown/duplicate operation');seen.add(name)
++  require(type(op['count']) is int and 0<op['count']<=2**53 and type(op['failures']) is int and 0<=op['failures']<=op['count'],'counts')
++  total=number(op['totalSeconds']);cpu=number(op['totalThreadCpuSeconds']);m=op['max']
++  require(type(m) is dict and set(m)=={'start','end','threadCpuSeconds','failed'},'maximum shape')
++  a=number(m['start']);b=number(m['end']);used=number(m['threadCpuSeconds'])
++  require(start<=a<=b<=end and b-a<=total+1e-9 and total<=end-start+1e-6,'endpoints/total')
++  # Adjacent clock samples can differ by sub-microsecond call overhead.
++  require(used<=b-a+0.0001 and used<=cpu+1e-9 and cpu<=total+op['count']*0.0001,'CPU bounds')
++  require(type(m['failed']) is bool and (not m['failed'] or op['failures']>0) and (op['failures']!=op['count'] or m['failed']),'failure status')
++  require(total<=(b-a)*op['count']+1e-6,'maximum below mean')
++ return True
++
++def validate_capture(rows,receipt):
++ """New-source evidence only; callers must use old frozen code for old captures."""
++ require(receipt.get('phaseSchema')==1 and type(receipt.get('phaseSchema')) is int,'missing phase contract')
++ require(bool(rows),'missing collection rows')
++ seen=set();heartbeats=[];persists=[]
++ for row in rows:
++  validate(row);require(all(not op['name'].startswith(('poll.','heartbeat.')) for op in row['phases']['operations']),'collection operation scope');key=(row['runId'],row['clockOrigin'],row['start']);require(key not in seen,'duplicate collection');seen.add(key)
++  require((row['runId'],row['clockOrigin'])==(receipt['runId'],receipt['clockOrigin']),'receipt identity')
++  if row.get('previousIntervalPersistence') is not None:persists.append(row['previousIntervalPersistence'])
++  if row.get('previousHeartbeat') is not None:
++   h=row['previousHeartbeat'];require(number(h['end'])<=row['start'],'heartbeat outside carrier');heartbeats.append(h)
++ if receipt.get('lastIntervalPersistence') is not None:persists.append(receipt['lastIntervalPersistence'])
++ if receipt.get('lastHeartbeat') is not None:heartbeats.append(receipt['lastHeartbeat'])
++ require(len(persists)==len(rows),'persistence coverage')
++ for row,p in zip(rows,persists):
++  validate(p);require(all(op['name'].startswith('poll.') for op in p['phases']['operations']),'persistence operation scope');require(p['observation']=='persistence' and (p['runId'],p['clockOrigin'],p['persistedObservationStart'],p['start'])==(row['runId'],row['clockOrigin'],row['start'],row['end']),'persistence linkage')
++ count=receipt.get('heartbeatCount');require(type(count) is int and 0<count<=2**53 and len(heartbeats)==count,'heartbeat coverage')
++ require([h.get('sequence') for h in heartbeats]==list(range(1,count+1)) and all(type(h.get('sequence')) is int for h in heartbeats),'heartbeat sequence')
++ seen_h=set();anchors=set();by_start={row['start']:p for row,p in zip(rows,persists)}
++ for h in heartbeats:
++  validate(h);key=(h['runId'],h['clockOrigin'],h['start']);require(key not in seen_h,'duplicate heartbeat');seen_h.add(key)
++  require((h['runId'],h['clockOrigin'])==(receipt['runId'],receipt['clockOrigin']) and h['observation']=='heartbeat' and h['bytes']==0 and h['checkpoint'] is False,'heartbeat identity')
++  anchor=h['precedingPollStart'];require(anchor not in anchors,'duplicate heartbeat anchor');anchors.add(anchor)
++  if anchor is None:require(h['startup'] is True and h['end']<=rows[0]['start'],'startup linkage')
++  else:
++   number(anchor);require(h['startup'] is False and anchor in by_start and by_start[anchor]['end']<=h['start'],'heartbeat linkage')
++  require(all(op['name'].startswith('heartbeat.') for op in h['phases']['operations']),'heartbeat operation scope')
++ return {'collection':len(rows),'persistence':len(persists),'heartbeat':len(heartbeats)}
+--- a/rehearsal-check.py
++++ b/rehearsal-check.py
+@@ -0,0 +1,131 @@
++"""Scaled rehearsal contracts; all host data are synthetic/private."""
++import copy, datetime, hashlib, json, os, pathlib, runpy, sys, tempfile
++ROOT=pathlib.Path(__file__).resolve().parent
++sys.path.insert(0,str(ROOT));import controller as c
++os.umask(0o077)
++assert (ROOT/'rehearse.py').exists(), 'Task5 prepare/start/verify interfaces are absent'
++r=c.module('rehearse',ROOT/'rehearse.py')
++checks=[]
++def reject(label,fn):
++ try:fn()
++ except (ValueError,AssertionError):checks.append(label);return
++ raise AssertionError('accepted '+label)
++def proof_fixture(root):
++ run={'runNonce':'fixture-nonce','runDir':str(root),'watchdogWall':1000,'threadId':'thread-fixture','codeSha256':r.inventory(ROOT)}
++ rows=[]
++ def add(kind,payload,sec):
++  rows.append({'timestamp':datetime.datetime.fromtimestamp(sec,datetime.timezone.utc).isoformat(),'type':kind,'payload':payload})
++ add('session_meta',{'id':run['threadId'],'cwd':str(root),'originator':'codex-tui','thread_source':'user'},1)
++ add('event_msg',{'type':'task_started','turn_id':'first','turn_attribution':{'turn_trigger':'user'}},10)
++ add('response_item',{'type':'custom_tool_call','call_id':'start-id','input':f'rehearse.py start {root} --nonce fixture-nonce'},11)
++ add('response_item',{'type':'custom_tool_call_output','call_id':'start-id','output':json.dumps({'runDir':str(root),'runNonce':'fixture-nonce','started':True})},12)
++ add('event_msg',{'type':'task_complete','turn_id':'first'},13)
++ add('event_msg',{'type':'task_started','turn_id':'next','turn_attribution':{'turn_trigger':'user'}},1001)
++ add('event_msg',{'type':'user_message','message':'The watchdog has passed.'},1002)
++ add('response_item',{'type':'message','role':'user','content':[{'type':'input_text','text':'The watchdog has passed.'}]},1002)
++ add('event_msg',{'type':'item_completed','turn_id':'next','item':{'type':'UserMessage'}},1002)
++ add('response_item',{'type':'custom_tool_call','call_id':'read-id','input':f'python3 {ROOT}/rehearse.py read-evidence {root} --receipt {root}/receipt.json --rollout {root}/rollout.jsonl --nonce fixture-nonce'},1003)
++ (root/'receipt.json').write_text(json.dumps({'syntheticFixture':True,'integrityComplete':True})+'\n')
++ (root/'rollout.jsonl').write_text(''.join(json.dumps(x)+'\n' for x in rows))
++ ack=r.evidence_read(run,root/'receipt.json',root/'rollout.jsonl','fixture-nonce')
++ # Representative actual root functions.exec envelope; acknowledgement is from real fixture reads.
++ output=[{'type':'input_text','text':'Script completed\nWall time 0.2 seconds\nOutput:\n'},
++  {'type':'input_text','text':json.dumps({'chunk_id':'fixture','wall_time_seconds':.2,'exit_code':0,'original_token_count':200,'output':json.dumps(ack)+'\n'})}]
++ add('response_item',{'type':'custom_tool_call_output','call_id':'read-id','output':output},1004)
++ return run,rows
++with tempfile.TemporaryDirectory() as temp:
++ root=pathlib.Path(temp);run,rows=proof_fixture(root);rollout=root/'rollout.jsonl'
++ def prove(changes=None):
++  data=copy.deepcopy(rows)
++  if changes:changes(data)
++  rollout.write_text(''.join(json.dumps(x)+'\n' for x in data))
++  proof=r.turn_proof(run,rollout,'first','next',pathlib.Path.home()/'.agents/bin/session-episodes')
++  return r.verify_turn(run,proof)
++ assert prove()['distinctHumanTurn'];checks.append('task_started before serialized human associates correctly')
++ def result_change(data,**changes):
++  envelope=json.loads(data[10]['payload']['output'][1]['text']);envelope.update(changes)
++  data[10]['payload']['output'][1]['text']=json.dumps(envelope)
++ def ack_change(data,change):
++  envelope=json.loads(data[10]['payload']['output'][1]['text']);ack=json.loads(envelope['output']);change(ack);result_change(data,output=json.dumps(ack))
++ for label,change in [
++  ('completed command permission denied',lambda x:result_change(x,exit_code=1,output='Permission denied')),
++  ('error-only successful exit',lambda x:result_change(x,output='Permission denied')),
++  ('success prose without acknowledgement',lambda x:result_change(x,output='read receipts and rollout')),
++  ('still-running nested command',lambda x:result_change(x,exit_code=None,session_id=42)),
++  ('session id with success ack',lambda x:result_change(x,session_id=42)),
++  ('error property with success ack',lambda x:result_change(x,error='Permission denied')),
++  ('yielded exec framing',lambda x:x[10]['payload']['output'][0].update(text='Script running with cell ID 1')),
++  ('wrong acknowledgement nonce',lambda x:ack_change(x,lambda a:a.update(runNonce='wrong'))),
++  ('wrong acknowledgement run',lambda x:ack_change(x,lambda a:a.update(runDir='/other'))),
++  ('wrong acknowledgement thread',lambda x:ack_change(x,lambda a:a.update(threadId='other'))),
++  ('wrong acknowledgement code',lambda x:ack_change(x,lambda a:a.update(codeDigest='0'*64))),
++  ('wrong receipt path',lambda x:ack_change(x,lambda a:a['receipt'].update(path='/other'))),
++  ('wrong receipt digest',lambda x:ack_change(x,lambda a:a['receipt'].update(sha256='0'*64))),
++  ('wrong rollout path',lambda x:ack_change(x,lambda a:a['rollout'].update(path='/other'))),
++  ('wrong rollout prefix digest',lambda x:ack_change(x,lambda a:a['rollout'].update(prefixSha256='0'*64))),
++  ('prefix excludes evidence-read call',lambda x:ack_change(x,lambda a:a['rollout'].update(prefixBytes=1))),
++  ('prefix includes its own result',lambda x:ack_change(x,lambda a:a['rollout'].update(prefixBytes=10**9))),
++  ('wrong read call nonce',lambda x:x[9]['payload'].update(input=x[9]['payload']['input'].replace('fixture-nonce','other'))),
++  ('wrong read result call id',lambda x:x[10]['payload'].update(call_id='other'))]:reject(label,lambda:prove(change))
++ assert prove(lambda x:x.append({'timestamp':'1970-01-01T00:16:45+00:00','type':'event_msg','payload':{'type':'task_complete','turn_id':'next'}}))['distinctHumanTurn']
++ checks.append('later rollout growth preserves actual read prefix')
++ receipt_bytes=(root/'receipt.json').read_bytes();(root/'receipt.json').write_bytes(receipt_bytes+b' ')
++ reject('receipt changed after actual read',lambda:prove());(root/'receipt.json').write_bytes(receipt_bytes)
++ for missing in (root/'receipt.json',rollout):
++  saved=missing.read_bytes();missing.unlink()
++  try:r.evidence_read(run,root/'receipt.json',rollout,'fixture-nonce')
++  except FileNotFoundError:checks.append('actual unreadable '+missing.name+' emits no ack')
++  else:raise AssertionError('acknowledged absent evidence')
++  missing.write_bytes(saved)
++ reject('read API wrong nonce',lambda:r.evidence_read(run,root/'receipt.json',rollout,'other'))
++
++ for label,change in [
++  ('failed evidence read Permission denied',lambda x:x[10]['payload'].update(output=json.dumps({'exit_code':1,'output':'cat: receipt.json: Permission denied; cat: rollout: Permission denied'}))),
++  ('same turn with parks',lambda x:x[5]['payload'].update(turn_id='first')),
++  ('missing first task_complete',lambda x:x[4]['payload'].update(type='other')),
++  ('injected user content',lambda x:x[7]['payload']['content'][0].update(text='# AGENTS.md injected')),
++  ('child-agent trigger',lambda x:x[5]['payload']['turn_attribution'].update(turn_trigger='agent')),
++  ('missing UserMessage completed',lambda x:x[8]['payload']['item'].update(type='Tool')),
++  ('wrong-turn UserMessage completed',lambda x:x[8]['payload'].update(turn_id='first')),
++  ('pre-watchdog reply',lambda x:x[7].update(timestamp='1970-01-01T00:16:39+00:00')),
++  ('wrong run nonce',lambda x:x[2]['payload'].update(input=f'rehearse.py start {root} --nonce other')),
++  ('failed start result',lambda x:x[3]['payload'].update(output=json.dumps({'runDir':str(root),'runNonce':'fixture-nonce','started':False}))),
++  ('mismatched tool result',lambda x:x[3]['payload'].update(call_id='other')),
++  ('aborted first turn',lambda x:x[4]['payload'].update(type='turn_aborted')),
++  ('wrong session',lambda x:x[0]['payload'].update(id='other'))]:reject(label,lambda:prove(change))
++ # verify_turn must independently reject a once-valid proof when the read result fails.
++ prove();valid=r.turn_proof(run,rollout,'first','next',pathlib.Path.home()/'.agents/bin/session-episodes')
++ failed=copy.deepcopy(rows);result_change(failed,exit_code=1,output='Permission denied')
++ rollout.write_text(''.join(json.dumps(x)+'\n' for x in failed))
++ reject('verify_turn rechecks failed completed read',lambda:r.verify_turn(run,valid))
++ reject('session-only provenance',lambda:r.verify_turn(run,{'threadId':run['threadId']}))
++ rollout.write_text(''.join(json.dumps(x)+'\n' for x in rows));p=r.turn_proof(run,rollout,'first','next',pathlib.Path.home()/'.agents/bin/session-episodes');p['events']['startCall']['sha256']='0'*64
++ reject('altered event reference',lambda:r.verify_turn(run,p))
++ # Controlled monotonic receipts: no real wait is used to claim lifetime.
++ good={'complete':True,'started':100.,'ended':2500.,'deadline':2800.,'exitReason':'complete','bytes':2400*1117592,'blocks':24000,'starts':1}
++ r.production_contract(good,2400,1117592)
++ for label,change in [('premature SIGTERM',{'complete':False,'exitReason':'signal'}),('short lifetime',{'ended':2499}),('deadline',{'ended':2800}),('restarted producer',{'starts':2}),('silently reduced byte rate',{'bytes':2400*1117592-1})]:
++  bad=good|change;reject(label,lambda:r.production_contract(bad,2400,1117592))
++ polls=[{'start':1.,'end':1.01,'previousIntervalPersistence':None},{'start':1.1,'end':1.11,'previousIntervalPersistence':{'start':1.01,'end':1.02,'persistedObservationStart':1.}}]
++ receipt={'lastIntervalPersistence':{'start':1.11,'end':1.12,'persistedObservationStart':1.1}}
++ assert r.poll_contract(polls,receipt,.2)['persistenceCount']==2
++ reject('missing persistence',lambda:r.poll_contract(polls,{},.2))
++ reject('gap breach',lambda:r.poll_contract(polls,receipt,.05))
++ reject('work plus persistence breach',lambda:r.poll_contract(polls,{'lastIntervalPersistence':{'start':1.11,'end':1.4,'persistedObservationStart':1.1}},.2))
++ # Each payload is independently expected, including repeated exact A bytes.
++ for n in range(4):assert r.block('n',n,2048).startswith(f'rehearsal n {n} 2048\n'.encode()) and len(r.block('n',n,2048))==2048
++ data=b''.join(r.block('n',n,2048) for n in range(4));path=root/'blocks';path.write_bytes(data)
++ assert r.check_blocks(path,'n',2048)==4
++ path.write_bytes(data[:2048]+data[:2048]+data[4096:]);reject('duplicate id',lambda:r.check_blocks(path,'n',2048))
++ path.write_bytes(data[:2048]+data[4096:]);reject('missing id',lambda:r.check_blocks(path,'n',2048))
++with tempfile.TemporaryDirectory() as temp:
++ root=pathlib.Path(temp)/'prepared';r.prepare(root,1)
++ run=c.load(root/'run.json');original=(root/'run.json').read_bytes()
++ c.atomic(root/'run.json',run|{'smoke':False})
++ reject('scaled run promoted to lifetime',lambda:r.verify_inputs(root))
++ (root/'run.json').write_bytes(original)
++ artifact=root/'build/baseline/plugin/panel.lua'
++ if not artifact.exists():artifact=next(p for p in (root/'build/baseline/plugin').rglob('*') if p.is_file())
++ artifact.write_bytes(artifact.read_bytes()+b'\nchanged\n')
++ reject('generated plugin changed before start',lambda:r.verify_inputs(root))
++print('PASS scaled contracts',len(checks),json.dumps(checks))
+--- a/rehearsal-smoke.py
++++ b/rehearsal-smoke.py
+@@ -0,0 +1,46 @@
++"""Seconds-long exact-wrapper lifecycle checks; no live desktop or application state."""
++import json,os,signal,subprocess,sys,time
++from pathlib import Path
++import capture as cap,controller as c,rehearse as r
++os.umask(0o077)
++root=Path(sys.argv[1]).resolve();mode=sys.argv[2];duration=3 if mode=='fullburst' else 2
++r.prepare(root,duration,mode in ('native','native-emergency'));cfg=c.load(root/'collector.json');ids={};result=None
++p=Path(os.getenv('TMUX_TMPDIR','/tmp'))/f'tmux-{os.getuid()}'/'default'
++def default():
++ if not p.exists():return None
++ st=p.stat();return [st.st_dev,st.st_ino,st.st_mtime_ns,st.st_ctime_ns,subprocess.check_output(['tmux','-L','default','list-sessions'],text=True)]
++before=default();c.immutable(root/'default-before.json',before)
++def wait(predicate,seconds=4):
++ end=time.monotonic()+seconds
++ while time.monotonic()<end:
++  if predicate():return
++  time.sleep(.02)
++ raise AssertionError('bounded smoke condition failed')
++try:
++ r.start(root,c.load(root/'run.json')['runNonce'])
++ wait(lambda:(root/'producer-start.json').exists(),2)
++ ids=c.load(root/'processes.json');assert 'producer' in ids,'wrapper does not own producer'
++ if mode=='deadline':
++  binding=c.load(root/'start.json');binding['watchdogMonotonic']=time.monotonic()+.2;c.atomic(root/'start.json',binding)
++ if mode in ('term','int','hup'):os.kill(ids['wrapper']['pid'],{'term':signal.SIGTERM,'int':signal.SIGINT,'hup':signal.SIGHUP}[mode])
++ if mode=='native-emergency':wait(lambda:(root/'native-identity.json').exists(),4)
++ if mode in ('emergency','native-emergency'):cap.tmux(cfg,'kill-server',check=False)
++ if mode=='producer-term':os.kill(ids['producer']['pid'],signal.SIGTERM)
++ wait(lambda:(root/'receipt.json').exists() and 'wrapperEnded' in c.load(root/'receipt.json'),120 if mode=='native' else 25)
++ receipt=c.load(root/'receipt.json');wait(lambda:all(not cap.same_process(x) for x in receipt['processes'].values()))
++ r.phases.validate_capture([json.loads(line) for line in (root/'polls.jsonl').read_text().splitlines()],receipt)
++ if mode in ('normal','fullburst','native'):
++  result=r.verify_capture(root);assert result['blocks']>=20 and len(c.load(root/'manifest.json')['segments'])>=3
++ else:
++  assert receipt['integrityComplete'] is False,receipt
++  result={'incomplete':True,'exitReason':receipt['exitReason'],'processesGone':True}
++ assert before==default(),'default tmux changed'
++ c.immutable(root/'smoke-result.json',result);print('PASS',mode,json.dumps({k:v for k,v in result.items() if k!='overlap'}))
++finally:
++ cap.tmux(cfg,'kill-server',check=False)
++ if (root/'processes.json').exists():ids=c.load(root/'processes.json')
++ end=time.monotonic()+5
++ while any(cap.same_process(x) for x in ids.values()) and time.monotonic()<end:time.sleep(.02)
++ remaining={k:v for k,v in ids.items() if cap.same_process(v)}
++ c.immutable(root/'smoke-cleanup.json',{'processes':ids,'remaining':remaining,'defaultServerUnchanged':default()==before})
++ assert not remaining,remaining
+--- a/rehearse.py
++++ b/rehearse.py
+@@ -0,0 +1,404 @@
++"""Synthetic lifetime preparation and strict private evidence verification; never live IPC."""
++import argparse, datetime, hashlib, json, math, os, runpy, selectors, signal, subprocess, sys, time, uuid
++from pathlib import Path
++import controller as c
++import capture as cap
++import phases
++ROOT=Path(__file__).resolve().parent
++BASELINE='9bf4e8e920c005f8a4d1666b32b4e1a516856ac2'
++CANDIDATE='e7384b0d7ab3e8e935cdf0776043839441132af5'
++FLOOR=682491
++OBSERVED=1117592
++GUARD=1425679
++MIB=1024*1024
++
++def inventory(root):
++    return {str(p.relative_to(root)):c.digest(p.read_bytes()) for p in sorted(root.rglob('*')) if p.is_file() and '__pycache__' not in p.parts}
++
++def production_contract(receipt,duration,rate):
++    c.require(receipt['complete'] is True and receipt['exitReason']=='complete','producer incomplete or interrupted')
++    c.require(receipt['starts']==1,'producer restart')
++    c.require(receipt['ended']-receipt['started']>=duration,'short producer lifetime')
++    c.require(receipt['ended']<receipt['deadline'],'producer deadline')
++    c.require(receipt['bytes']>=math.ceil(duration*rate),'silently reduced producer rate')
++    return True
++
++def poll_contract(rows,receipt,gap):
++    c.require(bool(rows),'missing polls')
++    persists=[x['previousIntervalPersistence'] for x in rows if x.get('previousIntervalPersistence') is not None]
++    if receipt.get('lastIntervalPersistence') is not None:persists.append(receipt['lastIntervalPersistence'])
++    c.require(len(persists)==len(rows),'missing persistence coverage')
++    c.require(len({x['persistedObservationStart'] for x in persists})==len(rows),'duplicate persistence coverage')
++    for row,p in zip(rows,persists):
++        c.require(row['start']==p['persistedObservationStart'] and row['end']==p['start'] and p['end']>=p['start']>=row['start'],'persistence identity/order')
++        c.require(not row.get('error') and not p.get('error'),'poll error')
++    work=max(p['end']-row['start'] for row,p in zip(rows,persists))
++    maxgap=max((b['start']-a['start'] for a,b in zip(rows,rows[1:])),default=0)
++    c.require(work<=gap and maxgap<=gap,'poll gap/work plus persistence breach')
++    return {'collectionCount':len(rows),'persistenceCount':len(persists),'maxGapSeconds':maxgap,'maxWorkPersistenceSeconds':work}
++
++def block(nonce,n,size):
++    head=f'rehearsal {nonce} {n} {size}\n'.encode()
++    # Exact A -> B -> A payload occurrences recur; numbered headers prove multiplicity/order.
++    return head+bytes([65 if n%3!=1 else 66])*(size-len(head)-1)+b'\n'
++
++def check_blocks(path,nonce,size):
++    n=0
++    with path.open('rb') as f:
++        while raw:=f.read(size):
++            c.require(raw==block(nonce,n,size),'synthetic payload/id/sequence mismatch');n+=1
++    return n
++
++def epoch(text):return datetime.datetime.fromisoformat(text.replace('Z','+00:00')).timestamp()
++
++def start_ack(value,run):
++    if isinstance(value,dict):
++        if value.get('started') is True and value.get('runDir')==run['runDir'] and value.get('runNonce')==run['runNonce']:return True
++        return any(start_ack(v,run) for v in value.values())
++    if isinstance(value,list):return any(start_ack(v,run) for v in value)
++    if isinstance(value,str):
++        try:decoded=json.loads(value)
++        except (ValueError,TypeError):
++            # Harness output may wrap an exact JSON acknowledgement in tool status text.
++            for i,char in enumerate(value):
++                if char!='{':continue
++                try:decoded,_=json.JSONDecoder().raw_decode(value[i:])
++                except ValueError:continue
++                if start_ack(decoded,run):return True
++            return False
++        return decoded!=value and start_ack(decoded,run)
++    return False
++
++def evidence_read(run,receipt,rollout,nonce):
++    """Emit an acknowledgement only after both actual reads; rollout may keep growing."""
++    c.require(nonce==run['runNonce'],'evidence-read nonce mismatch')
++    c.require(receipt==Path(run['runDir'])/'receipt.json' and receipt.is_absolute() and rollout.is_absolute(),'evidence-read path mismatch')
++    c.require(inventory(ROOT)==run['codeSha256'],'evidence-read code changed')
++    receipt_bytes=receipt.read_bytes();json.loads(receipt_bytes)
++    rollout_bytes=rollout.read_bytes()
++    # A concurrently serialized last line is outside this stable, complete-line prefix.
++    prefix=rollout_bytes[:rollout_bytes.rfind(b'\n')+1]
++    c.require(bool(prefix),'empty evidence-read rollout prefix')
++    first=json.loads(prefix.splitlines()[0])
++    c.require(first['type']=='session_meta' and first['payload']['id']==run['threadId'],'evidence-read thread mismatch')
++    return {'schema':1,'kind':'rehearsal-evidence-read','runDir':run['runDir'],'runNonce':nonce,
++        'threadId':run['threadId'],'codeDigest':c.digest(c.encoded(run['codeSha256'])),
++        'receipt':{'path':str(receipt),'bytes':len(receipt_bytes),'sha256':c.digest(receipt_bytes)},
++        'rollout':{'path':str(rollout),'prefixBytes':len(prefix),'prefixSha256':c.digest(prefix)}}
++
++def read_ack(value,run,rollout,raw,call_index,result_index):
++    # Exact functions.exec text(await tools.exec_command(...)) completed envelope.
++    # No recursive/string search: yielded sessions and arbitrary output cannot qualify.
++    c.require(isinstance(value,list) and len(value)==2 and all(isinstance(x,dict) and set(x)=={'type','text'} and x['type']=='input_text' and isinstance(x['text'],str) for x in value),'invalid evidence-read harness envelope')
++    framing=value[0]['text'].splitlines()
++    c.require(len(framing)==3 and framing[0]=='Script completed' and framing[1].startswith('Wall time ') and framing[1].endswith(' seconds') and framing[2]=='Output:','evidence-read exec not completed')
++    result=json.loads(value[1]['text'])
++    c.require(isinstance(result,dict) and set(result)=={'chunk_id','wall_time_seconds','exit_code','original_token_count','output'} and type(result['exit_code']) is int and result['exit_code']==0 and isinstance(result['output'],str),'evidence-read command failed or still running')
++    ack=json.loads(result['output'])
++    c.require(isinstance(ack,dict) and set(ack)=={'schema','kind','runDir','runNonce','threadId','codeDigest','receipt','rollout'},'invalid evidence-read acknowledgement')
++    prefix_info=ack['rollout']
++    c.require(isinstance(prefix_info,dict) and set(prefix_info)=={'path','prefixBytes','prefixSha256'},'invalid evidence-read prefix')
++    count=prefix_info['prefixBytes'];data=b''.join(raw)
++    c.require(type(count) is int and sum(map(len,raw[:call_index+1]))<=count<=sum(map(len,raw[:result_index])) and data[:count].endswith(b'\n'),'evidence-read prefix does not cover call before result')
++    receipt=Path(run['runDir'])/'receipt.json';receipt_bytes=receipt.read_bytes()
++    expected={'schema':1,'kind':'rehearsal-evidence-read','runDir':run['runDir'],'runNonce':run['runNonce'],
++        'threadId':run['threadId'],'codeDigest':c.digest(c.encoded(run['codeSha256'])),
++        'receipt':{'path':str(receipt),'bytes':len(receipt_bytes),'sha256':c.digest(receipt_bytes)},
++        'rollout':{'path':str(rollout),'prefixBytes':count,'prefixSha256':c.digest(data[:count])}}
++    c.require(ack==expected,'evidence-read artifact/run/code binding mismatch')
++
++def turn_proof(run,rollout,first,next_turn,classifier):
++    """Root calls only after its evidence-read call and completed first turn exist."""
++    c.require(first!=next_turn,'same turn is not a handoff')
++    c.require(classifier.resolve()==(Path.home()/'.agents/bin/session-episodes').resolve(),'unrecognized human classifier')
++    raw=rollout.read_bytes().splitlines(keepends=True);rows=[json.loads(x) for x in raw]
++    classified=runpy.run_path(str(classifier))['read_codex'](rollout)
++    c.require(classified.malformed==0 and classified.session_id==run['threadId'] and not classified.subagent,'wrong session or malformed rollout')
++    human_lines={e.line for e in classified.events if e.kind=='human'}
++    refs={};active=None
++    def ref(i):
++        x=rows[i];p=x['payload'];return {'line':i+1,'timestamp':x['timestamp'],'type':p.get('type',x['type']),'turnId':p.get('turn_id',active),'sha256':c.digest(raw[i])}
++    def put(key,i):c.require(key not in refs,'ambiguous '+key);refs[key]=ref(i)
++    for i,x in enumerate(rows):
++        p=x['payload'];typ=p.get('type');kind=x['type']
++        if kind=='session_meta' and 'session' not in refs:put('session',i)
++        if kind=='event_msg' and typ=='task_started':
++            active=p['turn_id']
++            if active==first:put('firstStarted',i)
++            if active==next_turn:
++                c.require(p.get('turn_attribution',{}).get('turn_trigger')=='user','next turn is not human-triggered');put('nextStarted',i)
++        if kind=='event_msg' and typ=='turn_aborted' and active in (first,next_turn):raise ValueError('aborted turn')
++        if kind=='event_msg' and typ=='task_complete' and p.get('turn_id')==first:
++            c.require(active==first,'first completion outside its bracket');put('firstComplete',i);active=None
++        if active==first and kind=='response_item' and typ in ('custom_tool_call','function_call'):
++            text=str(p.get('input',p.get('arguments','')))
++            if 'rehearse.py' in text and 'start' in text and run['runDir'] in text and run['runNonce'] in text:put('startCall',i)
++        if active==first and kind=='response_item' and typ in ('custom_tool_call_output','function_call_output') and 'startCall' in refs:
++            call=rows[refs['startCall']['line']-1]['payload']
++            if p.get('call_id')==call['call_id']:
++                c.require(start_ack(p.get('output'),run),'start result lacks successful run binding');put('startResult',i)
++        if active==next_turn:
++            if i+1 in human_lines:put('human',i)
++            if kind=='event_msg' and typ=='item_completed' and p.get('item',{}).get('type')=='UserMessage':
++                c.require(p.get('turn_id')==next_turn,'wrong-turn UserMessage item_completed');put('humanCompleted',i)
++            if kind=='response_item' and typ in ('custom_tool_call','function_call'):
++                text=str(p.get('input',p.get('arguments','')))
++                if 'rehearse.py' in text and 'read-evidence' in text and run['runNonce'] in text and str(rollout) in text and str(Path(run['runDir'])/'receipt.json') in text:put('readCall',i)
++            if kind=='response_item' and typ in ('custom_tool_call_output','function_call_output') and 'readCall' in refs:
++                call=rows[refs['readCall']['line']-1]['payload']
++                if p.get('call_id')==call['call_id']:
++                    read_ack(p.get('output'),run,rollout,raw,refs['readCall']['line']-1,i)
++                    put('readResult',i);break
++    required={'session','firstStarted','startCall','startResult','firstComplete','nextStarted','human','humanCompleted','readCall','readResult'}
++    c.require(set(refs)==required,'missing turn evidence: '+','.join(sorted(required-set(refs))))
++    c.require(rows[refs['session']['line']-1]['payload']['id']==run['threadId'],'session identity mismatch')
++    c.require(refs['firstStarted']['line']<refs['startCall']['line']<refs['startResult']['line']<refs['firstComplete']['line']<refs['nextStarted']['line']<=refs['human']['line']<refs['readCall']['line']<refs['readResult']['line'],'turn bracket/tool order mismatch')
++    c.require(refs['nextStarted']['line']<refs['humanCompleted']['line']<refs['readCall']['line'],'human completed outside next turn')
++    c.require(epoch(refs['human']['timestamp'])>run['watchdogWall'] and epoch(refs['nextStarted']['timestamp'])>run['watchdogWall'],'pre-watchdog message')
++    return {'threadId':run['threadId'],'firstTurnId':first,'nextTurnId':next_turn,'rolloutPath':str(rollout),'classifierPath':str(classifier),'classifierSha256':c.digest(classifier.read_bytes()),'events':refs}
++
++def verify_turn(run,proof):
++    c.require(set(proof)=={'threadId','firstTurnId','nextTurnId','rolloutPath','classifierPath','classifierSha256','events'},'session-only/invalid proof')
++    c.require(proof['threadId']==run['threadId'],'proof thread mismatch')
++    classifier=Path(proof['classifierPath'])
++    c.require(c.digest(classifier.read_bytes())==proof['classifierSha256'],'classifier changed')
++    actual=turn_proof(run,Path(proof['rolloutPath']),proof['firstTurnId'],proof['nextTurnId'],classifier)
++    c.require(actual==proof,'selected event reference/hash mismatch')
++    return {'distinctHumanTurn':True,'threadId':proof['threadId'],'firstTurnId':proof['firstTurnId'],'nextTurnId':proof['nextTurnId'],'events':proof['events'],'classifierSha256':proof['classifierSha256']}
++
++def private(root):
++    for p in [root,*root.rglob('*')]:
++        if not p.is_symlink():p.chmod(0o700 if p.is_dir() else 0o600)
++
++def prepare(root,smoke_seconds=None,native_smoke=False):
++    os.umask(0o077);root=root.resolve();root.mkdir(mode=0o700)
++    state=ROOT.parent;accepted=state/'runs/broad-fix2-b52be99db6a54e219e3b038e65c6cb93'
++    calibration=[accepted/'final-qualification-baseline/run/proof.json',accepted/'final-qualification-candidate/run/proof.json',accepted/'final-qualification-capacity/proof.json']
++    observed=state/'runs/root-accepted-proof-0c1040d5a4a040d7b332ff9937ddcb14'
++    calibration += [observed/v/'run/proof.json' for v in ('baseline','candidate')]
++    calibration += [accepted/('qualification-'+v)/'run/proof.json' for v in ('baseline','candidate')]
++    proofs=[c.load(p) for p in calibration]
++    c.require(max(p['nativeWorkloadPeakBytesPerSecond'] for p in proofs if 'nativeWorkloadPeakBytesPerSecond' in p)==682491,'native calibration mismatch')
++    c.require(max(p['peakBytesPerSecond'] for p in proofs if 'peakBytesPerSecond' in p)==OBSERVED,'observed full source calibration mismatch')
++    c.require(proofs[2]['PASS'] and proofs[2]['retainedBytes']>=FLOOR*2400,'insufficient retained-history qualification')
++    nonce='rehearsal-'+uuid.uuid4().hex;duration=2400 if smoke_seconds is None else smoke_seconds
++    c.require(smoke_seconds is None or 1<=duration<=10,'smoke must be seconds-long')
++    build=root/'build';cli=str(Path.cwd()/'bin/prism')
++    subprocess.run([sys.executable,str(ROOT/'frozen-task2/build.py'),'--baseline',BASELINE,'--candidate',CANDIDATE,'--cli',cli,'--output',str(build),'--nonce',nonce,'--stage','stage2','--block','1','--cold-pairs','5','--launch-pairs','5'],check=True,capture_output=True)
++    model=state/'private-fixtures/model-private.lua'
++    subprocess.run(['lua',str(ROOT/'controller-producer.lua'),str(build),str(model),str(ROOT/'frozen-task2/test_encode.lua'),cli,'handoff-full','baseline',str(root/'producer')],env=os.environ|{'FIXTURE_START':'1000'},check=True,capture_output=True)
++    identity=c.load(build/'baseline/identity.json');meta=c.load(root/'producer-meta.json');model=meta['initialModel'];values={p['key']:p['value'] for p in model['params']}
++    saved={'pair':{'P':'P','Q':'Q'},'profiles':{'P':values,'Q':values},'runtime':{'active':model['active'],'scratch':{}},'uneditedNumeric':[{'key':'glass.inactive.roughness'}]}
++    definitions={p['key']:{k:p[k] for k in ('type','range') if k in p} for p in model['params']}
++    actions=c.action_manifest(identity,saved)
++    c.immutable(root/'protocol.json',{'identity':identity,'saved':saved,'definitions':definitions,'manifest':actions,'replyAt':meta['finalReply'],'payloadSha256':c.digest((root/'producer-tail.log').read_bytes())})
++    protocol(root,root/'producer-tail.log')
++    (root/'raw').mkdir();(root/'raw/host.log').write_bytes(b'')
++    limits=c.capture_limits(MIB,GUARD,1)
++    cfg={'schema':2,'environment':'synthetic','runId':identity['runId'],'clockOrigin':identity['clockOrigin'] if smoke_seconds is None or native_smoke else 'host-monotonic-synthetic-rehearsal','socket':'prism-budget-capture-'+nonce,'deadlineSeconds':2700,'pollSeconds':min(.1,limits['pollSeconds']),'maxGapSeconds':limits['maxGapSeconds'],'log':str(root/'raw/host.log'),'rehearsal':str(root/'run.json')}
++    for k in ('manifest','control','receipt','heartbeat','polls','identities'):cfg[k]=str(root/(('processes' if k=='identities' else k)+('.jsonl' if k=='polls' else '.json')))
++    c.immutable(root/'collector.json',cfg)
++    code=inventory(ROOT);inputs={str(p.relative_to(state)):c.digest(p.read_bytes()) for p in calibration}
++    run={'schema':2,'environment':'synthetic','runDir':str(root),'runNonce':nonce,'durationSeconds':duration,'watchdogSeconds':2700,'smoke':smoke_seconds is not None,'native':smoke_seconds is None or native_smoke,'nativeLeadSeconds':90,'targetBytesPerSecond':FLOOR,'guardBytesPerSecond':GUARD,'nativePeakBytesPerSecond':682491,'observedSourcePeakBytesPerSecond':OBSERVED,'cli':cli,'modelSha256':c.digest((state/'private-fixtures/model-private.lua').read_bytes()),'blockBytes':math.ceil(FLOOR*.1),'tickSeconds':.1,'codeSha256':code,'calibrationSha256':inputs,'baselineSource':BASELINE,'candidateSource':CANDIDATE,'clock':'host monotonic; protocol times controlled fixture only','inputs':{str(p.relative_to(root)):c.digest(p.read_bytes()) for p in [root/'collector.json',root/'protocol.json',root/'producer-tail.log',*(x for x in build.rglob('*') if x.is_file())]}}
++    c.immutable(root/'run.json',run);private(root)
++    return {'runDir':str(root),'runNonce':nonce,'prepared':True,'smoke':run['smoke'],'codeDigest':c.digest(c.encoded(code))}
++
++def protocol(root,path):
++    p=c.load(root/'protocol.json');run=c.load(root/'run.json') if (root/'run.json').exists() else None
++    expected=root/'producer-tail.log'
++    if run and run['native']:
++        expected=root/'native-tail.log';p=p|{'replyAt':c.load(root/'native-meta.json')['finalReply']}
++    # Compare every measurement line to the producer's independently retained full history.
++    payload=b''.join(line for line in path.read_bytes().splitlines(keepends=True) if b'prism-budget ' in line)
++    expected_payload=b''.join(line for line in expected.read_bytes().splitlines(keepends=True) if b'prism-budget ' in line)
++    c.require(payload==expected_payload,'measurement payload equality')
++    p=p|{'payloadSha256':c.digest(expected_payload)}
++    events=c.analyze.read_rotated([path]);i=p['identity'];n=i['activationNonce']
++    c.require(sorted(e['recordId'] for e in events)==list(range(1,len(events)+1)),'duplicate/missing protocol ids')
++    normal,context=c.inspect_capture(events,[i],{n:p['manifest']},{n:p['saved']},{n:p['definitions']},{n:p['replyAt']},True,{})
++    c.require(normal['collectionComplete'] and context['cardTiming'][i['cardId']],'strict synthetic operation contract incomplete')
++    c.require(any(e['class']=='drain' and e.get('operationId')==p['manifest']['operations'][-1]['id'] for e in events),'final operation-qualified drain missing')
++    return {'records':len(events),'payloadSha256':p['payloadSha256'],'collectionComplete':True,'normal':normal}
++
++def verify_inputs(root):
++    run=c.load(root/'run.json');c.require(run['environment']=='synthetic' and run['runDir']==str(root),'non-synthetic/path mismatch')
++    c.require(run['schema']==2 and type(run['smoke']) is bool and run['watchdogSeconds']==2700 and run['targetBytesPerSecond']==FLOOR and run['guardBytesPerSecond']==GUARD,'invalid rehearsal contract')
++    c.require((run['smoke'] and 1<=run['durationSeconds']<=10) or (not run['smoke'] and run['durationSeconds']==2400 and run['native'] is True),'invalid duration/native contract')
++    c.require(inventory(ROOT)==run['codeSha256'],'code changed since prepare')
++    for name,sha in run['inputs'].items():c.require(c.digest((root/name).read_bytes())==sha,'prepared input changed: '+name)
++    for name,sha in run['calibrationSha256'].items():c.require(c.digest((ROOT.parent/name).read_bytes())==sha,'calibration changed')
++    return run
++
++def start(root,nonce):
++    run=verify_inputs(root);c.require(nonce==run['runNonce'],'run nonce mismatch')
++    c.require(not (root/'start.json').exists(),'run cannot restart')
++    thread=os.environ.get('CODEX_THREAD_ID') or os.environ.get('CODEX_SESSION_ID')
++    c.require(run['smoke'] or bool(thread),'native thread identity required')
++    now=time.monotonic();wall=time.time();cfg=c.load(root/'collector.json')
++    c.immutable(root/'start.json',{'threadId':thread,'runNonce':nonce,'startedMonotonic':now,'startedWall':wall,'watchdogMonotonic':now+2700,'watchdogWall':wall+2700,'stopCommand':f"tmux -L {cfg['socket']} kill-server"})
++    # Same shell wrapper and capture launch path for smoke and the root's long run.
++    subprocess.run(['bash',str(ROOT/'capture-wrapper.sh'),str(root/'collector.json')],check=True,capture_output=True)
++    return {'runDir':str(root),'runNonce':nonce,'started':True,**c.load(root/'start.json')}
++
++def produce(root):
++    run=verify_inputs(root);cfg=c.load(root/'collector.json');started=time.monotonic();deadline=c.load(root/'start.json')['watchdogMonotonic'];seq=0;total=0;sha=hashlib.sha256();reason='unexpected';complete=False;spans=[];native=None;native_id=None;sel=None
++    cap.install_traps();c.immutable(root/'producer-start.json',{'process':cap.process(os.getpid()),'started':started,'deadline':deadline})
++    log=Path(cfg['log']);size=run['blockBytes'];tick=run['tickSeconds'];next_floor=started;native_started=False;buffer=b'';ticks=[]
++    try:
++        with (root/'writer-spans.jsonl').open('x') as out, (root/'native-stderr.log').open('x') as errors, (root/'scheduler.jsonl').open('x') as scheduler:
++            def write(raw,kind):
++                nonlocal total
++                c.require(time.monotonic()<deadline,'producer deadline')
++                c.require(len(raw)<=MIB,'source flush exceeds rotation capacity')
++                if log.stat().st_size+len(raw)>MIB:log.replace(log.with_name(log.name+'.1'));log.write_bytes(b'')
++                begin=time.monotonic()
++                with log.open('ab',buffering=0) as f:c.require(f.write(raw)==len(raw),'partial producer write');os.fsync(f.fileno())
++                end=time.monotonic();sha.update(raw);total+=len(raw)
++                row={'start':begin,'end':end,'bytes':len(raw),'kind':kind};out.write(json.dumps(row)+'\n');out.flush();spans.append(row)
++            def padding(amount):
++                nonlocal seq
++                if amount>=128:write(block(run['runNonce'],seq,amount),'synthetic');seq+=1
++            next_tick=started
++            while True:
++                now=time.monotonic();c.require(now<deadline,'producer deadline')
++                if run['native'] and not native_started and now-started>=max(0,run['durationSeconds']-run['nativeLeadSeconds']):
++                    model=ROOT.parent/'private-fixtures/model-private.lua'
++                    c.require(c.digest(model.read_bytes())==run['modelSha256'],'private fixture changed')
++                    argv=['lua',str(ROOT/'controller-producer.lua'),str(root/'build'),str(model),str(ROOT/'frozen-task2/test_encode.lua'),run['cli'],'handoff-full','baseline',str(root/'native')]
++                    prior=signal.pthread_sigmask(signal.SIG_BLOCK,{signal.SIGTERM,signal.SIGINT,signal.SIGHUP})
++                    try:
++                        native=subprocess.Popen(argv,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=errors,env=os.environ|{'PACED':'1','FIXTURE_START':str(now)},bufsize=0,preexec_fn=lambda:signal.pthread_sigmask(signal.SIG_SETMASK,prior))
++                        native_id=cap.process(native.pid);c.immutable(root/'native-identity.json',native_id)
++                    finally:signal.pthread_sigmask(signal.SIG_SETMASK,prior)
++                    sel=selectors.DefaultSelector();sel.register(native.stdout,selectors.EVENT_READ);native_started=True;next_tick=time.monotonic()
++                if native and native.poll() is None and now>=next_tick:
++                    try:native.stdin.write((str(now)+'\n').encode())
++                    except BrokenPipeError:pass
++                    scheduler.write(json.dumps({'timestamp':now})+'\n');scheduler.flush();ticks.append(now);next_tick=now+.016
++                if sel:
++                    for key,mask in sel.select(0):
++                        data=os.read(key.fd,65536)
++                        if data:
++                            buffer+=data
++                            if b'\n' in buffer:
++                                cut=buffer.rfind(b'\n')+1;write(buffer[:cut],'protocol');buffer=buffer[cut:]
++                        else:sel.unregister(key.fileobj)
++                if now>=next_floor:
++                    recent=0
++                    for span in reversed(spans):
++                        if span['start']<now-1:break
++                        recent+=span['bytes']
++                    padding(min(size,max(0,FLOOR-recent)));next_floor=now+.1
++                native_done=native_started and native.poll() is not None and not sel.get_map() if run['native'] else True
++                if native_done and now-started>=run['durationSeconds'] and total>=math.ceil(run['durationSeconds']*FLOOR):break
++                time.sleep(.002)
++            if native:
++                native.wait(timeout=2);c.require(native.returncode==0,'native producer failed')
++                c.require(not buffer,'partial native final line')
++            else:
++                with (root/'producer-tail.log').open('rb') as f:
++                    for line in f:
++                        write(line,'protocol');time.sleep(max(0,len(line)/FLOOR-(time.monotonic()-spans[-1]['start'])))
++            complete=True;reason='complete'
++    except cap.Interrupted:reason='signal'
++    except BaseException as e:reason=str(e)
++    finally:
++        for sig in (signal.SIGTERM,signal.SIGINT,signal.SIGHUP):signal.signal(sig,signal.SIG_IGN)
++        if native:
++            if native.poll() is None:native.terminate()
++            try:native.wait(timeout=2)
++            except subprocess.TimeoutExpired:
++                if native_id and cap.same_process(native_id):native.kill()
++                native.wait(timeout=2)
++            native.stdin.close();native.stdout.close()
++        if sel:sel.close()
++        ended=time.monotonic();peak=0;j=0;running=0
++        for row in spans:
++            while j<len(spans) and spans[j]['start']<row['start']+1:running+=spans[j]['bytes'];j+=1
++            peak=max(peak,running);running-=row['bytes']
++        c.immutable(root/'producer-receipt.json',{'complete':complete,'exitReason':reason,'started':started,'ended':ended,'deadline':deadline,'starts':1,'blocks':seq,'bytes':total,'sha256':sha.hexdigest(),'peakBytesPerSecond':peak,'nativeProcess':native_id,'nativeExit':native.returncode if native else None,'framePeriodSeconds':.016 if native else None,'nativeTicks':len(ticks),'maxFrameGapSeconds':max((b-a for a,b in zip(ticks,ticks[1:])),default=0)})
++    return 0 if complete else 1
++
++def before_finish(root):
++    run=verify_inputs(root);receipt=c.load(root/'producer-receipt.json')
++    production_contract(receipt,run['durationSeconds'],FLOOR)
++    c.require(time.monotonic()<receipt['deadline'],'supervisor deadline before verification')
++    cfg=c.load(root/'collector.json');limits=c.capture_limits(MIB,max(FLOOR,receipt['peakBytesPerSecond']),1)
++    c.require(cfg['pollSeconds']<=limits['pollSeconds'] and cfg['maxGapSeconds']<=limits['maxGapSeconds'],'actual burst exceeds prospective guard')
++    result=audit_stream(root)['protocol']
++    c.require(time.monotonic()<receipt['deadline'],'supervisor deadline during verification')
++    return {k:v for k,v in result.items() if k!='normal'}
++
++def audit_stream(root,allow_expired=False):
++    run=c.load(root/'run.json');pr=c.load(root/'producer-receipt.json');manifest=c.load(root/'manifest.json')
++    sha=hashlib.sha256();total=0;blocks=0;pending=b'';payload=root/'raw/verified-protocol.log';expected_block=None
++    with payload.open('wb') as out:
++        for index,segment in enumerate(manifest['segments'],1):
++            c.require(segment['generation']==index and Path(segment['path']).name==segment['path'],'segment order/path')
++            path=root/segment['path'];h=hashlib.sha256();count=0
++            with path.open('rb') as f:
++                while chunk:=f.read(MIB):
++                    c.require(time.monotonic()<pr['deadline'] or allow_expired,'stream verification deadline')
++                    h.update(chunk);count+=len(chunk);sha.update(chunk);total+=len(chunk);pending+=chunk
++                    while b'\n' in pending:
++                        line,pending=pending.split(b'\n',1);line+=b'\n'
++                        if expected_block:
++                            c.require(line==expected_block,'captured synthetic payload mismatch');expected_block=None;blocks+=1
++                        elif line.startswith(b'rehearsal '):
++                            parts=line.decode().split();c.require(len(parts)==4 and parts[1]==run['runNonce'] and int(parts[2])==blocks,'captured duplicate/missing synthetic id')
++                            amount=int(parts[3]);c.require(128<=amount<=run['blockBytes'],'synthetic block size')
++                            expected=block(run['runNonce'],blocks,amount);c.require(expected.startswith(line),'synthetic header');expected_block=expected[len(line):]
++                        else:out.write(line)
++            c.require(count==segment['bytes'] and h.hexdigest()==segment['sha256'],'captured segment hash/bytes mismatch')
++    c.require(not pending and expected_block is None,'truncated captured line/block')
++    c.require(total==pr['bytes'] and sha.hexdigest()==pr['sha256'] and blocks==pr['blocks'],'all captured bytes/ids differ from producer')
++    c.require(b'exceeded its CPU budget' not in payload.read_bytes(),'captured budget error')
++    normal=protocol(root,payload)
++    return {'bytes':total,'sha256':sha.hexdigest(),'blocks':blocks,'protocol':normal,'protocolSha256':normal['payloadSha256']}
++
++def verify_capture(root):
++    run=verify_inputs(root);receipt=c.load(root/'receipt.json');pr=c.load(root/'producer-receipt.json');cfg=c.load(root/'collector.json')
++    production_contract(pr,run['durationSeconds'],FLOOR)
++    c.require(receipt['integrityComplete'] is True and receipt['exitReason']=='finish' and receipt.get('error') is None,'incomplete collector receipt')
++    start=c.load(root/'start.json');producer_start=c.load(root/'producer-start.json')
++    c.require(pr['started']==producer_start['started']>=start['startedMonotonic'] and pr['deadline']==producer_start['deadline']==start['watchdogMonotonic'] and start['watchdogMonotonic']==start['startedMonotonic']+2700 and start['watchdogWall']==start['startedWall']+2700,'producer/watchdog lifetime binding')
++    c.require(receipt['processes']['producer']==producer_start['process'],'producer process identity changed')
++    if run['native']:c.require(receipt['processes']['native']==pr['nativeProcess'] and pr['nativeExit']==0,'native process identity/exit mismatch')
++    ids=receipt['processes'];c.require('producer' in ids and all(not cap.same_process(x) for x in ids.values()),'owned process alive/missing producer identity')
++    c.require(cap.tmux(cfg,'list-sessions',check=False).returncode!=0,'named socket still alive')
++    manifest=c.load(root/'manifest.json');cutoff=manifest.get('terminalCutoff');c.require(manifest['lastCheckpoint']=='finish' and cutoff==receipt.get('terminalCutoff'),'terminal cutoff mismatch')
++    held=manifest['current'];last=manifest['segments'][-1]
++    c.require(cutoff['generation']==held['generation']==last['generation'] and cutoff['dev']==held['dev']==last['dev'] and cutoff['inode']==held['inode']==last['inode'] and cutoff['endOffset']==cutoff['sourceSize']==held['offset']==last['endOffset'],'terminal offset/source identity mismatch')
++    stream=audit_stream(root,allow_expired=True);normal=stream['protocol']
++    c.require(stream['bytes']==cutoff['capturedBytes'] and cutoff['segmentSha256']==[s['sha256'] for s in manifest['segments']],'terminal segment identities mismatch')
++    rows=[json.loads(x) for x in Path(cfg['polls']).read_text().splitlines()]
++    limits=c.capture_limits(MIB,max(FLOOR,pr['peakBytesPerSecond']),1)
++    c.require(cfg['pollSeconds']<=limits['pollSeconds'] and cfg['maxGapSeconds']<=limits['maxGapSeconds'],'actual peak exceeds configured guard')
++    phase_counts=phases.validate_capture(rows,receipt)
++    poll=poll_contract(rows,receipt,min(cfg['maxGapSeconds'],limits['maxGapSeconds']))
++    # Synthetic protocol timestamps are a distinct clock; never relabel them as host time.
++    if run['native']:
++        overlap=c.analyze.overlap_report(normal['normal'],rows+[receipt['lastIntervalPersistence']]+([receipt['lastHeartbeat']] if receipt['lastHeartbeat'] else []))
++    else:
++        persistence=[x['previousIntervalPersistence'] for x in rows if x.get('previousIntervalPersistence')]+[receipt['lastIntervalPersistence']]
++        spans=[json.loads(x) for x in (root/'writer-spans.jsonl').read_text().splitlines()]
++        intervals=rows+persistence
++        overlap={'clockOrigin':cfg['clockOrigin'],'collectionCount':len(rows),'persistenceCount':len(persistence),'writerCount':len(spans),
++            'writerOverlapCount':sum(any(p['start']<w['end'] and w['start']<p['end'] for p in intervals) for w in spans),
++            'protocolWindowOverlap':'inapplicable: controlled synthetic protocol and actual host monotonic are distinct clocks'}
++    return {'bytes':stream['bytes'],'sha256':stream['sha256'],'blocks':stream['blocks'],'protocolRecords':normal['records'],'protocolSha256':stream['protocolSha256'],'producerSeconds':pr['ended']-pr['started'],'peakBytesPerSecond':pr['peakBytesPerSecond'],'limits':limits,'polls':poll,'overlap':overlap,'processesGone':True,'socketGone':True}
++
++def verify(root,proof_path):
++    run=verify_inputs(root);c.require(not run['smoke'],'seconds-long smoke is not lifetime proof')
++    result=verify_capture(root);binding=run|c.load(root/'start.json');proof=c.load(proof_path);result['turnProof']=verify_turn(binding,proof)
++    c.immutable(root/'verified.json',result);return result
++
++def main():
++    os.umask(0o077);p=argparse.ArgumentParser();p.add_argument('mode',choices=['prepare','start','verify','produce','read-evidence']);p.add_argument('run',type=Path);p.add_argument('--nonce');p.add_argument('--receipt',type=Path);p.add_argument('--rollout',type=Path);p.add_argument('--turn-proof',type=Path);p.add_argument('--smoke-seconds',type=float);p.add_argument('--native-smoke',action='store_true');a=p.parse_args();root=a.run.resolve()
++    if a.mode=='prepare':result=prepare(root,a.smoke_seconds,a.native_smoke)
++    elif a.mode=='start':result=start(root,a.nonce)
++    elif a.mode=='verify':result=verify(root,a.turn_proof)
++    elif a.mode=='read-evidence':result=evidence_read(verify_inputs(root)|c.load(root/'start.json'),a.receipt,a.rollout,a.nonce)
++    else:return produce(root)
++    print(json.dumps(result));return 0
++if __name__=='__main__':sys.exit(main())

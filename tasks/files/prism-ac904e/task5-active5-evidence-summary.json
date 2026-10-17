@@ -1,0 +1,475 @@
+{
+  "additionalCheckSha256": "cf2a1fafe66105197ff6fabeaafc8f4b67549ada005fdbee6cab8dc752ecb383",
+  "allGone": true,
+  "cases": {
+    "emergency-final": {
+      "collection": 2,
+      "complete": false,
+      "exitReason": "signal",
+      "heartbeat": 3,
+      "maxPollRowBytes": 4468,
+      "operations": {
+        "archive.metadata": {
+          "count": 2,
+          "failures": 0,
+          "maxSeconds": 0.00013810303062200546
+        },
+        "heartbeat.flush": {
+          "count": 3,
+          "failures": 0,
+          "maxSeconds": 5.135702667757869e-05
+        },
+        "heartbeat.fsync": {
+          "count": 3,
+          "failures": 0,
+          "maxSeconds": 0.0034151760046370327
+        },
+        "heartbeat.publish": {
+          "count": 3,
+          "failures": 0,
+          "maxSeconds": 0.003989527001976967
+        },
+        "manifest.flush": {
+          "count": 2,
+          "failures": 0,
+          "maxSeconds": 4.34929970651865e-05
+        },
+        "manifest.fsync": {
+          "count": 2,
+          "failures": 0,
+          "maxSeconds": 0.006296818028204143
+        },
+        "manifest.publish": {
+          "count": 2,
+          "failures": 0,
+          "maxSeconds": 0.006713679991662502
+        },
+        "poll.flush": {
+          "count": 2,
+          "failures": 0,
+          "maxSeconds": 2.6961031835526228e-05
+        },
+        "poll.fsync": {
+          "count": 2,
+          "failures": 0,
+          "maxSeconds": 0.0038351829862222075
+        },
+        "poll.write": {
+          "count": 2,
+          "failures": 0,
+          "maxSeconds": 0.00012370501644909382
+        },
+        "source.locate": {
+          "count": 2,
+          "failures": 0,
+          "maxSeconds": 0.0001282439916394651
+        },
+        "source.read": {
+          "count": 2,
+          "failures": 0,
+          "maxSeconds": 8.225964847952127e-06
+        },
+        "source.stat": {
+          "count": 10,
+          "failures": 0,
+          "maxSeconds": 1.542898826301098e-05
+        }
+      },
+      "persistence": 2
+    },
+    "native-pilot-final/run": {
+      "budgetErrors": 0,
+      "bytes": 17608342,
+      "collection": 235,
+      "complete": true,
+      "exitReason": "finish",
+      "heartbeat": 233,
+      "maxPollRowBytes": 5858,
+      "nativeProof": {
+        "floorBytesPerSecond": 682491.0,
+        "framePeriodSeconds": 0.016,
+        "guardBytesPerSecond": 1425679.0,
+        "maxFrameGapSeconds": 0.024251753988210112,
+        "meanFrameGapSeconds": 0.01706797313858586,
+        "nativeWorkloadPeakBytesPerSecond": 668972,
+        "peakBytesPerSecond": 1079562,
+        "runtimeSeconds": 26.488331336993724,
+        "ticks": 1552
+      },
+      "operations": {
+        "archive.flush": {
+          "count": 221,
+          "failures": 0,
+          "maxSeconds": 0.0002648729714564979
+        },
+        "archive.fsync": {
+          "count": 221,
+          "failures": 0,
+          "maxSeconds": 0.006848613964393735
+        },
+        "archive.metadata": {
+          "count": 290,
+          "failures": 0,
+          "maxSeconds": 0.0007376900175586343
+        },
+        "archive.validate": {
+          "count": 70,
+          "failures": 0,
+          "maxSeconds": 0.0019703819998539984
+        },
+        "archive.write": {
+          "count": 221,
+          "failures": 0,
+          "maxSeconds": 0.00016434199642390013
+        },
+        "heartbeat.flush": {
+          "count": 233,
+          "failures": 0,
+          "maxSeconds": 7.695599924772978e-05
+        },
+        "heartbeat.fsync": {
+          "count": 233,
+          "failures": 0,
+          "maxSeconds": 0.009496923012193292
+        },
+        "heartbeat.publish": {
+          "count": 233,
+          "failures": 0,
+          "maxSeconds": 0.010013353952672333
+        },
+        "manifest.flush": {
+          "count": 288,
+          "failures": 0,
+          "maxSeconds": 8.329801494255662e-05
+        },
+        "manifest.fsync": {
+          "count": 288,
+          "failures": 0,
+          "maxSeconds": 0.008497815986629575
+        },
+        "manifest.publish": {
+          "count": 288,
+          "failures": 0,
+          "maxSeconds": 0.00890269601950422
+        },
+        "poll.flush": {
+          "count": 235,
+          "failures": 0,
+          "maxSeconds": 8.887896547093987e-05
+        },
+        "poll.fsync": {
+          "count": 235,
+          "failures": 0,
+          "maxSeconds": 0.02804730396019295
+        },
+        "poll.write": {
+          "count": 235,
+          "failures": 0,
+          "maxSeconds": 0.0006506550125777721
+        },
+        "source.locate": {
+          "count": 289,
+          "failures": 0,
+          "maxSeconds": 0.0004710750072263181
+        },
+        "source.prefix": {
+          "count": 36,
+          "failures": 0,
+          "maxSeconds": 0.0022495820303447545
+        },
+        "source.read": {
+          "count": 252,
+          "failures": 0,
+          "maxSeconds": 0.00017331901472061872
+        },
+        "source.stat": {
+          "count": 1371,
+          "failures": 0,
+          "maxSeconds": 6.732798647135496e-05
+        }
+      },
+      "payloadSha256": "af4e6e7a3956905d1133b350c9fc15978701908a4620d079731ea2760dbe2518",
+      "persistence": 235,
+      "polls": {
+        "collectionCount": 235,
+        "maxGapSeconds": 0.15150737902149558,
+        "maxWorkPersistenceSeconds": 0.04394147399580106,
+        "persistenceCount": 235
+      },
+      "protocolRecords": 678,
+      "sha256": "f96c63e1bab94cebfef4ab321711206cb9b35a2ae0ab6b182bc350b7b6e5110d"
+    },
+    "normal-final": {
+      "bytes": 2963994,
+      "collection": 55,
+      "complete": true,
+      "exitReason": "finish",
+      "heartbeat": 53,
+      "maxPollRowBytes": 5808,
+      "operations": {
+        "archive.flush": {
+          "count": 47,
+          "failures": 0,
+          "maxSeconds": 9.690399747341871e-05
+        },
+        "archive.fsync": {
+          "count": 47,
+          "failures": 0,
+          "maxSeconds": 0.01015985500998795
+        },
+        "archive.metadata": {
+          "count": 65,
+          "failures": 0,
+          "maxSeconds": 0.00018131401157006621
+        },
+        "archive.validate": {
+          "count": 10,
+          "failures": 0,
+          "maxSeconds": 0.0016026140074245632
+        },
+        "archive.write": {
+          "count": 47,
+          "failures": 0,
+          "maxSeconds": 0.00012494699331000447
+        },
+        "heartbeat.flush": {
+          "count": 53,
+          "failures": 0,
+          "maxSeconds": 6.255798507481813e-05
+        },
+        "heartbeat.fsync": {
+          "count": 53,
+          "failures": 0,
+          "maxSeconds": 0.006383202970027924
+        },
+        "heartbeat.publish": {
+          "count": 53,
+          "failures": 0,
+          "maxSeconds": 0.006883633031975478
+        },
+        "manifest.flush": {
+          "count": 63,
+          "failures": 0,
+          "maxSeconds": 5.7008001022040844e-05
+        },
+        "manifest.fsync": {
+          "count": 63,
+          "failures": 0,
+          "maxSeconds": 0.006866280979011208
+        },
+        "manifest.publish": {
+          "count": 63,
+          "failures": 0,
+          "maxSeconds": 0.007244980020914227
+        },
+        "poll.flush": {
+          "count": 55,
+          "failures": 0,
+          "maxSeconds": 5.8380013797432184e-05
+        },
+        "poll.fsync": {
+          "count": 55,
+          "failures": 0,
+          "maxSeconds": 0.006750641041435301
+        },
+        "poll.write": {
+          "count": 55,
+          "failures": 0,
+          "maxSeconds": 0.00022363499738276005
+        },
+        "source.locate": {
+          "count": 63,
+          "failures": 0,
+          "maxSeconds": 0.00017866998678073287
+        },
+        "source.prefix": {
+          "count": 6,
+          "failures": 0,
+          "maxSeconds": 0.0020805610110983253
+        },
+        "source.read": {
+          "count": 57,
+          "failures": 0,
+          "maxSeconds": 0.00018422002904117107
+        },
+        "source.stat": {
+          "count": 305,
+          "failures": 0,
+          "maxSeconds": 4.1418010368943214e-05
+        }
+      },
+      "persistence": 55,
+      "polls": {
+        "collectionCount": 55,
+        "maxGapSeconds": 0.16078807297162712,
+        "maxWorkPersistenceSeconds": 0.053517511987593025,
+        "persistenceCount": 55
+      },
+      "sha256": "5bc801735097aa9b5c4a17742262338ccd3802c068383cb590839978ee2f6a25",
+      "smoke": {
+        "blocks": 20,
+        "bytes": 2963994,
+        "limits": {
+          "bytesPerSecond": 688617.0,
+          "fileFillSeconds": 1.5227274377484146,
+          "maxGapSeconds": 0.7613637188742073,
+          "pollSeconds": 0.38068185943710364
+        },
+        "peakBytesPerSecond": 688617,
+        "polls": {
+          "collectionCount": 55,
+          "maxGapSeconds": 0.16078807297162712,
+          "maxWorkPersistenceSeconds": 0.053517511987593025,
+          "persistenceCount": 55
+        },
+        "processesGone": true,
+        "producerSeconds": 5.632519279955886,
+        "protocolRecords": 815,
+        "protocolSha256": "b2485299898e1eb6e54fc6bd3c044bb51c63641a8da73b14a065fad0e850ae3d",
+        "sha256": "5bc801735097aa9b5c4a17742262338ccd3802c068383cb590839978ee2f6a25",
+        "socketGone": true
+      }
+    }
+  },
+  "checks": [
+    {
+      "args": [],
+      "check": "active-append-check.py",
+      "exit": 0,
+      "seconds": 1.8333626939565875
+    },
+    {
+      "args": [],
+      "check": "phase-check.py",
+      "exit": 0,
+      "seconds": 0.8954009180306457
+    },
+    {
+      "args": [],
+      "check": "capture-check.py",
+      "exit": 0,
+      "seconds": 3.7590325539931655
+    },
+    {
+      "args": [],
+      "check": "broad-log-check.py",
+      "exit": 0,
+      "seconds": 0.45859548199223354
+    },
+    {
+      "args": [],
+      "check": "broad-cooperative-check.py",
+      "exit": 0,
+      "seconds": 0.3393715560087003
+    },
+    {
+      "args": [],
+      "check": "broad-cooperative-control-check.py",
+      "exit": 0,
+      "seconds": 0.23105315200518817
+    },
+    {
+      "args": [],
+      "check": "rehearsal-check.py",
+      "exit": 0,
+      "seconds": 1.7267260869848542
+    }
+  ],
+  "codeDigest": "4203ac5942263fcda74d5f741549674ecb0194345012b575229d5d0409ed5b32",
+  "failedAuditHelper": {
+    "finalAudit": "passed",
+    "firstCleanupRead": "polls JSONL treated as single JSON; no socket removed",
+    "firstPhysicalSocketAudit": "stale owned endpoint found before explicit cleanup"
+  },
+  "fileCount": 54,
+  "focusedCases": {
+    "completionCallerNegatives": 2,
+    "finishUnreadGrowth": 3,
+    "incompleteReceiptNegatives": 6,
+    "inheritedNegativeActiveTransitions": 48,
+    "newDescriptorPathCases": 12,
+    "positiveActiveSeams": 18,
+    "priorVisibleReadGrowthPublication": 1,
+    "receiptOnlySuccessNegatives": 5,
+    "representativeMiBChecks": 3,
+    "structuredReceiptSuccessNegatives": 2
+  },
+  "limits": [
+    "Bounded synthetic proof only; no lifetime or live Noctalia claim",
+    "All three historical failed captures remain immutable and incomplete",
+    "At most eight resolver observations; a still-active or unsupported timestamp epoch refuses",
+    "Failure bytes are provisional; source diagnostics do not complete an interrupted poll",
+    "Descriptor and pathname observations share monotonic convergence; no visibility-order regression exception"
+  ],
+  "positiveSequenceChanges": [],
+  "prepared": {
+    "codeDigest": "4203ac5942263fcda74d5f741549674ecb0194345012b575229d5d0409ed5b32",
+    "durationSeconds": 2400,
+    "native": true,
+    "prepared": true,
+    "runNonce": "rehearsal-fc881784c4934067bf73e08ff7fc12e6",
+    "smoke": false,
+    "started": false,
+    "watchdogSeconds": 2700
+  },
+  "purpose": "bounded active append correction; not lifetime qualification",
+  "receiptEvidence": {
+    "actualFailedPublicationBytesPreserved": true,
+    "collectionRows": 55,
+    "receiptNullAndAbsentSuccessAccepted": true,
+    "rowDiagnosticsAbsent": true,
+    "source": "previous successful normal smoke, changed in memory only"
+  },
+  "recordedIdentities": 13,
+  "redEvidence": {
+    "active-red.log": {
+      "bytes": 7485,
+      "sha256": "7dd1ab634ba6afff536a1245df4857a74201305d0a917908497ccd8db47cbc0a"
+    },
+    "receipt-callsite-green.log": {
+      "bytes": 160,
+      "sha256": "d710893f2e49d09ae3c24afde3731bb1d183f9af6fbfda34f03e9d1b9a8453b8"
+    },
+    "receipt-incomplete-red.log": {
+      "bytes": 5867,
+      "sha256": "64bc8fa125d1c15a9581dbf0d9658e53011e429e49a7a99afb0ca7f83fbc9986"
+    },
+    "receipt-red.log": {
+      "bytes": 4476,
+      "sha256": "2a1322dc759a7d7e1334b47c70dfb83064d8703d0240bed5b35a353f43de61e5"
+    },
+    "receipt-structured-green.log": {
+      "bytes": 99,
+      "sha256": "6e3c9b10227dffea42959825c855feec0b871c6718fe9c98b3dafa6fc05a6fec"
+    },
+    "receipt-structured-red.log": {
+      "bytes": 434,
+      "sha256": "e880db4a1589bacc3c76fd306da80e7ccef592ddc33b38e914ab8a194b584d36"
+    }
+  },
+  "retainedHistoricalFailures": 3,
+  "smokes": [
+    {
+      "check": "rehearsal-smoke.py",
+      "exit": 0,
+      "seconds": 7.436137928045355
+    },
+    {
+      "check": "rehearsal-smoke.py",
+      "exit": 0,
+      "seconds": 1.314318785967771
+    },
+    {
+      "check": "broad-independent-check.py",
+      "exit": 0,
+      "seconds": 29.896070184011478
+    }
+  ],
+  "sourceBeforeDigest": "87f8f0250fbe497c64ff0aceeb3db2233f04f839057739392980148f4f1003df",
+  "staleSocketCleanup": {
+    "allPhysicallyAbsentAfterCleanup": true,
+    "identitiesRecordedBeforeRemoval": true,
+    "ownedInactivePathsRemoved": 3,
+    "priorSocketGoneMeaning": "server unreachable; physical path absence established only after recorded cleanup"
+  }
+}

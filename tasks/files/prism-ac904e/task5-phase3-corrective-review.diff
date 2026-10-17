@@ -1,0 +1,780 @@
+--- a/README.md
++++ b/README.md
+@@ -91,3 +91,16 @@
+ rows remain historical and gain no invented persistence endpoints. Actual collection
+ starts are guarded after intervening persistence, before replacing the prior anchor;
+ terminal persistence is also guarded before successful completion.
++
++
++### Phase evidence contract (new captures)
++
++`phaseSchema: 1` on collector receipts requires bounded `phases` summaries on every collection/persistence observation. Each fixed operation has count, total wall/thread CPU, failure count and actual maximum start/end/thread CPU/failure. Nested names (for example manifest publication and its fsync) overlap; their totals must never be added. No per-file paths or values enter phase labels. `phases.validate_capture` checks current-version records; old captures retain their frozen readers and unknown internal phases.
++
++Each collection window owns completed source/stat/read/prefix, archive validation/write/flush/fsync and manifest publication/flush/fsync operations. Cooperative checkpoint service closes a window only between leaf operations; there is no spanning checkpoint phase. Counts/maximums reflect only that window. The existing previousIntervalPersistence and lastIntervalPersistence carry poll serialization/write/flush/fsync after it completes, including failure. Its error propagates and guards still include actual persistence cost.
++
++Runtime heartbeats occur outside collection. A completed heartbeat observation carries actual start/end, run/clock and precedingPollStart (null plus startup=true for the initial heartbeat). Contiguous heartbeat sequence/count binds complete carrier coverage. The next collection row consumes previousHeartbeat once; the receipt carries only a still-unconsumed lastHeartbeat. The heartbeat file never claims its own future fsync. Startup manifest/collector initialization and final receipt/final heartbeat durability are not phase measured; no endpoint is invented for those writes. After emergency child reaping, the wrapper can reread an actual collector receipt bound to schema/run/clock/owned identity; its own signal/failure outcome stays authoritative. If a failure prevents the existing evidence write, telemetry can be incomplete, never a successful certificate.
++
++Overlap expands heartbeat and persistence carriers uniquely, rejecting repeated complete pairs and duplicate heartbeat identities. Only containing operation intervals enter overlap; nested phase summaries do not inflate it or alter target samples. Current rehearsal verification and independent native proof require strict phase validation before acceptance.
++
++There are19 fixed names, at most19 summaries per observation, and a16KiB phase-summary validation bound. Runtime memory is one fixed-name recorder per active window plus completed carriers, independent of archive history. No new durable file or fsync is added. Phase bookkeeping, JSON serialization and extra bytes remain inside the existing actual time guards. Observer overhead is measured in preparation; this is observability, not a remedy for historical latency or evidence of long-run reliability.
+--- a/broad-independent-check.py
++++ b/broad-independent-check.py
+@@ -1,7 +1,7 @@
+ """Paced actual generated fake-host, independent writer, named collector. Never live."""
+ import os,sys,time,json,subprocess,selectors,signal,hashlib,math
+ from pathlib import Path
+-import controller as c, capture as cap
++import controller as c, capture as cap, phases
+ ROOT=Path(__file__).parent
+ OUT=Path(sys.argv[1]);MODEL=Path(sys.argv[2]);CLI=sys.argv[3];mode=sys.argv[4];variant=sys.argv[5] if len(sys.argv)>5 else 'baseline'
+ os.umask(0o077);OUT.mkdir(mode=0o700)
+@@ -100,7 +100,9 @@
+   assert sorted(e['recordId'] for e in events)==list(range(1,len(events)+1))
+   c.immutable(root/'context.json',context);c.immutable(root/'normalized.json',normal);c.immutable(root/'audit.json',audit)
+  polls=[json.loads(line) for line in (root/'polls.json').read_text().splitlines()]
+- if mode!='stop':c.immutable(root/'overlap.json',c.analyze.overlap_report(normal,polls+[receipt['lastIntervalPersistence']]))
++ if mode!='stop':
++  phases.validate_capture(polls,receipt)
++  c.immutable(root/'overlap.json',c.analyze.overlap_report(normal,polls+[receipt['lastIntervalPersistence']]+([receipt['lastHeartbeat']] if receipt['lastHeartbeat'] else [])))
+  # Prospective 1-second peak and complete-workload mean, never offline Lua replay speed.
+  peak=max(sum(x['bytes'] for x in spans if s['start']<=x['start']<s['start']+1) for s in spans)
+  native=[x for x in spans if x['kind']=='probe'];native_peak=max(sum(x['bytes'] for x in native if s['start']<=x['start']<s['start']+1) for s in native)
+--- a/broad-persistence-check.py
++++ b/broad-persistence-check.py
+@@ -43,6 +43,7 @@
+   for row in other:
+    row['clockOrigin']='other-clock'
+    if row.get('previousIntervalPersistence'):row['previousIntervalPersistence']['clockOrigin']='other-clock'
++   if row.get('previousHeartbeat'):row['previousHeartbeat']['clockOrigin']='other-clock'
+   sample2=sample|{'clockOrigin':'other-clock','variant':'candidate'}
+   assert analyze.overlap_report(normal|{'events':[sample,sample2],'samples':[sample,sample2]},rows+other[:-1]+[all_rows[-1],other[-1]])['overlapCount']==2
+   zero=copy.deepcopy(all_rows);origin=zero[0]['start']
+@@ -50,6 +51,8 @@
+    row['start']-=origin;row['end']-=origin
+    if 'persistedObservationStart' in row:row['persistedObservationStart']-=origin
+    if row.get('previousIntervalPersistence'):shift(row['previousIntervalPersistence'])
++   if row.get('previousHeartbeat'):shift(row['previousHeartbeat'])
++   if row.get('precedingPollStart') is not None:row['precedingPollStart']-=origin
+   for row in zero:shift(row)
+   zero[1]['previousIntervalPersistence']['persistedObservationStart']=False
+   try:analyze.overlap_report(normal,zero)
+--- a/capture.py
++++ b/capture.py
+@@ -9,13 +9,17 @@
+ import time
+ from pathlib import Path
+ import logs
+-
+-
+-def atomic(path, data):
++import phases
++
++
++def atomic(path, data, observer=None):
+     temp=path.with_suffix('.tmp')
+-    with temp.open('w') as f:
+-        json.dump(data,f,indent=2);f.write('\n');f.flush();os.fsync(f.fileno())
+-    temp.replace(path)
++    with phases.measure(observer,'heartbeat.publish'):
++        with temp.open('w') as f:
++            json.dump(data,f,indent=2);f.write('\n')
++            with phases.measure(observer,'heartbeat.flush'):f.flush()
++            with phases.measure(observer,'heartbeat.fsync'):os.fsync(f.fileno())
++        temp.replace(path)
+
+
+ def process(pid):
+@@ -68,14 +72,25 @@
+
+
+ def run_collector(path):
+-    cfg=config(path);root=path.parent;started=None;c=None;last_end=None;last_start=None;last_sequence=0;last_persistence=None;reason='unexpected';complete=False;error=None
++    cfg=config(path);root=path.parent;started=None;c=None;last_end=None;last_start=None;last_sequence=0;last_persistence=None;last_heartbeat=None;heartbeat_count=0;reason='unexpected';complete=False;error=None
+     install_traps()
+     me=process(os.getpid())
+     def status():
+         identities=json.loads(Path(cfg['identities']).read_text())
+         return {'schema':2,'runId':cfg['runId'],'clockOrigin':cfg['clockOrigin'],'collectorStarted':started,
+-                'lastPollStart':last_start,'lastPollEnd':last_end,'lastIntervalPersistence':last_persistence,'generations':len(c.state['segments']) if c else 0,
++                'lastPollStart':last_start,'lastPollEnd':last_end,'lastIntervalPersistence':last_persistence,'phaseSchema':1,'lastHeartbeat':last_heartbeat,'heartbeatCount':heartbeat_count,'generations':len(c.state['segments']) if c else 0,
+                 'terminalCutoff':c.state.get('terminalCutoff') if c and complete else None,'lastSequence':last_sequence,'exitReason':reason,'integrityComplete':complete,'processes':dict(identities,collector=me),'error':error}
++    def heartbeat():
++        nonlocal last_heartbeat,heartbeat_count
++        observer=phases.Recorder();begin=time.monotonic();failure=None
++        # A heartbeat file never claims its own still-in-flight persistence completed.
++        try:atomic(Path(cfg['heartbeat']),status(),observer)
++        except BaseException as exc:failure=str(exc);raise
++        finally:
++            heartbeat_count+=1
++            last_heartbeat={'runId':cfg['runId'],'clockOrigin':cfg['clockOrigin'],'start':begin,'end':time.monotonic(),
++                'bytes':0,'checkpoint':False,'error':failure,'observation':'heartbeat','precedingPollStart':last_start,
++                'startup':last_start is None,'sequence':heartbeat_count,'phases':observer.snapshot()}
+     try:
+         # Options and wrapper identity must exist before the collector owns the log.
+         gate=root/'wrapper-ready.json';wait_start=time.monotonic()
+@@ -83,28 +98,35 @@
+             logs.require(time.monotonic()-wait_start<10,'wrapper startup timeout');time.sleep(.01)
+         logs.require(not Path(cfg['manifest']).exists(),'activation cannot resume a prior manifest')
+         logs.start(Path(cfg['log']),Path(cfg['manifest']));c=logs.Capture(Path(cfg['manifest']))
+-        started=time.monotonic();reason='running';atomic(Path(cfg['heartbeat']),status())
++        started=time.monotonic();reason='running';heartbeat()
+         control_version=None
+         with Path(cfg['polls']).open('x') as intervals:
+             def interval(checkpoint=False):
+-                nonlocal last_start,last_end,last_sequence,control_version,last_persistence
++                nonlocal last_start,last_end,last_sequence,control_version,last_persistence,last_heartbeat
+                 begin=None;count=0;effective_checkpoint=checkpoint
+                 def close_interval(failure=None):
+-                    nonlocal last_end,begin,last_persistence
++                    nonlocal last_end,begin,last_persistence,last_heartbeat
+                     if begin is None:return
+                     last_end=time.monotonic()
+                     row={'runId':cfg['runId'],'start':begin,'end':last_end,'clockOrigin':cfg['clockOrigin'],'bytes':count,'checkpoint':effective_checkpoint,'error':failure,
+-                         'observation':'collection','previousIntervalPersistence':last_persistence}
+-                    begin=None
+-                    intervals.write(json.dumps(row)+'\n');intervals.flush();os.fsync(intervals.fileno())
+-                    last_persistence={'runId':cfg['runId'],'clockOrigin':cfg['clockOrigin'],'start':last_end,'end':time.monotonic(),
+-                        'bytes':0,'checkpoint':effective_checkpoint,'error':failure,'observation':'persistence','persistedObservationStart':row['start']}
++                         'observation':'collection','previousIntervalPersistence':last_persistence,'previousHeartbeat':last_heartbeat,'phases':c.observer.snapshot()}
++                    begin=None;last_heartbeat=None;c.observer=None
++                    observer=phases.Recorder();persistence_error=failure
++                    try:
++                        with observer.measure('poll.write'):intervals.write(json.dumps(row)+'\n')
++                        with observer.measure('poll.flush'):intervals.flush()
++                        with observer.measure('poll.fsync'):os.fsync(intervals.fileno())
++                    except BaseException as exc:persistence_error=str(exc);raise
++                    finally:
++                        last_persistence={'runId':cfg['runId'],'clockOrigin':cfg['clockOrigin'],'start':last_end,'end':time.monotonic(),
++                            'bytes':0,'checkpoint':effective_checkpoint,'error':persistence_error,'observation':'persistence',
++                            'persistedObservationStart':row['start'],'phases':observer.snapshot()}
+                 def guard(now=None):
+                     logs.require(not expired(cfg['deadlineSeconds'],started),'collector deadline expired during work')
+                     logs.require(last_start is None or (time.monotonic() if now is None else now)-last_start<=cfg['maxGapSeconds'],'poll gap breached during collection/checkpoint work')
+                 def collect():
+                     nonlocal begin,count,last_start,effective_checkpoint
+-                    guard();close_interval();actual_start=time.monotonic();guard(actual_start);begin=actual_start;last_start=actual_start
++                    guard();close_interval();actual_start=time.monotonic();guard(actual_start);begin=actual_start;last_start=actual_start;c.observer=phases.Recorder()
+                     before=sum(r['bytes'] for r in c.state['segments']);generations=len(c.state['segments']);c.poll();count=sum(r['bytes'] for r in c.state['segments'])-before
+                     if not effective_checkpoint and len(c.state['segments'])!=generations:effective_checkpoint='rotation'
+                     guard()
+@@ -128,7 +150,7 @@
+                 except BaseException as e:close_interval(str(e));raise
+                 finally:close_interval()
+             while True:
+-                interval();atomic(Path(cfg['heartbeat']),status())
++                interval();heartbeat()
+                 control=Path(cfg['control'])
+                 if control.exists():
+                     version=logs.snapshot(control.stat())
+@@ -140,7 +162,7 @@
+                         if action=='stop':reason='stop';break
+                         interval('ready' if action=='ready' else 'finish')
+                         if action=='finish':complete=True;reason='finish';break
+-                        atomic(Path(cfg['heartbeat']),status())
++                        heartbeat()
+                 time.sleep(cfg['pollSeconds'])
+     except Stopped:reason='stop'
+     except Interrupted as e:reason='signal';error=str(e)
+@@ -186,6 +208,16 @@
+         atomic(Path(cfg['receipt']),{'schema':2,'runId':cfg['runId'],'exitReason':'launch-failure','integrityComplete':False,'error':str(e)})
+         raise
+     return 0
++
++
++def collector_receipt(path,cfg,identities):
++    value=json.loads(path.read_text())
++    logs.require(type(value) is dict and type(value.get('schema')) is int and value['schema']==2
++        and value.get('runId')==cfg['runId'] and value.get('clockOrigin')==cfg['clockOrigin']
++        and type(value.get('integrityComplete')) is bool and type(value.get('processes')) is dict
++        and type(value.get('phaseSchema')) is int and value['phaseSchema']==1
++        and value['processes'].get('collector')==identities['collector'], 'collector receipt identity/schema mismatch')
++    return value
+
+
+ def supervise(path):
+@@ -263,6 +295,13 @@
+             except subprocess.TimeoutExpired:
+                 if same_process(identities['collector']):os.kill(child.pid,signal.SIGKILL)
+                 child.wait(timeout=2)
++        # Reaping may complete a collector receipt after the supervisor's last poll.
++        # Preserve that actual evidence; the wrapper's signal/failure still owns outcome.
++        if receipt is None and (root/'collector-receipt.json').exists():
++            try:receipt=collector_receipt(root/'collector-receipt.json',cfg,identities)
++            except (OSError,ValueError,AssertionError,KeyError,TypeError) as exc:
++                error=error or str(exc)
++                if reason!='signal':reason='failure'
+         complete=receipt is not None and receipt['integrityComplete'] is True and reason=='finish' and error is None and child.returncode==0
+         if 'rehearsal' in cfg:complete=complete and producer_checked and producer is not None and producer.returncode==0
+         final=dict(receipt or {'schema':2,'runId':cfg['runId'],'collectorStarted':started,'clockOrigin':cfg['clockOrigin'],'lastPollStart':None,'lastPollEnd':None,'generations':0})
+--- a/controller.py
++++ b/controller.py
+@@ -488,7 +488,7 @@
+     evidence,launch=stage_evidence(normalized,identities,receipts,restoration,clock,observations,stage1)
+     blocks=analyze.target_blocks(normalized);verdict=analyze.decide(blocks['stage'],[blocks['blocks'].get(b,{}) for b in ('1','2')],evidence,launch)
+     if any(i['environment']!='live' for i in identities):verdict['accepted']=False
+-    polls=observations['polls']+[r['lastIntervalPersistence'] for r in receipts if r.get('lastIntervalPersistence') is not None]
++    polls=observations['polls']+[r['lastIntervalPersistence'] for r in receipts if r.get('lastIntervalPersistence') is not None]+[r['lastHeartbeat'] for r in receipts if r.get('lastHeartbeat') is not None]
+     return {'verdict':verdict,'evidence':evidence,'launch':analyze.pairs(normalized),'overlap':analyze.overlap_report(normalized,polls)}
+
+ def capture_limits(capacity_bytes,burst_bytes,burst_seconds):
+--- a/frozen-task2/analyze.py
++++ b/frozen-task2/analyze.py
+@@ -607,13 +607,19 @@
+     origins={e['clockOrigin'] for e in normalized['events']}
+     run_ids={e['runId'] for e in normalized['events']}
+     if not all(c['originVerified'] for c in normalized['certificates']):raise ValueError('unverified clock origin')
+-    checked=[];pending={};expanded=[]
++    checked=[];pending={};expanded=[];completed={};seen=set();first_collection={}
+     for obs in observations:
+         if isinstance(obs,dict) and obs.get('previousIntervalPersistence') is not None:
+             previous=obs['previousIntervalPersistence']
+             if not isinstance(previous,dict) or previous.get('observation')!='persistence' or 'previousIntervalPersistence' in previous:raise ValueError('invalid previous interval persistence')
+             if previous.get('runId')!=obs.get('runId') or previous.get('clockOrigin')!=obs.get('clockOrigin') or number(previous.get('end'),'persistence end')>number(obs.get('start'),'collection start'):raise ValueError('persistence outside next collection boundary')
+             expanded.append(previous)
++        if isinstance(obs,dict) and obs.get('previousHeartbeat') is not None:
++            h=obs['previousHeartbeat']
++            if not isinstance(h,dict) or h.get('observation')!='heartbeat' or 'previousHeartbeat' in h:raise ValueError('invalid previous heartbeat')
++            if h.get('runId')!=obs.get('runId') or h.get('clockOrigin')!=obs.get('clockOrigin') or number(h.get('end'),'heartbeat end')>number(obs.get('start'),'collection start'):raise ValueError('heartbeat outside next collection boundary')
++            expanded.append(h)
++        if isinstance(obs,dict) and obs.get('observation')=='collection':first_collection.setdefault((obs.get('runId'),obs.get('clockOrigin')),obs.get('start'))
+         expanded.append(obs)
+     for obs in expanded:
+         if not isinstance(obs,dict) or any(key not in obs for key in ('runId','start','end','clockOrigin','bytes','checkpoint','error')):raise ValueError('invalid observation')
+@@ -625,15 +631,26 @@
+         if end<start:raise ValueError('reversed observation')
+         integer(obs.get('bytes'),'observation bytes')
+         observation=obs.get('observation')
+-        if observation not in (None,'collection','persistence'):raise ValueError('unknown collector observation')
++        if observation not in (None,'collection','persistence','heartbeat'):raise ValueError('unknown collector observation')
+         observer_key=(obs['runId'],obs['clockOrigin'])
++        if observation is not None:
++            key=(*observer_key,observation,start)
++            if key in seen:raise ValueError('duplicate completed observation')
++            seen.add(key)
+         if observation=='collection':
+             if observer_key in pending:raise ValueError('unobserved interval persistence')
+             pending[observer_key]=obs
+         elif observation=='persistence':
+             previous=pending.pop(observer_key,None)
+             if previous is None or number(obs.get('persistedObservationStart'),'persisted observation start')!=previous['start'] or start!=previous['end'] or obs['bytes']!=0 or obs['checkpoint']!=previous['checkpoint'] or obs['clockOrigin']!=previous['clockOrigin']:raise ValueError('persistence does not bind previous interval')
+-        checked.append(obs|{'durationSeconds':end-start,'kind':'persistence' if observation=='persistence' else 'poll' if obs['checkpoint'] is False else 'checkpoint'})
++            completed[(*observer_key,previous['start'])]=end
++        elif observation=='heartbeat':
++            anchor=obs.get('precedingPollStart')
++            if obs['bytes']!=0 or obs['checkpoint'] is not False or type(obs.get('startup')) is not bool:raise ValueError('invalid heartbeat metadata')
++            if anchor is None:
++                if obs['startup'] is not True or observer_key not in first_collection or end>number(first_collection[observer_key],'first collection'):raise ValueError('invalid startup heartbeat')
++            elif obs['startup'] is not False or completed.get((*observer_key,number(anchor,'preceding poll start')),float('inf'))>start:raise ValueError('heartbeat does not bind completed persistence')
++        checked.append(obs|{'durationSeconds':end-start,'kind':observation if observation in ('persistence','heartbeat') else 'poll' if obs['checkpoint'] is False else 'checkpoint'})
+     if pending:raise ValueError('terminal interval persistence observation missing')
+     selected=[e for e in normalized['samples'] if e['scope']=='callback' and e['class'] in CLASSES]
+     full=[];groups=defaultdict(list)
+@@ -644,7 +661,7 @@
+         groups[(event['block'],event['variant'],event['class'])].append(row)
+     return dict(overlapCount=sum(e['overlapCount'] for e in full),samples=full,observations=checked,
+         groups=[dict(block=k[0],variant=k[1],targetClass=k[2],samples=v,timingMs=distribution([e['elapsedMs'] for e in v]),overlapCount=sum(e['overlapCount'] for e in v)) for k,v in sorted(groups.items())],
+-        persistenceDurationsSeconds=distribution([o['durationSeconds'] for o in checked if o['kind']=='persistence']),pollDurationsSeconds=distribution([o['durationSeconds'] for o in checked if o['kind']=='poll']),pollBytes=distribution([o['bytes'] for o in checked if o['kind']=='poll']),checkpointDurationsSeconds=distribution([o['durationSeconds'] for o in checked if o['kind']=='checkpoint']),exclusions=normalized['exclusions'])
++        heartbeatDurationsSeconds=distribution([o['durationSeconds'] for o in checked if o['kind']=='heartbeat']),persistenceDurationsSeconds=distribution([o['durationSeconds'] for o in checked if o['kind']=='persistence']),pollDurationsSeconds=distribution([o['durationSeconds'] for o in checked if o['kind']=='poll']),pollBytes=distribution([o['bytes'] for o in checked if o['kind']=='poll']),checkpointDurationsSeconds=distribution([o['durationSeconds'] for o in checked if o['kind']=='checkpoint']),exclusions=normalized['exclusions'])
+
+ def main():
+     p=argparse.ArgumentParser()
+--- a/logs.py
++++ b/logs.py
+@@ -4,6 +4,7 @@
+ import os
+ import sys
+ import time
++import phases
+ from pathlib import Path
+
+
+@@ -11,11 +12,14 @@
+     if not ok: raise AssertionError(message)
+
+
+-def save(manifest, state):
++def save(manifest, state, observer=None):
+     temp = manifest.with_suffix('.tmp')
+-    with temp.open('w') as f:
+-        f.write(json.dumps(state, indent=2)); f.write('\n'); f.flush(); os.fsync(f.fileno())
+-    temp.replace(manifest)
++    with phases.measure(observer,'manifest.publish'):
++        with temp.open('w') as f:
++            f.write(json.dumps(state, indent=2)); f.write('\n')
++            with phases.measure(observer,'manifest.flush'):f.flush()
++            with phases.measure(observer,'manifest.fsync'):os.fsync(f.fileno())
++        temp.replace(manifest)
+
+
+ def start(log, manifest):
+@@ -39,6 +43,7 @@
+
+ class Capture:
+     def __init__(self, manifest):
++        self.observer = None
+         self.manifest = Path(manifest)
+         self.state = json.loads(self.manifest.read_text())
+         self.log = Path(self.state['log'])
+@@ -76,6 +81,7 @@
+     def _path(self, r): return self.manifest.parent/r['path']
+     def paths(self): return [self._path(r) for r in self.state['segments']]
+
++    @phases.operation('archive.validate')
+     def _archive(self, r):
+         p = self._path(r)
+         require(p.is_file(), 'archive missing; preserve capture')
+@@ -106,18 +112,20 @@
+         missing=None
+         for attempt in range(8):
+             try:
+-                live=self.log.stat()
+-                if missing is not None:require(snapshot(os.fstat(self.source.fileno()))==missing, 'outgoing changed during absent live path')
++
++                with phases.measure(self.observer,'source.stat'):live=self.log.stat()
++                if missing is not None:require(snapshot(self._source_stat(self.source))==missing, 'outgoing changed during absent live path')
+                 return live
+             except FileNotFoundError:
+                 held=self.state['current'];p=self._locate(held)
+                 require(p==self.log.with_name(self.log.name+'.1'), 'absent live path without unique outgoing occurrence')
+-                now=snapshot(os.fstat(self.source.fileno()))
++                now=snapshot(self._source_stat(self.source))
+                 require(now==snapshot(p.stat()) and (missing is None or now==missing), 'outgoing changed during absent live path')
+                 missing=now
+                 if attempt==7:raise
+                 time.sleep(.001)
+
++    @phases.operation('source.locate')
+     def _locate(self, held):
+         missing=None
+         for attempt in range(8):
+@@ -134,12 +142,15 @@
+             # A directory enumeration can straddle rename. Retry only a still-linked,
+             # stable held descriptor; a lost/overwritten occurrence never qualifies.
+             require(self.source is not None, 'saved log inode missing or ambiguous; preserve capture')
+-            stat=os.fstat(self.source.fileno());now=snapshot(stat)
++            stat=self._source_stat(self.source);now=snapshot(stat)
+             require(identity(stat)==(held['dev'],held['inode']) and stat.st_nlink==1 and (missing is None or now==missing),
+                     'saved log inode missing or ambiguous; preserve capture')
+             missing=now
+             require(attempt<7, 'saved log inode missing or ambiguous; preserve capture')
+             time.sleep(.001)
++
++    @phases.operation('source.stat')
++    def _source_stat(self, source):return os.fstat(source.fileno())
+
+     def _source(self, held):
+         p=self._locate(held); f=p.open('rb')
+@@ -148,14 +159,15 @@
+             return f
+         except BaseException: f.close(); raise
+
++    @phases.operation('source.prefix')
+     def _prefix(self, source, held):
+-        before=os.fstat(source.fileno())
++        before=self._source_stat(source)
+         require(identity(before)==(held['dev'],held['inode']) and before.st_size>=held['offset'], 'log truncated; preserve capture')
+         if held['generation'] <= len(self.state['segments']):
+             r=self.state['segments'][held['generation']-1]
+             source.seek(r['startOffset']);data=source.read(r['bytes'])
+             require(len(data)==r['bytes'] and hashlib.sha256(data).hexdigest()==r['sha256'], 'log prefix changed; preserve capture')
+-        after=os.fstat(source.fileno())
++        after=self._source_stat(source)
+         if snapshot(before)!=snapshot(after):
+             require(identity(after)==identity(before) and after.st_size>before.st_size,
+                     'source changed during checkpoint')
+@@ -181,14 +193,16 @@
+                'startOffset':held['offset'],'endOffset':held['offset'],'bytes':0,'sha256':self.hasher.hexdigest()}
+             self.archive=self._path(r).open('xb');segments.append(r)
+             self.metadata[self._path(r)]=snapshot(os.fstat(self.archive.fileno()))
+-            save(self.manifest,self.state)
+-
++            save(self.manifest,self.state,self.observer)
++
++    @phases.operation('archive.metadata')
+     def _metadata(self):
+         for p,expected in self.metadata.items():
+             require(p.is_file(), 'archive missing; preserve capture')
+             require(snapshot(p.stat())==expected, 'archive integrity metadata changed; preserve capture')
+         require(snapshot(os.fstat(self.archive.fileno()))==self.metadata[self._path(self.state['segments'][-1])], 'archive descriptor changed')
+
++    @phases.operation('source.resolve')
+     def _append_growth(self, source, held, before, transition, data):
+         # An append can publish advanced timestamps before its larger extent is visible.
+         # Never accept stabilization alone: require the same append's later growth,
+@@ -198,7 +212,7 @@
+                 'non-advancing append timestamps')
+         for _ in range(8):
+             time.sleep(.001)
+-            observed=os.fstat(source.fileno())
++            observed=self._source_stat(source)
+             require(identity(observed)==identity(before) and observed.st_size>=before.st_size
+                     and (observed.st_mtime_ns,observed.st_ctime_ns)==stamps,
+                     'append transition identity/extent/timestamps changed')
+@@ -209,7 +223,7 @@
+             prefix=os.pread(source.fileno(),before.st_size-r['startOffset'],r['startOffset'])
+             require(len(prefix)==r['bytes']+len(data) and hashlib.sha256(prefix[:r['bytes']]).hexdigest()==r['sha256']
+                     and prefix[r['bytes']:]==data,'append transition prefix/read interval changed')
+-            final=os.fstat(source.fileno())
++            final=self._source_stat(source)
+             require(identity(final)==identity(before) and final.st_size>=observed.st_size
+                     and (final.st_mtime_ns,final.st_ctime_ns)==stamps,
+                     'append transition changed during prefix validation')
+@@ -228,18 +242,19 @@
+         detail={'reason':str(reason),'generation':held['generation'],'offset':held['offset'],
+                 'requestedBytes':before.st_size-held['offset'],'readBytes':len(data),
+                 'before':stat_fields(before),'after':stat_fields(after),
+-                'currentDescriptor':stat_fields(os.fstat(source.fileno())),'livePath':live}
++                'currentDescriptor':stat_fields(self._source_stat(source)),'livePath':live}
+         raise AssertionError('log changed during read: '+json.dumps(detail,sort_keys=True)) from reason
+
+     def _append(self, source, held):
+-        before=os.fstat(source.fileno())
++        before=self._source_stat(source)
+         require(identity(before)==(held['dev'],held['inode']) and before.st_size>=held['offset'], 'log truncated; preserve capture')
+         self.provisional_tail=None
+         archive_before=os.fstat(self.archive.fileno())
+         require(snapshot(archive_before)==self.metadata[self._path(self.state['segments'][-1])], 'archive metadata changed before append')
+-        source.seek(held['offset']);data=source.read(before.st_size-held['offset'])
++        with phases.measure(self.observer,'source.read'):
++            source.seek(held['offset']);data=source.read(before.st_size-held['offset'])
+         require(snapshot(archive_before)==snapshot(os.fstat(self.archive.fileno())), 'archive changed during source read')
+-        after=os.fstat(source.fileno())
++        after=self._source_stat(source)
+         initial_after=after
+         try:
+             require(len(data)==before.st_size-held['offset'] and identity(before)==identity(after),
+@@ -260,15 +275,17 @@
+         r=self.state['segments'][-1]
+         require(archive_before.st_size==r['bytes'], 'interrupted archive append')
+         if data:
+-            require(self.archive.write(data)==len(data), 'short archive append');self.archive.flush();os.fsync(self.archive.fileno())
++            with phases.measure(self.observer,'archive.write'):require(self.archive.write(data)==len(data), 'short archive append')
++            with phases.measure(self.observer,'archive.flush'):self.archive.flush()
++            with phases.measure(self.observer,'archive.fsync'):os.fsync(self.archive.fileno())
+         archive_after=os.fstat(self.archive.fileno())
+         require(identity(archive_before)==identity(archive_after) and archive_after.st_size==r['bytes']+len(data), 'archive changed during append')
+         self.hasher.update(data);held['offset']+=len(data)
+         r.update(bytes=r['bytes']+len(data),endOffset=held['offset'],sha256=self.hasher.hexdigest())
+         self.metadata[self._path(r)]=snapshot(archive_after)
+         require(snapshot(self._path(r).stat())==snapshot(archive_after), 'archive path changed during append')
+-        save(self.manifest,self.state)
+-        observed=os.fstat(source.fileno())
++        save(self.manifest,self.state,self.observer)
++        observed=self._source_stat(source)
+         require(identity(observed)==identity(after) and observed.st_size>=after.st_size, 'source truncated during append publication')
+         if observed.st_size==after.st_size and snapshot(observed)!=snapshot(after):
+             require(observed.st_mtime_ns==after.st_mtime_ns and self._locate(held)==self.log.with_name(self.log.name+'.1')
+@@ -287,7 +304,7 @@
+                 old=self._locate(held)
+                 require(old==self.log.with_name(self.log.name+'.1'), 'rotation ambiguous during poll')
+                 # A verified rename changes ctime; size/mtime and consumed range must not change.
+-                relocated=snapshot(os.fstat(self.source.fileno()))
++                relocated=snapshot(self._source_stat(self.source))
+                 observed=self.provisional_tail
+                 if observed is not None:
+                     require(relocated==snapshot(old.stat()) and observed[:4]==relocated[:4], 'unobserved outgoing growth before seal')
+@@ -300,13 +317,13 @@
+                         'outgoing source changed after capture; preserve evidence')
+                 outgoing=relocated
+                 # Keep the snapshot tied to consumed bytes, never absorb a later outgoing write.
+-                require(outgoing[2]==held['offset'] and snapshot(os.fstat(self.source.fileno()))==outgoing,
++                require(outgoing[2]==held['offset'] and snapshot(self._source_stat(self.source))==outgoing,
+                         'outgoing source changed after capture; preserve evidence')
+                 require(snapshot(self._prefix(self.source,held))==outgoing,
+                         'outgoing source changed during seal validation; preserve evidence')
+                 self._archive(self.state['segments'][-1])
+                 self._metadata()
+-                require(snapshot(os.fstat(self.source.fileno()))==snapshot(old.stat())==outgoing,
++                require(snapshot(self._source_stat(self.source))==snapshot(old.stat())==outgoing,
+                         'outgoing source changed during seal validation; preserve evidence')
+                 outgoing_source=self.source;self.archive.close()
+                 try:
+@@ -339,7 +356,7 @@
+             require(identity(self._live_stat())==identity(before), 'rotation during checkpoint')
+             self._metadata()
+             if reason=='finish':
+-                require(snapshot(os.fstat(self.source.fileno()))==snapshot(self._live_stat())==snapshot(before),
++                require(snapshot(self._source_stat(self.source))==snapshot(self._live_stat())==snapshot(before),
+                         'source changed at terminal cutoff; preserve evidence')
+                 self.state['terminalCutoff']={'generation':held['generation'],'dev':held['dev'],'inode':held['inode'],
+                     'endOffset':held['offset'],'sourceSize':before.st_size,'sourceMtimeNs':before.st_mtime_ns,
+@@ -348,7 +365,7 @@
+             self.integrity_complete=reason=='finish'
+             self.state['integrityComplete']=False
+             self.state['lastCheckpoint']=reason
+-            save(self.manifest,self.state)
++            save(self.manifest,self.state,self.observer)
+             return {'integrityComplete':self.integrity_complete,'generations':len(self.state['segments']),'reason':reason,'terminalCutoff':self.state.get('terminalCutoff')}
+         except BaseException:
+             self.failed=True;self.integrity_complete=False;raise
+--- a/phase-check.py
++++ b/phase-check.py
+@@ -0,0 +1,138 @@
++"""Saved evidence must identify real blocking work, not just report a generic gap."""
++import copy,json,os,signal,tempfile,time,unittest,uuid
++os.umask(0o077)
++from pathlib import Path
++from unittest.mock import patch
++import capture,logs,phases,controller
++
++class PhaseCheck(unittest.TestCase):
++ def case(self,operation='archive',effect='slow',seed=False):
++  with tempfile.TemporaryDirectory() as tmp:
++   root=Path(tmp);log=root/'source.log';log.write_bytes(b'')
++   cfg={'schema':2,'runId':'phase-case','clockOrigin':'linux-monotonic','socket':'prism-budget-capture-phase-case','environment':'synthetic','deadlineSeconds':2700,'pollSeconds':.01,'maxGapSeconds':.05 if effect=='slow' else 2,'log':str(log)}
++   for k in ('manifest','control','receipt','heartbeat','polls','identities'):cfg[k]=str(root/(k+'.json'))
++   capture.atomic(root/'RUN.json',cfg);capture.atomic(root/'wrapper-ready.json',{});capture.atomic(root/'identities.json',{'wrapper':capture.process(os.getpid())});capture.atomic(root/'control.json',{'sequence':1,'command':'stop' if effect=='stop' else 'finish'})
++   real_start=logs.start;real_sync=os.fsync;real_hash=logs.hashlib.sha256;real_checkpoint=logs.Capture.checkpoint;fired=[];active=[False];matches=[0]
++   def start(*args):
++    real_start(*args)
++    if seed:
++     owner=logs.Capture(root/'manifest.json')
++     try:
++      for i in range(4):
++       log.write_bytes(b'captured\n');owner.poll()
++       if i<3:log.replace(root/'source.log.1');log.write_bytes(b'')
++     finally:owner.close()
++    else:
++     with log.open('ab') as f:f.write(b'captured\n')
++   def sync(fd):
++    name=Path(os.readlink(f'/proc/self/fd/{fd}')).name
++    match=name.endswith('.raw') if operation=='archive' else name==operation+'.json' if operation=='polls' else name==operation+'.tmp'
++    if match:matches[0]+=1
++    if match and not fired and (operation!='heartbeat' or matches[0]==2):
++     fired.append(True)
++     if effect=='slow':time.sleep(.08)
++     real_sync(fd)
++     if effect=='error':raise OSError('controlled fsync failure')
++     if effect=='signal':raise capture.Interrupted('SIGTERM')
++    else:real_sync(fd)
++   def checkpoint(owner,*args,**kwargs):
++    active[0]=True
++    try:return real_checkpoint(owner,*args,**kwargs)
++    finally:active[0]=False
++   def hashed(*args,**kwargs):
++    if seed and active[0]:time.sleep(.015)
++    return real_hash(*args,**kwargs)
++   traps={s:signal.getsignal(s) for s in (signal.SIGTERM,signal.SIGINT,signal.SIGHUP)}
++   try:
++    with patch.object(logs,'start',start),patch.object(os,'fsync',sync),patch.object(logs.Capture,'checkpoint',checkpoint),patch.object(logs.hashlib,'sha256',hashed):result=capture.run_collector(root/'RUN.json')
++   finally:
++    for s,h in traps.items():signal.signal(s,h)
++   receipt=json.loads((root/'collector-receipt.json').read_text());rows=[json.loads(x) for x in (root/'polls.json').read_text().splitlines()]
++   self.assertTrue(fired or seed);self.assertEqual(result,0 if effect=='normal' else 1);self.assertEqual(receipt['integrityComplete'],effect=='normal')
++   if os.environ.get('PHASE_CHECK_PROOFS'):
++    dest=Path(os.environ['PHASE_CHECK_PROOFS'])/(operation+'-'+effect+'-'+str(seed)+'-'+uuid.uuid4().hex);dest.mkdir(parents=True,mode=0o700)
++    (dest/'evidence.json').write_text(json.dumps({'rows':rows,'receipt':receipt},indent=2)+'\n')
++   return rows,receipt
++ def test_real_archive_fsync_cost_identified_after_gap(self):
++  rows,receipt=self.case()
++  self.assertIn('gap',receipt['error'])
++  found=[op for row in rows for op in row.get('phases',{}).get('operations',[]) if op['name']=='archive.fsync' and op['max']['end']-op['max']['start']>=.08]
++  self.assertTrue(found,'saved evidence cannot identify the actual slow archive fsync')
++
++ def test_persistence_cost_failure_and_signal_are_carried(self):
++  for effect in ('slow','error','signal'):
++   with self.subTest(effect=effect):
++    rows,receipt=self.case('polls',effect)
++    p=receipt['lastIntervalPersistence'];self.assertEqual(p['persistedObservationStart'],rows[-1]['start'])
++    phases.validate(p)
++    op=next(x for x in p['phases']['operations'] if x['name']=='poll.fsync')
++    self.assertEqual(op['failures'],int(effect!='slow'))
++    if effect=='slow':self.assertGreaterEqual(op['max']['end']-op['max']['start'],.08)
++    else:self.assertIn('SIGTERM' if effect=='signal' else 'controlled fsync failure',receipt['error'])
++ def test_heartbeat_overlap_and_complete_duplicate_pair_refuse(self):
++  rows,receipt=self.case(effect='normal');phases.validate_capture(rows,receipt)
++  h=next(row['previousHeartbeat'] for row in rows if row.get('previousHeartbeat'))
++  sample={'runId':'phase-case','clockOrigin':'linux-monotonic','block':'1','variant':'baseline','class':'coldRender','scope':'callback','startTimestamp':h['start'],'endTimestamp':h['end'],'elapsedMs':(h['end']-h['start'])*1000,'timestamp':h['end']}
++  normal={'events':[sample],'samples':[sample],'certificates':[{'originVerified':True}],'exclusions':[]}
++  observations=rows+[receipt['lastIntervalPersistence']]+([receipt['lastHeartbeat']] if receipt['lastHeartbeat'] else [])
++  result=controller.analyze.overlap_report(normal,observations)
++  self.assertEqual(result['overlapCount'],1);self.assertEqual(result['observations'][result['samples'][0]['overlapObservationIndices'][0]]['kind'],'heartbeat')
++  with self.assertRaises(ValueError):controller.analyze.overlap_report(normal,observations+observations)
++ def test_strict_phase_and_carrier_validation(self):
++  rows,receipt=self.case(effect='normal');phases.validate_capture(rows,receipt)
++  for kind in ('nan','bool','negative','outside','duplicate','unknown','cpu','count','correlation','duplicate-row','missing-schema','missing-heartbeat','duplicate-heartbeat','heartbeat-bool','heartbeat-clock'):
++   rr=copy.deepcopy(rows);rc=copy.deepcopy(receipt);op=next(x for row in rr for x in row['phases']['operations'])
++   if kind=='nan':op['max']['end']=float('nan')
++   if kind=='bool':op['max']['start']=True
++   if kind=='negative':op['totalSeconds']=-1
++   if kind=='outside':op['max']['end']+=100
++   if kind=='duplicate':rr[0]['phases']['operations'].append(copy.deepcopy(rr[0]['phases']['operations'][0]))
++   if kind=='unknown':op['name']='owner-value'
++   if kind=='cpu':op['max']['threadCpuSeconds']=100
++   if kind=='count':op['count']=True
++   if kind=='correlation':rc['lastIntervalPersistence']['persistedObservationStart']+=.01
++   if kind=='duplicate-row':rr.append(copy.deepcopy(rr[-1]))
++   if kind=='missing-schema':rc.pop('phaseSchema')
++   if kind=='missing-heartbeat':rr[0]['previousHeartbeat']=None
++   if kind=='duplicate-heartbeat':rc['lastHeartbeat']=copy.deepcopy(rr[0]['previousHeartbeat'])
++   if kind=='heartbeat-bool':rr[0]['previousHeartbeat']['sequence']=True
++   if kind=='heartbeat-clock':rr[0]['previousHeartbeat']['clockOrigin']='wrong'
++   with self.subTest(kind=kind),self.assertRaises((ValueError,KeyError)):phases.validate_capture(rr,rc)
++
++ def test_collection_error_and_early_stop(self):
++  for effect in ('error','signal','stop'):
++   rows,receipt=self.case(effect=effect)
++   phases.validate_capture(rows,receipt)
++   self.assertEqual(receipt['exitReason'],{'error':'failure','signal':'signal','stop':'stop'}[effect])
++   op=next(x for x in rows[0]['phases']['operations'] if x['name']=='archive.fsync')
++   self.assertEqual(op['failures'],int(effect!='stop'))
++ def test_runtime_heartbeat_failure_keeps_actual_completed_span(self):
++  rows,receipt=self.case('heartbeat','error')
++  phases.validate_capture(rows,receipt)
++  h=receipt['lastHeartbeat'];self.assertFalse(h['startup']);self.assertEqual(h['precedingPollStart'],rows[-1]['start'])
++  op=next(x for x in h['phases']['operations'] if x['name']=='heartbeat.fsync');self.assertEqual(op['failures'],1)
++ def test_cooperative_checkpoint_operations_belong_to_actual_windows(self):
++  rows,receipt=self.case(effect='normal',seed=True)
++  phases.validate_capture(rows,receipt)
++  windows=[row for row in rows if row['checkpoint']=='finish']
++  self.assertGreater(len(windows),2)
++  operations=[op for row in windows for op in row['phases']['operations'] if op['name']=='archive.validate']
++  self.assertEqual(sum(op['count'] for op in operations),4)
++  self.assertTrue(all(op['max']['end']-op['max']['start']>=.015 for op in operations))
++ def test_complete_pair_duplicate_refuses_without_heartbeat(self):
++  row={'runId':'r','clockOrigin':'c','start':1.,'end':1.1,'bytes':1,'checkpoint':False,'error':None,'observation':'collection'}
++  persist=row|{'start':1.1,'end':1.2,'bytes':0,'observation':'persistence','persistedObservationStart':1.}
++  normal={'events':[{'runId':'r','clockOrigin':'c'}],'samples':[],'certificates':[{'originVerified':True}],'exclusions':[]}
++  controller.analyze.overlap_report(normal,[row,persist])
++  with self.assertRaises(ValueError):controller.analyze.overlap_report(normal,[row,persist,row,persist])
++
++ def test_reaped_receipt_bound_to_owned_collector(self):
++  rows,receipt=self.case(effect='normal');identity=receipt['processes']['collector']
++  with tempfile.TemporaryDirectory() as tmp:
++   p=Path(tmp)/'receipt.json';cfg={'runId':'phase-case','clockOrigin':'linux-monotonic'};ids={'collector':identity}
++   p.write_text(json.dumps(receipt));self.assertEqual(capture.collector_receipt(p,cfg,ids),receipt)
++   for key,value in (('schema',True),('runId','other'),('clockOrigin','other'),('processes',{'collector':identity|{'startTicks':identity['startTicks']+1}}),('integrityComplete',1),('processes',None),('phaseSchema',True)):
++    p.write_text(json.dumps(receipt|{key:value}))
++    with self.subTest(key=key),self.assertRaises(AssertionError):capture.collector_receipt(p,cfg,ids)
++
++if __name__=='__main__':unittest.main(verbosity=2)
+--- a/phases.py
++++ b/phases.py
+@@ -0,0 +1,94 @@
++"""Bounded operation summaries; nested operation durations are not additive."""
++import contextlib,functools,math,time
++
++NAMES=frozenset(('source.stat','source.locate','source.read','source.prefix','source.resolve',
++ 'archive.metadata','archive.validate','archive.write','archive.flush','archive.fsync',
++ 'manifest.publish','manifest.flush','manifest.fsync','heartbeat.publish','heartbeat.flush',
++ 'heartbeat.fsync','poll.write','poll.flush','poll.fsync'))
++MAX_BYTES=16384
++
++def require(ok,message):
++ if not ok:raise ValueError('phase evidence: '+message)
++
++class Recorder:
++ def __init__(self):self.operations={}
++ @contextlib.contextmanager
++ def measure(self,name):
++  require(name in NAMES,'unknown operation');start=time.monotonic();cpu=time.thread_time();failed=True
++  try:
++   yield
++   failed=False
++  finally:
++   end=time.monotonic();used=time.thread_time()-cpu;elapsed=end-start
++   op=self.operations.setdefault(name,{'name':name,'count':0,'totalSeconds':0.,'totalThreadCpuSeconds':0.,'failures':0,'max':None})
++   op['count']+=1;op['totalSeconds']+=elapsed;op['totalThreadCpuSeconds']+=used;op['failures']+=int(failed)
++   if op['max'] is None or elapsed>op['max']['end']-op['max']['start']:
++    op['max']={'start':start,'end':end,'threadCpuSeconds':used,'failed':failed}
++ def snapshot(self):return {'schema':1,'operations':[dict(op,max=dict(op['max'])) for _,op in sorted(self.operations.items())]}
++
++def measure(observer,name):return observer.measure(name) if observer is not None else contextlib.nullcontext()
++
++def operation(name):
++ def decorate(fn):
++  @functools.wraps(fn)
++  def wrapped(self,*args,**kwargs):
++   with measure(self.observer,name):return fn(self,*args,**kwargs)
++  return wrapped
++ return decorate
++
++def number(value):
++ require(type(value) in (int,float) and math.isfinite(value) and value>=0,'invalid finite number')
++ return value
++
++def validate(row):
++ """Validate one summary against its containing actual observation interval."""
++ import json
++ require(type(row) is dict,'invalid observation')
++ start=number(row['start']);end=number(row['end']);require(end>=start,'reversed observation')
++ require(type(row['runId']) is str and bool(row['runId']) and type(row['clockOrigin']) is str and bool(row['clockOrigin']),'identity')
++ require(row.get('error') is None or type(row['error']) is str,'error type')
++ data=row['phases'];require(type(data) is dict and set(data)=={'schema','operations'} and type(data['schema']) is int and data['schema']==1,'schema')
++ ops=data['operations'];require(type(ops) is list and len(ops)<=len(NAMES),'operation bound')
++ require(len(json.dumps(data))<=MAX_BYTES,'serialized bound');seen=set()
++ for op in ops:
++  require(type(op) is dict and set(op)=={'name','count','totalSeconds','totalThreadCpuSeconds','failures','max'},'operation shape')
++  name=op['name'];require(type(name) is str and name in NAMES and name not in seen,'unknown/duplicate operation');seen.add(name)
++  require(type(op['count']) is int and 0<op['count']<=2**53 and type(op['failures']) is int and 0<=op['failures']<=op['count'],'counts')
++  total=number(op['totalSeconds']);cpu=number(op['totalThreadCpuSeconds']);m=op['max']
++  require(type(m) is dict and set(m)=={'start','end','threadCpuSeconds','failed'},'maximum shape')
++  a=number(m['start']);b=number(m['end']);used=number(m['threadCpuSeconds'])
++  require(start<=a<=b<=end and b-a<=total+1e-9 and total<=end-start+1e-6,'endpoints/total')
++  # Adjacent clock samples can differ by sub-microsecond call overhead.
++  require(used<=b-a+0.0001 and used<=cpu+1e-9 and cpu<=total+op['count']*0.0001,'CPU bounds')
++  require(type(m['failed']) is bool and (not m['failed'] or op['failures']>0) and (op['failures']!=op['count'] or m['failed']),'failure status')
++  require(total<=(b-a)*op['count']+1e-6,'maximum below mean')
++ return True
++
++def validate_capture(rows,receipt):
++ """New-source evidence only; callers must use old frozen code for old captures."""
++ require(receipt.get('phaseSchema')==1 and type(receipt.get('phaseSchema')) is int,'missing phase contract')
++ require(bool(rows),'missing collection rows')
++ seen=set();heartbeats=[];persists=[]
++ for row in rows:
++  validate(row);require(all(not op['name'].startswith(('poll.','heartbeat.')) for op in row['phases']['operations']),'collection operation scope');key=(row['runId'],row['clockOrigin'],row['start']);require(key not in seen,'duplicate collection');seen.add(key)
++  require((row['runId'],row['clockOrigin'])==(receipt['runId'],receipt['clockOrigin']),'receipt identity')
++  if row.get('previousIntervalPersistence') is not None:persists.append(row['previousIntervalPersistence'])
++  if row.get('previousHeartbeat') is not None:
++   h=row['previousHeartbeat'];require(number(h['end'])<=row['start'],'heartbeat outside carrier');heartbeats.append(h)
++ if receipt.get('lastIntervalPersistence') is not None:persists.append(receipt['lastIntervalPersistence'])
++ if receipt.get('lastHeartbeat') is not None:heartbeats.append(receipt['lastHeartbeat'])
++ require(len(persists)==len(rows),'persistence coverage')
++ for row,p in zip(rows,persists):
++  validate(p);require(all(op['name'].startswith('poll.') for op in p['phases']['operations']),'persistence operation scope');require(p['observation']=='persistence' and (p['runId'],p['clockOrigin'],p['persistedObservationStart'],p['start'])==(row['runId'],row['clockOrigin'],row['start'],row['end']),'persistence linkage')
++ count=receipt.get('heartbeatCount');require(type(count) is int and 0<count<=2**53 and len(heartbeats)==count,'heartbeat coverage')
++ require([h.get('sequence') for h in heartbeats]==list(range(1,count+1)) and all(type(h.get('sequence')) is int for h in heartbeats),'heartbeat sequence')
++ seen_h=set();anchors=set();by_start={row['start']:p for row,p in zip(rows,persists)}
++ for h in heartbeats:
++  validate(h);key=(h['runId'],h['clockOrigin'],h['start']);require(key not in seen_h,'duplicate heartbeat');seen_h.add(key)
++  require((h['runId'],h['clockOrigin'])==(receipt['runId'],receipt['clockOrigin']) and h['observation']=='heartbeat' and h['bytes']==0 and h['checkpoint'] is False,'heartbeat identity')
++  anchor=h['precedingPollStart'];require(anchor not in anchors,'duplicate heartbeat anchor');anchors.add(anchor)
++  if anchor is None:require(h['startup'] is True and h['end']<=rows[0]['start'],'startup linkage')
++  else:
++   number(anchor);require(h['startup'] is False and anchor in by_start and by_start[anchor]['end']<=h['start'],'heartbeat linkage')
++  require(all(op['name'].startswith('heartbeat.') for op in h['phases']['operations']),'heartbeat operation scope')
++ return {'collection':len(rows),'persistence':len(persists),'heartbeat':len(heartbeats)}
+--- a/rehearsal-smoke.py
++++ b/rehearsal-smoke.py
+@@ -28,6 +28,7 @@
+  if mode=='producer-term':os.kill(ids['producer']['pid'],signal.SIGTERM)
+  wait(lambda:(root/'receipt.json').exists() and 'wrapperEnded' in c.load(root/'receipt.json'),120 if mode=='native' else 25)
+  receipt=c.load(root/'receipt.json');wait(lambda:all(not cap.same_process(x) for x in receipt['processes'].values()))
++ r.phases.validate_capture([json.loads(line) for line in (root/'polls.jsonl').read_text().splitlines()],receipt)
+  if mode in ('normal','fullburst','native'):
+   result=r.verify_capture(root);assert result['blocks']>=20 and len(c.load(root/'manifest.json')['segments'])>=3
+  else:
+--- a/rehearse.py
++++ b/rehearse.py
+@@ -3,6 +3,7 @@
+ from pathlib import Path
+ import controller as c
+ import capture as cap
++import phases
+ ROOT=Path(__file__).resolve().parent
+ BASELINE='9bf4e8e920c005f8a4d1666b32b4e1a516856ac2'
+ CANDIDATE='e7384b0d7ab3e8e935cdf0776043839441132af5'
+@@ -373,10 +374,11 @@
+     rows=[json.loads(x) for x in Path(cfg['polls']).read_text().splitlines()]
+     limits=c.capture_limits(MIB,max(FLOOR,pr['peakBytesPerSecond']),1)
+     c.require(cfg['pollSeconds']<=limits['pollSeconds'] and cfg['maxGapSeconds']<=limits['maxGapSeconds'],'actual peak exceeds configured guard')
++    phase_counts=phases.validate_capture(rows,receipt)
+     poll=poll_contract(rows,receipt,min(cfg['maxGapSeconds'],limits['maxGapSeconds']))
+     # Synthetic protocol timestamps are a distinct clock; never relabel them as host time.
+     if run['native']:
+-        overlap=c.analyze.overlap_report(normal['normal'],rows+[receipt['lastIntervalPersistence']])
++        overlap=c.analyze.overlap_report(normal['normal'],rows+[receipt['lastIntervalPersistence']]+([receipt['lastHeartbeat']] if receipt['lastHeartbeat'] else []))
+     else:
+         persistence=[x['previousIntervalPersistence'] for x in rows if x.get('previousIntervalPersistence')]+[receipt['lastIntervalPersistence']]
+         spans=[json.loads(x) for x in (root/'writer-spans.jsonl').read_text().splitlines()]

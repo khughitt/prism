@@ -1,0 +1,781 @@
+{
+ "spans": {
+  "B1": [
+   {
+    "nonce": "1792269475",
+    "seq": 0,
+    "label": "loaded",
+    "ms": 0.0
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 2,
+    "label": "open",
+    "ms": 0.185
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 3,
+    "label": "async:describe",
+    "ms": 5.651
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 6,
+    "label": "async:describe",
+    "ms": 0.012
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 0,
+    "label": "coldStart",
+    "ms": 0.0
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 8,
+    "label": "coldRender",
+    "ms": 21.442
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 11,
+    "label": "coldRender",
+    "ms": 18.382
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 14,
+    "label": "coldRender",
+    "ms": 15.82
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 17,
+    "label": "coldRender",
+    "ms": 11.271
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 20,
+    "label": "coldRender",
+    "ms": 18.005
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 23,
+    "label": "coldRender",
+    "ms": 19.75
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 26,
+    "label": "coldRender",
+    "ms": 17.638
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 29,
+    "label": "coldRender",
+    "ms": 16.086
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 32,
+    "label": "coldRender",
+    "ms": 10.886
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 35,
+    "label": "coldRender",
+    "ms": 18.802
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 37,
+    "label": "async:describe",
+    "ms": 0.022
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 38,
+    "label": "async:describe",
+    "ms": 0.018
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 41,
+    "label": "async:describe",
+    "ms": 8.662
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 169,
+    "label": "dragEnd",
+    "ms": 16.274
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 171,
+    "label": "async:set",
+    "ms": 16.673
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 172,
+    "label": "async:describe",
+    "ms": 8.699
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 175,
+    "label": "async:describe",
+    "ms": 0.018
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 273,
+    "label": "dragEnd",
+    "ms": 18.083
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 275,
+    "label": "async:set",
+    "ms": 16.632
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 276,
+    "label": "async:describe",
+    "ms": 9.676
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 293,
+    "label": "async:describe",
+    "ms": 8.404
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 351,
+    "label": "dragEnd",
+    "ms": 18.555
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 353,
+    "label": "async:set",
+    "ms": 18.789
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 354,
+    "label": "async:describe",
+    "ms": 9.191
+   },
+   {
+    "nonce": "1792269475",
+    "seq": 357,
+    "label": "async:describe",
+    "ms": 0.022
+   }
+  ],
+  "C1": [
+   {
+    "nonce": "1792270213",
+    "seq": 0,
+    "label": "loaded",
+    "ms": 0.0
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 2,
+    "label": "open",
+    "ms": 0.466
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 3,
+    "label": "async:describe",
+    "ms": 5.912
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 6,
+    "label": "async:describe",
+    "ms": 0.017
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 0,
+    "label": "coldStart",
+    "ms": 0.0
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 8,
+    "label": "coldRender",
+    "ms": 22.181
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 11,
+    "label": "coldRender",
+    "ms": 18.198
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 14,
+    "label": "coldRender",
+    "ms": 14.81
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 17,
+    "label": "coldRender",
+    "ms": 20.96
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 20,
+    "label": "coldRender",
+    "ms": 17.983
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 23,
+    "label": "coldRender",
+    "ms": 15.805
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 26,
+    "label": "coldRender",
+    "ms": 10.77
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 29,
+    "label": "coldRender",
+    "ms": 10.617
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 32,
+    "label": "coldRender",
+    "ms": 19.408
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 35,
+    "label": "coldRender",
+    "ms": 19.846
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 37,
+    "label": "async:describe",
+    "ms": 0.017
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 137,
+    "label": "dragEnd",
+    "ms": 17.366
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 139,
+    "label": "async:set",
+    "ms": 14.922
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 140,
+    "label": "async:describe",
+    "ms": 10.192
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 222,
+    "label": "dragEnd",
+    "ms": 16.15
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 224,
+    "label": "async:set",
+    "ms": 16.145
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 225,
+    "label": "async:describe",
+    "ms": 8.734
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 228,
+    "label": "async:describe",
+    "ms": 0.02
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 340,
+    "label": "dragEnd",
+    "ms": 18.341
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 342,
+    "label": "async:set",
+    "ms": 18.354
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 343,
+    "label": "async:describe",
+    "ms": 6.073
+   },
+   {
+    "nonce": "1792270213",
+    "seq": 346,
+    "label": "async:describe",
+    "ms": 0.016
+   }
+  ],
+  "B2": [
+   {
+    "nonce": "1792270533",
+    "seq": 0,
+    "label": "loaded",
+    "ms": 0.0
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 2,
+    "label": "open",
+    "ms": 0.241
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 3,
+    "label": "async:describe",
+    "ms": 9.866
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 6,
+    "label": "async:describe",
+    "ms": 0.022
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 0,
+    "label": "coldStart",
+    "ms": 0.0
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 8,
+    "label": "coldRender",
+    "ms": 24.132
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 11,
+    "label": "coldRender",
+    "ms": 20.429
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 14,
+    "label": "coldRender",
+    "ms": 14.174
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 17,
+    "label": "coldRender",
+    "ms": 13.028
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 20,
+    "label": "coldRender",
+    "ms": 10.902
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 23,
+    "label": "coldRender",
+    "ms": 11.489
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 26,
+    "label": "coldRender",
+    "ms": 11.928
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 29,
+    "label": "coldRender",
+    "ms": 20.873
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 32,
+    "label": "coldRender",
+    "ms": 11.379
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 35,
+    "label": "coldRender",
+    "ms": 12.068
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 37,
+    "label": "async:describe",
+    "ms": 0.015
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 38,
+    "label": "async:describe",
+    "ms": 0.024
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 88,
+    "label": "dragEnd",
+    "ms": 18.553
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 90,
+    "label": "async:set",
+    "ms": 13.467
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 91,
+    "label": "async:describe",
+    "ms": 6.152
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 219,
+    "label": "dragEnd",
+    "ms": 18.216
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 221,
+    "label": "async:set",
+    "ms": 16.357
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 222,
+    "label": "async:describe",
+    "ms": 11.22
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 225,
+    "label": "async:describe",
+    "ms": 0.02
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 409,
+    "label": "dragEnd",
+    "ms": 17.639
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 411,
+    "label": "async:set",
+    "ms": 16.155
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 412,
+    "label": "async:describe",
+    "ms": 5.988
+   },
+   {
+    "nonce": "1792270533",
+    "seq": 415,
+    "label": "async:describe",
+    "ms": 0.023
+   }
+  ],
+  "C2": [
+   {
+    "nonce": "1792271255",
+    "seq": 0,
+    "label": "loaded",
+    "ms": 0.0
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 2,
+    "label": "open",
+    "ms": 0.272
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 3,
+    "label": "async:describe",
+    "ms": 9.853
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 6,
+    "label": "async:describe",
+    "ms": 0.017
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 0,
+    "label": "coldStart",
+    "ms": 0.0
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 8,
+    "label": "coldRender",
+    "ms": 20.695
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 11,
+    "label": "coldRender",
+    "ms": 18.269
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 14,
+    "label": "coldRender",
+    "ms": 16.181
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 17,
+    "label": "coldRender",
+    "ms": 12.015
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 20,
+    "label": "coldRender",
+    "ms": 10.764
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 23,
+    "label": "coldRender",
+    "ms": 18.837
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 26,
+    "label": "coldRender",
+    "ms": 19.943
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 29,
+    "label": "coldRender",
+    "ms": 15.308
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 32,
+    "label": "coldRender",
+    "ms": 10.929
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 35,
+    "label": "coldRender",
+    "ms": 11.585
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 37,
+    "label": "async:describe",
+    "ms": 0.019
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 105,
+    "label": "dragEnd",
+    "ms": 17.472
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 107,
+    "label": "async:set",
+    "ms": 13.492
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 108,
+    "label": "async:describe",
+    "ms": 8.896
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 256,
+    "label": "dragEnd",
+    "ms": 17.73
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 258,
+    "label": "async:set",
+    "ms": 16.546
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 259,
+    "label": "async:describe",
+    "ms": 9.142
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 333,
+    "label": "dragEnd",
+    "ms": 16.125
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 335,
+    "label": "async:set",
+    "ms": 12.706
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 336,
+    "label": "async:describe",
+    "ms": 8.44
+   },
+   {
+    "nonce": "1792271255",
+    "seq": 339,
+    "label": "async:describe",
+    "ms": 0.022
+   }
+  ]
+ },
+ "pooled": {
+  "B": {
+   "async:describe": {
+    "n": 20,
+    "median": 2.837,
+    "max": 11.22,
+    "min": 0.012
+   },
+   "async:set": {
+    "n": 6,
+    "median": 16.495,
+    "max": 18.789,
+    "min": 13.467
+   },
+   "coldRender": {
+    "n": 20,
+    "median": 15.953,
+    "max": 24.132,
+    "min": 10.886
+   },
+   "dragEnd": {
+    "n": 6,
+    "median": 18.149,
+    "max": 18.555,
+    "min": 16.274
+   },
+   "frameTick": {
+    "n": 352,
+    "median": 7.746,
+    "max": 24.164,
+    "min": 4.37
+   },
+   "loaded": {
+    "n": 2,
+    "median": 0.0,
+    "max": 0.0,
+    "min": 0.0
+   },
+   "open": {
+    "n": 2,
+    "median": 0.213,
+    "max": 0.241,
+    "min": 0.185
+   },
+   "render": {
+    "n": 366,
+    "median": 7.728,
+    "max": 24.09,
+    "min": 0.028
+   }
+  },
+  "C": {
+   "async:describe": {
+    "n": 15,
+    "median": 5.912,
+    "max": 10.192,
+    "min": 0.016
+   },
+   "async:set": {
+    "n": 6,
+    "median": 15.534,
+    "max": 18.354,
+    "min": 12.706
+   },
+   "coldRender": {
+    "n": 20,
+    "median": 17.082,
+    "max": 22.181,
+    "min": 10.617
+   },
+   "dragEnd": {
+    "n": 6,
+    "median": 17.419,
+    "max": 18.341,
+    "min": 16.125
+   },
+   "frameTick": {
+    "n": 311,
+    "median": 7.614,
+    "max": 22.214,
+    "min": 4.176
+   },
+   "loaded": {
+    "n": 2,
+    "median": 0.0,
+    "max": 0.0,
+    "min": 0.0
+   },
+   "open": {
+    "n": 2,
+    "median": 0.369,
+    "max": 0.466,
+    "min": 0.272
+   },
+   "render": {
+    "n": 325,
+    "median": 7.621,
+    "max": 22.147,
+    "min": 0.043
+   }
+  }
+ },
+ "budgetLines": []
+}

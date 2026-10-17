@@ -33,7 +33,7 @@ test('panel lifecycle owns refresh, drag cleanup, and live-drag frame ticks', as
   // Opening is a fresh gesture: it drops a sticky command error from a previous
   // session before re-reading, since the Luau runtime survives a close. It
   // renders itself because refresh no longer does.
-  assert.match(source, /function onOpen\(context\)\n  state\.help = false\n  state\.errorText = nil\n  state\.errorSticky = false\n  state\.ticks = 0\n  panel\.setWantsSecondTicks\(true\)\n  render\(\)\n  refresh\(\)\nend/);
+  assert.match(source, /function onOpen\(context\)\n  state\.open = true\n  state\.help = false\n  state\.errorText = nil\n  state\.errorSticky = false\n  state\.ticks = 0\n  panel\.setWantsSecondTicks\(true\)\n  render\(\)\n  refresh\(\)\nend/);
   assert.match(source, /function onClose\(\)[\s\S]*state\.drag = nil[\s\S]*state\.sampleElapsedMs = 0[\s\S]*panel\.setNeedsFrameTick\(false\)/);
   // Closing the panel has no backend action: there is no preview to tear down.
   const onClose = source.slice(source.indexOf('function onClose()'));
@@ -41,15 +41,15 @@ test('panel lifecycle owns refresh, drag cleanup, and live-drag frame ticks', as
   // A native slider can fire onChange far more often than the panel can
   // afford to rebuild its tree, whatever the parameter's effectiveDrag; the
   // tick flushes at most one render per frame instead of one per event.
-  assert.match(source, /function onFrameTick\(deltaMs\)\n  if not state\.drag then return end\n  if state\.drag\.dirty then[\s\S]*render\(\)[\s\S]*if not state\.drag\.pendingSample then return end[\s\S]*state\.sampleElapsedMs = state\.sampleElapsedMs \+ deltaMs[\s\S]*state\.sampleElapsedMs < 100[\s\S]*enqueue\(state\.drag\.pendingSample\)[\s\S]*state\.drag\.pendingSample = nil/);
+  assert.match(source, /function onFrameTick\(deltaMs\)\n  local dragDirty = state\.drag ~= nil and state\.drag\.dirty\n  if state\.renderPending or dragDirty then[\s\S]*render\(\)[\s\S]*if not state\.drag then[\s\S]*syncFrameTick\(\)[\s\S]*return[\s\S]*if not state\.drag\.pendingSample then return end[\s\S]*state\.sampleElapsedMs = state\.sampleElapsedMs \+ deltaMs[\s\S]*state\.sampleElapsedMs < 100[\s\S]*enqueue\(state\.drag\.pendingSample\)[\s\S]*state\.drag\.pendingSample = nil/);
 
   const liveDrag = source.slice(source.indexOf('local function beginDrag'), source.indexOf('local function endDrag'));
   // Every drag requests ticks now, not only live-mode ones: it is what
   // throttles the render, not only the live-mode sample write.
-  assert.match(liveDrag, /panel\.setNeedsFrameTick\(true\)/);
+  assert.match(liveDrag, /syncFrameTick\(\)/);
   assert.match(liveDrag, /state\.drag\.dirty = true/);
   assert.doesNotMatch(liveDrag, /render\(\)/);
-  assert.equal(source.match(/panel\.setNeedsFrameTick\(true\)/g)?.length, 1);
+  assert.equal(source.match(/panel\.setNeedsFrameTick\(state\.drag ~= nil or state\.renderPending\)/g)?.length, 1);
 });
 
 test('describe refresh validates visible parameters and discards stale results', async () => {
@@ -129,11 +129,9 @@ test('slider rows render the formatted local value beside the native control', a
 test('presentation renders every section open with a header toggle, matrix rows, and resets', async () => {
   const source = await readEntry('panel.luau');
 
-  assert.match(source, /Presentation\.titleParam\(state\.model\.params\)/);
-  assert.match(source, /Presentation\.sections\(state\.model\.params, rack\.group\)/);
   assert.doesNotMatch(source, /expandedGroups|groupParams|Quick/);
   assert.match(source, /Presentation\.editedCount\(params\)/);
-  assert.match(source, /local function matrixRow\(row, indent\)[\s\S]*controlCell\(row\.unfocused, 1\)[\s\S]*controlCell\(row\.focused, 1\)/);
+  assert.match(source, /local function matrixRow\(row, indent\)[\s\S]*retainedCell\(row\.unfocused, 1\)[\s\S]*retainedCell\(row\.focused, 1\)/);
   assert.match(source, /text = "Unfocused"[\s\S]*text = "Focused"/);
   assert.match(source, /local function resetAction[\s\S]*enqueue\(\{verb = "reset", mode = mode, group = group\}\)/);
   assert.match(source, /tooltip = param\.edited and "Revert edit"/);

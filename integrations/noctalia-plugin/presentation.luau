@@ -1,27 +1,51 @@
 local M = {}
 
+-- A step's precision depends on the number alone; the same few steps recur on
+-- every render.
+local precisionByStep = {}
+
 function M.stepPrecision(step)
+  local cached = precisionByStep[step]
+  if cached ~= nil then return cached end
   local text = tostring(step):lower()
   local exponentAt = text:find("e-", 1, true)
+  local result
   if exponentAt then
     local coefficient = text:sub(1, exponentAt - 1)
     local decimalAt = coefficient:find(".", 1, true)
     local fractional = decimalAt and #coefficient - decimalAt or 0
-    return tonumber(text:sub(exponentAt + 2)) + fractional
+    result = tonumber(text:sub(exponentAt + 2)) + fractional
+  else
+    local decimalAt = text:find(".", 1, true)
+    result = decimalAt and #text - decimalAt or 0
   end
-  local decimalAt = text:find(".", 1, true)
-  return decimalAt and #text - decimalAt or 0
+  precisionByStep[step] = result
+  return result
 end
 
-local function display(param) return param.ui.display or "raw" end
-local function scale(param) return param.ui.scale or "linear" end
--- A curved track runs in normalized space whatever its label reads.
-local function curved(param) return scale(param) ~= "linear" end
+-- Describe entries are never edited in place apart from value and edited, so
+-- what a slider's range and ui imply is derived once per entry table. A new
+-- describe decodes new tables, and the weak keys let the old ones go.
+local metaByParam = setmetatable({}, { __mode = "k" })
 
-local function percentPrecision(param)
-  return math.max(0, math.max(M.stepPrecision(param.ui.step), M.stepPrecision(param.range[1]),
-    M.stepPrecision(param.range[2])) - 2)
+local function meta(param)
+  local found = metaByParam[param]
+  if found ~= nil then return found end
+  local display = param.ui.display or "raw"
+  local scale = param.ui.scale or "linear"
+  found = { display = display, scale = scale, normalizedTrack = scale ~= "linear" or display == "normalized" }
+  if param.range ~= nil and param.ui.step ~= nil then
+    found.percentPrecision = math.max(0, math.max(M.stepPrecision(param.ui.step),
+      M.stepPrecision(param.range[1]), M.stepPrecision(param.range[2])) - 2)
+  end
+  metaByParam[param] = found
+  return found
 end
+
+local function display(param) return meta(param).display end
+local function scale(param) return meta(param).scale end
+
+local function percentPrecision(param) return meta(param).percentPrecision end
 
 local function multiplicationError(left, right, product)
   local splitter = 134217729 -- 2^27 + 1 splits an IEEE-754 double's significand.
@@ -75,7 +99,7 @@ function M.snapValue(value, range, step)
 end
 
 local function normalizedTrack(param)
-  return curved(param) or display(param) == "normalized"
+  return meta(param).normalizedTrack
 end
 
 function M.sliderFrom(param)
@@ -399,22 +423,34 @@ function M.rack(model)
     if not claimedKeys[key] then error("parameter " .. key .. " belongs to no device") end
   end
   for _, card in ipairs(cards) do
-    card.bypassed = card.bypass.value == true
-    card.silenced = card.requires ~= nil and card.requires.bypass.value == true
-  end
-  for _, card in ipairs(cards) do
-    card.attenuatedBy = {}
     for _, interaction in ipairs(card.interactions) do
-      if interaction.kind == "attenuates" then
-        local source = byId[interaction.device]
-          or error("device " .. card.device .. " names unknown device " .. tostring(interaction.device))
-        if source.bypassed then
-          card.attenuatedBy[#card.attenuatedBy + 1] = { card = source, why = interaction.why }
-        end
+      if interaction.kind == "attenuates" and byId[interaction.device] == nil then
+        error("device " .. card.device .. " names unknown device " .. tostring(interaction.device))
       end
     end
   end
-  return { group = rack.group, header = header, cards = cards }
+  local result = { group = rack.group, header = header, cards = cards, byId = byId }
+  M.rackState(result)
+  return result
+end
+
+-- What a rack's values make of it: which cards are bypassed, silenced by a
+-- bypassed requirement, or attenuated by a bypassed source. The structure holds
+-- the param tables, so a render recomputes this after every optimistic write.
+function M.rackState(rack)
+  for _, card in ipairs(rack.cards) do
+    card.bypassed = card.bypass.value == true
+    card.silenced = card.requires ~= nil and card.requires.bypass.value == true
+  end
+  for _, card in ipairs(rack.cards) do
+    card.attenuatedBy = {}
+    for _, interaction in ipairs(card.interactions) do
+      local source = rack.byId[interaction.device]
+      if interaction.kind == "attenuates" and source.bypassed then
+        card.attenuatedBy[#card.attenuatedBy + 1] = { card = source, why = interaction.why }
+      end
+    end
+  end
 end
 
 -- Bypass first: it is the first row of the expanded card.
