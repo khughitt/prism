@@ -8,7 +8,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T16:18:11Z
-updated: 2026-10-17T21:22:34Z
+updated: 2026-10-17T21:22:36Z
 started: 2026-10-10T16:20:49Z
 completed: 2026-10-17T21:20:14Z
 closed: 2026-10-17T21:20:14Z
@@ -157,3 +157,4 @@ Remedies to weigh (folded from prism-5172ea): render only what changed, or cache
 - 2026-10-17T21:20:14Z (fix/panel-render-budget): Retained subtrees and a deferred describe render keep every panel callback under the host's 25 ms budget: in-host with all cards expanded, drag frame ~8 ms, release 18 ms, cold rebuild 16 ms median / 24 ms worst, zero budget errors over four runtimes; Lua-call ceilings pinned in contract.test.mjs; token change reverted; cold-render headroom follows in prism-9d063e.
   provenance: {"harness_session":"claude-code:2efe5e59-1ac2-4da3-a170-7b5188325415","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
 - 2026-10-17T21:22:34Z (main): attached: 2026-10-10-panel-render-budget-ledger.md (24552 bytes): SDD ledger for plan 2026-10-10-panel-render-budget (rulings and deferred minors), kept when the panel-budget worktree was removed
+- 2026-10-17T21:22:36Z (main): attached: 2026-10-11-panel-budget-tokens-and-launch-ledger.md (21206 bytes): SDD ledger for plan 2026-10-11-panel-budget-tokens-and-launch (rulings and deferred minors), kept when the panel-budget worktree was removed
