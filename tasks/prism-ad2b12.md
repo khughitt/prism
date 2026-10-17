@@ -1,12 +1,11 @@
 ---
 id: prism-ad2b12
 title: One reset per level that loads the neutral look
-status: idea
+status: dropped
 priority: 2
-reviewed: true
-reviewed_at: 2026-10-17T21:15:32Z
 created: 2026-09-10T17:00:50Z
-updated: 2026-10-17T21:15:32Z
+updated: 2026-10-17T21:20:13Z
+closed: 2026-10-17T21:20:13Z
 depends: []
 parent: prism-3415ef
 tags: [ui, noctalia, defs]
@@ -20,3 +19,7 @@ Proposal 2026-09-10: drop the restore-versus-neutralize distinction. Reset at gl
 - 2026-10-17T21:14:54Z (main): scope: drop; rechecked at 93625b4: settled by docs/specs/2026-09-19-compositional-profiles-design.md Section 4 (revert and neutral both stay, since they answer different questions, and both write scratch so neither touches a persisted layer); the panel offers revert, symmetric and neutral on the panel-wide and section rows and revert as the row reset (integrations/noctalia-plugin/panel.luau resetModeButtons, rowReset 'Revert edit'); the spec's task map says 'done by Section 4; close with the verdict'; proposal: drop as landed in ad17477 under prism-aec90f (done; step prism-c76742), sibling verdict prism-bf3ae9 already closed
 - 2026-10-17T21:15:08Z (main): correction to the scope note above: the row reset function is resetButton (tooltip 'Revert edit'), not rowReset
 - 2026-10-17T21:15:32Z (main): scope: drop; restated with the corrected function name (the note above masked the proposal); rechecked at 93625b4: settled by docs/specs/2026-09-19-compositional-profiles-design.md Section 4 (revert and neutral both stay, since they answer different questions, and both write scratch so neither touches a persisted layer); the panel offers revert, symmetric and neutral on the panel-wide and section rows (integrations/noctalia-plugin/panel.luau resetModeButtons) and revert as the row reset (resetButton, 'Revert edit'); the spec's task map says 'done by Section 4; close with the verdict'; proposal: drop as landed in ad17477 under prism-aec90f (done; step prism-c76742), sibling verdict prism-bf3ae9 already closed
+- 2026-10-17T21:20:13Z (main): dropped
+  provenance: {"harness_session":"claude-code:5057c2c8-b2fe-4e4e-9246-1852a4bc3121","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-17T21:20:13Z (main): landed: revert and neutral both stay and write scratch at every level (compositional profiles Section 4, ad17477, prism-aec90f); drop approved by owner 2026-10-17
+  provenance: {"harness_session":"claude-code:5057c2c8-b2fe-4e4e-9246-1852a4bc3121","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
