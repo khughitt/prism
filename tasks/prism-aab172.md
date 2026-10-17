@@ -4,8 +4,9 @@ title: Should explicit profile selection stop autosaving scratch into the outgoi
 status: idea
 priority: 2
 reviewed: true
+reviewed_at: 2026-10-17T21:15:11Z
 created: 2026-09-27T16:00:56Z
-updated: 2026-10-17T21:15:10Z
+updated: 2026-10-17T21:15:11Z
 depends: [prism-092855]
 parent: prism-2f0b4b
 tags: [profiles, wallpaper]
@@ -17,3 +18,4 @@ After prism-5f6046, rotation carries pending edits (including values from a prev
 ## Notes
 
 - 2026-09-29T22:37:44Z (main): scope: briefed; confirmed profile selection saves carried scratch into the current outgoing pair; preserve clean-load semantics while reviewing explicit save/discard/cancel; brief: docs/notes/2026-09-29-profile-selection-brief.md
+- 2026-10-17T21:15:11Z (main): scope: briefed; rechecked at 93625b4: src/context-cli.js is unchanged since the brief's 8ccb348, and changeSlots still folds scratch, carried rotation values included, into the outgoing look-wallpaper pair on select-profile (saveOutgoing); the decision stays with design task prism-092855 (todo, planned), now recorded as a dependency so its close readmits this idea; brief: docs/notes/2026-09-29-profile-selection-brief.md
