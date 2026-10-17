@@ -478,3 +478,158 @@ test('the panel captures exactly the prism rows of tools/keys.toml', () => {
     'capture_keys must be the inventory rows in host spelling',
   );
 });
+
+// Render cost in Lua calls, on real describe output with every card expanded.
+// In the shell each call also pays the budget interrupt's clock read, so calls
+// are the unit the 25 ms budget is spent in
+// (docs/specs/2026-10-10-panel-render-budget-design.md). The host's decode and
+// encode are single C calls, so their stand-ins run unhooked.
+const costHarness = String.raw`
+local pluginDir, model = arg[1], MODEL
+
+local function canonical(value)
+  if type(value) == "number" then return string.format("%.17g", value) end
+  if type(value) ~= "table" then return type(value) == "string" and string.format("%q", value) or tostring(value) end
+  local keys = {}
+  for key in pairs(value) do keys[#keys + 1] = key end
+  table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
+  local parts = {}
+  for _, key in ipairs(keys) do parts[#parts + 1] = tostring(key) .. "=" .. canonical(value[key]) end
+  return "{" .. table.concat(parts, ",") .. "}"
+end
+local function copyOf(value)
+  if type(value) ~= "table" then return value end
+  local copied = {}
+  for key, held in pairs(value) do copied[key] = copyOf(held) end
+  return copied
+end
+local function unhooked(fn, value)
+  local hook, mask, count = debug.gethook()
+  debug.sethook()
+  local result = fn(value)
+  if hook then debug.sethook(hook, mask, count) end
+  return result
+end
+
+local calls = 0
+local function measure(action)
+  calls = 0
+  debug.sethook(function() calls = calls + 1 end, "c")
+  action()
+  debug.sethook()
+  return calls
+end
+
+local function collect(tree, found)
+  found = found or {}
+  if type(tree) ~= "table" then return found end
+  if tree.kind ~= nil then found[#found + 1] = tree end
+  for _, child in ipairs(tree.children or {}) do collect(child, found) end
+  return found
+end
+
+local rendered, described
+local ui = setmetatable({}, {__index = function(_, kind)
+  return function(props, children) return {kind = kind, props = props or {}, children = children or {}} end
+end})
+local panel = {render = function(tree) rendered = tree end, setNeedsFrameTick = function() end, setWantsSecondTicks = function() end}
+local noctalia = {
+  json = {
+    decode = function() return unhooked(copyOf, model) end,
+    encode = function(value) return unhooked(canonical, value) end,
+  },
+  runAsync = function(command, callback)
+    if command:find("describe", 1, true) then described = callback end
+    return true
+  end,
+}
+local env = {noctalia = noctalia, panel = panel, ui = ui}
+setmetatable(env, {__index = _G})
+env.require = function(name)
+  return assert(loadfile(pluginDir .. name:gsub("^%./", ""), "t", env))()
+end
+assert(loadfile(pluginDir .. "panel.luau", "t", env))()
+local Retain = env.require("./retain.luau")
+
+local serial = 0
+local function answer()
+  serial = serial + 1
+  return {timedOut = false, exitCode = 0, stdout = tostring(serial), stderr = "",
+    stdoutTruncated = false, stderrTruncated = false}
+end
+
+env.onOpen({})
+described(answer())
+env.onFrameTick(16)
+for _, node in ipairs(collect(rendered)) do
+  if node.kind == "button" and node.props.tooltip == "Show details" then node.props.onClick() end
+end
+
+local counts = {}
+Retain.clear(env.retainedMemo())
+env.onKey("F1", true)
+counts.fullRender = measure(function() env.onKey("F1", true) end)
+
+local sliders = {}
+for _, node in ipairs(collect(rendered)) do
+  if node.kind == "slider" then sliders[#sliders + 1] = node end
+end
+local dragged = sliders[#sliders]
+dragged.props.onChange(dragged.props.min + (dragged.props.max - dragged.props.min) * 0.37)
+counts.dragTick = measure(function() env.onFrameTick(16) end)
+counts.dragEnd = measure(function() dragged.props.onDragEnd() end)
+
+local function sliderParams()
+  local list = {}
+  for _, param in ipairs(model.params) do
+    if param.ui.control == "slider" then list[#list + 1] = param end
+  end
+  return list
+end
+local one = sliderParams()[1]
+one.value = one.value == one.range[2] and one.range[1] or one.range[2]
+counts.describeChanged = measure(function() described(answer()) end)
+counts.describeRender = measure(function() env.onFrameTick(16) end)
+
+for _, param in ipairs(sliderParams()) do
+  param.value = param.value == param.range[1] and param.range[2] or param.range[1]
+end
+described(answer())
+counts.switchRender = measure(function() env.onFrameTick(16) end)
+
+local parts = {}
+for name, count in pairs(counts) do parts[#parts + 1] = string.format('"%s":%d', name, count) end
+io.write("{" .. table.concat(parts, ",") .. "}")
+`;
+
+// Measured on 2026-10-17 at 61fba00 (fullRender 8704, dragTick 3211, dragEnd
+// 3103, describeChanged 3995, describeRender 3376, switchRender 7916); each
+// ceiling is about 1.25x the measurement. In the shell that day a cold render
+// with every card expanded took 16 ms median, 24 ms at worst, and a release
+// 18 ms (prism-f15cbf). Raise one only with the in-host figure for it beside
+// the new number.
+const renderCostCeilings = {
+  fullRender: 10900,
+  dragTick: 4100,
+  dragEnd: 3900,
+  describeChanged: 5000,
+  describeRender: 4300,
+  switchRender: 9900,
+};
+
+test('panel render cost on real describe output stays under its recorded ceilings', () => {
+  const model = describeStore({});
+  const script = costHarness.replace('MODEL', () => luaLiteral(model));
+  const result = spawnSync('lua', ['-', fileURLToPath(pluginDir)], { input: script, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const counts = JSON.parse(result.stdout);
+  console.log('panel render cost (Lua calls):', counts);
+  for (const [name, ceiling] of Object.entries(renderCostCeilings)) {
+    assert.ok(counts[name] <= ceiling, `${name}: ${counts[name]} calls is over its ceiling of ${ceiling}`);
+  }
+  // Retention reuses every unchanged subtree, but each render still computes
+  // the signatures it compares, so a drag's render costs about a third of a
+  // full rebuild; one near a full rebuild means retention stopped working.
+  assert.ok(counts.dragTick * 2 < counts.fullRender,
+    `a drag tick (${counts.dragTick}) should cost under half a full render (${counts.fullRender})`);
+});
