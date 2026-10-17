@@ -4,8 +4,8 @@ title: Panel notice when the host has disabled it
 status: idea
 priority: 2
 created: 2026-10-17T21:19:38Z
-updated: 2026-10-17T21:26:47Z
-depends: []
+updated: 2026-10-17T21:26:49Z
+depends: [prism-220e66]
 parent: prism-ab3a3d
 tags: []
 agent: claude-code/claude-opus-5-5
