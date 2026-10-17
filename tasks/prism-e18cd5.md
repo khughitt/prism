@@ -7,7 +7,7 @@ size: xs
 complexity: low
 process: direct
 created: 2026-10-17T02:02:01Z
-updated: 2026-10-17T02:02:02Z
+updated: 2026-10-17T02:11:03Z
 depends: []
 tags: []
 agent: claude-code/claude-opus-5-5
@@ -18,3 +18,4 @@ The authorship rewrite (prism-10c518, 2026-10-17) re-hashed every t@t commit wit
 ## Notes
 
 - 2026-10-17T02:02:02Z (main): concerns: prism-10c518 extension — the rewrite could not note the new ids on the pilot's branch-only records
+- 2026-10-17T02:11:03Z (main): Old ids also sit outside git in the pilot's run state, ~/.local/state/prism/panel-budget/capture-recovery-2026-10-13/runs/ (hundreds of files across the task5/task6/broad-fix runs); revalidation must read them through the map in tasks/files/prism-10c518/.
