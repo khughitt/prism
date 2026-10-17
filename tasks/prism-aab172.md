@@ -5,8 +5,8 @@ status: idea
 priority: 2
 reviewed: true
 created: 2026-09-27T16:00:56Z
-updated: 2026-10-12T18:22:26Z
-depends: []
+updated: 2026-10-17T21:15:10Z
+depends: [prism-092855]
 parent: prism-2f0b4b
 tags: [profiles, wallpaper]
 agent: claude-code/claude-opus-5-5
