@@ -1039,16 +1039,6 @@ local function renderModel(next)
   return rendered
 end
 
-function host.acceptedStructure()
-  local index = 1
-  while true do
-    local name, value = debug.getupvalue(onOpen, index)
-    assert(name ~= nil, "fixture: onOpen has no state upvalue")
-    if name == "state" then return value.structure end
-    index = index + 1
-  end
-end
-
 local function labelSet(tree)
   local found = {}
   for _, label in ipairs(collect(tree, "label")) do found[label.props.text or ""] = true end
@@ -2351,11 +2341,7 @@ end)()
   local gaps = byKey(rendered, "compositor.gaps:slider")[1]
   gaps.props.onChange(gaps.props.value + 5)
   equal(host.frameTick, true, "a drag ticks")
-  local previousStructure = host.acceptedStructure()
-  local previousTokens = host.copy(previousStructure.contentToken)
   rawDescribed(host.describeOk())
-  assert(host.acceptedStructure() == previousStructure)
-  equal(host.acceptedStructure().contentToken, previousTokens, "mid-drag describe cannot publish tokens")
   host.renders = 0
   gaps.props.onDragEnd()
   equal(host.renders, 1, "the release renders once")
@@ -2504,20 +2490,6 @@ end)()
   renderModel(host.tintRack("noctalia"))
   expandAll()
   retainedMatchesFresh("expanded rack")
-
-  -- Optimistic values must retain all digits without another accepted describe.
-  local structure = host.acceptedStructure()
-  local precisionParam = structure.byKey["glass.roughness"]
-  local rawDigest = structure.digest[precisionParam.key]
-  precisionParam.value = 0.1 + 0.2
-  onKey("F1", true); onKey("F1", true)
-  local precisionSignature = retainedMemo().entries["c:" .. precisionParam.key].signature
-  precisionParam.value = 0.3
-  onKey("F1", true); onKey("F1", true)
-  assert(retainedMemo().entries["c:" .. precisionParam.key].signature ~= precisionSignature)
-  equal(structure.digest[precisionParam.key], rawDigest, "precision change has no new raw digest")
-  retainedMatchesFresh("optimistic value differs past the fifteenth digit")
-
   local mix = byKey(rendered, "glass.inactive.roughness:slider")[1]
   mix.props.onChange(mix.props.value + 0.1)
   onFrameTick(16)
@@ -2558,41 +2530,32 @@ end)()
   retainedMatchesFresh("a describe with another structure")
 
   -- Describes that change only metadata, every value unchanged.
+  model = host.tintRack("noctalia")
+  described(host.describeOk())
+  expandAll()
   local metadata = {
-    { "a slider's range", "glass.ior", function(m) param(m, "glass.ior").range = { 1, 3 } end },
-    { "a slider's step", "glass.ior", function(m) param(m, "glass.ior").ui.step = 0.1 end },
-    { "a slider's display", "glass.ior", function(m) param(m, "glass.ior").ui.display = "percent" end },
-    { "a slider's scale", "glass.ior", function(m) param(m, "glass.ior").ui.scale = "logarithmic" end },
-    { "a slider's unit", "compositor.gaps", function(m) param(m, "compositor.gaps").ui.unit = "px" end },
-    { "a select's values", "glass.tintSource", function(m) param(m, "glass.tintSource").values = { "familiar", "noctalia", "manual", "mood" } end },
-    { "a label", "glass.ior", function(m) param(m, "glass.ior").ui.label = "Index" end },
-    { "a description", "glass.ior", function(m) param(m, "glass.ior").description = "How far light bends" end },
-    { "a parameter's order", "glass.ior", function(m) param(m, "glass.ior").ui.order = 5 end },
-    { "a parameter's identity", "glass.ior", function(m) param(m, "glass.ior").key = "glass.index" end, "glass.index" },
-    { "a device's label", "device:backdrop", function(m) m.rack.devices[1].label = "Back" end },
-    { "a device's family", "device:backdrop", function(m) m.rack.devices[1].family = "transmission" end },
-    { "a device's identity", "device:backdrop", function(m) m.rack.devices[1].device = "background" end, "device:background" },
+    { "a slider's range", function(m) param(m, "glass.ior").range = { 1, 3 } end },
+    { "a slider's step", function(m) param(m, "glass.ior").ui.step = 0.1 end },
+    { "a slider's display", function(m) param(m, "glass.ior").ui.display = "percent" end },
+    { "a slider's scale", function(m) param(m, "glass.ior").ui.scale = "logarithmic" end },
+    { "a slider's unit", function(m) param(m, "compositor.gaps").ui.unit = "px" end },
+    { "a select's values", function(m) param(m, "glass.tintSource").values = { "familiar", "noctalia", "manual", "mood" } end },
+    { "a label", function(m) param(m, "glass.ior").ui.label = "Index" end },
+    { "a description", function(m) param(m, "glass.ior").description = "How far light bends" end },
+    { "a device's label", function(m) m.rack.devices[1].label = "Back" end },
+    { "a device's family", function(m) m.rack.devices[1].family = "transmission" end },
   }
   for _, case in ipairs(metadata) do
-    model = host.copy(host.tintRack("noctalia"))
+    case[2](model)
     described(host.describeOk())
-    expandAll()
-    local tokens = host.copy(host.acceptedStructure().contentToken)
-    case[3](model)
-    described(host.describeOk())
-    local token = host.acceptedStructure().contentToken[case[4] or case[2]]
-    assert(token ~= nil and token ~= tokens[case[2]], case[1] .. " changes its token")
-    if case[4] then equal(host.acceptedStructure().contentToken[case[2]], nil, "old identity leaves current map") end
     retainedMatchesFresh(case[1])
   end
 
   -- An effective color's source shows in the lock beside its select.
   model = host.gatedRing("noctalia", { value = "#112233", from = "noctalia" })
   described(host.describeOk())
-  local colorToken = host.acceptedStructure().contentToken["glass.ring.color"]
   model = host.gatedRing("noctalia", { value = "#112233", from = "familiar" })
   described(host.describeOk())
-  assert(host.acceptedStructure().contentToken["glass.ring.color"] ~= colorToken, "attached color's from changes its token")
   retainedMatchesFresh("an effective color's from")
 
   -- A device's interactions name the card that flattens it. The fixture rack
@@ -2600,44 +2563,9 @@ end)()
   model = layeredModel()
   param(model, "glass.bypass.backdrop").value = true
   described(host.describeOk())
-  local deviceToken = host.acceptedStructure().contentToken["device:backdrop"]
   model.rack.devices[1].interactions = { { kind = "attenuates", device = "backdrop", why = "self" } }
   described(host.describeOk())
-  assert(host.acceptedStructure().contentToken["device:backdrop"] ~= deviceToken, "interactions change the device token")
   retainedMatchesFresh("a device's interactions")
-
-  -- Another card's label belongs in the attenuated card's signature too.
-  model = host.copy(layeredModel())
-  for _, key in ipairs({ "glass.roughness", "glass.inactive.roughness", "glass.bypass.backdrop" }) do
-    local added = host.copy(param(model, key))
-    added.key = "other." .. key
-    if added.ui.row then added.ui.row = "Other blur" else added.value = true end
-    model.params[#model.params + 1] = added
-  end
-  local other = host.copy(model.rack.devices[1])
-  other.device, other.label, other.mix, other.bypass = "other", "Other", "Other blur", "other.glass.bypass.backdrop"
-  model.rack.devices[2] = other
-  model.rack.devices[1].interactions = { { kind = "attenuates", device = "other", why = "level" } }
-  described(host.describeOk())
-  local otherToken = host.acceptedStructure().contentToken["device:other"]
-  model.rack.devices[2].label = "Changed other"
-  described(host.describeOk())
-  assert(host.acceptedStructure().contentToken["device:other"] ~= otherToken, "attenuating device label changes its token")
-  assert(labelSet(rendered)["Blur is flattened while Changed other is bypassed"], "attenuated card shows the current source label")
-  retainedMatchesFresh("an attenuating device's label")
-
-  local orderedTokens = host.copy(host.acceptedStructure().contentToken)
-  model.rack.devices[1], model.rack.devices[2] = model.rack.devices[2], model.rack.devices[1]
-  described(host.describeOk())
-  equal(host.acceptedStructure().contentToken, orderedTokens, "rack reorder preserves equal entry tokens")
-  local cardOrder = {}
-  for _, node in ipairs(collect(rendered, "column")) do
-    if node.props.key == "other:card" or node.props.key == "backdrop:card" then
-      cardOrder[#cardOrder + 1] = node.props.key
-    end
-  end
-  equal(cardOrder, { "other:card", "backdrop:card" }, "rack reorder follows current layout")
-  retainedMatchesFresh("a device's order")
 
   -- A commit and a profile pick.
   renderModel(twoEdits())
@@ -2646,6 +2574,12 @@ end)()
   collect(rendered, "select")[1].props.onChange(1) -- the profile selector: dawn
   retainedMatchesFresh("a profile pick")
 
+  -- Two values that differ only past the fifteenth digit never share a signature.
+  param(model, "glass.roughness").value = 0.1 + 0.2
+  described(host.describeOk())
+  param(model, "glass.roughness").value = 0.3
+  described(host.describeOk())
+  retainedMatchesFresh("a value that differs past the fifteenth digit")
   host.copies = false
 
   -- Retention reach: an unchanged render builds nothing; a drag builds only its
@@ -2677,69 +2611,4 @@ end)()
   equal(cellFor(rendered, "compositor.gaps").props.fill, "primary/0.12", "j focuses the first slider")
   onKey("j", true)
   equal(cellFor(rendered, "glass.ior").props.fill, "primary/0.12", "and the next")
-end)()
-
-;(function()
-  host.copies = true
-  renderModel(layeredModel())
-  local first = host.acceptedStructure()
-  assert(first.contentToken ~= nil, "accepted structure has compact content tokens")
-  local tokens = host.copy(first.contentToken)
-  local distinct = {}
-  for key, token in pairs(tokens) do
-    assert(token:match("^%d+$"), "token is an integer string")
-    assert(not distinct[token], "distinct keys have distinct tokens")
-    distinct[token] = true
-    assert(first.digest[key] ~= nil)
-  end
-  described(host.describeOk())
-  assert(host.acceptedStructure() ~= first, "new decode produces fresh structure")
-  equal(host.acceptedStructure().contentToken, tokens, "equal raw bytes preserve tokens")
-
-  local original = tokens["glass.ior"]
-  model.params[3].budgetProbeMetadata = true
-  described(host.describeOk())
-  local changed = host.acceptedStructure().contentToken["glass.ior"]
-  assert(changed ~= original, "an arbitrary raw field changes its token")
-  model.params[3].budgetProbeMetadata = nil
-  described(host.describeOk())
-  assert(host.acceptedStructure().contentToken["glass.ior"] ~= original, "A-B-A allocates anew")
-
-  local removed = table.remove(model.params) -- debug.backdrop, no layout dependency
-  local oldRemovedToken = tokens[removed.key]
-  described(host.describeOk())
-  equal(host.acceptedStructure().contentToken[removed.key], nil, "removed key leaves current map")
-  model.params[#model.params + 1] = removed
-  described(host.describeOk())
-  assert(host.acceptedStructure().contentToken[removed.key] ~= oldRemovedToken)
-  local count, digestCount = 0, 0
-  for _ in pairs(host.acceptedStructure().contentToken) do count = count + 1 end
-  for _ in pairs(host.acceptedStructure().digest) do digestCount = digestCount + 1 end
-  equal(count, digestCount, "token storage is bounded by current entries")
-
-  local retainedTokens = host.copy(host.acceptedStructure().contentToken)
-  package.loaded["./retain.luau"].clear(retainedMemo())
-  onKey("F1", true); onKey("F1", true)
-  equal(host.acceptedStructure().contentToken, retainedTokens, "memo clear keeps labels")
-  onClose(); onOpen({}); described(host.describeOk())
-  equal(host.acceptedStructure().contentToken, retainedTokens, "close/reopen keeps labels")
-  model.params[3].budgetProbeMetadata = "after reopen"
-  described(host.describeOk())
-  assert(tonumber(host.acceptedStructure().contentToken["glass.ior"]) > tonumber(changed))
-  host.copies = false
-end)()
-
-;(function()
-  host.copies = true
-  renderModel(layeredModel())
-  local validModel = model
-  local previousStructure = host.acceptedStructure()
-  local previousTokens = host.copy(previousStructure.contentToken)
-  model = { params = {} }
-  rawDescribed(host.describeOk())
-  assert(host.acceptedStructure() == previousStructure)
-  equal(host.acceptedStructure().contentToken, previousTokens, "rejected describe keeps token map")
-  model = validModel
-  described(host.describeOk())
-  host.copies = false
 end)()

@@ -66,7 +66,6 @@ local attached = {}
 -- more of the host's budget than one callback can spare, so a render rebuilds
 -- only the units whose inputs changed.
 local memo = Retain.new()
-local contentTokenCounter = 0
 -- This render's signatures by memo id: a row, card, or header reuses its
 -- cells' signatures instead of recomputing them.
 local signatures = {}
@@ -95,7 +94,7 @@ local function sig(value)
   return tostring(value)
 end
 
--- A cell is what describe said of its param (the content token) and what the panel
+-- A cell is what describe said of its param (the digest) and what the panel
 -- changed since: the optimistic value and edit, the gate, keyboard focus, and
 -- the read-only color drawn beside a gating select. A builder reads nothing
 -- else; a new panel-side input goes here in the same change.
@@ -105,9 +104,9 @@ local function cellSignature(param)
   if found ~= nil then return found end
   local color = attached[param.key]
   found = table.concat({
-    state.structure.contentToken[param.key], sig(param.value), sig(param.edited), gateOf(param),
+    state.structure.digest[param.key], sig(param.value), sig(param.edited), gateOf(param),
     sig(state.focus == param.key),
-    color ~= nil and state.structure.contentToken[color.key] or "", color ~= nil and sig(color.value) or "",
+    color ~= nil and state.structure.digest[color.key] or "", color ~= nil and sig(color.value) or "",
   }, "\1")
   signatures[id] = found
   return found
@@ -226,8 +225,8 @@ end
 
 -- What one accepted describe fixes until the next: the layout, the lookups
 -- handlers resolve through when they run, every memo id the layout can use,
--- and each entry's raw digest, compared exactly to assign its retained
--- subtree's content token. Digests are taken before markEdits adds the
+-- and the digest of each entry, which is what a retained subtree's signature
+-- says describe reported. Digests are taken before markEdits adds the
 -- panel's own fields.
 local function buildStructure(model, title, rack, sections)
   local structure = {
@@ -338,24 +337,6 @@ local function syncFrameTick()
   panel.setNeedsFrameTick(state.drag ~= nil or state.renderPending)
 end
 
-local function assignContentTokens(structure)
-  local previous = state.structure
-  local tokens = {}
-  local nextToken = contentTokenCounter
-  for key, digest in pairs(structure.digest) do
-    if previous ~= nil and previous.digest[key] == digest then
-      tokens[key] = previous.contentToken[key]
-    else
-      local before = nextToken
-      nextToken = nextToken + 1
-      assert(nextToken > before, "content token counter must increase")
-      tokens[key] = string.format("%d", nextToken)
-    end
-  end
-  structure.contentToken = tokens
-  contentTokenCounter = nextToken
-end
-
 local function described(result)
   describeRunning = false
   local invalidated = state.describeInvalidated or state.drag ~= nil
@@ -381,7 +362,6 @@ local function described(result)
   if invalidated then
     state.refreshAfterDrag = true
   elseif not message then
-    assignContentTokens(structure)
     markEdits(model)
     state.model = model
     state.structure = structure
@@ -903,13 +883,13 @@ local function cardHead(card, expanded)
   })
 end
 
-local function deviceToken(card)
-  return state.structure.contentToken["device:" .. card.device]
+local function deviceDigest(card)
+  return state.structure.digest["device:" .. card.device]
 end
 
 local function cardHeadSignature(card, expanded)
   return table.concat({
-    deviceToken(card), sig(expanded), sig(card.bypassed), sig(card.silenced),
+    deviceDigest(card), sig(expanded), sig(card.bypassed), sig(card.silenced),
     cellSignature(card.bypass), cellSignature(card.mix.unfocused), cellSignature(card.mix.focused),
   }, "\2")
 end
@@ -926,11 +906,11 @@ local function retainedCardHead(card, expanded)
   end)
 end
 
--- A card prints the labels of the devices that flatten it, so their tokens
+-- A card prints the labels of the devices that flatten it, so their digests
 -- belong to its signature; the "|" part keeps that list apart from the rows.
 local function cardSignature(card, expanded)
   local parts = { cardHeadSignature(card, expanded) }
-  for _, entry in ipairs(card.attenuatedBy) do parts[#parts + 1] = deviceToken(entry.card) end
+  for _, entry in ipairs(card.attenuatedBy) do parts[#parts + 1] = deviceDigest(entry.card) end
   parts[#parts + 1] = "|"
   if expanded then
     for _, row in ipairs(card.rows) do
@@ -1038,7 +1018,7 @@ local function sectionHeaderSignature(name, toggle, params, color)
   local pairsShown = #Presentation.pairsOf(params) > 0
   return table.concat({
     name, color,
-    toggle ~= nil and state.structure.contentToken[toggle.key] or "", toggle ~= nil and sig(toggle.value) or "",
+    toggle ~= nil and state.structure.digest[toggle.key] or "", toggle ~= nil and sig(toggle.value) or "",
     Presentation.editedCount(params), pairsShown and Presentation.symmetricCount(params) or -1,
     Presentation.neutralCount(params),
   }, "\1")
