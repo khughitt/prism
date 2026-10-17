@@ -1,15 +1,16 @@
 ---
 id: prism-10c518
 title: Rewrite t@t commit authorship in this repository
-status: doing
+status: done
 priority: 2
 size: s
 complexity: low
 process: direct
 owner: main
 created: 2026-10-16T16:33:03Z
-updated: 2026-10-17T00:36:35Z
+updated: 2026-10-17T00:38:09Z
 started: 2026-10-17T00:35:34Z
+completed: 2026-10-17T00:38:09Z
 depends: [ops-e5b39c]
 tags: []
 source: git-identity-leak-2026-10-07
@@ -25,3 +26,7 @@ Rewrite this repository's t <t@t> commits (from the 2026-10-07 global-config lea
 - 2026-10-17T00:35:35Z (main): Direct history maintenance under ops-e5b39c's pilot procedure (as obs-a20f0c). No agent session in prism on Titan or Europa; Europa has only the main checkout. Inventory: 832 commits, 248 t@t, on main and fix/panel-render-budget (unmerged, 158; worktree .worktrees/panel-budget on Titan WORK_ROOT, locked, clean); docs/material-cad932, glass-noise-acceptance, glass-noise-types, profile-selector, profile-ux are merged and predate the window (unchanged). One filter-repo pass; origin/main reaches 43 (pushed). No tags, stash, signatures, extra headers, repo-local user.*, or .git-blame-ignore-revs. Remote khughitt/prism main fa562c7025b83094ae188a1296729c3d9bb40f85 (lease). Functional pins outside git: the parked panel pilot's frozen build.py and integrity-check.py resolve baseline 9bf4e8e and candidate e7384b0 with git show; the packet driver itself runs prebuilt builds without git. Old objects stay resolvable via reflog (30 days) and the kept bundle; old->new ids get noted on prism-7ed2d3 and prism-111a3f. Steps: bundle --all; mirror; filter-repo --mailmap; byte-verify; citation check; one guarded update-ref transaction; attach map; tests; push main --force-with-lease.
 - 2026-10-17T00:36:34Z (main): Cited ids in the parked panel pilot (prism-7ed2d3, prism-111a3f, records only on fix/panel-render-budget, so not noted there): fe3f29a -> 0defb953c5, 2c37d73 -> afeb7852b4, build candidate e7384b0 -> 5f08fec31d, baseline 9bf4e8e -> bec721919f, branch tip 6f6e506 -> f9a1f6c90a. The packet's frozen build.py and integrity-check.py resolve the old ids with git show; they stay resolvable via the branch reflog (about 30 days) and permanently from WORK_ROOT/prism/identity-rewrite-20261017T003536Z/all.bundle. Revalidation at the pilot's resume should use the new ids.
 - 2026-10-17T00:36:35Z (main): attached: 2026-10-16-identity-commit-map.txt (20664 bytes): Authorship rewrite map: 252 changed commit IDs (old new); resolves historical SHA references in task notes, docs and pilot packets without editing them
+- 2026-10-17T00:38:09Z (main): done
+  provenance: {"harness_session":"claude-code:c6863573-34c2-470d-b394-259f7cc75503","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-17T00:38:09Z (main): Rewrote 248 t@t commits to Keith Hughitt (496 identity lines, 252 hashes changed) in one filter-repo pass over main and fix/panel-render-budget in a mirror outside Dropbox; five merged pre-window branches unchanged. Verified all 834 commits byte-for-byte (only mapped parents and identities differ; no message SHAs; every tree preserved). Swapped both branches in one guarded update-ref transaction; the panel-budget worktree stayed clean. Rewritten SHAs cited in tracked files and pilot packets are provenance; the parked panel pilot's frozen build.py/integrity-check.py resolve old ids by git show, kept resolvable via reflog and the bundle, with old->new ids in this task's notes (the pilot's records live only on the branch). Map attached (tasks/files/prism-10c518/2026-10-16-identity-commit-map.txt). just test-fast green (574 pass). Pushed main with lease fa562c7 -> 240e4ff (khughitt/prism). A fresh remote mirror, Titan and Europa show 0 t@t; Europa fsck clean. Forced only past ops-e5b39c, whose pilot procedure was followed. Artifacts on Titan at WORK_ROOT/prism/identity-rewrite-20261017T003536Z.
+  provenance: {"harness_session":"claude-code:c6863573-34c2-470d-b394-259f7cc75503","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
