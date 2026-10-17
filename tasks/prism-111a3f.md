@@ -1,15 +1,16 @@
 ---
 id: prism-111a3f
 title: Recover staged panel budget capture
-status: doing
+status: dropped
 priority: 2
 size: s
 complexity: mid
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-13T22:07:51Z
-updated: 2026-10-15T05:11:51Z
+updated: 2026-10-17T21:14:05Z
 started: 2026-10-13T22:08:29Z
+closed: 2026-10-17T21:14:05Z
 depends: []
 parent: prism-f15cbf
 tags: [performance]
@@ -117,3 +118,7 @@ Approved capture recovery design (spec round3) and proposed implementation plan.
 - 2026-10-15T05:10:41Z (fix/panel-render-budget): Task6 complete driver final corrective round5 accepted after integrated RED-GREEN/lifecycle and scoped review; current fe3f29a packet and Root audits qualify permission-request preparation only. Readonly current clock/source/log checks pass; no actual host approval or actors. Next gate is fresh25-minute four-card n1 desktop consent, then actual snapshots and one-click cards; no performance disposition yet.
 - 2026-10-15T05:11:51Z (fix/panel-render-budget): parked (waiting on user, approval): Keith answers the fresh25-minute Task6 corrected pilot request; Root then performs actual authorization/preflight/B1 card and restores exact plugin/settings/rotation at completion or safe stop. Reviewed fe3f29a packet, disposition2c37d73, fix5 locator in .worktrees/panel-budget. No work running, live namespace/permit/collector/socket, host pointer change or timer pause stands.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-17T21:14:05Z (fix/panel-render-budget): dropped
+  provenance: {"harness_session":"claude-code:2efe5e59-1ac2-4da3-a170-7b5188325415","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-17T21:14:05Z (fix/panel-render-budget): Superseded 2026-10-17 by the owner's short in-host comparison on prism-f15cbf (B/C x2, zero budget errors); capture-recovery protocol retired and its run state deleted.
+  provenance: {"harness_session":"claude-code:2efe5e59-1ac2-4da3-a170-7b5188325415","harness_session_source":"CLAUDE_CODE_SESSION_ID"}

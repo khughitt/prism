@@ -1,15 +1,16 @@
 ---
 id: prism-7ed2d3
 title: "Stage 1 pilot, cold/launch comparison and disposition"
-status: doing
+status: dropped
 priority: 2
 size: m
 complexity: high
 process: direct
 owner: fix/panel-render-budget
 created: 2026-10-13T23:49:40Z
-updated: 2026-10-15T05:11:51Z
+updated: 2026-10-17T21:14:05Z
 started: 2026-10-14T22:23:52Z
+closed: 2026-10-17T21:14:05Z
 depends: [prism-ac904e]
 parent: prism-111a3f
 tags: [performance]
@@ -102,3 +103,7 @@ Execute only after owner approves this proposed plan. Requirements and interface
 - 2026-10-15T05:10:41Z (fix/panel-render-budget): Final corrective round5/5 accepted: all4 findings addressed, no new Critical/Important/Minor; full scoped review and exact identity retained. Root actual review receipt binds master e5e350b8 and report hash. Read-only preparation Step1 complete; fresh25-minute four-card n1 host consent is next. Unchanged reconciliation ambiguity remains a documented manual boundary; no automatic sixth correction. Actual approval/permits/live namespaces remain absent; no process or host mutation. No performance/Task7/full-stage acceptance.
 - 2026-10-15T05:11:51Z (fix/panel-render-budget): parked (waiting on user, approval): Keith approves or defers the fresh25-minute corrected four-card n1 desktop pilot; on approval Root records real human provenance, revalidates reviewed master e5e350b8/current facts and runs explicit packet_driver start B1 from the fix5 locator in .worktrees/panel-budget. All own checks/reviews stopped and complete. No live namespace/permit/collector/socket, no standing plugin pointer or timer mutation; original discovered pointer remains unchanged and no new rotation journal exists. Deferred use needs a fresh request.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-17T21:14:05Z (fix/panel-render-budget): dropped
+  provenance: {"harness_session":"claude-code:2efe5e59-1ac2-4da3-a170-7b5188325415","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-17T21:14:05Z (fix/panel-render-budget): Superseded 2026-10-17 by the owner's short in-host comparison on prism-f15cbf (B/C x2, zero budget errors); capture-recovery protocol retired and its run state deleted.
+  provenance: {"harness_session":"claude-code:2efe5e59-1ac2-4da3-a170-7b5188325415","harness_session_source":"CLAUDE_CODE_SESSION_ID"}

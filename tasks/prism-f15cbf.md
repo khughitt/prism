@@ -7,7 +7,7 @@ complexity: high
 process: planned
 owner: fix/panel-render-budget
 created: 2026-10-10T17:06:10Z
-updated: 2026-10-13T22:11:43Z
+updated: 2026-10-17T21:14:01Z
 started: 2026-10-10T18:43:57Z
 depends: [prism-b81188]
 parent: prism-dac509
@@ -143,3 +143,13 @@ step: "Task 6: In-host measurement and the 15 ms gate"
 - 2026-10-13T21:51:17Z (fix/panel-render-budget): Stabilized r2 pilot owner phases complete; original main plugin pointer/profile dark-wish-ii/scratch0/raw docs/canonical state verified restored, rotation prior active/waiting/enabled restored, host-load reports nothing left running. Preserved B2 collector inode-reuse loss prevents complete verdict; offline analysis/correction/review follows, no desktop retry authorized.
 - 2026-10-13T22:11:43Z (fix/panel-render-budget): parked (waiting on user, review): Owner reviews capture-recovery design in prism-111a3f; root then prepares reviewed plan and protocol before requesting a fresh pilot. Task6 acceptance remains false; original plugin and rotation restored.
   provenance: {"harness_session":"codex:01a126fc-fa1d-7c71-8177-24d23ad4bf26","harness_session_source":"CODEX_THREAD_ID"}
+- 2026-10-17T12:53:14Z (fix/panel-render-budget): resumed
+  provenance: {"harness_session":"claude-code:2efe5e59-1ac2-4da3-a170-7b5188325415","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-17T12:53:27Z (fix/panel-render-budget): Owner ruling 2026-10-17: close the pilot with one short in-host comparison instead of the capture-recovery protocol. Baseline bec7219 vs token candidate 5f08fec, B1/C1/B2/C2 activations, os.clock per callback via noctalia.log, 10 automatic cold renders (all cards expanded) + 3 owner releases per activation. Gate becomes clear headroom under the host's 25 ms budget with zero budget errors (replaces 15/12 ms); token change kept only if it lowers cold render. Capture-recovery subtree (prism-111a3f) to be dropped as superseded; its ~34 GB run state under ~/.local/state/prism/panel-budget deleted once this closes.
+- 2026-10-17T20:25:24Z (fix/panel-render-budget): Host pointer repointed for the short comparison: ~/.local/share/noctalia/plugins/prism from /mnt/ssd/Dropbox/prism/integrations/noctalia-plugin to /tmp/prism-budget-short-HYql/plugins/<B1|C1|B2|C2> in turn; wali-rotate.timer stopped (was active); active.json saved. Restore with /tmp/prism-budget-short-HYql/code/session.sh end (relinks, reloads, restores active.json + prism apply, restarts timer).
+- 2026-10-17T21:12:37Z (fix/panel-render-budget): Host pointer restored 2026-10-17 17:11: plugin link back to the main checkout and reloaded (no probe lines after), active.json byte-equal to snapshot and applied, wali-rotate.timer active. Reload note: disable/enable did not rebuild the panel runtime (settings.toml write fails); a zero-byte append to the main checkout's panel.luau hot-reloads through the link, because Noctalia caches the directory watch by path string.
+- 2026-10-17T21:13:57Z (fix/panel-render-budget): attached: short-comparison-report.md (2164 bytes): Short in-host B/C comparison: pooled and raw callback spans, reading
+- 2026-10-17T21:13:57Z (fix/panel-render-budget): attached: short-comparison-results.json (12374 bytes): Non-frame callback spans per activation, pooled stats, budget lines (none)
+- 2026-10-17T21:13:57Z (fix/panel-render-budget): attached: instrument.py (4006 bytes): Short comparison probe tooling: instrument.py
+- 2026-10-17T21:13:57Z (fix/panel-render-budget): attached: analyze.py (2404 bytes): Short comparison probe tooling: analyze.py
+- 2026-10-17T21:13:57Z (fix/panel-render-budget): attached: session.sh (2160 bytes): Short comparison probe tooling: session.sh
