@@ -5,8 +5,8 @@ status: idea
 priority: 2
 reviewed: true
 created: 2026-09-11T23:39:09Z
-updated: 2026-10-12T18:22:25Z
-depends: []
+updated: 2026-10-17T17:37:16Z
+depends: [prism-6aca8a]
 parent: prism-179840
 tags: [profiles, noctalia]
 ---
