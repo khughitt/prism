@@ -5,8 +5,8 @@ status: idea
 priority: 2
 reviewed: true
 created: 2026-09-09T13:08:43Z
-updated: 2026-10-12T18:22:27Z
-depends: []
+updated: 2026-10-17T17:37:15Z
+depends: [prism-569378]
 parent: prism-a03862
 tags: [ui, noctalia]
 source: docs/notes/2026-09-09-device-chain-rack-ui.png
