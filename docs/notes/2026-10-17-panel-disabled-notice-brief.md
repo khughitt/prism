@@ -83,12 +83,56 @@ own upstream report, which includes the missing plugin-visible disabled state.
 
 Lean: A, if the probe confirms every step. C remains the long-term fix, and would retire A.
 
+## Probe result (2026-10-18, `prism-220e66`)
+
+Host: the installed Noctalia is the Arch package 5.3.0-1, not the fork. In v5.3.0,
+`script_runtime.cpp` and `plugin_state_store.cpp` are unchanged from `7f547389f`, and
+`plugin_panel.cpp` and `plugin_widget.cpp` change only scrolling and colour defaults, so
+the host facts above still hold. No plugin API reports whether a panel is open.
+
+The probe was a throwaway plugin, `probe/panelrevive`, with a widget and a panel, run
+beside `khughitt/prism` and removed afterwards. Its panel beat into shared state once a
+second while open, and an `onIpc` event busy-looped past the budget. Its widget polled
+the beat every second, opened the panel with `noctalia.togglePanel`, and revived it by
+rewriting `panel.luau` with the same bytes through `noctalia.writeFile`. The script and
+log slice are attached to `prism-220e66`.
+
+| Step | Happened? | Evidence (host log) |
+|------|-----------|---------------------|
+| Panel goes unhealthy | yes, on the third consecutive overrun; the next two events were dropped | `plugin panel '…:panel' disabled after repeated timeouts`; one critical 6 s toast |
+| Widget keeps ticking | yes, every second throughout | widget `update()` log lines continue |
+| State pushes delivered | yes, while the panel ran; they stop when it is disabled and resume after the reload | widget watch count 6, then 6 for 7 s, then 8 |
+| Stale beat seen | yes, 2.6 s after the disable, with a 3 s threshold | `STALE detected beatAge=3325` |
+| Widget notice shown | yes: `noctalia.notify` toast, and `setGlyph`/`setTooltip` ran without error (the glyph was not captured on screen) | notification `urgency=normal` from the widget |
+| Touch-reload clears the disable, re-runs `onOpen` | yes, within 1 ms of the write; a new load nonce, `onOpen`, and beats resume | `hot reload: reloaded 'panel.luau'`, plus the host's "reloaded" toast |
+
+Two findings change the design:
+
+- **A panel disabled while closed, then opened from outside the widget, goes unnoticed.**
+  With the panel disabled while closed, opening it shows the last tree, but `onOpen` is
+  dropped, so `panelOpen` stays false and the beat rule never fires. The widget caught it
+  only because it had opened the panel itself and expected `onOpen` to acknowledge
+  within 3 s. A second reload with the frozen panel open re-ran `onOpen` and recovered
+  it. Prism's Super+P binding (dotfiles `niri/config.kdl`) opens the panel with
+  `noctalia msg panel-toggle`, which no widget sees. A therefore needs every open to go
+  through the widget, for example a widget `onIpc` "toggle" that the binding calls.
+- **Reviving rewrites a tracked file.** Prism's plugin directory is a symlink into this
+  checkout, so a same-bytes rewrite of `panel.luau` changes the mtime of a tracked file
+  in the main checkout. Git sees no diff, but Dropbox syncs the file. A small module the
+  panel requires, kept out of git, would reload the panel the same way ("editing a
+  successfully loaded module hot-reloads the owning entry").
+
+Recommendation: A, amended. The widget owns every open and expects an `onOpen`
+acknowledgement, the panel beats while open, and the widget flags a missing
+acknowledgement or a stale beat with its glyph and tooltip. A click revives the panel by
+rewriting a dedicated reload module. B adds nothing that A lacks. C still retires A when
+#3893 lands.
+
 ## Unanswered questions
 
-1. While the panel is unhealthy, does the widget keep ticking and receive state pushes?
-   Does touching the installed panel source (a symlink into this checkout for Prism,
-   unless the host materializes a copy) clear the disable and re-run `onOpen`? The probe
-   answers both: `prism-220e66`.
+1. ~~While the panel is unhealthy, does the widget keep ticking and receive state
+   pushes? Does touching the installed panel source clear the disable and re-run
+   `onOpen`?~~ Yes to both; see Probe result.
 2. Is this insurance worth building before `prism-9d063e` lands its headroom? The owner
    decides when `prism-ea3efb` wakes.
 3. Should a click restart the panel, or only explain how to? A restart means touching the

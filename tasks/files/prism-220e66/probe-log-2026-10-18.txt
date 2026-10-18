@@ -1,0 +1,337 @@
+2026-10-18 19:54:47.897 [DBG] [plugins.git] git -C ~/.local/state/noctalia/plugins/sources/community/repo config --get remote.origin.url took 18ms (exit 0)
+2026-10-18 19:54:47.915 [DBG] [plugins.git] git -C ~/.local/state/noctalia/plugins/sources/community/repo remote set-url origin https://github.com/noctalia-dev/community-plugins took 18ms (exit 0)
+2026-10-18 19:54:47.943 [DBG] [plugins.git] git -C ~/.local/state/noctalia/plugins/sources/community/repo rev-parse HEAD took 28ms (exit 0)
+2026-10-18 19:54:47.958 [DBG] [plugins.git] git -C ~/.local/state/noctalia/plugins/sources/community/repo rev-parse FETCH_HEAD took 15ms (exit 0)
+2026-10-18 19:54:47.989 [DBG] [plugins.git] git -C ~/.local/state/noctalia/plugins/sources/community/repo show 7b5c57677da1a7f4df7840cd04d0b029fdefc8f8:catalog.toml took 31ms (exit 0)
+2026-10-18 19:54:48.012 [DBG] [plugins.git] git -C ~/.local/state/noctalia/plugins/sources/official/repo config --get remote.origin.url took 15ms (exit 0)
+2026-10-18 19:54:48.030 [DBG] [plugins.git] git -C ~/.local/state/noctalia/plugins/sources/official/repo remote set-url origin https://github.com/noctalia-dev/official-plugins took 18ms (exit 0)
+2026-10-18 19:54:48.046 [DBG] [plugins.git] git -C ~/.local/state/noctalia/plugins/sources/official/repo rev-parse HEAD took 16ms (exit 0)
+2026-10-18 19:54:48.062 [DBG] [plugins.git] git -C ~/.local/state/noctalia/plugins/sources/official/repo rev-parse FETCH_HEAD took 16ms (exit 0)
+2026-10-18 19:54:48.082 [DBG] [plugins.git] git -C ~/.local/state/noctalia/plugins/sources/official/repo show 470013c568d734a2013a3dfe690be71507e8bf16:catalog.toml took 20ms (exit 0)
+2026-10-18 19:54:48.085 [INF] [plugins] enabling plugin 'probe/panelrevive' (resolved + exported in 207ms)
+2026-10-18 19:54:48.086 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from ~/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-18 19:54:48.086 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from ~/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-18 19:54:48.086 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from ~/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-18 19:54:48.086 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from ~/.local/share/noctalia/plugins/wali-panel
+2026-10-18 19:54:48.087 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from ~/.local/share/noctalia/plugins/prism
+2026-10-18 19:54:48.088 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from ~/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-18 19:54:48.088 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from ~/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-18 19:54:48.088 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from ~/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-18 19:54:48.089 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from ~/.local/share/noctalia/plugins/wali-panel
+2026-10-18 19:54:48.089 [INF] [plugins] loaded plugin 'probe/panelrevive' (2 entries) from ~/.local/share/noctalia/plugins/panelrevive
+2026-10-18 19:54:48.089 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from ~/.local/share/noctalia/plugins/prism
+2026-10-18 19:54:48.091 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from ~/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-18 19:54:48.091 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from ~/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-18 19:54:48.091 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from ~/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-18 19:54:48.092 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from ~/.local/share/noctalia/plugins/wali-panel
+2026-10-18 19:54:48.092 [INF] [plugins] loaded plugin 'probe/panelrevive' (2 entries) from ~/.local/share/noctalia/plugins/panelrevive
+2026-10-18 19:54:48.092 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from ~/.local/share/noctalia/plugins/prism
+2026-10-18 19:54:48.093 [INF] [config] 1 bar(s) defined
+2026-10-18 19:54:48.093 [INF] [config] bar order: default
+2026-10-18 19:54:48.093 [INF] [config] idle behaviors=3
+2026-10-18 19:54:48.093 [INF] [config] hooks kinds with commands=3
+2026-10-18 19:54:48.108 [INF] [i18n] language: en (from en-US)
+2026-10-18 19:54:48.109 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from ~/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-18 19:54:48.109 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from ~/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-18 19:54:48.110 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from ~/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-18 19:54:48.110 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from ~/.local/share/noctalia/plugins/wali-panel
+2026-10-18 19:54:48.110 [INF] [plugins] loaded plugin 'probe/panelrevive' (2 entries) from ~/.local/share/noctalia/plugins/panelrevive
+2026-10-18 19:54:48.110 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from ~/.local/share/noctalia/plugins/prism
+2026-10-18 19:54:48.110 [INF] [bar] reloading config
+2026-10-18 19:54:48.110 [DBG] [file-watcher] unwatching id 33
+2026-10-18 19:54:48.111 [DBG] [file-watcher] unwatching id 34
+2026-10-18 19:54:48.112 [DBG] [file-watcher] unwatching id 35
+2026-10-18 19:54:48.112 [DBG] [file-watcher] unwatching id 36
+2026-10-18 19:54:48.112 [DBG] [bar] bar.default.dead_zone: right=panel-toggle control-center home
+2026-10-18 19:54:48.114 [DBG] [bar.actions] widget.workspaces: middle=settings-open-widget, scroll_up=workspace-switch prev, scroll_down=workspace-switch next
+2026-10-18 19:54:48.114 [DBG] [bar.actions] widget.cpu: left=panel-toggle control-center system, middle=settings-open-widget
+2026-10-18 19:54:48.114 [DBG] [bar.actions] widget.ram: left=panel-toggle control-center system, middle=settings-open-widget
+2026-10-18 19:54:48.114 [DBG] [bar.actions] widget.cat: middle=settings-open-widget
+2026-10-18 19:54:48.114 [DBG] [file-watcher] watching '~/.local/state/noctalia/plugins/materialized/community/cat/cat.luau' (id 37)
+2026-10-18 19:54:48.114 [DBG] [bar.actions] widget.active_window: middle=settings-open-widget
+2026-10-18 19:54:48.114 [DBG] [bar.actions] widget.widget: middle=settings-open-widget
+2026-10-18 19:54:48.114 [DBG] [file-watcher] watching '~/.local/state/noctalia/plugins/materialized/community/pomodoro/src/widget.luau' (id 38)
+2026-10-18 19:54:48.114 [DBG] [bar.actions] widget.tray: middle=settings-open-widget
+2026-10-18 19:54:48.114 [DBG] [bar.actions] widget.network: left=panel-toggle control-center network, right=network-toggle, middle=settings-open-widget
+2026-10-18 19:54:48.114 [DBG] [bar.actions] widget.battery: left=panel-toggle control-center power, middle=settings-open-widget
+2026-10-18 19:54:48.115 [DBG] [bar.actions] widget.output_volume: left=panel-toggle control-center audio, right=volume-mute, middle=settings-open-widget, scroll_up=volume-up, scroll_down=volume-down
+2026-10-18 19:54:48.115 [DBG] [bar.actions] widget.khughitt/prism:widget: middle=settings-open-widget
+2026-10-18 19:54:48.115 [DBG] [file-watcher] watching '~/.local/share/noctalia/plugins/prism/widget.luau' (id 39)
+2026-10-18 19:54:48.115 [DBG] [bar.actions] widget.khughitt/wali-panel:widget: middle=settings-open-widget
+2026-10-18 19:54:48.115 [DBG] [file-watcher] watching '~/.local/share/noctalia/plugins/wali-panel/widget.luau' (id 40)
+2026-10-18 19:54:48.115 [DBG] [bar.actions] widget.clock: left=panel-toggle control-center calendar, middle=settings-open-widget
+2026-10-18 19:54:49.311 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_2369221' sender=':1.3356' -> bus=':1.3356' objectPath='/org/ayatana/NotificationItem/dropbox_client_2369221' elapsed=0ms
+2026-10-18 19:54:49.911 [INF] [config] reloading ~/.local/state/noctalia/settings.toml
+2026-10-18 19:54:49.911 [INF] [config] loading ~/.local/state/noctalia/settings.toml
+2026-10-18 19:54:49.912 [INF] [config] config changed, reloading
+2026-10-18 19:54:49.913 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from ~/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-18 19:54:49.913 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from ~/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-18 19:54:49.913 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from ~/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-18 19:54:49.914 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from ~/.local/share/noctalia/plugins/wali-panel
+2026-10-18 19:54:49.914 [INF] [plugins] loaded plugin 'probe/panelrevive' (2 entries) from ~/.local/share/noctalia/plugins/panelrevive
+2026-10-18 19:54:49.914 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from ~/.local/share/noctalia/plugins/prism
+2026-10-18 19:54:49.915 [INF] [config] 1 bar(s) defined
+2026-10-18 19:54:49.915 [INF] [config] bar order: default
+2026-10-18 19:54:49.915 [INF] [config] idle behaviors=3
+2026-10-18 19:54:49.915 [INF] [config] hooks kinds with commands=3
+2026-10-18 19:54:49.927 [INF] [i18n] language: en (from en-US)
+2026-10-18 19:54:49.928 [INF] [bar] reloading config
+2026-10-18 19:54:49.928 [DBG] [file-watcher] unwatching id 37
+2026-10-18 19:54:49.928 [DBG] [file-watcher] unwatching id 38
+2026-10-18 19:54:49.929 [DBG] [file-watcher] unwatching id 39
+2026-10-18 19:54:49.929 [DBG] [file-watcher] unwatching id 40
+2026-10-18 19:54:49.929 [DBG] [bar] bar.default.dead_zone: right=panel-toggle control-center home
+2026-10-18 19:54:49.930 [DBG] [bar.actions] widget.workspaces: middle=settings-open-widget, scroll_up=workspace-switch prev, scroll_down=workspace-switch next
+2026-10-18 19:54:49.930 [DBG] [bar.actions] widget.cpu: left=panel-toggle control-center system, middle=settings-open-widget
+2026-10-18 19:54:49.930 [DBG] [bar.actions] widget.ram: left=panel-toggle control-center system, middle=settings-open-widget
+2026-10-18 19:54:49.930 [DBG] [bar.actions] widget.cat: middle=settings-open-widget
+2026-10-18 19:54:49.930 [DBG] [file-watcher] watching '~/.local/state/noctalia/plugins/materialized/community/cat/cat.luau' (id 41)
+2026-10-18 19:54:49.930 [DBG] [bar.actions] widget.active_window: middle=settings-open-widget
+2026-10-18 19:54:49.930 [DBG] [bar.actions] widget.widget: middle=settings-open-widget
+2026-10-18 19:54:49.930 [DBG] [file-watcher] watching '~/.local/state/noctalia/plugins/materialized/community/pomodoro/src/widget.luau' (id 42)
+2026-10-18 19:54:49.930 [DBG] [bar.actions] widget.tray: middle=settings-open-widget
+2026-10-18 19:54:49.930 [DBG] [bar.actions] widget.network: left=panel-toggle control-center network, right=network-toggle, middle=settings-open-widget
+2026-10-18 19:54:49.930 [DBG] [bar.actions] widget.battery: left=panel-toggle control-center power, middle=settings-open-widget
+2026-10-18 19:54:49.930 [DBG] [bar.actions] widget.output_volume: left=panel-toggle control-center audio, right=volume-mute, middle=settings-open-widget, scroll_up=volume-up, scroll_down=volume-down
+2026-10-18 19:54:49.930 [DBG] [bar.actions] widget.khughitt/prism:widget: middle=settings-open-widget
+2026-10-18 19:54:49.930 [DBG] [file-watcher] watching '~/.local/share/noctalia/plugins/prism/widget.luau' (id 43)
+2026-10-18 19:54:49.930 [DBG] [bar.actions] widget.khughitt/wali-panel:widget: middle=settings-open-widget
+2026-10-18 19:54:49.930 [DBG] [file-watcher] watching '~/.local/share/noctalia/plugins/wali-panel/widget.luau' (id 44)
+2026-10-18 19:54:49.930 [DBG] [bar.actions] widget.probe/panelrevive:widget: middle=settings-open-widget
+2026-10-18 19:54:49.930 [DBG] [file-watcher] watching '~/.local/share/noctalia/plugins/panelrevive/widget.luau' (id 45)
+2026-10-18 19:54:49.931 [DBG] [bar.actions] widget.clock: left=panel-toggle control-center calendar, middle=settings-open-widget
+2026-10-18 19:54:49.938 [INF] [script-runtime] PROBE widget load nonce=1792367689932
+2026-10-18 19:54:49.938 [INF] [script-runtime] PROBE widget tick=1 open=false beatAge=1792367689932 pushes=0 sinceLastPush=-1
+2026-10-18 19:54:49.938 [INF] [config] reloading ~/.local/state/noctalia/settings.toml
+2026-10-18 19:54:49.938 [INF] [config] loading ~/.local/state/noctalia/settings.toml
+2026-10-18 19:54:49.938 [INF] [config] config changed, reloading
+2026-10-18 19:54:49.939 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from ~/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-18 19:54:49.939 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from ~/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-18 19:54:49.940 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from ~/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-18 19:54:49.940 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from ~/.local/share/noctalia/plugins/wali-panel
+2026-10-18 19:54:49.940 [INF] [plugins] loaded plugin 'probe/panelrevive' (2 entries) from ~/.local/share/noctalia/plugins/panelrevive
+2026-10-18 19:54:49.940 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from ~/.local/share/noctalia/plugins/prism
+2026-10-18 19:54:49.941 [INF] [config] 1 bar(s) defined
+2026-10-18 19:54:49.941 [INF] [config] bar order: default
+2026-10-18 19:54:49.941 [INF] [config] idle behaviors=3
+2026-10-18 19:54:49.941 [INF] [config] hooks kinds with commands=3
+2026-10-18 19:54:49.953 [INF] [i18n] language: en (from en-US)
+2026-10-18 19:54:49.955 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from ~/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-18 19:54:49.955 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from ~/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-18 19:54:49.955 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from ~/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-18 19:54:49.956 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from ~/.local/share/noctalia/plugins/wali-panel
+2026-10-18 19:54:49.956 [INF] [plugins] loaded plugin 'probe/panelrevive' (2 entries) from ~/.local/share/noctalia/plugins/panelrevive
+2026-10-18 19:54:49.956 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from ~/.local/share/noctalia/plugins/prism
+2026-10-18 19:54:49.957 [INF] [config] 1 bar(s) defined
+2026-10-18 19:54:49.957 [INF] [config] bar order: default
+2026-10-18 19:54:49.957 [INF] [config] idle behaviors=3
+2026-10-18 19:54:49.957 [INF] [config] hooks kinds with commands=3
+2026-10-18 19:54:49.967 [INF] [i18n] language: en (from en-US)
+2026-10-18 19:54:51.036 [INF] [script-runtime] PROBE widget tick=2 open=false beatAge=1792367691036 pushes=0 sinceLastPush=-1
+2026-10-18 19:54:52.036 [INF] [script-runtime] PROBE widget tick=3 open=false beatAge=1792367692036 pushes=0 sinceLastPush=-1
+2026-10-18 19:54:53.009 [INF] [script-runtime] PROBE widget onIpc toggle
+2026-10-18 19:54:53.009 [INF] [script-runtime] PROBE widget toggle requested
+2026-10-18 19:54:53.010 [DBG] [panel] panel manager: opened "probe/panelrevive:panel" as attached layer-shell
+2026-10-18 19:54:53.011 [DBG] [surface] fractional scale preferred output=DP-1 surface=0x7fc6f6b32260 scale=1.000 raw=120/120 logical=0x0 buffer=0x0
+2026-10-18 19:54:53.016 [DBG] [file-watcher] watching '~/.local/share/noctalia/plugins/panelrevive/panel.luau' (id 46)
+2026-10-18 19:54:53.019 [INF] [script-runtime] PROBE widget saw panelLoad=1792367693017
+2026-10-18 19:54:53.019 [INF] [script-runtime] PROBE panel load nonce=1792367693017
+2026-10-18 19:54:53.019 [INF] [script-runtime] PROBE panel onOpen nonce=1792367693017
+2026-10-18 19:54:53.246 [INF] [script-runtime] PROBE widget tick=4 open=true beatAge=229 pushes=2 sinceLastPush=229
+2026-10-18 19:54:54.344 [INF] [script-runtime] PROBE widget tick=5 open=true beatAge=324 pushes=3 sinceLastPush=324
+2026-10-18 19:54:55.344 [INF] [script-runtime] PROBE widget tick=6 open=true beatAge=324 pushes=4 sinceLastPush=324
+2026-10-18 19:54:56.345 [INF] [script-runtime] PROBE widget tick=7 open=true beatAge=323 pushes=5 sinceLastPush=323
+2026-10-18 19:54:57.079 [ERR] [luau] plugin probe/panelrevive:panel: call to 'onIpc' failed: script callback 'onIpc' exceeded its CPU budget
+2026-10-18 19:54:57.079 [INF] [script-runtime] PROBE panel onIpc burn nonce=1792367693017
+2026-10-18 19:54:57.345 [INF] [script-runtime] PROBE widget tick=8 open=true beatAge=324 pushes=6 sinceLastPush=324
+2026-10-18 19:54:57.419 [INF] [script-runtime] PROBE panel onIpc burn nonce=1792367693017
+2026-10-18 19:54:57.761 [DBG] [notification] notification added #16234 origin=internal from="Noctalia" urgency=critical timeout=6000ms
+2026-10-18 19:54:57.761 [DBG] [app] notification added id=16234 origin=internal
+2026-10-18 19:54:57.761 [INF] [script-runtime] PROBE panel onIpc burn nonce=1792367693017
+2026-10-18 19:54:57.761 [WRN] [plugin-panel] plugin panel 'probe/panelrevive:panel' disabled after repeated timeouts
+2026-10-18 19:54:57.761 [DBG] [notification] notification toast: surface created on DP-1
+2026-10-18 19:54:57.761 [DBG] [notification] notification toast: showing #16234
+2026-10-18 19:54:57.764 [DBG] [surface] fractional scale preferred output=DP-1 surface=0x7fc6f3f35d60 scale=1.000 raw=120/120 logical=0x0 buffer=0x0
+2026-10-18 19:54:58.345 [INF] [script-runtime] PROBE widget tick=9 open=true beatAge=1324 pushes=6 sinceLastPush=1324
+2026-10-18 19:54:59.346 [INF] [script-runtime] PROBE widget tick=10 open=true beatAge=2325 pushes=6 sinceLastPush=2325
+2026-10-18 19:55:00.346 [INF] [script-runtime] PROBE widget tick=11 open=true beatAge=3325 pushes=6 sinceLastPush=3325
+2026-10-18 19:55:00.346 [DBG] [notification] notification added #16235 origin=internal from="Noctalia" urgency=normal timeout=6000ms
+2026-10-18 19:55:00.346 [DBG] [app] notification added id=16235 origin=internal
+2026-10-18 19:55:00.346 [INF] [script-runtime] PROBE widget STALE detected beatAge=3325
+2026-10-18 19:55:00.352 [DBG] [notification] notification toast: showing #16235
+2026-10-18 19:55:01.347 [INF] [script-runtime] PROBE widget tick=12 open=true beatAge=4326 pushes=6 sinceLastPush=4326
+2026-10-18 19:55:02.347 [INF] [script-runtime] PROBE widget tick=13 open=true beatAge=5326 pushes=6 sinceLastPush=5326
+2026-10-18 19:55:03.345 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_2369221' sender=':1.3356' -> bus=':1.3356' objectPath='/org/ayatana/NotificationItem/dropbox_client_2369221' elapsed=0ms
+2026-10-18 19:55:03.348 [INF] [script-runtime] PROBE widget tick=14 open=true beatAge=6327 pushes=6 sinceLastPush=6327
+2026-10-18 19:55:03.762 [DBG] [notification] notification expired #16234
+2026-10-18 19:55:03.762 [DBG] [app] notification closed id=16234 origin=internal
+2026-10-18 19:55:04.350 [INF] [script-runtime] PROBE widget tick=15 open=true beatAge=7327 pushes=6 sinceLastPush=7327
+2026-10-18 19:55:04.756 [INF] [plugin-panel] hot reload: reloaded 'panel.luau'
+2026-10-18 19:55:04.756 [DBG] [notification] notification added #16236 origin=internal from="Noctalia" urgency=normal timeout=6000ms
+2026-10-18 19:55:04.756 [DBG] [app] notification added id=16236 origin=internal
+2026-10-18 19:55:04.757 [INF] [script-runtime] PROBE widget onIpc revive
+2026-10-18 19:55:04.757 [INF] [script-runtime] PROBE widget revive via ipc path=~/.local/share/noctalia/plugins/panelrevive/panel.luau ok=true err=nil
+2026-10-18 19:55:04.757 [DBG] [notification] notification toast: showing #16236
+2026-10-18 19:55:04.757 [INF] [script-runtime] PROBE panel load nonce=1792367704757
+2026-10-18 19:55:04.758 [INF] [script-runtime] PROBE widget saw panelLoad=1792367704757
+2026-10-18 19:55:04.758 [INF] [script-runtime] PROBE panel onOpen nonce=1792367704757
+2026-10-18 19:55:05.350 [INF] [script-runtime] PROBE widget tick=16 open=true beatAge=592 pushes=8 sinceLastPush=592
+2026-10-18 19:55:05.350 [INF] [script-runtime] PROBE widget stale cleared
+2026-10-18 19:55:05.977 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_2369221' sender=':1.3356' -> bus=':1.3356' objectPath='/org/ayatana/NotificationItem/dropbox_client_2369221' elapsed=0ms
+2026-10-18 19:55:06.347 [DBG] [notification] notification expired #16235
+2026-10-18 19:55:06.347 [DBG] [app] notification closed id=16235 origin=internal
+2026-10-18 19:55:06.351 [INF] [script-runtime] PROBE widget tick=17 open=true beatAge=592 pushes=9 sinceLastPush=592
+2026-10-18 19:55:07.352 [INF] [script-runtime] PROBE widget tick=18 open=true beatAge=593 pushes=10 sinceLastPush=593
+2026-10-18 19:55:08.352 [INF] [script-runtime] PROBE widget tick=19 open=true beatAge=592 pushes=11 sinceLastPush=592
+2026-10-18 19:55:08.801 [DBG] [panel] panel manager: closing "probe/panelrevive:panel"
+2026-10-18 19:55:09.023 [INF] [script-runtime] PROBE panel onClose nonce=1792367704757
+2026-10-18 19:55:09.352 [INF] [script-runtime] PROBE widget tick=20 open=false beatAge=592 pushes=12 sinceLastPush=592
+2026-10-18 19:55:10.353 [INF] [script-runtime] PROBE widget tick=21 open=false beatAge=1593 pushes=12 sinceLastPush=1593
+2026-10-18 19:55:10.757 [DBG] [notification] notification expired #16236
+2026-10-18 19:55:10.757 [DBG] [app] notification closed id=16236 origin=internal
+2026-10-18 19:55:10.868 [ERR] [luau] plugin probe/panelrevive:panel: call to 'onIpc' failed: script callback 'onIpc' exceeded its CPU budget
+2026-10-18 19:55:10.868 [INF] [script-runtime] PROBE panel onIpc burn nonce=1792367704757
+2026-10-18 19:55:10.969 [DBG] [notification] notification toast: all surfaces destroyed
+2026-10-18 19:55:11.214 [INF] [script-runtime] PROBE panel onIpc burn nonce=1792367704757
+2026-10-18 19:55:11.321 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_2369221' sender=':1.3356' -> bus=':1.3356' objectPath='/org/ayatana/NotificationItem/dropbox_client_2369221' elapsed=0ms
+2026-10-18 19:55:11.353 [INF] [script-runtime] PROBE widget tick=22 open=false beatAge=2593 pushes=12 sinceLastPush=2593
+2026-10-18 19:55:11.378 [DBG] [tray] tray register service/path='/org/ayatana/NotificationItem/dropbox_client_2369221' sender=':1.3356' -> bus=':1.3356' objectPath='/org/ayatana/NotificationItem/dropbox_client_2369221' elapsed=0ms
+2026-10-18 19:55:11.556 [DBG] [notification] notification added #16237 origin=internal from="Noctalia" urgency=critical timeout=6000ms
+2026-10-18 19:55:11.556 [DBG] [app] notification added id=16237 origin=internal
+2026-10-18 19:55:11.556 [INF] [script-runtime] PROBE panel onIpc burn nonce=1792367704757
+2026-10-18 19:55:11.556 [WRN] [plugin-panel] plugin panel 'probe/panelrevive:panel' disabled after repeated timeouts
+2026-10-18 19:55:11.556 [DBG] [notification] notification toast: surface created on DP-1
+2026-10-18 19:55:11.556 [DBG] [notification] notification toast: showing #16237
+2026-10-18 19:55:11.557 [DBG] [surface] fractional scale preferred output=DP-1 surface=0x7fc7017fe680 scale=1.000 raw=120/120 logical=0x0 buffer=0x0
+2026-10-18 19:55:12.354 [INF] [script-runtime] PROBE widget tick=23 open=false beatAge=3594 pushes=12 sinceLastPush=3594
+2026-10-18 19:55:13.355 [INF] [script-runtime] PROBE widget tick=24 open=false beatAge=4595 pushes=12 sinceLastPush=4595
+2026-10-18 19:55:14.355 [INF] [script-runtime] PROBE widget tick=25 open=false beatAge=5595 pushes=12 sinceLastPush=5595
+2026-10-18 19:55:14.546 [INF] [script-runtime] PROBE widget onIpc toggle
+2026-10-18 19:55:14.546 [INF] [script-runtime] PROBE widget toggle requested
+2026-10-18 19:55:14.546 [DBG] [panel] panel manager: opened "probe/panelrevive:panel" as attached layer-shell
+2026-10-18 19:55:14.553 [DBG] [surface] fractional scale preferred output=DP-1 surface=0x7fc6f522dc80 scale=1.000 raw=120/120 logical=0x0 buffer=0x0
+2026-10-18 19:55:15.356 [INF] [script-runtime] PROBE widget tick=26 open=false beatAge=6596 pushes=12 sinceLastPush=6596
+2026-10-18 19:55:16.357 [INF] [script-runtime] PROBE widget tick=27 open=false beatAge=7597 pushes=12 sinceLastPush=7597
+2026-10-18 19:55:17.358 [INF] [script-runtime] PROBE widget tick=28 open=false beatAge=8598 pushes=12 sinceLastPush=8598
+2026-10-18 19:55:17.557 [DBG] [notification] notification expired #16237
+2026-10-18 19:55:17.557 [DBG] [app] notification closed id=16237 origin=internal
+2026-10-18 19:55:17.769 [DBG] [notification] notification toast: all surfaces destroyed
+2026-10-18 19:55:18.358 [INF] [script-runtime] PROBE widget tick=29 open=false beatAge=9598 pushes=12 sinceLastPush=9598
+2026-10-18 19:55:18.359 [INF] [script-runtime] PROBE widget NOACK: toggle 3812 ms ago, no onOpen ack
+2026-10-18 19:55:19.359 [INF] [script-runtime] PROBE widget tick=30 open=false beatAge=10599 pushes=12 sinceLastPush=10599
+2026-10-18 19:55:19.589 [INF] [plugin-panel] hot reload: reloaded 'panel.luau'
+2026-10-18 19:55:19.589 [DBG] [notification] notification added #16238 origin=internal from="Noctalia" urgency=normal timeout=6000ms
+2026-10-18 19:55:19.590 [DBG] [app] notification added id=16238 origin=internal
+2026-10-18 19:55:19.590 [INF] [script-runtime] PROBE widget onIpc revive
+2026-10-18 19:55:19.590 [INF] [script-runtime] PROBE widget revive via ipc path=~/.local/share/noctalia/plugins/panelrevive/panel.luau ok=true err=nil
+2026-10-18 19:55:19.590 [DBG] [notification] notification toast: surface created on DP-1
+2026-10-18 19:55:19.590 [DBG] [notification] notification toast: showing #16238
+2026-10-18 19:55:19.591 [INF] [script-runtime] PROBE widget saw panelLoad=1792367719590
+2026-10-18 19:55:19.591 [INF] [script-runtime] PROBE panel load nonce=1792367719590
+2026-10-18 19:55:19.591 [INF] [script-runtime] PROBE panel onOpen nonce=1792367719590
+2026-10-18 19:55:19.591 [DBG] [surface] fractional scale preferred output=DP-1 surface=0x7fc6f84f7840 scale=1.000 raw=120/120 logical=0x0 buffer=0x0
+2026-10-18 19:55:20.360 [INF] [script-runtime] PROBE widget tick=31 open=true beatAge=770 pushes=14 sinceLastPush=769
+2026-10-18 19:55:21.361 [INF] [script-runtime] PROBE widget tick=32 open=true beatAge=769 pushes=15 sinceLastPush=769
+2026-10-18 19:55:22.362 [INF] [script-runtime] PROBE widget tick=33 open=true beatAge=769 pushes=16 sinceLastPush=769
+2026-10-18 19:55:23.363 [INF] [script-runtime] PROBE widget tick=34 open=true beatAge=769 pushes=17 sinceLastPush=769
+2026-10-18 19:55:23.633 [DBG] [panel] panel manager: closing "probe/panelrevive:panel"
+2026-10-18 19:55:23.657 [INF] [config] reloading ~/.local/state/noctalia/settings.toml
+2026-10-18 19:55:23.657 [INF] [config] loading ~/.local/state/noctalia/settings.toml
+2026-10-18 19:55:23.657 [INF] [config] config changed, reloading
+2026-10-18 19:55:23.659 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from ~/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-18 19:55:23.659 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from ~/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-18 19:55:23.660 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from ~/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-18 19:55:23.660 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from ~/.local/share/noctalia/plugins/wali-panel
+2026-10-18 19:55:23.660 [INF] [plugins] loaded plugin 'probe/panelrevive' (2 entries) from ~/.local/share/noctalia/plugins/panelrevive
+2026-10-18 19:55:23.660 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from ~/.local/share/noctalia/plugins/prism
+2026-10-18 19:55:23.661 [INF] [config] 1 bar(s) defined
+2026-10-18 19:55:23.661 [INF] [config] bar order: default
+2026-10-18 19:55:23.661 [INF] [config] idle behaviors=3
+2026-10-18 19:55:23.661 [INF] [config] hooks kinds with commands=3
+2026-10-18 19:55:23.678 [INF] [i18n] language: en (from en-US)
+2026-10-18 19:55:23.679 [INF] [bar] reloading config
+2026-10-18 19:55:23.680 [DBG] [file-watcher] unwatching id 41
+2026-10-18 19:55:23.680 [DBG] [file-watcher] unwatching id 42
+2026-10-18 19:55:23.681 [DBG] [file-watcher] unwatching id 43
+2026-10-18 19:55:23.681 [DBG] [file-watcher] unwatching id 44
+2026-10-18 19:55:23.681 [DBG] [file-watcher] unwatching id 45
+2026-10-18 19:55:23.682 [DBG] [bar] bar.default.dead_zone: right=panel-toggle control-center home
+2026-10-18 19:55:23.684 [DBG] [bar.actions] widget.workspaces: middle=settings-open-widget, scroll_up=workspace-switch prev, scroll_down=workspace-switch next
+2026-10-18 19:55:23.684 [DBG] [bar.actions] widget.cpu: left=panel-toggle control-center system, middle=settings-open-widget
+2026-10-18 19:55:23.684 [DBG] [bar.actions] widget.ram: left=panel-toggle control-center system, middle=settings-open-widget
+2026-10-18 19:55:23.684 [DBG] [bar.actions] widget.cat: middle=settings-open-widget
+2026-10-18 19:55:23.684 [DBG] [file-watcher] watching '~/.local/state/noctalia/plugins/materialized/community/cat/cat.luau' (id 47)
+2026-10-18 19:55:23.684 [DBG] [bar.actions] widget.active_window: middle=settings-open-widget
+2026-10-18 19:55:23.684 [DBG] [bar.actions] widget.widget: middle=settings-open-widget
+2026-10-18 19:55:23.684 [DBG] [file-watcher] watching '~/.local/state/noctalia/plugins/materialized/community/pomodoro/src/widget.luau' (id 48)
+2026-10-18 19:55:23.684 [DBG] [bar.actions] widget.tray: middle=settings-open-widget
+2026-10-18 19:55:23.684 [DBG] [bar.actions] widget.network: left=panel-toggle control-center network, right=network-toggle, middle=settings-open-widget
+2026-10-18 19:55:23.684 [DBG] [bar.actions] widget.battery: left=panel-toggle control-center power, middle=settings-open-widget
+2026-10-18 19:55:23.684 [DBG] [bar.actions] widget.output_volume: left=panel-toggle control-center audio, right=volume-mute, middle=settings-open-widget, scroll_up=volume-up, scroll_down=volume-down
+2026-10-18 19:55:23.684 [DBG] [bar.actions] widget.khughitt/prism:widget: middle=settings-open-widget
+2026-10-18 19:55:23.684 [DBG] [file-watcher] watching '~/.local/share/noctalia/plugins/prism/widget.luau' (id 49)
+2026-10-18 19:55:23.684 [DBG] [bar.actions] widget.khughitt/wali-panel:widget: middle=settings-open-widget
+2026-10-18 19:55:23.684 [DBG] [file-watcher] watching '~/.local/share/noctalia/plugins/wali-panel/widget.luau' (id 50)
+2026-10-18 19:55:23.684 [DBG] [bar.actions] widget.clock: left=panel-toggle control-center calendar, middle=settings-open-widget
+2026-10-18 19:55:23.689 [INF] [plugins] disabling plugin 'probe/panelrevive'
+2026-10-18 19:55:23.690 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from ~/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-18 19:55:23.690 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from ~/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-18 19:55:23.690 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from ~/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-18 19:55:23.691 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from ~/.local/share/noctalia/plugins/wali-panel
+2026-10-18 19:55:23.691 [INF] [plugins] loaded plugin 'probe/panelrevive' (2 entries) from ~/.local/share/noctalia/plugins/panelrevive
+2026-10-18 19:55:23.691 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from ~/.local/share/noctalia/plugins/prism
+2026-10-18 19:55:23.692 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from ~/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-18 19:55:23.693 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from ~/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-18 19:55:23.693 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from ~/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-18 19:55:23.693 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from ~/.local/share/noctalia/plugins/wali-panel
+2026-10-18 19:55:23.693 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from ~/.local/share/noctalia/plugins/prism
+2026-10-18 19:55:23.695 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from ~/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-18 19:55:23.695 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from ~/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-18 19:55:23.695 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from ~/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-18 19:55:23.696 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from ~/.local/share/noctalia/plugins/wali-panel
+2026-10-18 19:55:23.696 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from ~/.local/share/noctalia/plugins/prism
+2026-10-18 19:55:23.697 [INF] [config] 1 bar(s) defined
+2026-10-18 19:55:23.697 [INF] [config] bar order: default
+2026-10-18 19:55:23.697 [INF] [config] idle behaviors=3
+2026-10-18 19:55:23.697 [INF] [config] hooks kinds with commands=3
+2026-10-18 19:55:23.706 [INF] [i18n] language: en (from en-US)
+2026-10-18 19:55:23.707 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from ~/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-18 19:55:23.707 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from ~/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-18 19:55:23.707 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from ~/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-18 19:55:23.707 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from ~/.local/share/noctalia/plugins/wali-panel
+2026-10-18 19:55:23.707 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from ~/.local/share/noctalia/plugins/prism
+2026-10-18 19:55:23.707 [INF] [bar] reloading config
+2026-10-18 19:55:23.707 [DBG] [file-watcher] unwatching id 47
+2026-10-18 19:55:23.708 [DBG] [file-watcher] unwatching id 48
+2026-10-18 19:55:23.708 [DBG] [file-watcher] unwatching id 49
+2026-10-18 19:55:23.708 [DBG] [file-watcher] unwatching id 50
+2026-10-18 19:55:23.708 [DBG] [bar] bar.default.dead_zone: right=panel-toggle control-center home
+2026-10-18 19:55:23.709 [DBG] [bar.actions] widget.workspaces: middle=settings-open-widget, scroll_up=workspace-switch prev, scroll_down=workspace-switch next
+2026-10-18 19:55:23.709 [DBG] [bar.actions] widget.cpu: left=panel-toggle control-center system, middle=settings-open-widget
+2026-10-18 19:55:23.709 [DBG] [bar.actions] widget.ram: left=panel-toggle control-center system, middle=settings-open-widget
+2026-10-18 19:55:23.709 [DBG] [bar.actions] widget.cat: middle=settings-open-widget
+2026-10-18 19:55:23.709 [DBG] [file-watcher] watching '~/.local/state/noctalia/plugins/materialized/community/cat/cat.luau' (id 51)
+2026-10-18 19:55:23.709 [DBG] [bar.actions] widget.active_window: middle=settings-open-widget
+2026-10-18 19:55:23.709 [DBG] [bar.actions] widget.widget: middle=settings-open-widget
+2026-10-18 19:55:23.709 [DBG] [file-watcher] watching '~/.local/state/noctalia/plugins/materialized/community/pomodoro/src/widget.luau' (id 52)
+2026-10-18 19:55:23.709 [DBG] [bar.actions] widget.tray: middle=settings-open-widget
+2026-10-18 19:55:23.709 [DBG] [bar.actions] widget.network: left=panel-toggle control-center network, right=network-toggle, middle=settings-open-widget
+2026-10-18 19:55:23.709 [DBG] [bar.actions] widget.battery: left=panel-toggle control-center power, middle=settings-open-widget
+2026-10-18 19:55:23.709 [DBG] [bar.actions] widget.output_volume: left=panel-toggle control-center audio, right=volume-mute, middle=settings-open-widget, scroll_up=volume-up, scroll_down=volume-down
+2026-10-18 19:55:23.709 [DBG] [bar.actions] widget.khughitt/prism:widget: middle=settings-open-widget
+2026-10-18 19:55:23.709 [DBG] [file-watcher] watching '~/.local/share/noctalia/plugins/prism/widget.luau' (id 53)
+2026-10-18 19:55:23.709 [DBG] [bar.actions] widget.khughitt/wali-panel:widget: middle=settings-open-widget
+2026-10-18 19:55:23.709 [DBG] [file-watcher] watching '~/.local/share/noctalia/plugins/wali-panel/widget.luau' (id 54)
+2026-10-18 19:55:23.709 [DBG] [bar.actions] widget.clock: left=panel-toggle control-center calendar, middle=settings-open-widget
+2026-10-18 19:55:23.710 [DBG] [file-watcher] unwatching id 46
+2026-10-18 19:55:24.764 [INF] [plugins] loaded plugin 'noctalia/timer' (4 entries) from ~/.local/state/noctalia/plugins/materialized/official/timer
+2026-10-18 19:55:24.764 [INF] [plugins] loaded plugin 'dotnetrob/cat' (2 entries) from ~/.local/state/noctalia/plugins/materialized/community/cat
+2026-10-18 19:55:24.764 [INF] [plugins] loaded plugin 'thepunkoff/pomodoro' (3 entries) from ~/.local/state/noctalia/plugins/materialized/community/pomodoro
+2026-10-18 19:55:24.764 [INF] [plugins] loaded plugin 'khughitt/wali-panel' (2 entries) from ~/.local/share/noctalia/plugins/wali-panel
+2026-10-18 19:55:24.764 [INF] [plugins] loaded plugin 'khughitt/prism' (2 entries) from ~/.local/share/noctalia/plugins/prism
+2026-10-18 19:55:24.765 [INF] [config] 1 bar(s) defined
+2026-10-18 19:55:24.765 [INF] [config] bar order: default
+2026-10-18 19:55:24.765 [INF] [config] idle behaviors=3
+2026-10-18 19:55:24.765 [INF] [config] hooks kinds with commands=3
+2026-10-18 19:55:24.772 [INF] [i18n] language: en (from en-US)
+2026-10-18 19:55:25.590 [DBG] [notification] notification expired #16238
