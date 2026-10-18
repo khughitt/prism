@@ -8,7 +8,7 @@ complexity: mid
 process: direct
 owner: probe/panel-revive
 created: 2026-10-17T21:26:39Z
-updated: 2026-10-18T23:57:35Z
+updated: 2026-10-18T23:57:37Z
 started: 2026-10-18T23:13:50Z
 depends: []
 parent: prism-ab3a3d
@@ -35,3 +35,4 @@ Ideas it wakes: On completion, run `tasks note prism-ea3efb --no-reviewed "<find
 - 2026-10-18T23:57:18Z (probe/panel-revive): detached: log-slice.txt: carried machine paths; replaced by a redacted copy
 - 2026-10-18T23:57:20Z (probe/panel-revive): attached: probe-log-2026-10-18.txt (37517 bytes): Noctalia host log for the 2026-10-18 probe run, 19:54:47-19:55:26, machine paths redacted
 - 2026-10-18T23:57:35Z (probe/panel-revive): result (live probe 2026-10-18 vs Noctalia 5.3.0): every step happened. Panel unhealthy on the 3rd consecutive overrun (later events dropped; 'disabled after repeated timeouts' + one critical 6 s toast); widget update() kept ticking each second; state pushes flowed while the panel ran, stopped while disabled, resumed after reload; widget saw the stale beat 2.6 s after the disable (3 s threshold) and its noctalia.notify toast showed, setGlyph/setTooltip ran without error (glyph not captured); widget writeFile of panel.luau with the same bytes -> 'hot reload: reloaded panel.luau' within 1 ms, new load nonce, onOpen re-run, beats resumed. New: a panel disabled while closed and then opened outside the widget is invisible (onOpen dropped, panelOpen stays false); only the widget's own open + onOpen-ack check caught it, and Prism's Super+P opens via 'noctalia msg panel-toggle'. Reviving through Prism's symlink rewrites a tracked checkout file. Recommendation: A amended (widget owns every open and expects an onOpen ack; revive via a dedicated untracked reload module); brief updated with a Probe result section. Host restored: link removed, settings.toml equal to the pre-run backup.
+- 2026-10-18T23:57:37Z (probe/panel-revive): host pointer restored: probe link removed, probe/panelrevive disabled and its bar entry removed; settings.toml diffed identical to the pre-run backup
