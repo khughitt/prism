@@ -6,9 +6,9 @@ priority: 3
 size: s
 complexity: mid
 process: direct
-owner: main
+owner: probe/panel-revive
 created: 2026-10-17T21:26:39Z
-updated: 2026-10-18T23:13:50Z
+updated: 2026-10-18T23:14:09Z
 started: 2026-10-18T23:13:50Z
 depends: []
 parent: prism-ab3a3d
@@ -25,4 +25,6 @@ Ideas it wakes: On completion, run `tasks note prism-ea3efb --no-reviewed "<find
 ## Notes
 
 - 2026-10-18T23:13:50Z (main): started
+  provenance: {"harness_session":"claude-code:54c1a369-6c78-496c-b6e6-1e4155c87326","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-18T23:14:09Z (probe/panel-revive): resumed
   provenance: {"harness_session":"claude-code:54c1a369-6c78-496c-b6e6-1e4155c87326","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
