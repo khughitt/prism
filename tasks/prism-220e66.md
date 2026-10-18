@@ -1,13 +1,15 @@
 ---
 id: prism-220e66
 title: Establish whether the bar widget can detect and revive a host-disabled panel
-status: todo
+status: doing
 priority: 3
 size: s
 complexity: mid
 process: direct
+owner: main
 created: 2026-10-17T21:26:39Z
-updated: 2026-10-17T21:26:39Z
+updated: 2026-10-18T23:13:50Z
+started: 2026-10-18T23:13:50Z
 depends: []
 parent: prism-ab3a3d
 tags: [noctalia]
@@ -19,3 +21,8 @@ Where to start: docs/notes/2026-10-17-panel-disabled-notice-brief.md (Current be
 Bound: A throwaway probe plugin with its own id (a panel whose update() writes a beat and whose button busy-loops past 25 ms three times, and a widget that watches and polls), installed beside khughitt/prism and removed afterwards; never the prism plugin or its ~/.local/share symlink. Opening the probe panel uses the live desktop: ask the owner at that moment. No Prism implementation.
 Expected result: Record on this task and in the brief, for each step (unhealthy panel, widget still ticking, state pushes delivered, stale beat seen, notify shown, touch-reload clears unhealthy and re-runs onOpen), whether it happened, the host log lines, and a recommendation among the brief's alternatives.
 Ideas it wakes: On completion, run `tasks note prism-ea3efb --no-reviewed "<finding>"` before this result's branch merges.
+
+## Notes
+
+- 2026-10-18T23:13:50Z (main): started
+  provenance: {"harness_session":"claude-code:54c1a369-6c78-496c-b6e6-1e4155c87326","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
