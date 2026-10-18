@@ -8,7 +8,7 @@ complexity: mid
 process: direct
 owner: probe/panel-revive
 created: 2026-10-17T21:26:39Z
-updated: 2026-10-18T23:57:18Z
+updated: 2026-10-18T23:57:20Z
 started: 2026-10-18T23:13:50Z
 depends: []
 parent: prism-ab3a3d
@@ -33,3 +33,4 @@ Ideas it wakes: On completion, run `tasks note prism-ea3efb --no-reviewed "<find
 - 2026-10-18T23:57:05Z (probe/panel-revive): attached: panelrevive-probe.tar.gz (2771 bytes): probe/panelrevive plugin (panel + widget) and the self-cleaning run.sh used on 2026-10-18 against Noctalia 5.3.0
 - 2026-10-18T23:57:07Z (probe/panel-revive): attached: log-slice.txt (38607 bytes): Noctalia host log for the 2026-10-18 probe run, 19:54:47-19:55:26
 - 2026-10-18T23:57:18Z (probe/panel-revive): detached: log-slice.txt: carried machine paths; replaced by a redacted copy
+- 2026-10-18T23:57:20Z (probe/panel-revive): attached: probe-log-2026-10-18.txt (37517 bytes): Noctalia host log for the 2026-10-18 probe run, 19:54:47-19:55:26, machine paths redacted
