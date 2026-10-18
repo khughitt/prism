@@ -8,7 +8,7 @@ complexity: mid
 process: direct
 owner: probe/panel-revive
 created: 2026-10-17T21:26:39Z
-updated: 2026-10-18T23:19:11Z
+updated: 2026-10-18T23:19:13Z
 started: 2026-10-18T23:13:50Z
 depends: []
 parent: prism-ab3a3d
@@ -29,3 +29,4 @@ Ideas it wakes: On completion, run `tasks note prism-ea3efb --no-reviewed "<find
 - 2026-10-18T23:14:09Z (probe/panel-revive): resumed
   provenance: {"harness_session":"claude-code:54c1a369-6c78-496c-b6e6-1e4155c87326","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
 - 2026-10-18T23:19:11Z (probe/panel-revive): host check: installed noctalia is the Arch package 5.3.0-1 (built 2026-10-15), not the fork; v5.3.0 script_runtime.cpp and plugin_state_store.cpp are byte-identical to fork 7f547389f, plugin_panel.cpp/plugin_widget.cpp differ only in scroll-into-view and colour defaults, so the brief's host facts hold (enqueue drop at script_runtime.cpp:341, Reload clears unhealthy :411, panel log plugin_panel.cpp:349, reloadScript re-runs onOpen :536). No API reports whether a panel is open.
+- 2026-10-18T23:19:13Z (probe/panel-revive): host pointer (probe run): symlink ~/.local/share/noctalia/plugins/panelrevive -> ~/.cache/prism-probes/panelrevive, probe/panelrevive in [plugins].enabled, and "probe/panelrevive:widget" inserted before "clock" in [bar.default].end of ~/.local/state/noctalia/settings.toml; restore: the run script's EXIT trap disables the plugin, removes the line and the link, config-reloads, and diffs against ~/.cache/prism-probes/out/settings.toml.before
