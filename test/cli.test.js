@@ -277,9 +277,10 @@ test('doctor screens values.yaml for invalid values, naming the file the way it 
 
 test('reading verbs take the store lock, so they wait for an in-flight write', async () => {
   const { withLock } = await import('../src/lock.js');
-  let release;
-  const held = withLock(lockPath(), () => new Promise((resolve) => { release = resolve; }));
-  await new Promise((r) => setTimeout(r, 20)); // let the holder acquire
+  let release, acquired;
+  const holding = new Promise((resolve) => { acquired = resolve; });
+  const held = withLock(lockPath(), () => new Promise((resolve) => { release = resolve; acquired(); }));
+  await holding;
   let finished = false;
   const reader = cli.run(['describe', '--json'], { print: () => {} }).then(() => { finished = true; });
   await new Promise((r) => setTimeout(r, 100));
@@ -293,12 +294,15 @@ test('reading verbs take the store lock, so they wait for an in-flight write', a
 test('requirements takes the store lock too, so the pinned repair never writes outside it', async () => {
   const { withLock } = await import('../src/lock.js');
   let order = [];
+  let acquired;
+  const locked = new Promise((resolve) => { acquired = resolve; });
   const holding = withLock(lockPath(), async () => {
     order.push('locked');
+    acquired();
     await new Promise((resolve) => setTimeout(resolve, 60));
     order.push('released');
   });
-  await new Promise((resolve) => setTimeout(resolve, 10));
+  await locked;
   const reading = cli.run(['requirements'], { print: () => {} }).then(() => order.push('read'));
   await Promise.all([holding, reading]);
   assert.deepEqual(order, ['locked', 'released', 'read']);

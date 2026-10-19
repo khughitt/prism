@@ -272,9 +272,10 @@ const { sinkLockPath } = await import('../src/paths.js');
 test('an apply waits for the sink lock another apply of that sink holds', async () => {
   freshState();
   const order = [];
-  let release;
-  const held = withLock(sinkLockPath('fast'), () => new Promise((resolve) => { release = resolve; order.push('holder'); }));
-  await new Promise((resolve) => setTimeout(resolve, 50));
+  let release, acquired;
+  const holding = new Promise((resolve) => { acquired = resolve; });
+  const held = withLock(sinkLockPath('fast'), () => new Promise((resolve) => { release = resolve; order.push('holder'); acquired(); }));
+  await holding;
   const waiting = fanOut({ manifests: [manifests[0]], resolved, changedKeys: ['a.x'], runner: () => order.push('apply') });
   await new Promise((resolve) => setTimeout(resolve, 100));
   assert.deepEqual(order, ['holder'], 'the apply has not run while the lock is held');

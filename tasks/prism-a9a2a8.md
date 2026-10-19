@@ -6,9 +6,9 @@ priority: 2
 size: m
 complexity: low
 process: direct
-owner: main
+owner: test-ci-step3
 created: 2026-09-04T21:44:54Z
-updated: 2026-10-19T00:06:19Z
+updated: 2026-10-19T00:36:07Z
 started: 2026-10-19T00:06:19Z
 depends: [ops-31f038]
 tags: [testing]
@@ -29,3 +29,11 @@ Piece of ops-65837b (the cross-project audit in the ops hub). 1. Measure: full-s
 - 2026-09-28T10:27:50Z (main): Step 3 now follows ops docs/specs/2026-09-28-test-ci-act-design.md: copy templates/justfile's test-one, docs_paths/docs_check_cmd/hook-pre-commit-docs, ci_suite_refs/ci_remote/push_fast_cmd/hook-pre-push-fast and both templates/githooks; set ci_suite_refs from the refs CI actually runs the full suite for (say which in a note); add the AGENTS.md Gates line (templates/AGENTS.md). Then the after-window against this piece's baseline note.
 - 2026-10-19T00:06:19Z (main): started
   provenance: {"harness_session":"claude-code:c63bcc84-5990-40c5-ad53-5530f29a8203","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-19T00:06:52Z (test-ci-step3): resumed
+  provenance: {"harness_session":"claude-code:c63bcc84-5990-40c5-ad53-5530f29a8203","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-19T00:14:43Z (test-ci-step3): step 3 (35863f8, branch test-ci-step3): adopted act design §3 from ops templates — test-one (one_cmd = npm run --silent test:node --, files and --test-name-pattern), docs-only pre-commit (docs_paths excludes docs/notes/, which the suite reads; docs_check_cmd = check_cmd since check has no code checks), template githooks verbatim. ci_suite_refs: empty — prism has no CI (no .github), so every push keeps the full gate; push_fast_cmd = fast_cmd. AGENTS.md Gates line added.
+- 2026-10-19T00:14:46Z (test-ci-step3): step 3 hygiene: quiet reporter (dot + test/summary-reporter.mjs printing spec-style totals so tt still counts) cuts a passing run from 601 lines to 34; tests field still 575. Suite now 575 tests, ~10 s wall, bounded by contract.test.mjs (~8.5 s alone; one test drives ~40 real CLI spawns, 5.3 s) — spawn cost, kept for the end-to-end check. Sleeps: three waits for a lock holder to acquire (cli.test.js 20 ms and 10 ms, fanout.test.js 50 ms) were races against async fs acquisition, now wait on an acquisition promise; the 100 ms negative waits and the probe's 2 s production bound stay. No real network; fixtures are per-test tmp dirs by design.
+- 2026-10-19T00:23:19Z (test-ci-step3): review: impl round 1 — verdict: revise; findings: Important 2, Minor 4; reviewer: claude-code
+- 2026-10-19T00:25:03Z (test-ci-step3): round 1 fixes c607be1: pattern-before-files documented (I1), reporter forwards child stdout/stderr (I2) and skips with reasons (M5), moved to test-support/ (M3). minor (deferred): M4 engines >=20 but the test:summary event may need Node >=20.16/22 (unverified) — an older Node prints no totals, tt records tests null; M6 lock tests keep fixed 60/100 ms windows for the negative checks (pre-existing; closing it needs a spy on the reader's lock attempt).
+- 2026-10-19T00:35:35Z (test-ci-step3): review: impl round 2 — verdict: accept; findings: Minor 3; reviewer: claude-code
+- 2026-10-19T00:36:07Z (test-ci-step3): round 2 minors: M1 (wrong reason for pattern ordering) and M3 (README usage line) fixed in 284fa92; minor (deferred): M2 forwarded child output interleaves with dot rows, and a test printing a line starting '# tests' would now reach tt's count parser (none does).

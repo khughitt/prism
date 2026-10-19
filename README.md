@@ -454,6 +454,10 @@ Install the existing Node dependency with `npm install`.
   `tools/tt`; `just check` and `just gate` are the pre-commit and pre-push
   gates, and a fresh clone installs the hooks with
   `git config core.hooksPath .githooks`.
+- `just test-one [--test-name-pattern=<regex>] [<files>]` runs part of the Node
+  suite while working on it; the pattern goes before the files. A passing run
+  prints one dot per test, what the tests write, skips with their reasons, and the
+  totals; each failure prints with its error.
 - `tools/cli.toml` and `tools/cli_surface.py` are byte-identical copies of the shared
   CLI table and its helper in the ops repository; a change to prism's command surface
   is a change to the ops table first, then re-vendored here.
