@@ -8,7 +8,7 @@ complexity: low
 process: direct
 owner: test-ci-step3
 created: 2026-09-04T21:44:54Z
-updated: 2026-10-19T00:35:35Z
+updated: 2026-10-19T00:36:07Z
 started: 2026-10-19T00:06:19Z
 depends: [ops-31f038]
 tags: [testing]
@@ -36,3 +36,4 @@ Piece of ops-65837b (the cross-project audit in the ops hub). 1. Measure: full-s
 - 2026-10-19T00:23:19Z (test-ci-step3): review: impl round 1 — verdict: revise; findings: Important 2, Minor 4; reviewer: claude-code
 - 2026-10-19T00:25:03Z (test-ci-step3): round 1 fixes c607be1: pattern-before-files documented (I1), reporter forwards child stdout/stderr (I2) and skips with reasons (M5), moved to test-support/ (M3). minor (deferred): M4 engines >=20 but the test:summary event may need Node >=20.16/22 (unverified) — an older Node prints no totals, tt records tests null; M6 lock tests keep fixed 60/100 ms windows for the negative checks (pre-existing; closing it needs a spy on the reader's lock attempt).
 - 2026-10-19T00:35:35Z (test-ci-step3): review: impl round 2 — verdict: accept; findings: Minor 3; reviewer: claude-code
+- 2026-10-19T00:36:07Z (test-ci-step3): round 2 minors: M1 (wrong reason for pattern ordering) and M3 (README usage line) fixed in 284fa92; minor (deferred): M2 forwarded child output interleaves with dot rows, and a test printing a line starting '# tests' would now reach tt's count parser (none does).
