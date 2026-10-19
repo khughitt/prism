@@ -8,7 +8,7 @@ complexity: low
 process: direct
 owner: test-ci-step3
 created: 2026-09-04T21:44:54Z
-updated: 2026-10-19T00:37:19Z
+updated: 2026-10-19T00:37:28Z
 started: 2026-10-19T00:06:19Z
 depends: [ops-31f038]
 tags: [testing]
@@ -38,3 +38,5 @@ Piece of ops-65837b (the cross-project audit in the ops hub). 1. Measure: full-s
 - 2026-10-19T00:35:35Z (test-ci-step3): review: impl round 2 — verdict: accept; findings: Minor 3; reviewer: claude-code
 - 2026-10-19T00:36:07Z (test-ci-step3): round 2 minors: M1 (wrong reason for pattern ordering) and M3 (README usage line) fixed in 284fa92; minor (deferred): M2 forwarded child output interleaves with dot rows, and a test printing a line starting '# tests' would now reach tt's count parser (none does).
 - 2026-10-19T00:37:19Z (main): after-window caution: check/hook-pre-commit now ~2 s (baseline median 0.1 s), from vendored ops-check v12's machine-layout scan (1.9 s of it; tasks check 0.04 s), not from this step. Filed ops-31f3b3. Read the after-window's check and hook numbers with that in mind.
+- 2026-10-19T00:37:28Z (main): parked (waiting on agent): Agent: on or after 2026-10-25, run tt-report --project prism --since 2026-10-19 --until <read date> and add the after note against the 2026-09-28 baseline note (test, test-fast, test-one, check, hook-pre-commit, hook-pre-commit-docs, hook-pre-push; ops-check v12 inflates check, ops-31f3b3), then tasks done with before/after numbers
+  provenance: {"harness_session":"claude-code:c63bcc84-5990-40c5-ad53-5530f29a8203","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
