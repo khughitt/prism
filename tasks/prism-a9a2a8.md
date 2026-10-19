@@ -6,9 +6,9 @@ priority: 2
 size: m
 complexity: low
 process: direct
-owner: main
+owner: test-ci-step3
 created: 2026-09-04T21:44:54Z
-updated: 2026-10-19T00:06:19Z
+updated: 2026-10-19T00:06:52Z
 started: 2026-10-19T00:06:19Z
 depends: [ops-31f038]
 tags: [testing]
@@ -28,4 +28,6 @@ Piece of ops-65837b (the cross-project audit in the ops hub). 1. Measure: full-s
 - 2026-09-28T08:35:59Z (main): Baseline window 2026-09-05..09-24 closes the day before ops host-budget worker sizing (09-25), the first timing change after step 1; no step-3 change had landed. Front-door total counts wrapper seconds of test, test-fast, check and both hooks. Next: step 3 (gates to ops design §4.6, the AGENTS.md inner-loop line, hygiene the numbers point at), then an after-window read with tt-report --since/--until.
 - 2026-09-28T10:27:50Z (main): Step 3 now follows ops docs/specs/2026-09-28-test-ci-act-design.md: copy templates/justfile's test-one, docs_paths/docs_check_cmd/hook-pre-commit-docs, ci_suite_refs/ci_remote/push_fast_cmd/hook-pre-push-fast and both templates/githooks; set ci_suite_refs from the refs CI actually runs the full suite for (say which in a note); add the AGENTS.md Gates line (templates/AGENTS.md). Then the after-window against this piece's baseline note.
 - 2026-10-19T00:06:19Z (main): started
+  provenance: {"harness_session":"claude-code:c63bcc84-5990-40c5-ad53-5530f29a8203","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-19T00:06:52Z (test-ci-step3): resumed
   provenance: {"harness_session":"claude-code:c63bcc84-5990-40c5-ad53-5530f29a8203","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
