@@ -1,4 +1,4 @@
-# Front door for tests. Inner loop: `just test-one <files or --test-name-pattern=...>`
+# Front door for tests. Inner loop: `just test-one [--test-name-pattern=<re>] <files>`
 # on the test at hand, `just test-fast` before committing. Full suite: `just test`.
 # Gates: `just check` at pre-commit, `just gate` at pre-push. The git hooks call the
 # `hook-*` recipes instead, which run the very same commands under their own target names
@@ -44,8 +44,9 @@ ci_remote := "origin"
 push_fast_cmd := fast_cmd
 
 # The node runner with the suite's reporters and no files: `test-one` appends the
-# caller's arguments, each one intact. It takes test files and `--test-name-pattern=<re>`;
-# the Lua plugin checks are `npm run test:plugin-lua`.
+# caller's arguments, each one intact. It takes test files, and `--test-name-pattern=<re>`
+# before them: node hands an option after the first file to the tests, unread. The Lua
+# plugin checks run only in the whole suite.
 one_cmd := "npm run --silent test:node --"
 
 # Affected-only: the inner loop.

@@ -8,7 +8,7 @@
   "engines": { "node": ">=20" },
   "scripts": {
     "test": "npm run --silent test:node -- test/*.test.js integrations/noctalia-plugin/contract.test.mjs && npm run --silent test:plugin-lua",
-    "test:node": "node --test --test-reporter=dot --test-reporter-destination=stdout --test-reporter=./test/summary-reporter.mjs --test-reporter-destination=stdout",
+    "test:node": "node --test --test-reporter=dot --test-reporter-destination=stdout --test-reporter=./test-support/summary-reporter.mjs --test-reporter-destination=stdout",
     "test:plugin-lua": "command -v lua >/dev/null || { echo 'lua is required for the Noctalia plugin tests' >&2; exit 127; }; lua integrations/noctalia-plugin/plugin_test.lua"
   },
   "dependencies": { "yaml": "^2.4.0" }
