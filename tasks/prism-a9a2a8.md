@@ -8,7 +8,7 @@ complexity: low
 process: direct
 owner: test-ci-step3
 created: 2026-09-04T21:44:54Z
-updated: 2026-10-19T00:06:52Z
+updated: 2026-10-19T00:14:43Z
 started: 2026-10-19T00:06:19Z
 depends: [ops-31f038]
 tags: [testing]
@@ -31,3 +31,4 @@ Piece of ops-65837b (the cross-project audit in the ops hub). 1. Measure: full-s
   provenance: {"harness_session":"claude-code:c63bcc84-5990-40c5-ad53-5530f29a8203","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
 - 2026-10-19T00:06:52Z (test-ci-step3): resumed
   provenance: {"harness_session":"claude-code:c63bcc84-5990-40c5-ad53-5530f29a8203","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
+- 2026-10-19T00:14:43Z (test-ci-step3): step 3 (35863f8, branch test-ci-step3): adopted act design §3 from ops templates — test-one (one_cmd = npm run --silent test:node --, files and --test-name-pattern), docs-only pre-commit (docs_paths excludes docs/notes/, which the suite reads; docs_check_cmd = check_cmd since check has no code checks), template githooks verbatim. ci_suite_refs: empty — prism has no CI (no .github), so every push keeps the full gate; push_fast_cmd = fast_cmd. AGENTS.md Gates line added.
