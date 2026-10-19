@@ -45,8 +45,8 @@ push_fast_cmd := fast_cmd
 
 # The node runner with the suite's reporters and no files: `test-one` appends the
 # caller's arguments, each one intact. It takes test files, and `--test-name-pattern=<re>`
-# before them: node hands an option after the first file to the tests, unread. The Lua
-# plugin checks run only in the whole suite.
+# before them: node reads anything after the first file as another file pattern and
+# drops one that matches nothing. The Lua plugin checks run only in the whole suite.
 one_cmd := "npm run --silent test:node --"
 
 # Affected-only: the inner loop.
