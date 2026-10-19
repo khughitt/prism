@@ -8,7 +8,7 @@ complexity: low
 process: direct
 owner: test-ci-step3
 created: 2026-09-04T21:44:54Z
-updated: 2026-10-19T00:14:43Z
+updated: 2026-10-19T00:14:46Z
 started: 2026-10-19T00:06:19Z
 depends: [ops-31f038]
 tags: [testing]
@@ -32,3 +32,4 @@ Piece of ops-65837b (the cross-project audit in the ops hub). 1. Measure: full-s
 - 2026-10-19T00:06:52Z (test-ci-step3): resumed
   provenance: {"harness_session":"claude-code:c63bcc84-5990-40c5-ad53-5530f29a8203","harness_session_source":"CLAUDE_CODE_SESSION_ID"}
 - 2026-10-19T00:14:43Z (test-ci-step3): step 3 (35863f8, branch test-ci-step3): adopted act design §3 from ops templates — test-one (one_cmd = npm run --silent test:node --, files and --test-name-pattern), docs-only pre-commit (docs_paths excludes docs/notes/, which the suite reads; docs_check_cmd = check_cmd since check has no code checks), template githooks verbatim. ci_suite_refs: empty — prism has no CI (no .github), so every push keeps the full gate; push_fast_cmd = fast_cmd. AGENTS.md Gates line added.
+- 2026-10-19T00:14:46Z (test-ci-step3): step 3 hygiene: quiet reporter (dot + test/summary-reporter.mjs printing spec-style totals so tt still counts) cuts a passing run from 601 lines to 34; tests field still 575. Suite now 575 tests, ~10 s wall, bounded by contract.test.mjs (~8.5 s alone; one test drives ~40 real CLI spawns, 5.3 s) — spawn cost, kept for the end-to-end check. Sleeps: three waits for a lock holder to acquire (cli.test.js 20 ms and 10 ms, fanout.test.js 50 ms) were races against async fs acquisition, now wait on an acquisition promise; the 100 ms negative waits and the probe's 2 s production bound stay. No real network; fixtures are per-test tmp dirs by design.
