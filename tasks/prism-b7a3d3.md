@@ -7,8 +7,8 @@ size: m
 complexity: mid
 process: planned
 created: 2026-10-19T11:55:26Z
-updated: 2026-10-19T11:55:26Z
-depends: []
+updated: 2026-10-19T11:55:28Z
+depends: [material-9c8763]
 tags: []
 source: ops-630a87 boundary-proposal-r3.md A2
 agent: claude-code/claude-opus-5-5
