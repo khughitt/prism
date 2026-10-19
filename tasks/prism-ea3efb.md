@@ -1,10 +1,10 @@
 ---
 id: prism-ea3efb
 title: Panel notice when the host has disabled it
-status: idea
+status: todo
 priority: 2
 created: 2026-10-17T21:19:38Z
-updated: 2026-10-18T23:57:40Z
+updated: 2026-10-19T00:01:51Z
 depends: [prism-220e66]
 parent: prism-ab3a3d
 tags: []
