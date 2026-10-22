@@ -4,8 +4,8 @@ title: "Colour agent replies per harness: project colours on task ids and a high
 status: idea
 priority: 2
 created: 2026-10-22T01:23:12Z
-updated: 2026-10-22T01:23:12Z
-depends: []
+updated: 2026-10-22T01:23:14Z
+depends: [lore-587c8a]
 tags: []
 source: "user:2026-10-21 lore session"
 agent: claude-code/claude-opus-5-5
