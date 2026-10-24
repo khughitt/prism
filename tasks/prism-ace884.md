@@ -2,13 +2,12 @@
 id: prism-ace884
 title: Documentation review
 status: todo
-priority: 3
+priority: 1
 size: s
 complexity: low
 process: direct
-defer: 2026-11-21
 created: 2026-10-24T12:49:31Z
-updated: 2026-10-24T12:49:38Z
+updated: 2026-10-24T18:56:16Z
 depends: []
 tags: [docs]
 source: curate-docs
