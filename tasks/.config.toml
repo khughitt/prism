@@ -1,5 +1,0 @@
-prefix = "prism"
-color = "#6671c6"
-
-[git]
-commit = true
