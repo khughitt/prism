@@ -30,7 +30,7 @@ check_cmd := "python3 tools/ops-check && tasks check"
 # Staged paths that cannot change the code checks' verdict: a commit staging only these
 # runs docs_check_cmd instead of check_cmd. fnmatch globs, `*` crossing `/`. docs/notes/
 # is left out because the suite reads docs/notes/pipeline-interactions.md.
-docs_paths := "README.md AGENTS.md docs/specs/* docs/plans/* docs/superpowers/* tasks/*"
+docs_paths := "README.md AGENTS.md docs/specs/* docs/plans/* docs/superpowers/*"
 # check_cmd holds no code checks yet, so the docs path runs the same command; the hook
 # still records it under its own target.
 docs_check_cmd := check_cmd
