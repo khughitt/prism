@@ -100,7 +100,7 @@ source of truth for the parameters it owns.
   `reload_config` and scripted reload via its systemd integration
   (`systemctl reload --user app-com.mitchellh.ghostty.service`), so a
   future ghostty sink is liveness class `reload`. (Only macOS background-opacity changes require restart.)
-- **Placement**: standalone repo (`~/d/prism`) with a machine-enforced
+- **Placement**: standalone repo (`prism`) with a machine-enforced
   portability seam, following familiar's model. Dotfiles only wires it up.
 
 ### What v1 closes, and what stays drifted
@@ -685,7 +685,7 @@ that same directory) is the model.
 
 Two environment notes that shape the migration:
 
-- **The dotfiles repo is inside cloud sync** (`~/d` is the Dropbox root), so
+- **The dotfiles repo is inside cloud sync** (its parent directory is the Dropbox root), so
   `prism/<hostname>/values.yaml` is a synced file that prism rewrites via
   atomic rename. A sync client observing a mid-write rename can produce a
   conflicted copy. v1 ships no conflict-resolution mechanism and does not
