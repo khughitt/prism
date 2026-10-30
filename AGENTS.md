@@ -13,8 +13,11 @@
   `docs/specs/2026-09-04-test-ci-audit-design.md`). `just check` is the pre-commit gate
   and `just gate` the pre-push one; install the hooks in a fresh clone with
   `git config core.hooksPath .githooks`.
-- Design specs live under `docs/specs/` and implementation plans under `docs/plans/`;
-  they are committed. `docs/superpowers/` holds the earlier ones and takes no new docs.
+- New design specs, implementation plans, briefs and handoffs go under the
+  project's records directory (`tasks where` names it; `docs/specs/`, `docs/plans/`,
+  `docs/notes/` there), committed in the records repository, never in this tree. The
+  documents this tree already tracks under `docs/specs/`, `docs/plans/`, `docs/notes/`
+  and `docs/superpowers/` stay here and are revised in place.
 
 ## Tasks workflow
 
