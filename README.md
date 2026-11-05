@@ -371,7 +371,7 @@ legibility by itself.
 ## Command line
 
 `prism [--json|--pretty] [--color <when>] <command> [args]`, following the shared CLI
-vocabulary (ops `docs/specs/2026-09-20-cli-conventions-design.md`). The command table
+vocabulary (ops `docs/cli-conventions.md`). The command table
 is declared once in `src/commands.js` and mirrored in `tools/cli.toml`, the vendored
 copy of ops's inventory; `test/cli-surface.test.js` proves the two agree.
 

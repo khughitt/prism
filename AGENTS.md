@@ -10,7 +10,7 @@
   no CI: the pre-push hook carries the full suite (`ci_suite_refs` is empty).
 - `just test` runs the suite (`npm test`); every recipe records its wall time through
   `tools/tt` for the cross-project test and CI audit (ops
-  `docs/specs/2026-09-04-test-ci-audit-design.md`). `just check` is the pre-commit gate
+  `docs/tooling.md`). `just check` is the pre-commit gate
   and `just gate` the pre-push one; install the hooks in a fresh clone with
   `git config core.hooksPath .githooks`.
 - New design specs, implementation plans, briefs and handoffs go under the
