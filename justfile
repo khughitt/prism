@@ -24,13 +24,15 @@ tt := "python3 tools/tt"
 # report showing the two targets with equal durations is the truth, not a gap to close.
 fast_cmd := "npm test --silent"
 test_cmd := "npm test --silent"
-# No formatter, linter, or typechecker in this project; `tasks check` is the gate.
-check_cmd := "python3 tools/ops-check && tasks check"
+# No formatter, linter, or typechecker in this project. tools/ops-check and tools/ops-docs
+# are vendored from ops (see tools/README.md): shared hygiene, then the guides against
+# identity.toml; `tasks check` last.
+check_cmd := "python3 tools/ops-check && python3 tools/ops-docs check && tasks check"
 
 # Staged paths that cannot change the code checks' verdict: a commit staging only these
 # runs docs_check_cmd instead of check_cmd. fnmatch globs, `*` crossing `/`. docs/notes/
 # is left out because the suite reads docs/notes/pipeline-interactions.md.
-docs_paths := "README.md AGENTS.md docs/specs/* docs/plans/* docs/superpowers/*"
+docs_paths := "README.md AGENTS.md CLAUDE.md identity.toml docs/specs/* docs/plans/* docs/superpowers/*"
 # check_cmd holds no code checks yet, so the docs path runs the same command; the hook
 # still records it under its own target.
 docs_check_cmd := check_cmd
@@ -68,6 +70,10 @@ check:
     {{tt}} check -- sh -c '{{check_cmd}}'
 
 gate: check test
+
+# Regenerate the identity regions in README.md and AGENTS.md from identity.toml.
+docs:
+    python3 tools/ops-docs write
 
 # What the pre-commit hook runs: `check`'s command under its own hook target.
 hook-pre-commit:

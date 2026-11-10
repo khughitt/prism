@@ -1,0 +1,25 @@
+# What this project is. `tools/ops-docs write` renders it into the identity region of
+# README.md and AGENTS.md; `tools/ops-docs check` refuses a commit while they differ.
+# Reference: ops docs/project-guides.md
+name = "prism"
+aliases = []
+# At most 80 characters: this line sits in every agent session in every project.
+purpose = "Resolves appearance definitions and applies them to their targets"
+# One to three sentences, at most 400 characters: what it does and for whom.
+abstract = """
+One store of desktop look settings (glass optics, focus ring, gaps, terminal \
+opacity), saved as named profiles and per-wallpaper adjustments, resolved into one \
+set of values and rendered into each target's configuration. Its first desktop is \
+niri with the native glass material, tuned live from a Noctalia shell panel or the \
+`prism` command line.
+"""
+# Documents that are the authority for what is built or decided; each must be tracked.
+authority = [
+    "docs/superpowers/specs/2026-08-15-prism-visual-bus-design.md",
+    "docs/specs/2026-09-19-compositional-profiles-design.md",
+    "docs/specs/2026-09-20-profile-wallpaper-pairs-design.md",
+    "docs/specs/2026-09-27-rotation-keeps-edits-design.md",
+    "docs/specs/2026-10-04-pipeline-schema-design.md",
+    "docs/notes/noctalia-plugin-contract.md",
+]
+subsystems = []
