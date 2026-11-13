@@ -38,9 +38,8 @@ docs_paths := "README.md AGENTS.md CLAUDE.md identity.toml docs/usage.md docs/st
 # still records it under its own target.
 docs_check_cmd := check_cmd
 
-# Remote refs whose pushes have qualified full-suite CI. Keep empty until the
-# prepared workflow completes its approved hosted qualification.
-ci_suite_refs := ""
+# Remote refs whose pushes have qualified full-suite CI, including nested branches.
+ci_suite_refs := "refs/heads/*"
 ci_remote := "origin"
 
 # The node runner with the suite's reporters and no files: `test-one` appends the

@@ -22,9 +22,9 @@ just, Python 3.11 or newer, bash and zsh on PATH.
 - `just test` and `just test-fast` both invoke the complete package suite, including
   the real CLI/plugin contract and standalone Lua checks; there is no affected-only
   broad selector. The invoking code Git root's .tt.toml controls these two broad
-  targets. The policy is currently absent/enabled, pending hosted qualification.
-  With automatic_broad false, a local broad request records a policy skip; focused
-  checks and mandatory hygiene still run. A skip is never a passing test run.
+  targets. The policy sets automatic_broad false: local broad requests record a
+  policy skip while focused checks and mandatory hygiene still run. A skip is
+  never a passing test run.
   `just test-full` (or `TT_FORCE=1 just test`) deliberately runs the full suite.
 - Every timed recipe records through `tools/tt` for the cross-project audit
   ([ops tooling](https://github.com/khughitt/ops/blob/main/docs/tooling.md)).
@@ -33,13 +33,13 @@ just, Python 3.11 or newer, bash and zsh on PATH.
   Install the hooks in a fresh clone with `git config core.hooksPath .githooks`.
   Push hooks time mandatory hygiene separately from their broad child, so those
   hook timings cannot be compared to the old combined hook/suite durations.
-- `.github/workflows/ci.yml` prepares one standard Linux job on every branch push
+- `.github/workflows/ci.yml` runs one qualified standard Linux job on every branch push
   (including nested names) and manual dispatch, with per-ref cancellation and
   explicit TT_FORCE=1. It has no duplicate PR trigger. It runs portable ops-check
   and ops-docs, then the complete suite. Private detached tasks check and the
-  registry-dependent parts of hygiene stay local. The workflow is not yet qualified:
-  ci_suite_refs remains empty and local automatic broad checks stay enabled until
-  an approved hosted invocation demonstrates its coverage.
+  registry-dependent parts of hygiene stay local. ci_suite_refs declares refs/heads/*
+  on origin, including nested branches. Tags and other remotes are uncovered and
+  warn under policy-off; cancelled or absent runs leave their revision unverified.
 - Hosted setup uses Node 26, Python 3.12 and Lua 5.4; the development host currently
   uses Lua 5.5.1. Noctalia 5.4.1's release vendors Luau 0.742 (the installed package's
   exact Luau revision is not exposed). Offline PUC Lua checks do not certify the

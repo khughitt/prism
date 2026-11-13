@@ -32,12 +32,12 @@ Development also needs Lua, just, Python 3.11 or newer, bash and zsh. Use
 plugin checks, and `just check` for mandatory hygiene and guide checks.
 `just test-full` deliberately runs the complete Node and Lua suite. Ordinary
 `just test` and `just test-fast` observe the code checkout's .tt.toml; it is
-currently absent/enabled while hosted verification is prepared. Policy skips are
-reported separately from test results.
+configured to skip automatic local broad runs. Focused checks and mandatory hygiene
+still execute; policy skips are reported separately from test results.
 
-The prepared GitHub workflow runs one Linux suite per branch push, with superseded
-runs cancelled. Hosted qualification is still pending, so local broad verification
-remains enabled. Its pinned renderer checkout makes the schema comparison explicit;
+The qualified GitHub workflow runs one Linux suite per origin branch push, including
+nested names, with superseded runs cancelled. Tags and other remotes are uncovered.
+Its pinned renderer checkout makes the schema comparison explicit;
 it omits the one Noctalia CLI palette test and private task-record checks. CI uses
 Lua 5.4; the development host uses Lua 5.5.1. Noctalia's plugin runtime is Luau, so
 neither offline interpreter certifies live desktop integration.
