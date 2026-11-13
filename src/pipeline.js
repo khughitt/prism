@@ -4,7 +4,7 @@ import path from 'node:path';
 // The renderer's pipeline schema, vendored as a byte copy of the renderer's
 // resources/materials/pipeline.json. This module checks the copy's version
 // and shape at load; freshness against the checkout is the contract test's
-// job (docs/specs/2026-10-04-pipeline-schema-design.md, Section 3).
+// job; see docs/definitions.md for the schema lifecycle.
 export const VERSION = 1;
 export const CARRIERS = ['texture', 'normal', 'linear', 'light', 'encoded'];
 export const LAWS = ['sequence', 'sum', 'product', 'coupled'];

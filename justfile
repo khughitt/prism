@@ -30,9 +30,9 @@ test_cmd := "npm test --silent"
 check_cmd := "python3 tools/ops-check && python3 tools/ops-docs check && tasks check"
 
 # Staged paths that cannot change the code checks' verdict: a commit staging only these
-# runs docs_check_cmd instead of check_cmd. fnmatch globs, `*` crossing `/`. docs/notes/
-# is left out because the suite reads docs/notes/pipeline-interactions.md.
-docs_paths := "README.md AGENTS.md CLAUDE.md identity.toml docs/specs/* docs/plans/* docs/superpowers/*"
+# runs docs_check_cmd instead of check_cmd. definitions.md stays outside the explicit
+# list because the suite reads and verifies its generated interaction block.
+docs_paths := "README.md AGENTS.md CLAUDE.md identity.toml docs/usage.md docs/store.md docs/desktop.md docs/noctalia-plugin.md"
 # check_cmd holds no code checks yet, so the docs path runs the same command; the hook
 # still records it under its own target.
 docs_check_cmd := check_cmd

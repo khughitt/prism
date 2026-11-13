@@ -11,7 +11,7 @@ import { nodeMap } from '../src/nodes.js';
 import { renderInteractions } from '../src/interactions.js';
 import { defsDir, integrationsDir } from '../src/paths.js';
 
-const DOC = fileURLToPath(new URL('../docs/notes/pipeline-interactions.md', import.meta.url));
+const DOC = fileURLToPath(new URL('../docs/definitions.md', import.meta.url));
 const BEGIN = '<!-- interactions:begin -->';
 const END = '<!-- interactions:end -->';
 
@@ -27,7 +27,7 @@ test('the structural block of the interaction document is generated', () => {
     fs.writeFileSync(DOC, doc.slice(0, a) + expected + doc.slice(b));
     return;
   }
-  assert.equal(doc.slice(a, b), expected, 'docs/notes/pipeline-interactions.md is stale; rerun with PRISM_DOCS_UPDATE=1');
+  assert.equal(doc.slice(a, b), expected, 'docs/definitions.md is stale; rerun with PRISM_DOCS_UPDATE=1');
 });
 
 test('the table has one row per structural cell and keeps the decision', () => {

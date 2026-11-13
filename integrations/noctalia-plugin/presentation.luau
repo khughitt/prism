@@ -335,9 +335,8 @@ function M.profileSection(model)
   return { options = options, selectedIndex = selectedIndex, activeName = model.active.profile }
 end
 
--- One color per site family (docs/specs/2026-10-04-pipeline-schema-design.md,
--- Section 3). Noctalia gives a plugin no theme palette, so these are
--- constants; a card's fill is the same color at hex alpha 1f. Light is the
+-- One color per site family. Noctalia gives a plugin no theme palette, so
+-- these are constants; a card's fill is the same color at hex alpha 1f. Light is the
 -- yellow: distinct from post's orange at the light's 12 px size.
 M.familyColors = { source = "#5b9cf6", geometry = "#c78bfa", transmission = "#4fd1c5", light = "#f6e05e", post = "#f6ad55" }
 

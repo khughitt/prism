@@ -48,7 +48,7 @@ test('a def cannot replace a key that is still defined, and a key is replaced at
 });
 
 test('glass slider ranges and curves follow the sweep evidence', () => {
-  // niri-material docs/materials/2026-09-06-glass-parameter-sweep-evidence.md, Part 2.
+  // niri-material docs/materials/performance.md (measured parameter costs).
   const defs = loadDefs(defsDir());
   for (const key of ['glass.roughness', 'glass.inactive.roughness']) {
     assert.deepEqual(defs.get(key).range, [0, 1]);

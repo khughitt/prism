@@ -62,7 +62,7 @@ local gates = {}
 local attached = {}
 
 -- Subtrees from earlier renders, each under the signature of what shaped it
--- (docs/specs/2026-10-10-panel-render-budget-design.md). A full tree costs
+-- (docs/noctalia-plugin.md). A full tree costs
 -- more of the host's budget than one callback can spare, so a render rebuilds
 -- only the units whose inputs changed.
 local memo = Retain.new()

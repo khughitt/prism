@@ -4,3 +4,6 @@ node_modules/
 # emptied by ops `tt-report`; never committed.
 .tt/
 .worktrees
+
+# Task execution reports belong to private records/storage.
+/.superpowers/

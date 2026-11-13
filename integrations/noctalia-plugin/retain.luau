@@ -1,6 +1,6 @@
 -- Subtrees the panel built on an earlier render, each under the signature of
 -- the inputs that shaped it. A unit whose signature is unchanged is handed back
--- whole; see docs/specs/2026-10-10-panel-render-budget-design.md.
+-- whole; see docs/noctalia-plugin.md.
 local M = {}
 
 function M.new()

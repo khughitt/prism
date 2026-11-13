@@ -1,4 +1,4 @@
-// The structural cells of the interaction matrix (spec Section 4), one row
+// The structural cells of the public interaction matrix, one row
 // per resolved interaction on a device, as a Markdown table. Each interaction
 // carries its source: a schema edge's decision is the bracketed suffix of its
 // `why`, which it must have; a dry coupling is always `expose`, since the

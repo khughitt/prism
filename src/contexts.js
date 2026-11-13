@@ -7,7 +7,7 @@ import { readJson, writeJsonAtomic } from './store.js';
 
 // Resolution order of the context kinds, lowest first. Base sits below all of
 // them and scratch above; the look is base then profile, and the deltas ride
-// on top of the look (2026-09-19 compositional profiles design, Section 1).
+// on top of the look; see docs/store.md for records and transitions.
 export const LAYER_ORDER = ['profile', 'wallpaper', 'state'];
 // The kinds that are sparse, hook-activated deltas over the look.
 export const DELTA_KINDS = ['wallpaper', 'state'];

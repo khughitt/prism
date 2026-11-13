@@ -14,12 +14,8 @@ niri with the native glass material, tuned live from a Noctalia shell panel or t
 `prism` command line.
 """
 # Documents that are the authority for what is built or decided; each must be tracked.
-authority = [
-    "docs/superpowers/specs/2026-08-15-prism-visual-bus-design.md",
-    "docs/specs/2026-09-19-compositional-profiles-design.md",
-    "docs/specs/2026-09-20-profile-wallpaper-pairs-design.md",
-    "docs/specs/2026-09-27-rotation-keeps-edits-design.md",
-    "docs/specs/2026-10-04-pipeline-schema-design.md",
-    "docs/notes/noctalia-plugin-contract.md",
-]
+authority = ["docs/store.md", "docs/definitions.md", "docs/noctalia-plugin.md"]
 subsystems = []
+
+[documents]
+standard = 1

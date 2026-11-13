@@ -309,7 +309,7 @@ test('the terminal opacity pair is hidden from the panel', () => {
 
 // One bypass per rack device, shared by both focus states: the niri sink
 // writes the device's dry value while the key is true and the mix keeps its
-// number (docs/specs/2026-09-08-device-chain-rack-design.md).
+// number (docs/definitions.md).
 const BYPASS = [
   ['glass.bypass.iridescence', 'Bypass iridescence', 435],
   ['glass.bypass.aurora', 'Bypass aurora', 455],

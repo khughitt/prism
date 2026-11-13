@@ -482,7 +482,7 @@ test('the panel captures exactly the prism rows of tools/keys.toml', () => {
 // Render cost in Lua calls, on real describe output with every card expanded.
 // In the shell each call also pays the budget interrupt's clock read, so calls
 // are the unit the 25 ms budget is spent in
-// (docs/specs/2026-10-10-panel-render-budget-design.md). The host's decode and
+// (docs/noctalia-plugin.md). The host's decode and
 // encode are single C calls, so their stand-ins run unhooked.
 const costHarness = String.raw`
 local pluginDir, model = arg[1], MODEL
