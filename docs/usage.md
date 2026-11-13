@@ -20,11 +20,13 @@ accepted before or after commands. Pretty is default; `PRISM_FORMAT` sets the
 default and explicit flags win. `PRISM_COLOR` defaults to `never`; color options
 are accepted but output currently contains no color.
 
-Exit 0 means success, 1 an operation failure, 2 a usage error. JSON results normally
-use one stdout object; operation/usage errors use `{error: {kind, detail}}` on
-stderr with no stdout. `doctor` and `requirements` instead report findings on stdout
-(`ok: false`) with exit 1; parse that report even when the command fails. Successful
-`migrate pairs --json` is silent. Pretty diagnostics retain the sink/validation message.
+Exit 0 means success, 1 an operation failure, 2 a usage error. Help, version and
+completion output is plain text. Other JSON results normally use one stdout object;
+operation errors use `{error: {kind, detail}}` on stderr with no stdout. Usage
+errors are plain-text stderr even under `--json`. `doctor` and `requirements`
+instead report findings on stdout (`ok: false`) with exit 1; parse that report even
+when the command fails. Successful `migrate pairs --json` is silent. Pretty
+diagnostics retain the sink/validation message.
 Use `PRISM_COMPLETE=zsh prism` or `PRISM_COMPLETE=bash prism` to generate completion.
 
 | Command | Result or action |
