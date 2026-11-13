@@ -29,7 +29,7 @@ function liveRows() {
 }
 
 function tableRows() {
-  const text = execFileSync('python3', [path.join(ROOT, 'tools', 'cli_surface.py'), 'rows', 'prism', path.join(ROOT, 'tools', 'cli.toml')], { encoding: 'utf8' });
+  const text = execFileSync('python3', [path.join(ROOT, 'tools', 'cli_surface.py'), 'rows', 'prism', path.join(ROOT, 'tools', 'cli.toml')], { encoding: 'utf8', env: childEnv() });
   return new Set(text.trim().split('\n').map((line) => key(JSON.parse(line))));
 }
 
@@ -37,12 +37,30 @@ let dir;
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prism-cli-'));
   process.env.PRISM_CONFIG_DIR = path.join(dir, 'config'); process.env.PRISM_STATE_DIR = path.join(dir, 'state');
+  // Parser/output contracts exercise no desktop sinks or their host preflights.
+  process.env.PRISM_INTEGRATIONS_DIR = path.join(dir, 'integrations');
+  fs.mkdirSync(process.env.PRISM_INTEGRATIONS_DIR);
 });
-afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }); delete process.env.PRISM_CONFIG_DIR; delete process.env.PRISM_STATE_DIR; });
+afterEach(() => {
+  fs.rmSync(dir, { recursive: true, force: true });
+  delete process.env.PRISM_CONFIG_DIR; delete process.env.PRISM_STATE_DIR; delete process.env.PRISM_INTEGRATIONS_DIR;
+});
+
+function childEnv() {
+  return {
+    PATH: process.env.PATH, HOME: dir, USER: 'fixture',
+    XDG_CONFIG_HOME: path.join(dir, 'xdg-config'), XDG_STATE_HOME: path.join(dir, 'xdg-state'),
+    GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1',
+    PRISM_CONFIG_DIR: process.env.PRISM_CONFIG_DIR, PRISM_STATE_DIR: process.env.PRISM_STATE_DIR,
+    PRISM_INTEGRATIONS_DIR: process.env.PRISM_INTEGRATIONS_DIR,
+  };
+}
 
 async function run(argv, env = {}) {
   const out = [], err = [];
-  const code = await cli.run(argv, { print: (t) => out.push(t), eprint: (t) => err.push(t), runner: () => {}, env: { ...process.env, ...env } });
+  const commandEnv = childEnv();
+  for (const [key, value] of Object.entries(env)) commandEnv[key] = value;
+  const code = await cli.run(argv, { print: (t) => out.push(t), eprint: (t) => err.push(t), runner: () => {}, env: commandEnv });
   return { code, stdout: out.join(''), stderr: err.join('') };
 }
 
@@ -134,9 +152,9 @@ test('completion callback and scripts', async () => {
   assert.deepEqual((await candidates(['prism', '--json', 'reset', 'n'], 3)), ['neutral']);
   assert.deepEqual(await candidates(['prism', '--color', 'never', 'context', 'dea'], 4), ['deactivate']);
   const zsh = path.join(dir, '_prism'); fs.writeFileSync(zsh, (await run([], { PRISM_COMPLETE: 'zsh' })).stdout);
-  assert.equal(execFileSync('zsh', ['-f', '-c', `autoload -Uz compinit; compinit -D -u; source ${zsh}; print -r -- \${_comps[prism]}`], { encoding: 'utf8' }).trim(), '_prism');
+  assert.equal(execFileSync('zsh', ['-f', '-c', 'autoload -Uz compinit; compinit -D -u; source "$1"; print -r -- ${_comps[prism]}', 'completion', zsh], { encoding: 'utf8', env: childEnv() }).trim(), '_prism');
   const bash = path.join(dir, 'prism.bash'); fs.writeFileSync(bash, (await run([], { PRISM_COMPLETE: 'bash' })).stdout);
-  execFileSync('bash', ['-c', `source ${bash}; complete -p prism`]);
+  execFileSync('bash', ['-c', 'source "$1"; complete -p prism', 'completion', bash], { env: childEnv() });
 });
 
 // Every command row without an `output` row follows the CLI default and its precedence:
@@ -146,7 +164,7 @@ function commandRowsWithoutOutput() {
   const script = 'import json, sys, tomllib\n'
     + 'rows = tomllib.load(open(sys.argv[1], "rb"))["cli"]["prism"]["commands"]\n'
     + 'print(json.dumps([r["path"] for r in rows if "output" not in r]))';
-  return JSON.parse(execFileSync('python3', ['-c', script, path.join(ROOT, 'tools', 'cli.toml')], { encoding: 'utf8' }));
+  return JSON.parse(execFileSync('python3', ['-c', script, path.join(ROOT, 'tools', 'cli.toml')], { encoding: 'utf8', env: childEnv() }));
 }
 
 test('every command without an output row emits one JSON value under --json and PRISM_FORMAT=json', async () => {
