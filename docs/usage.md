@@ -20,9 +20,11 @@ accepted before or after commands. Pretty is default; `PRISM_FORMAT` sets the
 default and explicit flags win. `PRISM_COLOR` defaults to `never`; color options
 are accepted but output currently contains no color.
 
-Exit 0 means success, 1 an operation failure, 2 a usage error. JSON success is
-one object on stdout; failure is one `{error: {kind, detail}}` object on stderr
-and no stdout. Pretty diagnostics retain the useful sink/validation message.
+Exit 0 means success, 1 an operation failure, 2 a usage error. JSON results normally
+use one stdout object; operation/usage errors use `{error: {kind, detail}}` on
+stderr with no stdout. `doctor` and `requirements` instead report findings on stdout
+(`ok: false`) with exit 1; parse that report even when the command fails. Successful
+`migrate pairs --json` is silent. Pretty diagnostics retain the sink/validation message.
 Use `PRISM_COMPLETE=zsh prism` or `PRISM_COMPLETE=bash prism` to generate completion.
 
 | Command | Result or action |
@@ -35,8 +37,8 @@ Use `PRISM_COMPLETE=zsh prism` or `PRISM_COMPLETE=bash prism` to generate comple
 | `reset <revert|symmetric|neutral> [--base] [--group <name>]` | Reset visible controls in scope. |
 | `commit <base|profile|wallpaper> [<name-or-id>]` | Keep pending edits or Save As, without changing appearance. |
 | `apply [<sink>…]` | Recompute/apply all sinks or named sinks. |
-| `requirements` | Report required commands/probes (`ok`, `unmet` in JSON). |
-| `doctor` | Diagnose store, resolved bus, generated files and sink status (`ok`, `problems`). |
+| `requirements` | Report required commands/probes (`ok`, `unmet` in JSON); findings exit 1 on stdout. |
+| `doctor` | Diagnose store, bus, generated files and sink status (`ok`, `problems`); findings exit 1 on stdout. |
 | `migrate [pairs]` | Explicit parameter replacement or old pair-layout conversion. |
 | `context list` | Discover profiles/pairs and active slots. |
 | `context show <profile|wallpaper> <name-or-id> [--look <token>]` | Inspect saved content; wallpaper look can be inactive. |

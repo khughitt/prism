@@ -42,12 +42,27 @@ value does not change its twin. The pane frame/motion and noise type are shared,
 so focus changes do not resize the slab. Optical dependencies are in
 [definitions](definitions.md#pipeline-and-structural-interactions).
 
-Kitty's sink writes generated `kitty.conf`; include it in Kitty configuration.
-Live opacity updates additionally need Kitty remote control and abstract listening
-sockets. Prism discovers PID-suffixed addresses in `/proc/net/unix` and applies
-inactive/focused values to live windows. Generation does not itself prove a live
-window accepted remote control. CLI terminal parameters remain available even
-though the panel hides them.
+Kitty needs `kitty` and `kitten` on PATH. Add this to Kitty configuration:
+
+```kittyconf
+allow_remote_control socket-only
+listen_on unix:@dotfiles-kitty
+dynamic_background_opacity yes
+```
+
+Start a new Kitty process with this config
+(`kitty --config <your-kitty.conf>`); socket and dynamic-opacity changes require a
+new process. The [Kitty socket contract](https://sw.kovidgoyal.net/kitty/conf/#opt-kitty.listen_on)
+appends its PID, yielding the exact Linux address `unix:@dotfiles-kitty-<pid>`.
+Prism discovers only that convention in `/proc/net/unix`; arbitrary socket names
+are not discovered. [Dynamic opacity](https://sw.kovidgoyal.net/kitty/conf/#opt-kitty.dynamic_background_opacity)
+must be enabled from launch. Then run `prism apply kitty` and inspect
+`prism doctor --json` plus the generated file. A socket/remote-control failure is
+reported after file generation; a generated file alone proves no live update.
+After the first apply creates it, add
+`include ~/.local/state/prism/generated/kitty.conf` to the same config for future
+launches; use the actual path when state is overridden. CLI terminal parameters
+remain available though the panel hides them.
 
 The optional `debug.backdrop` uses the separate `qs` executable from Quickshell;
 Noctalia is not that dependency. It is required only when that debug feature is
