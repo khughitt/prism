@@ -9,30 +9,51 @@ Authority: `docs/store.md`, `docs/definitions.md`, `docs/noctalia-plugin.md`
 ## Setup
 
 `npm ci` after `git worktree add`: the suite imports `yaml` from `node_modules`, so a
-suite that fails before it is an unhydrated tree. The Lua plugin checks need `lua` on
-`PATH`; the gates need `just` and Python 3.
+suite that fails before it is an unhydrated tree. Development checks also need Lua,
+just, Python 3.11 or newer, bash and zsh on PATH.
 
 ## Gates
 
 - `just test-one <args>` runs `node --test` on what you name: test files
   (`just test-one test/cli.test.js`), narrowed by `--test-name-pattern=<regex>` given
   before them (node reads anything after the first file as another file pattern, and
-  drops one that matches nothing without a word). The Lua plugin checks
-  (`npm run test:plugin-lua`) run only in the whole suite. `just test-fast` is the
-  whole suite, since `node --test` has no affected-only selection; its wall time is set
-  by the slowest file, `integrations/noctalia-plugin/contract.test.mjs`, which drives
-  the real CLI. There is no CI: the pre-push hook carries the full suite
-  (`ci_suite_refs` is empty).
-- `just test` runs the suite (`npm test`); every recipe records its wall time through
-  `tools/tt` for the cross-project test and CI audit (ops `docs/tooling.md`).
+  drops one that matches nothing without a word). `just test-plugin-lua` runs the
+  standalone Lua plugin checks as a focused subsystem route.
+- `just test` and `just test-fast` both invoke the complete package suite, including
+  the real CLI/plugin contract and standalone Lua checks; there is no affected-only
+  broad selector. The invoking code Git root's .tt.toml controls these two broad
+  targets. The policy is currently absent/enabled, pending hosted qualification.
+  With automatic_broad false, a local broad request records a policy skip; focused
+  checks and mandatory hygiene still run. A skip is never a passing test run.
+  `just test-full` (or `TT_FORCE=1 just test`) deliberately runs the full suite.
+- Every timed recipe records through `tools/tt` for the cross-project audit
+  ([ops tooling](https://github.com/khughitt/ops/blob/main/docs/tooling.md)).
   `just check` is the pre-commit gate: `tools/ops-check`, `tools/ops-docs check` (the
   guides against `identity.toml`), then `tasks check`. `just gate` is the pre-push one.
   Install the hooks in a fresh clone with `git config core.hooksPath .githooks`.
+  Push hooks time mandatory hygiene separately from their broad child, so those
+  hook timings cannot be compared to the old combined hook/suite durations.
+- `.github/workflows/ci.yml` prepares one standard Linux job on every branch push
+  (including nested names) and manual dispatch, with per-ref cancellation and
+  explicit TT_FORCE=1. It has no duplicate PR trigger. It runs portable ops-check
+  and ops-docs, then the complete suite. Private detached tasks check and the
+  registry-dependent parts of hygiene stay local. The workflow is not yet qualified:
+  ci_suite_refs remains empty and local automatic broad checks stay enabled until
+  an approved hosted invocation demonstrates its coverage.
+- Hosted setup uses Node 26, Python 3.12 and Lua 5.4; the development host currently
+  uses Lua 5.5.1. Noctalia 5.4.1's release vendors Luau 0.742 (the installed package's
+  exact Luau revision is not exposed). Offline PUC Lua checks do not certify the
+  embedded Luau runtime or a live desktop. Hosted CI omits the single Noctalia CLI
+  palette test because it does not install Noctalia; report that skip explicitly.
 - `just docs` regenerates the identity regions of README.md and AGENTS.md after an
   `identity.toml` edit.
 - `test/pipeline-contract.test.js` compares `defs/rack/pipeline.json` byte for byte
   with the copy in the niri-material checkout (`NIRI_MATERIAL_DIR`, or the registered
-  `material` project), so a schema change on either side alone fails it.
+  `material` project), so a schema change on either side alone fails it. Hosted CI
+  supplies a separate sparse renderer checkout pinned to
+  [3be57dc](https://github.com/khughitt/niri-material/commit/3be57dc203fe6c8e854b6f0e427a645688d343ab).
+  This compares a fixed renderer revision; update the pin when changing the schema.
+  The hosted renderer comparison must execute rather than skip.
   `test/pipeline-interactions.test.js` fails while the generated block of
   `docs/definitions.md` is stale; `PRISM_DOCS_UPDATE=1 just test-one test/pipeline-interactions.test.js`
   rewrites it.

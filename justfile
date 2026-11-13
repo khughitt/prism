@@ -1,5 +1,6 @@
 # Front door for tests. Inner loop: `just test-one [--test-name-pattern=<re>] <files>`
-# on the test at hand, `just test-fast` before committing. Full suite: `just test`.
+# on the test at hand. Broad targets observe .tt.toml; deliberate full suite:
+# `just test-full`. While policy is enabled, run `just test-fast` before committing.
 # Gates: `just check` at pre-commit, `just gate` at pre-push. The git hooks call the
 # `hook-*` recipes instead, which run the very same commands under their own target names
 # so the report can price the hooks separately from the targets people type.
@@ -37,18 +38,15 @@ docs_paths := "README.md AGENTS.md CLAUDE.md identity.toml docs/usage.md docs/st
 # still records it under its own target.
 docs_check_cmd := check_cmd
 
-# Remote refs whose push makes CI run the full suite. prism has no CI, so no ref is
-# covered and every push takes the full gate (`hook-pre-push`).
+# Remote refs whose pushes have qualified full-suite CI. Keep empty until the
+# prepared workflow completes its approved hosted qualification.
 ci_suite_refs := ""
 ci_remote := "origin"
-# The fixed fast set, which is the whole suite (fast_cmd). Unused while ci_suite_refs is
-# empty.
-push_fast_cmd := fast_cmd
 
 # The node runner with the suite's reporters and no files: `test-one` appends the
 # caller's arguments, each one intact. It takes test files, and `--test-name-pattern=<re>`
 # before them: node reads anything after the first file as another file pattern and
-# drops one that matches nothing. The Lua plugin checks run only in the whole suite.
+# drops one that matches nothing. test-plugin-lua runs the standalone Lua checks.
 one_cmd := "npm run --silent test:node --"
 
 # Affected-only: the inner loop.
@@ -64,6 +62,14 @@ test-one +args:
 # The full suite.
 test:
     {{tt}} test -- sh -c '{{test_cmd}}'
+
+# Explicit full verification, including when automatic broad verification is off.
+test-full:
+    TT_FORCE=1 just test
+
+# Focused checks for changes to the plugin's Lua modules.
+test-plugin-lua:
+    {{tt}} test-plugin-lua -- npm run --silent test:plugin-lua
 
 # Seconds, not minutes.
 check:
@@ -83,10 +89,12 @@ hook-pre-commit:
 hook-pre-commit-docs:
     {{tt}} hook-pre-commit-docs -- sh -c '{{docs_check_cmd}}'
 
-# What the pre-push hook runs: the same commands as `gate`, under one hook target.
+# Time mandatory hygiene once; the broad child records its own execution or skip.
 hook-pre-push:
-    {{tt}} hook-pre-push -- sh -c '{{check_cmd}} && {{test_cmd}}'
+    {{tt}} hook-pre-push -- sh -c '{{check_cmd}}'
+    just test
 
 # What the pre-push hook runs when CI runs the full suite for every pushed ref.
 hook-pre-push-fast:
-    {{tt}} hook-pre-push-fast -- sh -c '{{check_cmd}} && {{push_fast_cmd}}'
+    {{tt}} hook-pre-push-fast -- sh -c '{{check_cmd}}'
+    just test-fast
